@@ -1,0 +1,10 @@
+export { useAuth, useAuthHydration } from "./hooks/useAuth";
+export { signInDemo, signOut, setOnboardingComplete, setSession, hydrateAuth } from "./store/authStore";
+export { WelcomeSlides } from "./components/WelcomeSlides";
+export { GoalsForm } from "./components/GoalsForm";
+export { ProfileMetricsForm } from "./components/ProfileMetricsForm";
+export { ReadyScreen } from "./components/ReadyScreen";
+export { SignInForm } from "./components/SignInForm";
+export { SignUpForm } from "./components/SignUpForm";
+export { OAuthButtons } from "./components/OAuthButtons";
+export { authService } from "./services/auth.service";
