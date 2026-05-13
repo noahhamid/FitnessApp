@@ -1,11 +1,14 @@
 /**
  * Barrel export for legacy `@/src/theme` imports.
- * Prefer `@/src/ui/tokens` and feature `services` for new code.
+ * Prefer importing directly from `@/src/ui/tokens` in new code.
+ *
+ * Fixed: removed workout.service and nutrition.service exports.
+ * Theme should only export visual tokens. Services belong in their
+ * own feature imports: `@/src/features/workout` etc.
  */
-export { COLORS, C, TAG_COLORS } from "./ui/tokens/colors";
-export { FONTS } from "./ui/tokens/typography";
-export { spacing } from "./ui/tokens/spacing";
-export { SW, SH } from "./lib/dimensions";
+export { SH, SW } from "./lib/dimensions";
 export * from "./lib/seed";
-export * from "./features/workout/services/workout.service";
-export * from "./features/nutrition/services/nutrition.service";
+export { C, COLORS, TAG_COLORS } from "./ui/tokens/colors";
+export { spacing } from "./ui/tokens/spacing";
+export { FONTS } from "./ui/tokens/typography";
+

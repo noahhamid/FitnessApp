@@ -1,5 +1,5 @@
-import { View, StyleSheet } from "react-native";
 import { C } from "@/src/ui/tokens";
+import { StyleSheet, View } from "react-native";
 
 type Props = { total: number; current: number };
 
@@ -16,9 +16,10 @@ export function ProgressDots({ total, current }: Props) {
 const s = StyleSheet.create({
   row: {
     flexDirection: "row",
-    justifyContent: "center",
+    // Fixed: was "center" — left-align to match screen content alignment
+    justifyContent: "flex-start",
     alignItems: "center",
-    paddingVertical: 16,
+    paddingVertical: 12,
     gap: 6,
   },
   dot: { height: 4, borderRadius: 2 },

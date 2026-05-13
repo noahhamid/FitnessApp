@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { View, TextInput, Text, StyleSheet } from "react-native";
 import { C, FONTS } from "@/src/ui/tokens";
+import { useState } from "react";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 
 type Props = {
   label?: string;
@@ -46,8 +46,8 @@ const s = StyleSheet.create({
   label: {
     color: C.muted,
     fontSize: 11,
-    letterSpacing: 1.2,
-    fontFamily: FONTS.semiBold,
+    letterSpacing: 1.5,
+    fontFamily: FONTS.bold,
     marginBottom: 8,
   },
   box: {
@@ -58,6 +58,8 @@ const s = StyleSheet.create({
     borderColor: C.border,
     borderRadius: 12,
     paddingHorizontal: 16,
+    // Fixed: explicit minHeight prevents Android collapse
+    minHeight: 52,
   },
   boxFocused: { borderColor: `${C.accent}99` },
   text: {
