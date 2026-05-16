@@ -1,6 +1,5 @@
+import { CalorieCard } from "@/src/features/dashboard/components/CaloriCard";
 import {
-  ActionBtn,
-  CalorieCard,
   StatTile,
   WeeklyCard,
   WeightCard,
@@ -8,6 +7,7 @@ import {
 import { StreakBanner } from "@/src/features/dashboard/components/StreakBanner";
 import { TodaySession } from "@/src/features/dashboard/components/TodaySession";
 import { SLEEP_SPARK, STEPS_SPARK } from "@/src/theme";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
   ScrollView,
@@ -18,7 +18,6 @@ import {
   View,
 } from "react-native";
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
   bg0: "#0A0A0C",
   bg1: "#111114",
@@ -38,12 +37,51 @@ const T = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function SectionGap() {
-  return <View style={{ height: 14 }} />;
+  return <View style={{ height: 16 }} />;
 }
 
-function SectionLabel({ label }: { label: string }) {
-  return <Text style={s.sectionLabel}>{label}</Text>;
+function SectionLabel({
+  label,
+  icon,
+}: {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}) {
+  return (
+    <View style={s.sectionLabelRow}>
+      <Ionicons name={icon} size={12} color={T.muted} />
+      <Text style={s.sectionLabel}>{label}</Text>
+    </View>
+  );
 }
+
+// ─── Quick action data ────────────────────────────────────────────────────────
+const ACTIONS = [
+  {
+    icon: "barbell-outline" as const,
+    label: "LOG\nWORKOUT",
+    color: T.lime,
+    route: "/(app)/(tabs)/train" as const,
+  },
+  {
+    icon: "nutrition-outline" as const,
+    label: "LOG\nMEAL",
+    color: T.orange,
+    route: "/(app)/(tabs)/nutrition" as const,
+  },
+  {
+    icon: "flash-outline" as const,
+    label: "FOCUS\nMODE",
+    color: T.purple,
+    route: "/(app)/focus-mode" as const,
+  },
+  {
+    icon: "camera-outline" as const,
+    label: "PROGRESS\nPHOTO",
+    color: T.blue,
+    route: null,
+  },
+] as const;
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function DashboardScreen() {
@@ -67,10 +105,13 @@ export default function DashboardScreen() {
         contentContainerStyle={s.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── HEADER ─────────────────────────────────────────────────────────── */}
+        {/* ── HEADER ───────────────────────────────────────────────────────── */}
         <View style={s.header}>
           <View style={s.headerLeft}>
-            <Text style={s.date}>{date}</Text>
+            <View style={s.datePill}>
+              <Ionicons name="calendar-outline" size={10} color={T.muted} />
+              <Text style={s.date}>{date}</Text>
+            </View>
             <Text style={s.greeting}>{greeting},</Text>
             <Text style={s.heroName}>ALEX 👊</Text>
           </View>
@@ -78,28 +119,28 @@ export default function DashboardScreen() {
           {/* Notification bell */}
           <View>
             <TouchableOpacity style={s.bellBtn} activeOpacity={0.7}>
-              <Text style={{ fontSize: 18 }}>🔔</Text>
+              <Ionicons name="notifications-outline" size={20} color={T.text} />
             </TouchableOpacity>
             <View style={s.notifDot} />
           </View>
         </View>
 
-        {/* ── STREAK ─────────────────────────────────────────────────────────── */}
+        {/* ── STREAK ───────────────────────────────────────────────────────── */}
         <View style={s.px}>
           <StreakBanner days={12} best={21} />
         </View>
 
         <SectionGap />
 
-        {/* ── CALORIES ───────────────────────────────────────────────────────── */}
+        {/* ── CALORIES ─────────────────────────────────────────────────────── */}
         <View style={s.px}>
           <CalorieCard />
         </View>
 
         <SectionGap />
 
-        {/* ── STAT TILES ─────────────────────────────────────────────────────── */}
-        <SectionLabel label="TODAY'S METRICS" />
+        {/* ── STAT TILES ───────────────────────────────────────────────────── */}
+        <SectionLabel label="TODAY'S METRICS" icon="pulse-outline" />
         <View style={s.px}>
           <View style={s.tileRow}>
             <StatTile
@@ -108,7 +149,7 @@ export default function DashboardScreen() {
               value="7,842"
               unit=""
               note="↑ 12% vs yesterday"
-              color={T.blue}
+              color={T.lime}
               spark={STEPS_SPARK}
             />
             <StatTile
@@ -128,7 +169,7 @@ export default function DashboardScreen() {
               value="7.4"
               unit="hrs"
               note="Deep: 1h 52m"
-              color={T.orange}
+              color={T.purple}
               spark={SLEEP_SPARK}
             />
             <StatTile
@@ -145,65 +186,65 @@ export default function DashboardScreen() {
 
         <SectionGap />
 
-        {/* ── QUICK ACTIONS ──────────────────────────────────────────────────── */}
-        <SectionLabel label="QUICK ACTIONS" />
+        {/* ── QUICK ACTIONS ────────────────────────────────────────────────── */}
+        <SectionLabel label="QUICK ACTIONS" icon="grid-outline" />
         <View style={s.px}>
           <View style={s.actionsCard}>
             <View style={s.actionRow}>
-              <ActionBtn
-                icon="🏋️"
-                label={"LOG\nWORKOUT"}
-                color={T.lime}
-                onPress={() => router.push("/(app)/(tabs)/train")}
-              />
-              <View style={s.actionDividerV} />
-              <ActionBtn
-                icon="🍎"
-                label={"LOG\nMEAL"}
-                color={T.orange}
-                onPress={() => router.push("/(app)/(tabs)/nutrition")}
-              />
-              <View style={s.actionDividerV} />
-              <ActionBtn
-                icon="⚡"
-                label={"FOCUS\nMODE"}
-                color={T.lime}
-                onPress={() => router.push("/(app)/focus-mode")}
-              />
-              <View style={s.actionDividerV} />
-              <ActionBtn
-                icon="📸"
-                label={"PROGRESS\nPHOTO"}
-                color={T.purple}
-                onPress={() => {}}
-              />
+              {ACTIONS.map((action, i) => (
+                <View key={action.label} style={s.actionItem}>
+                  <TouchableOpacity
+                    activeOpacity={0.75}
+                    onPress={() =>
+                      action.route ? router.push(action.route) : null
+                    }
+                    style={[
+                      s.actionIconBtn,
+                      {
+                        backgroundColor: action.color + "18",
+                        borderColor: action.color + "30",
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={action.icon}
+                      size={22}
+                      color={action.color}
+                    />
+                  </TouchableOpacity>
+                  <Text style={s.actionLabel}>{action.label}</Text>
+                  {i < ACTIONS.length - 1 && <View style={s.actionDividerV} />}
+                </View>
+              ))}
             </View>
           </View>
         </View>
 
         <SectionGap />
 
-        {/* ── TODAY'S PLAN ───────────────────────────────────────────────────── */}
+        {/* ── TODAY'S PLAN ─────────────────────────────────────────────────── */}
+        <SectionLabel label="TODAY'S PLAN" icon="today-outline" />
         <View style={s.px}>
           <TodaySession onSeeAll={() => router.push("/(app)/(tabs)/train")} />
         </View>
 
         <SectionGap />
 
-        {/* ── WEEKLY ACTIVITY ────────────────────────────────────────────────── */}
+        {/* ── WEEKLY ACTIVITY ──────────────────────────────────────────────── */}
+        <SectionLabel label="WEEKLY ACTIVITY" icon="bar-chart-outline" />
         <View style={s.px}>
-          <WeeklyCard />
+          <WeeklyCard onReport={() => router.push("/(app)/(tabs)/progress")} />
         </View>
 
         <SectionGap />
 
-        {/* ── WEIGHT TREND ───────────────────────────────────────────────────── */}
+        {/* ── WEIGHT TREND ─────────────────────────────────────────────────── */}
+        <SectionLabel label="WEIGHT TREND" icon="trending-down-outline" />
         <View style={s.px}>
           <WeightCard />
         </View>
 
-        {/* Bottom breathing room */}
-        <View style={{ height: 32 }} />
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -220,11 +261,7 @@ const s = StyleSheet.create({
   },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
-
-  // Horizontal padding wrapper — keeps all sections aligned
-  px: {
-    paddingHorizontal: 16,
-  },
+  px: { paddingHorizontal: 16 },
 
   // ── Header ──────────────────────────────────────────────────────────────────
   header: {
@@ -236,14 +273,19 @@ const s = StyleSheet.create({
     paddingBottom: 20,
   },
   headerLeft: {
-    gap: 1,
+    gap: 2,
+  },
+  datePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 4,
   },
   date: {
     fontFamily: "DMSans_500Medium",
     fontSize: 10,
     color: T.muted,
     letterSpacing: 0.8,
-    marginBottom: 4,
   },
   greeting: {
     fontFamily: "DMSans_600SemiBold",
@@ -263,7 +305,7 @@ const s = StyleSheet.create({
     borderRadius: 13,
     backgroundColor: T.bg2,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: T.borderMid,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -274,19 +316,24 @@ const s = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: T.red,
     borderWidth: 2,
-    borderColor: T.bg0, // creates a "cut out" halo effect
+    borderColor: T.bg0,
     top: 4,
     right: 4,
   },
 
   // ── Section label ────────────────────────────────────────────────────────────
+  sectionLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
   sectionLabel: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 11,
     color: T.muted,
     letterSpacing: 1.4,
-    paddingHorizontal: 16,
-    marginBottom: 10,
   },
 
   // ── Tiles ────────────────────────────────────────────────────────────────────
@@ -295,7 +342,7 @@ const s = StyleSheet.create({
     gap: 10,
   },
 
-  // ── Actions card ─────────────────────────────────────────────────────────────
+  // ── Actions ──────────────────────────────────────────────────────────────────
   actionsCard: {
     backgroundColor: T.bg1,
     borderRadius: 20,
@@ -307,10 +354,36 @@ const s = StyleSheet.create({
   actionRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-around",
+  },
+  actionItem: {
+    flex: 1,
+    alignItems: "center",
+    gap: 7,
+    position: "relative",
+  },
+  actionIconBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 15,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionLabel: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 10,
+    color: T.sub,
+    textAlign: "center",
+    letterSpacing: 0.5,
+    lineHeight: 13,
   },
   actionDividerV: {
+    position: "absolute",
+    right: 0,
+    top: "15%",
     width: 1,
-    height: 44,
+    height: "70%",
     backgroundColor: T.border,
   },
 });

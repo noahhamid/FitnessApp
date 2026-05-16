@@ -22,14 +22,11 @@ export const WEEKLY_DATA = [
 export const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
 export const WEIGHT_DATA = [
-  { w: 84.2 },
-  { w: 83.8 },
-  { w: 83.5 },
-  { w: 83.1 },
-  { w: 82.9 },
-  { w: 82.6 },
-  { w: 82.4 },
-  { w: 82.1 },
+  { date: "Mon", w: 70 },
+  { date: "Tue", w: 69 },
+  { date: "Wed", w: 68 },
+  { date: "Thu", w: 67.5 },
+  { date: "Fri", w: 67 },
 ];
 
 export const STEPS_SPARK = [6200, 8400, 7100, 9800, 5500, 8200, 7600];
