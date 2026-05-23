@@ -1,5 +1,6 @@
-import { DAYS, WEEKLY_DATA, WEIGHT_DATA } from "@/src/theme";
+import { DAYS } from "@/src/theme";
 import {
+  ActivityIndicator,
   Dimensions,
   Pressable,
   StyleSheet,
@@ -280,8 +281,6 @@ export function SectionTitle({ title, action, onAction }: SectionTitleProps) {
   );
 }
 
-// ─── 6. CalorieCard ──────────────────────────────────────────────────────────
-
 // ─── 7. WeeklyCard ───────────────────────────────────────────────────────────
 
 type WeeklyBarItem = {
@@ -299,10 +298,10 @@ const BAR_W = 26;
 function WeeklyBars({ data }: WeeklyBarsProps) {
   const cals = data.map((d) => d.cal);
   const max = Math.max(...cals, 1);
-  const avg = Math.round(
-    cals.filter(Boolean).reduce((a, b) => a + b, 0) /
-      cals.filter(Boolean).length,
-  );
+  const nonzero = cals.filter(Boolean);
+  const avg = nonzero.length
+    ? Math.round(nonzero.reduce((a, b) => a + b, 0) / nonzero.length)
+    : 0;
   const avgH = Math.max((avg / max) * BAR_MAX_H, 4);
   const day = new Date().getDay();
   const todayIdx = day === 0 ? 6 : day - 1;
@@ -369,12 +368,36 @@ function WeeklyBars({ data }: WeeklyBarsProps) {
 
 type WeeklyCardProps = {
   onReport?: () => void;
+  /** Mon–Sun; falls back to empty week if omitted */
+  weeklyBars?: WeeklyBarItem[];
 };
 
-export function WeeklyCard({ onReport }: WeeklyCardProps) {
-  const totalWorkouts = WEEKLY_DATA.filter((d) => d.workout).length;
-  const totalCal = WEEKLY_DATA.reduce((a, d) => a + d.cal, 0);
-  const avgCal = Math.round(totalCal / WEEKLY_DATA.filter((d) => d.cal).length);
+export function WeeklyCard({ onReport, weeklyBars }: WeeklyCardProps) {
+  const bars: WeeklyBarItem[] =
+    weeklyBars && weeklyBars.length === 7
+      ? weeklyBars
+      : ([0, 1, 2, 3, 4, 5, 6].map(() => ({
+          cal: 0,
+          workout: false,
+        })) satisfies WeeklyBarItem[]);
+
+  const totalWorkouts = bars.filter((d) => d.workout).length;
+  const calsLogged = bars.filter((d) => d.cal > 0);
+  const totalCal = bars.reduce((a, d) => a + d.cal, 0);
+  const avgCal =
+    calsLogged.length > 0
+      ? Math.round(totalCal / calsLogged.length)
+      : 0;
+
+  const totalTrainMinsEstimate = Math.max(
+    totalWorkouts * 40,
+    calsLogged.length * 45,
+    0,
+  );
+  const totalTimeLabel =
+    totalTrainMinsEstimate >= 60
+      ? `${Math.floor(totalTrainMinsEstimate / 60)}h ${totalTrainMinsEstimate % 60}m`
+      : `${totalTrainMinsEstimate}m`;
 
   return (
     <View style={styles.card}>
@@ -394,13 +417,13 @@ export function WeeklyCard({ onReport }: WeeklyCardProps) {
           <Text style={styles.reportBtnArrow}>→</Text>
         </TouchableOpacity>
       </View>
-      <WeeklyBars data={WEEKLY_DATA} />
+      <WeeklyBars data={bars} />
       <Divider />
       <View style={styles.cardSummary}>
         {[
           { v: `${totalWorkouts}`, l: "Workouts", color: T.lime },
           { v: `${avgCal}`, l: "Avg kcal", color: T.text },
-          { v: "3h 20m", l: "Total", color: T.text },
+          { v: totalTrainMinsEstimate > 0 ? totalTimeLabel : "0m", l: "Total", color: T.text },
         ].map(({ v, l, color }) => (
           <View key={l} style={styles.summaryItem}>
             <Text style={[styles.summaryValue, { color }]}>{v}</Text>
@@ -451,8 +474,9 @@ function WeightLine({ data }: WeightLineProps) {
   const padX = 8;
   const padY = 10;
 
+  const divisor = vals.length <= 1 ? 1 : vals.length - 1;
   const pts: Point[] = vals.map((v, i) => ({
-    x: padX + (i / (vals.length - 1)) * (W - padX * 2),
+    x: padX + (i / divisor) * (W - padX * 2),
     y: padY + ((hi - v) / rng) * (H - padY * 2),
   }));
 
@@ -524,47 +548,117 @@ function WeightLine({ data }: WeightLineProps) {
   );
 }
 
-export function WeightCard() {
-  const startW = 84.2;
-  const goalW = 79.0;
-  const currentW = 82.1;
-  const progress = Math.round(((startW - currentW) / (startW - goalW)) * 100);
-  const delta = (startW - currentW).toFixed(1);
-  const toGo = (currentW - goalW).toFixed(1);
+type WeightCardProps = {
+  chartData?: WeightPoint[];
+  currentW?: number;
+  startW?: number;
+  goalW?: number;
+  subtitle?: string;
+  isLoading?: boolean;
+};
+
+export function WeightCard({
+  chartData,
+  currentW: currentWProp,
+  startW: startWProp,
+  goalW: goalWProp,
+  subtitle = "Last entries",
+  isLoading,
+}: WeightCardProps) {
+  const seriesRaw =
+    chartData && chartData.length > 0
+      ? [...chartData].sort((a, b) => {
+          const ai = `${a.date}`.localeCompare(`${b.date}`);
+          return ai;
+        })
+      : [];
+
+  const startW =
+    typeof startWProp === "number" && Number.isFinite(startWProp)
+      ? startWProp
+      : seriesRaw.length > 0
+        ? seriesRaw[0].w
+        : 0;
+
+  const currentW =
+    typeof currentWProp === "number" && Number.isFinite(currentWProp)
+      ? currentWProp
+      : seriesRaw.length > 0
+        ? seriesRaw[seriesRaw.length - 1].w
+        : startW;
+
+  const goalW =
+    typeof goalWProp === "number" && Number.isFinite(goalWProp)
+      ? goalWProp
+      : currentW || 0;
+
+  const journey = Math.abs(startW - goalW);
+  const progressed = Math.abs(startW - currentW);
+  const progressPct =
+    journey < 1e-6 ? 0 : Math.min(100, Math.round((progressed / journey) * 100));
+
+  const deltaNum = +(startW - currentW).toFixed(1);
+  const lossLabel =
+    seriesRaw.length < 2
+      ? "Log twice to trend"
+      : `${deltaNum >= 0 ? "↓" : "↑"} ${Math.abs(deltaNum).toFixed(1)} kg`;
+
+  const toGoMag = +(Math.abs(currentW - goalW)).toFixed(1);
+
+  const chartInner =
+    isLoading ? (
+      <View style={[styles.weightChartWrap, { height: 96, justifyContent: "center" }]}>
+        <ActivityIndicator color={T.lime} />
+      </View>
+    ) : seriesRaw.length < 2 ? (
+      <Text style={{ fontFamily: "DMSans_400Regular", fontSize: 11, color: T.muted, marginVertical: 20 }}>
+        Add weight logs to see your trend chart.
+      </Text>
+    ) : (
+      <WeightLine
+        data={
+          seriesRaw.length >= 2
+            ? seriesRaw
+            : [seriesRaw[0], seriesRaw[0]]
+        }
+      />
+    );
 
   return (
     <View style={styles.card}>
       <View style={styles.weightHeader}>
         <View style={{ gap: 3 }}>
           <Text style={styles.sectionTitle}>WEIGHT TREND</Text>
-          <Text style={styles.weightSubTitle}>Last 8 days</Text>
+          <Text style={styles.weightSubTitle}>{subtitle}</Text>
         </View>
         <View style={styles.weightRight}>
           <View style={styles.weightValueRow}>
-            <Text style={styles.weightValue}>{currentW}</Text>
+            <Text style={styles.weightValue}>
+              {isLoading ? "—" : currentW.toFixed(1)}
+            </Text>
             <Text style={styles.weightUnit}> kg</Text>
           </View>
-          <Text style={styles.weightDelta}>↓ {delta} kg lost</Text>
+          <Text style={styles.weightDelta}>{lossLabel}</Text>
         </View>
       </View>
-      <WeightLine data={WEIGHT_DATA} />
+      {chartInner}
       <View style={styles.weightGoalRow}>
-        <Text style={styles.weightGoalLabel}>{toGo} kg to goal</Text>
-        <Text style={styles.weightGoalPct}>{progress}%</Text>
+        <Text style={styles.weightGoalLabel}>{toGoMag.toFixed(1)} kg to goal</Text>
+        <Text style={styles.weightGoalPct}>{progressPct}%</Text>
       </View>
       <View style={styles.weightProgressTrack}>
-        <View style={[styles.weightProgressFill, { width: `${progress}%` }]} />
+        <View style={[styles.weightProgressFill, { width: `${progressPct}%` }]} />
       </View>
       <Divider />
       <View style={styles.cardSummary}>
         {[
-          { v: `${startW} kg`, l: "Start", color: T.sub },
-          { v: `${goalW} kg`, l: "Goal", color: T.lime },
-          { v: `${progress}%`, l: "Progress", color: T.text },
+          { v: `${startW.toFixed(1)} kg`, l: "Start", color: T.sub },
+          { v: `${goalW.toFixed(1)} kg`, l: "Goal", color: T.lime },
+          { v: `${progressPct}%`, l: "Progress", color: T.text },
         ].map(({ v, l, color }) => (
           <View key={l} style={styles.summaryItem}>
             <Text style={[styles.summaryValue, { fontSize: 15, color }]}>
-              {v}
+              {seriesRaw.length ? v : "--"}
             </Text>
             <Text style={styles.summaryLabel}>{l}</Text>
           </View>

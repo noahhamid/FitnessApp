@@ -1,116 +1,162 @@
 // src/features/nutrition/services/nutrition.service.ts
-import { supabase } from "@/src/lib/supabase";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { api } from "@/src/lib/api";
 import type {
   DailyTotals,
   FoodLibraryItem,
   MealLogEntry,
   NutritionGoals,
 } from "../types/nutrition.types";
+import { FOOD_SEARCH_SEED } from "./food-library.seed";
 
-// ─── Goals ────────────────────────────────────────────────────────────────────
+const CUSTOM_FOODS_KEY = "nutrition-custom-foods";
+
+type ApiNutritionGoal = {
+  id: string;
+  userId: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  updatedAt: string;
+};
+
+type ApiMealLog = {
+  id: string;
+  userId: string;
+  logDate: string;
+  meal: MealLogEntry["meal"];
+  name: string;
+  cal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
+
+/** Default macro targets for dashboard fallbacks. */
+export const NUTRITION_GOALS = {
+  calories: 2400,
+  protein: 180,
+  carbs: 280,
+  fat: 80,
+};
+
+function toNutritionGoals(row: ApiNutritionGoal): NutritionGoals {
+  return {
+    id: row.id,
+    user_id: row.userId,
+    calories: row.calories,
+    protein: row.protein,
+    carbs: row.carbs,
+    fat: row.fat,
+    updated_at: row.updatedAt,
+  };
+}
+
+function toMealLogEntry(row: ApiMealLog): MealLogEntry {
+  return {
+    id: row.id,
+    user_id: row.userId,
+    logged_at: `${row.logDate}T12:00:00.000Z`,
+    log_date: row.logDate,
+    meal: row.meal,
+    name: row.name,
+    cal: row.cal,
+    protein: Number(row.protein),
+    carbs: Number(row.carbs),
+    fat: Number(row.fat),
+    quantity: 1,
+    unit: "serving",
+  };
+}
+
+async function readCustomFoods(): Promise<FoodLibraryItem[]> {
+  const raw = await AsyncStorage.getItem(CUSTOM_FOODS_KEY);
+  if (!raw) return [];
+  return JSON.parse(raw) as FoodLibraryItem[];
+}
+
+async function writeCustomFoods(foods: FoodLibraryItem[]): Promise<void> {
+  await AsyncStorage.setItem(CUSTOM_FOODS_KEY, JSON.stringify(foods));
+}
 
 export async function fetchNutritionGoals(): Promise<NutritionGoals | null> {
-  const { data, error } = await supabase
-    .from("nutrition_goals")
-    .select("*")
-    .single();
-  if (error) throw error;
-  return data;
+  const row = await api.get<ApiNutritionGoal | null>("/api/nutrition/goals");
+  return row ? toNutritionGoals(row) : null;
 }
 
 export async function upsertNutritionGoals(
   goals: Partial<Omit<NutritionGoals, "id" | "user_id" | "updated_at">>,
 ): Promise<NutritionGoals> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { data, error } = await supabase
-    .from("nutrition_goals")
-    .upsert({
-      ...goals,
-      user_id: user!.id,
-      updated_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  const row = await api.put<ApiNutritionGoal>("/api/nutrition/goals", {
+    calories: goals.calories ?? NUTRITION_GOALS.calories,
+    protein: goals.protein ?? NUTRITION_GOALS.protein,
+    carbs: goals.carbs ?? NUTRITION_GOALS.carbs,
+    fat: goals.fat ?? NUTRITION_GOALS.fat,
+  });
+  return toNutritionGoals(row);
 }
-
-// ─── Meal log ─────────────────────────────────────────────────────────────────
 
 export async function fetchMealLog(date?: string): Promise<MealLogEntry[]> {
   const logDate = date ?? new Date().toISOString().split("T")[0];
-  const { data, error } = await supabase
-    .from("meal_log")
-    .select("*")
-    .eq("log_date", logDate)
-    .order("logged_at", { ascending: true });
-  if (error) throw error;
-  return data ?? [];
+  const rows = await api.get<ApiMealLog[]>(
+    `/api/nutrition/log?date=${encodeURIComponent(logDate)}`,
+  );
+  return rows.map(toMealLogEntry);
 }
 
 export async function addMealEntry(
   entry: Omit<MealLogEntry, "id" | "user_id" | "logged_at">,
 ): Promise<MealLogEntry> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { data, error } = await supabase
-    .from("meal_log")
-    .insert({ ...entry, user_id: user!.id })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  const row = await api.post<ApiMealLog>("/api/nutrition/log", {
+    logDate: entry.log_date,
+    meal: entry.meal,
+    name: entry.name,
+    cal: entry.cal,
+    protein: entry.protein,
+    carbs: entry.carbs,
+    fat: entry.fat,
+  });
+  return toMealLogEntry(row);
 }
 
 export async function deleteMealEntry(id: string): Promise<void> {
-  const { error } = await supabase.from("meal_log").delete().eq("id", id);
-  if (error) throw error;
+  await api.delete<{ deleted: boolean }>(`/api/nutrition/log/${id}`);
 }
 
 export async function fetchDailyTotals(date?: string): Promise<DailyTotals> {
   const logDate = date ?? new Date().toISOString().split("T")[0];
-  const { data, error } = await supabase
-    .from("meal_log")
-    .select("cal, protein, carbs, fat")
-    .eq("log_date", logDate);
-  if (error) throw error;
-  return (data ?? []).reduce(
-    (acc, row) => ({
-      cal: acc.cal + row.cal,
-      protein: acc.protein + Number(row.protein),
-      carbs: acc.carbs + Number(row.carbs),
-      fat: acc.fat + Number(row.fat),
-    }),
-    { cal: 0, protein: 0, carbs: 0, fat: 0 },
+  return api.get<DailyTotals>(
+    `/api/nutrition/totals?date=${encodeURIComponent(logDate)}`,
   );
 }
 
-// ─── Food library ─────────────────────────────────────────────────────────────
-
 export async function searchFoods(query: string): Promise<FoodLibraryItem[]> {
-  const { data, error } = await supabase
-    .from("food_library")
-    .select("*")
-    .ilike("name", `%${query}%`)
-    .limit(20);
-  if (error) throw error;
-  return data ?? [];
+  if (query.length < 2) return [];
+
+  const customFoods = await readCustomFoods();
+  const catalog = [...FOOD_SEARCH_SEED, ...customFoods];
+
+  return catalog.filter((food) =>
+    food.name.toLowerCase().includes(query.toLowerCase()),
+  );
 }
 
 export async function addCustomFood(
   food: Omit<FoodLibraryItem, "id" | "user_id" | "created_at">,
 ): Promise<FoodLibraryItem> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { data, error } = await supabase
-    .from("food_library")
-    .insert({ ...food, user_id: user!.id })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  const customFoods = await readCustomFoods();
+  const created: FoodLibraryItem = {
+    ...food,
+    id: `custom-${Date.now()}`,
+    user_id: null,
+    created_at: new Date().toISOString(),
+  };
+
+  await writeCustomFoods([created, ...customFoods]);
+  return created;
 }
+
+/** Legacy static exports for components not yet on hooks. */
+export const MEAL_LOG: MealLogEntry[] = [];
+export const FOOD_SEARCH = FOOD_SEARCH_SEED;

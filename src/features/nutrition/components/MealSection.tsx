@@ -1,6 +1,6 @@
 import { COLORS, FONTS, spacing } from "@/src/theme";
 import { StyleSheet, Text, View } from "react-native";
-import type { MealEntry } from "../types";
+import type { MealLogEntry } from "../types/nutrition.types";
 import { FoodLogItem } from "./FoodLogItem";
 
 // ─── Meal metadata ────────────────────────────────────────────────────────────
@@ -11,18 +11,18 @@ const MEAL_META: Record<string, { icon: string; color: string }> = {
   Snack: { icon: "🍎", color: COLORS.accent },
 };
 
-type Props = { title: string; items: MealEntry[] };
+type Props = { title: string; items: MealLogEntry[] };
 
 export function MealSection({ title, items }: Props) {
   if (items.length === 0) return null;
 
   const meta = MEAL_META[title] ?? { icon: "🍽️", color: COLORS.muted };
 
-  // Aggregate totals
+  // Aggregate totals — Math.round because DB returns numeric(6,1) floats
   const totalCal = items.reduce((a, i) => a + i.cal, 0);
-  const totalP = items.reduce((a, i) => a + i.protein, 0);
-  const totalC = items.reduce((a, i) => a + i.carbs, 0);
-  const totalF = items.reduce((a, i) => a + i.fat, 0);
+  const totalP = Math.round(items.reduce((a, i) => a + Number(i.protein), 0));
+  const totalC = Math.round(items.reduce((a, i) => a + Number(i.carbs), 0));
+  const totalF = Math.round(items.reduce((a, i) => a + Number(i.fat), 0));
 
   return (
     <View style={s.wrap}>

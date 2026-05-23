@@ -1,0 +1,288 @@
+import { Hono } from "hono";
+import { z } from "zod";
+import { prisma } from "../lib/prisma";
+import { err, ok } from "../lib/response";
+import { parseJson, parseQuery } from "../lib/validate";
+import { getUser, requireAuth } from "../middleware/requireAuth";
+import type { AppEnv } from "../types/hono";
+
+const setSchema = z.object({
+  reps: z.number().int().nonnegative().optional(),
+  weight: z.number().nonnegative().optional(),
+  completed: z.boolean().optional(),
+  durationSec: z.number().int().positive().optional(),
+});
+
+const exerciseInputSchema = z.object({
+  exerciseName: z.string().min(1),
+  sets: z.array(setSchema).min(1),
+});
+
+const startSessionSchema = z.object({
+  notes: z.string().optional(),
+  exercises: z.array(exerciseInputSchema).optional(),
+});
+
+const updateSessionSchema = z.object({
+  notes: z.string().nullable().optional(),
+  completedAt: z.string().datetime().nullable().optional(),
+});
+
+const completeSessionSchema = z.object({
+  notes: z.string().nullable().optional(),
+  completedAt: z.string().datetime().optional(),
+  exercises: z.array(exerciseInputSchema).min(1),
+});
+
+const exerciseUpdateSchema = z.object({
+  exerciseName: z.string().min(1).optional(),
+  sets: z.array(setSchema).min(1).optional(),
+});
+
+const listQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().max(100).optional(),
+  completed: z.enum(["true", "false"]).optional(),
+});
+
+function serializeSession(session: {
+  id: string;
+  startedAt: Date;
+  completedAt: Date | null;
+  notes: string | null;
+  userId: string;
+  exercises?: Array<{
+    id: string;
+    exerciseName: string;
+    sets: unknown;
+    sessionId: string;
+  }>;
+}) {
+  return {
+    ...session,
+    exercises: session.exercises?.map((exercise) => ({
+      ...exercise,
+      sets: exercise.sets,
+    })),
+  };
+}
+
+async function findOwnedSession(userId: string, sessionId: string) {
+  return prisma.workoutSession.findFirst({
+    where: { id: sessionId, userId },
+    include: { exercises: true },
+  });
+}
+
+export const workoutsRouter = new Hono<AppEnv>().use("*", requireAuth);
+
+workoutsRouter.post("/", async (c) => {
+  const parsed = await parseJson(c, startSessionSchema);
+  if (!parsed.success) return parsed.response;
+
+  const user = getUser(c);
+  const { notes, exercises } = parsed.data;
+
+  const session = await prisma.$transaction(async (tx) => {
+    const created = await tx.workoutSession.create({
+      data: {
+        userId: user.id,
+        notes: notes ?? null,
+      },
+    });
+
+    if (exercises?.length) {
+      await tx.workoutExercise.createMany({
+        data: exercises.map((exercise) => ({
+          sessionId: created.id,
+          exerciseName: exercise.exerciseName,
+          sets: exercise.sets,
+        })),
+      });
+    }
+
+    return tx.workoutSession.findUniqueOrThrow({
+      where: { id: created.id },
+      include: { exercises: true },
+    });
+  });
+
+  return ok(c, serializeSession(session), 201);
+});
+
+workoutsRouter.get("/", async (c) => {
+  const query = parseQuery(c, listQuerySchema);
+  if (!query.success) return query.response;
+
+  const user = getUser(c);
+  const sessions = await prisma.workoutSession.findMany({
+    where: {
+      userId: user.id,
+      ...(query.data.completed === "true"
+        ? { completedAt: { not: null } }
+        : query.data.completed === "false"
+          ? { completedAt: null }
+          : {}),
+    },
+    include: { exercises: true },
+    orderBy: { startedAt: "desc" },
+    take: query.data.limit ?? 50,
+  });
+
+  return ok(c, sessions.map(serializeSession));
+});
+
+workoutsRouter.get("/:id", async (c) => {
+  const user = getUser(c);
+  const session = await findOwnedSession(user.id, c.req.param("id"));
+
+  if (!session) return err(c, "Workout session not found", 404);
+  return ok(c, serializeSession(session));
+});
+
+workoutsRouter.patch("/:id", async (c) => {
+  const parsed = await parseJson(c, updateSessionSchema);
+  if (!parsed.success) return parsed.response;
+
+  const user = getUser(c);
+  const sessionId = c.req.param("id");
+
+  const existing = await prisma.workoutSession.findFirst({
+    where: { id: sessionId, userId: user.id },
+  });
+  if (!existing) return err(c, "Workout session not found", 404);
+
+  const session = await prisma.workoutSession.update({
+    where: { id: sessionId },
+    data: {
+      ...(parsed.data.notes !== undefined && { notes: parsed.data.notes }),
+      ...(parsed.data.completedAt !== undefined && {
+        completedAt: parsed.data.completedAt
+          ? new Date(parsed.data.completedAt)
+          : null,
+      }),
+    },
+    include: { exercises: true },
+  });
+
+  return ok(c, serializeSession(session));
+});
+
+workoutsRouter.post("/:id/complete", async (c) => {
+  const parsed = await parseJson(c, completeSessionSchema);
+  if (!parsed.success) return parsed.response;
+
+  const user = getUser(c);
+  const sessionId = c.req.param("id");
+
+  const existing = await prisma.workoutSession.findFirst({
+    where: { id: sessionId, userId: user.id },
+  });
+  if (!existing) return err(c, "Workout session not found", 404);
+
+  const session = await prisma.$transaction(async (tx) => {
+    await tx.workoutExercise.deleteMany({ where: { sessionId } });
+
+    await tx.workoutExercise.createMany({
+      data: parsed.data.exercises.map((exercise) => ({
+        sessionId,
+        exerciseName: exercise.exerciseName,
+        sets: exercise.sets,
+      })),
+    });
+
+    return tx.workoutSession.update({
+      where: { id: sessionId },
+      data: {
+        notes: parsed.data.notes ?? existing.notes,
+        completedAt: parsed.data.completedAt
+          ? new Date(parsed.data.completedAt)
+          : new Date(),
+      },
+      include: { exercises: true },
+    });
+  });
+
+  return ok(c, serializeSession(session));
+});
+
+workoutsRouter.delete("/:id", async (c) => {
+  const user = getUser(c);
+  const sessionId = c.req.param("id");
+
+  const existing = await prisma.workoutSession.findFirst({
+    where: { id: sessionId, userId: user.id },
+  });
+  if (!existing) return err(c, "Workout session not found", 404);
+
+  await prisma.workoutSession.delete({ where: { id: sessionId } });
+  return ok(c, { deleted: true });
+});
+
+workoutsRouter.post("/:id/exercises", async (c) => {
+  const parsed = await parseJson(c, exerciseInputSchema);
+  if (!parsed.success) return parsed.response;
+
+  const user = getUser(c);
+  const sessionId = c.req.param("id");
+
+  const session = await prisma.workoutSession.findFirst({
+    where: { id: sessionId, userId: user.id },
+  });
+  if (!session) return err(c, "Workout session not found", 404);
+
+  const exercise = await prisma.workoutExercise.create({
+    data: {
+      sessionId,
+      exerciseName: parsed.data.exerciseName,
+      sets: parsed.data.sets,
+    },
+  });
+
+  return ok(c, exercise, 201);
+});
+
+workoutsRouter.patch("/:id/exercises/:exerciseId", async (c) => {
+  const parsed = await parseJson(c, exerciseUpdateSchema);
+  if (!parsed.success) return parsed.response;
+
+  const user = getUser(c);
+  const sessionId = c.req.param("id");
+  const exerciseId = c.req.param("exerciseId");
+
+  const exercise = await prisma.workoutExercise.findFirst({
+    where: {
+      id: exerciseId,
+      session: { id: sessionId, userId: user.id },
+    },
+  });
+  if (!exercise) return err(c, "Workout exercise not found", 404);
+
+  const updated = await prisma.workoutExercise.update({
+    where: { id: exerciseId },
+    data: {
+      ...(parsed.data.exerciseName !== undefined && {
+        exerciseName: parsed.data.exerciseName,
+      }),
+      ...(parsed.data.sets !== undefined && { sets: parsed.data.sets }),
+    },
+  });
+
+  return ok(c, updated);
+});
+
+workoutsRouter.delete("/:id/exercises/:exerciseId", async (c) => {
+  const user = getUser(c);
+  const sessionId = c.req.param("id");
+  const exerciseId = c.req.param("exerciseId");
+
+  const exercise = await prisma.workoutExercise.findFirst({
+    where: {
+      id: exerciseId,
+      session: { id: sessionId, userId: user.id },
+    },
+  });
+  if (!exercise) return err(c, "Workout exercise not found", 404);
+
+  await prisma.workoutExercise.delete({ where: { id: exerciseId } });
+  return ok(c, { deleted: true });
+});

@@ -1,13 +1,12 @@
+import { useAuth, useAuthHydration } from "@/src/features/auth/hooks/useAuth";
 import { Redirect } from "expo-router";
 
-import { useAuth, useAuthHydration } from "@/src/features/auth";
-
 export default function Index() {
-  const ready = useAuthHydration();
-  const { onboardingComplete, hasSession } = useAuth();
+  const hydrated = useAuthHydration();
+  const { hasSession, onboardingComplete } = useAuth();
 
-  if (!ready) return null;
-  if (!onboardingComplete) return <Redirect href="/(auth)/welcome" />;
-  if (!hasSession) return <Redirect href="/(auth)/sign-in" />;
+  if (!hydrated) return null;
+  if (!hasSession) return <Redirect href="/(auth)/welcome" />;
+  if (!onboardingComplete) return <Redirect href="/(auth)/onboarding/goals" />;
   return <Redirect href="/(app)/(tabs)" />;
 }

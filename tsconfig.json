@@ -2,6 +2,7 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "types": ["node"],
     "paths": {
       "@/*": [
         "./*"
@@ -16,6 +17,17 @@
   ],
   "exclude": [
     "node_modules",
-    "__tests__"
+    "__tests__",
+    "src/index.ts",
+    "src/routes/**",
+    "src/lib/auth.server.ts",
+    "src/lib/prisma.ts",
+    "src/lib/response.ts",
+    "src/lib/validate.ts",
+    "src/lib/dates.ts",
+    "src/types/hono.ts",
+    "src/middleware/**",
+    "prisma/**",
+    "prisma.config.ts"
   ]
 }

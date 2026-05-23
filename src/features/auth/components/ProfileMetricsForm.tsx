@@ -4,6 +4,7 @@ import { ProgressDots } from "@/src/ui/components/ProgressDots";
 import { C, FONTS } from "@/src/ui/tokens";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -13,11 +14,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSaveProfile } from "../hooks/useProfile";
 
 type Props = {
   onNext: () => void;
   onBack: () => void;
-  // Optionally receive goal from previous screen to personalise copy
   goalId?: string;
 };
 
@@ -34,10 +35,30 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
   const [age, setAge] = useState("");
   const [unit, setUnit] = useState<"kg" | "lbs">("kg");
 
+  const { mutateAsync: saveProfile, isPending, error } = useSaveProfile();
+
   const canFinish = !!(weight && height && age);
   const subCopy = goalId
     ? GOAL_COPY[goalId]
     : "We need your stats to personalise your plan.";
+
+  async function handleFinish() {
+    if (!canFinish) return;
+
+    // Convert lbs → kg if needed before saving
+    const rawWeight = parseFloat(weight);
+    const weight_kg =
+      unit === "lbs" ? +(rawWeight / 2.205).toFixed(2) : rawWeight;
+
+    await saveProfile({
+      weight_kg,
+      height_cm: parseFloat(height),
+      age: parseInt(age, 10),
+      weight_unit: unit,
+    });
+
+    onNext();
+  }
 
   return (
     <SafeAreaView style={s.safe}>
@@ -107,17 +128,32 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
             Your data is stored securely and never shared.
           </Text>
 
+          {/* Error */}
+          {error && (
+            <Text style={s.errorText}>
+              Failed to save your stats. Please try again.
+            </Text>
+          )}
+
           {/* Nav */}
           <View style={s.nav}>
-            <TouchableOpacity style={s.backBtn} onPress={onBack}>
+            <TouchableOpacity
+              style={s.backBtn}
+              onPress={onBack}
+              disabled={isPending}
+            >
               <Text style={s.backText}>← BACK</Text>
             </TouchableOpacity>
             <Button
-              disabled={!canFinish}
-              onPress={onNext}
+              disabled={!canFinish || isPending}
+              onPress={handleFinish}
               style={[s.flex2, { marginLeft: 12 }]}
             >
-              FINISH SETUP →
+              {isPending ? (
+                <ActivityIndicator color={C.bg} />
+              ) : (
+                "FINISH SETUP →"
+              )}
             </Button>
           </View>
         </ScrollView>
@@ -198,6 +234,13 @@ const s = StyleSheet.create({
     marginTop: 4,
     marginBottom: 8,
     opacity: 0.6,
+  },
+  errorText: {
+    color: "red",
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: 8,
+    fontFamily: FONTS.regular,
   },
   nav: { flexDirection: "row", marginTop: 24 },
   backBtn: {

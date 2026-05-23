@@ -1,5 +1,9 @@
 import { NUTRITION_GOALS } from "@/src/features/nutrition/services/nutrition.service";
-import { StyleSheet, Text, View } from "react-native";
+import {
+  useDailyTotals,
+  useNutritionGoals,
+} from "@/src/features/nutrition/hooks/useNutrition";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { MacroBar } from "./DashboardComponents";
 
 const T = {
@@ -27,39 +31,49 @@ type MacroEntry = {
 };
 
 export function MacroSummary() {
+  const { data: goals } = useNutritionGoals();
+  const { data: totals, isPending: totalsPending } = useDailyTotals();
+
+  const gp =
+    typeof goals?.protein === "number" ? goals.protein : NUTRITION_GOALS.protein;
+  const gc =
+    typeof goals?.carbs === "number" ? goals.carbs : NUTRITION_GOALS.carbs;
+  const gf = typeof goals?.fat === "number" ? goals.fat : NUTRITION_GOALS.fat;
+
   const macros: MacroEntry[] = [
     {
       label: "Protein",
-      value: 142,
-      max: NUTRITION_GOALS.protein,
+      value: totals?.protein ?? 0,
+      max: gp || 1,
       unit: "g",
       color: T.blue,
       icon: "💪",
     },
     {
       label: "Carbs",
-      value: 198,
-      max: NUTRITION_GOALS.carbs,
+      value: totals?.carbs ?? 0,
+      max: gc || 1,
       unit: "g",
       color: T.orange,
       icon: "⚡",
     },
     {
       label: "Fat",
-      value: 54,
-      max: NUTRITION_GOALS.fat,
+      value: totals?.fat ?? 0,
+      max: gf || 1,
       unit: "g",
       color: T.red,
       icon: "🔥",
     },
   ];
 
-  const totalCalories = 142 * 4 + 198 * 4 + 54 * 9;
-  const totalGoalCal =
-    NUTRITION_GOALS.protein * 4 +
-    NUTRITION_GOALS.carbs * 4 +
-    NUTRITION_GOALS.fat * 9;
-  const overallPct = Math.round((totalCalories / totalGoalCal) * 100);
+  const totalCalories =
+    macros[0].value * 4 + macros[1].value * 4 + macros[2].value * 9;
+  const totalGoalCal = Math.max(gp * 4 + gc * 4 + gf * 9, 1);
+  const overallPct = Math.min(
+    100,
+    Math.round((totalCalories / totalGoalCal) * 100),
+  );
 
   return (
     <View style={s.card}>
@@ -69,9 +83,16 @@ export function MacroSummary() {
           <Text style={s.title}>MACROS</Text>
           <Text style={s.subtitle}>Today's breakdown</Text>
         </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {totalsPending ? (
+            <ActivityIndicator size="small" color={T.lime} />
+          ) : null}
         <View style={s.kcalBadge}>
-          <Text style={s.kcalValue}>{totalCalories.toLocaleString()}</Text>
+          <Text style={s.kcalValue}>
+            {(totalCalories ?? 0).toLocaleString()}
+          </Text>
           <Text style={s.kcalUnit}> kcal</Text>
+        </View>
         </View>
       </View>
 

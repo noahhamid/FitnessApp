@@ -30,34 +30,13 @@ type Props = {
   sessions?: Session[];
 };
 
-// ─── Default sessions ─────────────────────────────────────────────────────────
-const DEFAULT_SESSIONS: Session[] = [
-  {
-    title: "Upper Body Strength",
-    duration: "45 min",
-    sets: "5 exercises",
-    tag: "STRENGTH",
-    tagColor: T.lime,
-  },
-  {
-    title: "HIIT Cardio Blast",
-    duration: "20 min",
-    sets: "8 rounds",
-    tag: "CARDIO",
-    tagColor: T.orange,
-  },
-  {
-    title: "Core & Mobility",
-    duration: "15 min",
-    sets: "4 exercises",
-    tag: "RECOVERY",
-    tagColor: T.blue,
-  },
-];
-
 // ─── Component ────────────────────────────────────────────────────────────────
-export function TodaySession({ onSeeAll, sessions = DEFAULT_SESSIONS }: Props) {
-  const totalMins = sessions.reduce((acc, s) => acc + parseInt(s.duration), 0);
+export function TodaySession({ onSeeAll, sessions = [] }: Props) {
+  const totalMins = sessions.reduce(
+    (acc, s) =>
+      acc + (Number.parseInt(String(s.duration).replace(/\D/g, "") || "0", 10) || 0),
+    0,
+  );
   const totalExercises = sessions.length;
 
   return (

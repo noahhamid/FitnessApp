@@ -9,6 +9,7 @@ type Props = {
   placeholder?: string;
   secureTextEntry?: boolean;
   keyboardType?: "default" | "numeric" | "email-address";
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
 };
 
 export function Input({

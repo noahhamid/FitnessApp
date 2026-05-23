@@ -1,11 +1,17 @@
 import {
-  FOOD_SEARCH,
-  MEAL_LOG,
-  NUTRITION_GOALS,
-} from "@/src/features/nutrition/services/nutrition.service";
-import { useState } from "react";
+  useAddMeal,
+  useDailyTotals,
+  useDeleteMeal,
+  useMealLog,
+  useNutritionGoals,
+} from "@/src/features/nutrition/hooks/useNutrition";
+import { Ionicons } from "@expo/vector-icons";
+import { readAsStringAsync } from "expo-file-system/legacy";
+import * as ImagePicker from "expo-image-picker";
+import { useEffect, useState } from "react";
 import {
-  FlatList,
+  ActivityIndicator,
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -14,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import type { MealType } from "../types/nutrition.types";
 import { MacroBar } from "./MacroBar";
 import { ProgressCircle } from "./ProgressCircle";
 
@@ -34,19 +41,113 @@ const T = {
   borderMid: "#FFFFFF18",
 };
 
-// ─── Meal type emoji map ──────────────────────────────────────────────────────
-const MEAL_META: Record<string, { icon: string; color: string }> = {
-  Breakfast: { icon: "🌅", color: T.orange },
-  Snack: { icon: "🍎", color: T.lime },
-  Lunch: { icon: "☀️", color: T.blue },
-  Dinner: { icon: "🌙", color: "#9B6DFF" },
+// ─── Meal metadata ────────────────────────────────────────────────────────────
+const MEAL_META: Record<
+  string,
+  { icon: keyof typeof Ionicons.glyphMap; color: string }
+> = {
+  Breakfast: { icon: "sunny-outline", color: T.orange },
+  Snack: { icon: "leaf-outline", color: T.lime },
+  Lunch: { icon: "partly-sunny-outline", color: T.blue },
+  Dinner: { icon: "moon-outline", color: "#9B6DFF" },
 };
 
-const MEAL_TYPES = ["Breakfast", "Snack", "Lunch", "Dinner"] as const;
+const MEAL_TYPES: MealType[] = ["Breakfast", "Snack", "Lunch", "Dinner"];
+
+const today = () => new Date().toISOString().split("T")[0];
+
+const GEMINI_PROMPT =
+  "Analyze this food image and return ONLY a JSON object with these exact keys: name (string), cal (number), protein (number), carbs (number), fat (number). No explanation, no markdown, just the raw JSON.";
+
+function parseGeminiFoodJson(raw: string): {
+  name: string;
+  cal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+} | null {
+  try {
+    let t = raw.trim();
+    if (t.startsWith("```")) {
+      t = t
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/u, "")
+        .trim();
+    }
+    const obj = JSON.parse(t) as Record<string, unknown>;
+    const name = typeof obj.name === "string" ? obj.name.trim() : "";
+    const cal = Number(obj.cal);
+    const protein = Number(obj.protein);
+    const carbs = Number(obj.carbs);
+    const fat = Number(obj.fat);
+    if (!name || !Number.isFinite(cal) || cal < 0) return null;
+    return {
+      name,
+      cal,
+      protein: Number.isFinite(protein) ? protein : 0,
+      carbs: Number.isFinite(carbs) ? carbs : 0,
+      fat: Number.isFinite(fat) ? fat : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function requestGeminiFoodFromImage(
+  base64: string,
+  mimeType: string,
+): Promise<{
+  name: string;
+  cal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+} | null> {
+  const key = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+  if (!key) {
+    throw new Error("Missing EXPO_PUBLIC_GEMINI_API_KEY");
+  }
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(key)}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
+            { text: GEMINI_PROMPT },
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data: base64,
+              },
+            },
+          ],
+        },
+      ],
+    }),
+  });
+  const json = (await res.json()) as {
+    error?: { message?: string };
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  };
+  if (!res.ok) {
+    throw new Error(json.error?.message ?? `Vision request failed (${res.status})`);
+  }
+  if (!json.candidates?.length) {
+    throw new Error(
+      "No analysis result for this image. Try a clearer photo or enter manually.",
+    );
+  }
+  const text = json.candidates[0]?.content?.parts?.[0]?.text;
+  if (!text || typeof text !== "string") {
+    throw new Error("No response from vision model");
+  }
+  return parseGeminiFoodJson(text);
+}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-/** Stat column used in the hero row */
 function HeroStat({
   label,
   value,
@@ -69,9 +170,9 @@ function HeroStat({
   );
 }
 
-/** Single food item row inside a meal group */
 function FoodRow({
   item,
+  onDelete,
 }: {
   item: {
     id: string;
@@ -81,6 +182,7 @@ function FoodRow({
     carbs: number;
     fat: number;
   };
+  onDelete?: (id: string) => void;
 }) {
   return (
     <View style={s.foodRow}>
@@ -94,28 +196,48 @@ function FoodRow({
         <Text style={s.foodCal}>{item.cal}</Text>
         <Text style={s.foodCalUnit}>kcal</Text>
       </View>
+      {onDelete && (
+        <TouchableOpacity
+          onPress={() => onDelete(item.id)}
+          style={s.deleteBtn}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="trash-outline" size={14} color={T.muted} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
 
-/** Meal group card (Breakfast / Snack / Lunch / Dinner) */
 function MealGroup({
   mealGroup,
   items,
+  onDelete,
 }: {
   mealGroup: string;
-  items: typeof MEAL_LOG;
+  items: {
+    id: string;
+    name: string;
+    cal: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  }[];
+  onDelete: (id: string) => void;
 }) {
-  const meta = MEAL_META[mealGroup] ?? { icon: "🍽️", color: T.sub };
+  const meta = MEAL_META[mealGroup] ?? {
+    icon: "restaurant-outline" as const,
+    color: T.sub,
+  };
   const groupCal = items.reduce((a, m) => a + m.cal, 0);
 
   return (
     <View style={s.mealGroup}>
-      {/* Group header */}
       <View style={s.mealGroupHeader}>
         <View style={s.mealGroupLeft}>
           <View style={[s.mealIconBox, { backgroundColor: meta.color + "1A" }]}>
-            <Text style={s.mealIcon}>{meta.icon}</Text>
+            <Ionicons name={meta.icon} size={15} color={meta.color} />
           </View>
           <Text style={s.mealGroupName}>{mealGroup}</Text>
         </View>
@@ -134,11 +256,10 @@ function MealGroup({
         </View>
       </View>
 
-      {/* Food items */}
       {items.map((item, idx) => (
         <View key={item.id}>
           {idx > 0 && <View style={s.itemDivider} />}
-          <FoodRow item={item} />
+          <FoodRow item={item} onDelete={onDelete} />
         </View>
       ))}
     </View>
@@ -148,25 +269,209 @@ function MealGroup({
 // ─── Main component ───────────────────────────────────────────────────────────
 export function CaloriesSection() {
   const [showAddFood, setShowAddFood] = useState(false);
-  const [search, setSearch] = useState("");
-  const [mealType, setMealType] = useState<string>("Breakfast");
+  const [mealType, setMealType] = useState<MealType>("Breakfast");
+  const [addingId, setAddingId] = useState<string | null>(null);
 
-  // Totals
-  const totalCal = MEAL_LOG.reduce((a, m) => a + m.cal, 0);
-  const remaining = NUTRITION_GOALS.calories - totalCal;
-  const pct = Math.min(
-    Math.round((totalCal / NUTRITION_GOALS.calories) * 100),
-    100,
-  );
+  type EntryStep = "menu" | "analyzing" | "form";
+  const [entryStep, setEntryStep] = useState<EntryStep>("menu");
+  const [manualName, setManualName] = useState("");
+  const [manualCal, setManualCal] = useState("");
+  const [manualP, setManualP] = useState("");
+  const [manualC, setManualC] = useState("");
+  const [manualF, setManualF] = useState("");
+  const [geminiError, setGeminiError] = useState<string | null>(null);
+
+  // ─── Data hooks ──────────────────────────────────────────────────────────────
+  const { data: goals, isLoading: goalsLoading } = useNutritionGoals();
+  const { data: mealLog, isLoading: logLoading } = useMealLog();
+  const { data: totals, isLoading: totalsLoading } = useDailyTotals();
+  const { mutate: addMeal } = useAddMeal();
+  const { mutate: deleteMeal } = useDeleteMeal();
+
+  const isLoading = goalsLoading || logLoading || totalsLoading;
+
+  useEffect(() => {
+    if (!showAddFood) return;
+    setEntryStep("menu");
+    setManualName("");
+    setManualCal("");
+    setManualP("");
+    setManualC("");
+    setManualF("");
+    setGeminiError(null);
+  }, [showAddFood]);
+
+  // ─── Derived values ───────────────────────────────────────────────────────────
+  const goalCal = goals?.calories ?? 2400;
+  const burned = 0;
+  const totalCal = totals?.cal ?? 0;
+  const totalP = totals?.protein ?? 0;
+  const totalC = totals?.carbs ?? 0;
+  const totalF = totals?.fat ?? 0;
+
+  const remaining = goalCal - totalCal;
+  const pct = Math.min(Math.round((totalCal / goalCal) * 100), 100);
   const isOver = remaining < 0;
 
-  const totalP = MEAL_LOG.reduce((a, m) => a + m.protein, 0);
-  const totalC = MEAL_LOG.reduce((a, m) => a + m.carbs, 0);
-  const totalF = MEAL_LOG.reduce((a, m) => a + m.fat, 0);
+  // ─── Handlers ────────────────────────────────────────────────────────────────
+  function handleAddFood(food: {
+    id: string;
+    name: string;
+    cal: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  }) {
+    setAddingId(food.id);
+    addMeal(
+      {
+        log_date: today(),
+        meal: mealType,
+        name: food.name,
+        cal: food.cal,
+        protein: food.protein,
+        carbs: food.carbs,
+        fat: food.fat,
+        quantity: 1,
+        unit: "serving",
+      },
+      {
+        onSuccess: () => {
+          setAddingId(null);
+          setShowAddFood(false);
+        },
+        onError: () => setAddingId(null),
+      },
+    );
+  }
 
-  const filtered = FOOD_SEARCH.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  function handleDeleteFood(id: string) {
+    deleteMeal(id);
+  }
+
+  async function pickAndAnalyzeWithGemini(source: "camera" | "library") {
+    setEntryStep("analyzing");
+    setGeminiError(null);
+    try {
+      if (source === "camera") {
+        const cam = await ImagePicker.requestCameraPermissionsAsync();
+        if (!cam.granted) {
+          setGeminiError("Camera permission is required to scan.");
+          setEntryStep("form");
+          return;
+        }
+      } else {
+        const lib = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!lib.granted) {
+          setGeminiError("Photo library permission is required to scan.");
+          setEntryStep("form");
+          return;
+        }
+      }
+
+      const launched =
+        source === "camera"
+          ? await ImagePicker.launchCameraAsync({
+              quality: 1,
+            })
+          : await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              quality: 1,
+            });
+
+      if (launched.canceled) {
+        setEntryStep("menu");
+        return;
+      }
+
+      const asset = launched.assets[0];
+      const uri = asset.uri;
+      const mimeType =
+        asset.mimeType ??
+        (uri.toLowerCase().includes(".png") ? "image/png" : "image/jpeg");
+
+      const base64 = await readAsStringAsync(uri, { encoding: "base64" });
+
+      const parsed = await requestGeminiFoodFromImage(base64, mimeType);
+      if (!parsed) {
+        setGeminiError(
+          "Could not read nutrition data from this image. Please enter manually.",
+        );
+        setManualName("");
+        setManualCal("");
+        setManualP("");
+        setManualC("");
+        setManualF("");
+        setEntryStep("form");
+        return;
+      }
+
+      setManualName(parsed.name);
+      setManualCal(String(parsed.cal));
+      setManualP(String(parsed.protein));
+      setManualC(String(parsed.carbs));
+      setManualF(String(parsed.fat));
+      setGeminiError(null);
+      setEntryStep("form");
+    } catch (e) {
+      const msg =
+        e instanceof Error ? e.message : "Scan failed. Please enter manually.";
+      setGeminiError(msg);
+      setEntryStep("form");
+    }
+  }
+
+  function openScanSourcePicker() {
+    Alert.alert("Scan food", "Choose a photo source", [
+      {
+        text: "Camera",
+        onPress: () => {
+          void pickAndAnalyzeWithGemini("camera");
+        },
+      },
+      {
+        text: "Photo library",
+        onPress: () => {
+          void pickAndAnalyzeWithGemini("library");
+        },
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }
+
+  function submitManualEntry() {
+    const name = manualName.trim();
+    const cal = Number(manualCal.replace(",", "."));
+    if (!name || !Number.isFinite(cal) || cal <= 0) return;
+
+    const protein = Number(manualP.replace(",", ".")) || 0;
+    const carbs = Number(manualC.replace(",", ".")) || 0;
+    const fat = Number(manualF.replace(",", ".")) || 0;
+
+    handleAddFood({
+      id: `manual-${Date.now()}`,
+      name,
+      cal,
+      protein: Number.isFinite(protein) ? protein : 0,
+      carbs: Number.isFinite(carbs) ? carbs : 0,
+      fat: Number.isFinite(fat) ? fat : 0,
+    });
+  }
+
+  const manualCalNum = Number(manualCal.replace(",", "."));
+  const canSubmitManual =
+    manualName.trim().length > 0 &&
+    Number.isFinite(manualCalNum) &&
+    manualCalNum > 0;
+
+  // ─── Loading state ────────────────────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <View style={s.loadingWrap}>
+        <ActivityIndicator size="large" color={T.lime} />
+      </View>
+    );
+  }
 
   return (
     <>
@@ -184,28 +489,20 @@ export function CaloriesSection() {
             label={`${totalCal}`}
             sub="KCAL EATEN"
           />
-
-          {/* Divider */}
           <View style={s.heroDivider} />
-
-          {/* Side stats */}
           <View style={s.heroStats}>
-            <HeroStat
-              label="Goal"
-              value={NUTRITION_GOALS.calories}
-              unit="kcal"
-            />
+            <HeroStat label="Goal" value={goalCal} unit="kcal" />
             <View style={s.heroStatDivider} />
             <HeroStat
-              label="Remaining"
+              label={isOver ? "Over" : "Remaining"}
               value={Math.abs(remaining)}
-              unit={isOver ? "over" : "left"}
+              unit="kcal"
               color={isOver ? T.red : T.lime}
             />
             <View style={s.heroStatDivider} />
             <HeroStat
               label="Burned"
-              value={NUTRITION_GOALS.caloriesBurned}
+              value={burned}
               unit="kcal"
               color={T.orange}
             />
@@ -224,19 +521,19 @@ export function CaloriesSection() {
           <MacroBar
             label="Protein"
             current={totalP}
-            goal={NUTRITION_GOALS.protein}
+            goal={goals?.protein ?? 180}
             color={T.blue}
           />
           <MacroBar
             label="Carbs"
             current={totalC}
-            goal={NUTRITION_GOALS.carbs}
+            goal={goals?.carbs ?? 280}
             color={T.orange}
           />
           <MacroBar
             label="Fat"
             current={totalF}
-            goal={NUTRITION_GOALS.fat}
+            goal={goals?.fat ?? 80}
             color={T.red}
           />
         </View>
@@ -249,17 +546,32 @@ export function CaloriesSection() {
             activeOpacity={0.8}
             onPress={() => setShowAddFood(true)}
           >
-            <Text style={s.addFoodBtnText}>+ Add Food</Text>
+            <Ionicons name="add" size={14} color={T.bg0} />
+            <Text style={s.addFoodBtnText}>Add Food</Text>
           </TouchableOpacity>
         </View>
 
-        {MEAL_TYPES.map((mealGroup) => {
-          const items = MEAL_LOG.filter((m) => m.meal === mealGroup);
-          if (!items.length) return null;
-          return (
-            <MealGroup key={mealGroup} mealGroup={mealGroup} items={items} />
-          );
-        })}
+        {mealLog &&
+          MEAL_TYPES.map((mealGroup) => {
+            const items = mealLog.filter((m) => m.meal === mealGroup);
+            if (!items.length) return null;
+            return (
+              <MealGroup
+                key={mealGroup}
+                mealGroup={mealGroup}
+                items={items}
+                onDelete={handleDeleteFood}
+              />
+            );
+          })}
+
+        {mealLog?.length === 0 && (
+          <View style={s.emptyMeals}>
+            <Ionicons name="restaurant-outline" size={32} color={T.muted} />
+            <Text style={s.emptyMealsText}>No meals logged today</Text>
+            <Text style={s.emptyMealsSub}>Tap + Add Food to get started</Text>
+          </View>
+        )}
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -268,18 +580,19 @@ export function CaloriesSection() {
       <Modal visible={showAddFood} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <View style={s.sheet}>
-            {/* Handle */}
             <View style={s.sheetHandle} />
 
             {/* Header */}
             <View style={s.sheetHeader}>
               <Text style={s.sheetTitle}>ADD FOOD</Text>
               <TouchableOpacity
-                onPress={() => setShowAddFood(false)}
+                onPress={() => {
+                  setShowAddFood(false);
+                }}
                 style={s.sheetCloseBtn}
                 activeOpacity={0.7}
               >
-                <Text style={s.sheetCloseText}>✕</Text>
+                <Ionicons name="close" size={16} color={T.sub} />
               </TouchableOpacity>
             </View>
 
@@ -305,7 +618,11 @@ export function CaloriesSection() {
                       },
                     ]}
                   >
-                    <Text style={s.mealTypeIcon}>{meta.icon}</Text>
+                    <Ionicons
+                      name={meta.icon}
+                      size={13}
+                      color={active ? T.bg0 : meta.color}
+                    />
                     <Text style={[s.mealTypeText, active && { color: T.bg0 }]}>
                       {t}
                     </Text>
@@ -314,60 +631,131 @@ export function CaloriesSection() {
               })}
             </ScrollView>
 
-            {/* Search */}
-            <View style={s.searchBox}>
-              <Text style={s.searchIcon}>🔍</Text>
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search food…"
-                placeholderTextColor={T.muted}
-                style={s.searchInput}
-                autoCorrect={false}
-              />
-              {search.length > 0 && (
-                <TouchableOpacity onPress={() => setSearch("")}>
-                  <Text style={s.searchClear}>✕</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Food list */}
-            <FlatList
-              data={filtered}
-              keyExtractor={(i) => i.id}
-              style={s.foodList}
+            {/* Add-food flow: AI scan vs manual */}
+            <ScrollView
+              style={s.modalBodyScroll}
               keyboardShouldPersistTaps="handled"
-              ItemSeparatorComponent={() => <View style={s.listDivider} />}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={s.listItem}
-                  activeOpacity={0.7}
-                  onPress={() => setShowAddFood(false)}
-                >
-                  <View style={s.listItemLeft}>
-                    <Text style={s.listItemName}>{item.name}</Text>
-                    <Text style={s.listItemMacros}>
-                      P {item.protein}g · C {item.carbs}g · F {item.fat}g
-                    </Text>
-                  </View>
-                  <View style={s.listItemRight}>
-                    <Text style={s.listItemCal}>{item.cal}</Text>
-                    <Text style={s.listItemCalUnit}>kcal</Text>
-                  </View>
-                  <View style={s.listItemAdd}>
-                    <Text style={s.listItemAddText}>+</Text>
-                  </View>
-                </TouchableOpacity>
-              )}
-              ListEmptyComponent={
-                <View style={s.emptyState}>
-                  <Text style={s.emptyStateText}>
-                    No results for "{search}"
-                  </Text>
+              showsVerticalScrollIndicator={false}
+            >
+              {entryStep === "menu" ? (
+                <View style={s.entryMenu}>
+                  <TouchableOpacity
+                    style={s.scanPrimaryBtn}
+                    activeOpacity={0.85}
+                    onPress={openScanSourcePicker}
+                  >
+                    <Ionicons name="camera-outline" size={18} color={T.bg0} />
+                    <Text style={s.scanPrimaryBtnText}>Scan with AI</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={s.manualSecondaryBtn}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setGeminiError(null);
+                      setManualName("");
+                      setManualCal("");
+                      setManualP("");
+                      setManualC("");
+                      setManualF("");
+                      setEntryStep("form");
+                    }}
+                  >
+                    <Text style={s.manualSecondaryBtnText}>Enter manually</Text>
+                  </TouchableOpacity>
                 </View>
-              }
-            />
+              ) : null}
+
+              {entryStep === "analyzing" ? (
+                <View style={s.analyzingWrap}>
+                  <ActivityIndicator size="large" color={T.lime} />
+                  <Text style={s.analyzingText}>Analyzing food…</Text>
+                </View>
+              ) : null}
+
+              {entryStep === "form" ? (
+                <View style={s.manualForm}>
+                  {geminiError ? (
+                    <Text style={s.geminiErrorText}>{geminiError}</Text>
+                  ) : null}
+
+                  <Text style={s.formLabel}>Food name</Text>
+                  <TextInput
+                    value={manualName}
+                    onChangeText={setManualName}
+                    placeholder="Food name"
+                    placeholderTextColor={T.muted}
+                    style={s.formInput}
+                  />
+
+                  <Text style={s.formLabel}>Calories</Text>
+                  <TextInput
+                    value={manualCal}
+                    onChangeText={setManualCal}
+                    placeholder="Calories"
+                    placeholderTextColor={T.muted}
+                    style={s.formInput}
+                    keyboardType="numeric"
+                  />
+
+                  <Text style={s.formLabel}>Protein (g)</Text>
+                  <TextInput
+                    value={manualP}
+                    onChangeText={setManualP}
+                    placeholder="0"
+                    placeholderTextColor={T.muted}
+                    style={s.formInput}
+                    keyboardType="numeric"
+                  />
+
+                  <Text style={s.formLabel}>Carbs (g)</Text>
+                  <TextInput
+                    value={manualC}
+                    onChangeText={setManualC}
+                    placeholder="0"
+                    placeholderTextColor={T.muted}
+                    style={s.formInput}
+                    keyboardType="numeric"
+                  />
+
+                  <Text style={s.formLabel}>Fat (g)</Text>
+                  <TextInput
+                    value={manualF}
+                    onChangeText={setManualF}
+                    placeholder="0"
+                    placeholderTextColor={T.muted}
+                    style={s.formInput}
+                    keyboardType="numeric"
+                  />
+
+                  <TouchableOpacity
+                    style={[
+                      s.addToLogBtn,
+                      (!canSubmitManual || addingId !== null) && s.addToLogBtnDisabled,
+                    ]}
+                    activeOpacity={0.85}
+                    disabled={!canSubmitManual || addingId !== null}
+                    onPress={submitManualEntry}
+                  >
+                    {addingId !== null ? (
+                      <ActivityIndicator size="small" color={T.bg0} />
+                    ) : (
+                      <Text style={s.addToLogBtnText}>Add to Log</Text>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={s.formBackBtn}
+                    activeOpacity={0.75}
+                    onPress={() => {
+                      setGeminiError(null);
+                      setEntryStep("menu");
+                    }}
+                  >
+                    <Text style={s.formBackBtnText}>← Back</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -380,6 +768,14 @@ const s = StyleSheet.create({
   scroll: {
     paddingHorizontal: 16,
     paddingTop: 8,
+  },
+
+  // ── Loading ──────────────────────────────────────────────────────────────────
+  loadingWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 80,
   },
 
   // ── Hero card ────────────────────────────────────────────────────────────────
@@ -469,6 +865,9 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   addFoodBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     backgroundColor: T.lime,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -538,6 +937,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: 8,
   },
   foodRowLeft: {
     flex: 1,
@@ -565,6 +965,34 @@ const s = StyleSheet.create({
   foodCalUnit: {
     fontFamily: "DMSans_400Regular",
     fontSize: 9,
+    color: T.muted,
+  },
+  deleteBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: T.red + "12",
+    borderWidth: 1,
+    borderColor: T.red + "25",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // ── Empty meals ───────────────────────────────────────────────────────────────
+  emptyMeals: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 48,
+    gap: 8,
+  },
+  emptyMealsText: {
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 14,
+    color: T.sub,
+  },
+  emptyMealsSub: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 12,
     color: T.muted,
   },
 
@@ -617,7 +1045,7 @@ const s = StyleSheet.create({
     color: T.sub,
   },
 
-  // Meal type chips
+  // ── Meal type chips ───────────────────────────────────────────────────────────
   mealTypeScroll: {
     gap: 8,
     paddingBottom: 16,
@@ -642,7 +1070,7 @@ const s = StyleSheet.create({
     color: T.text,
   },
 
-  // Search
+  // ── Search ────────────────────────────────────────────────────────────────────
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -669,8 +1097,12 @@ const s = StyleSheet.create({
     color: T.muted,
     padding: 4,
   },
+  searchLoading: {
+    paddingVertical: 40,
+    alignItems: "center",
+  },
 
-  // Food list
+  // ── Food list ─────────────────────────────────────────────────────────────────
   foodList: {
     maxHeight: 360,
   },
@@ -728,14 +1160,119 @@ const s = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // Empty state
+  // ── Empty state ───────────────────────────────────────────────────────────────
   emptyState: {
     paddingVertical: 32,
     alignItems: "center",
+    gap: 8,
   },
   emptyStateText: {
     fontFamily: "DMSans_400Regular",
     fontSize: 13,
     color: T.muted,
+  },
+
+  // ── Add food modal: scan / manual ───────────────────────────────────────────
+  modalBodyScroll: {
+    maxHeight: 420,
+  },
+  entryMenu: {
+    gap: 12,
+    paddingBottom: 8,
+  },
+  scanPrimaryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: T.lime,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  scanPrimaryBtnText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 15,
+    color: T.bg0,
+    letterSpacing: 0.5,
+  },
+  manualSecondaryBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: T.borderMid,
+    backgroundColor: T.bg3,
+  },
+  manualSecondaryBtnText: {
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 14,
+    color: T.text,
+  },
+  analyzingWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 48,
+    gap: 14,
+  },
+  analyzingText: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 14,
+    color: T.sub,
+  },
+  manualForm: {
+    gap: 8,
+    paddingBottom: 12,
+  },
+  geminiErrorText: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 12,
+    color: T.red,
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  formLabel: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 11,
+    color: T.muted,
+    marginTop: 4,
+  },
+  formInput: {
+    backgroundColor: T.bg3,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontFamily: "DMSans_400Regular",
+    fontSize: 13,
+    color: T.text,
+  },
+  addToLogBtn: {
+    marginTop: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: T.lime,
+  },
+  addToLogBtnDisabled: {
+    opacity: 0.45,
+  },
+  addToLogBtnText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 15,
+    color: T.bg0,
+    letterSpacing: 0.5,
+  },
+  formBackBtn: {
+    alignItems: "center",
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  formBackBtnText: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 13,
+    color: T.sub,
   },
 });

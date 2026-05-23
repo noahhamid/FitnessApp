@@ -1,6 +1,13 @@
+import { useWeightGoal, useWeightChart } from "@/src/features/nutrition/hooks/useWeight";
 import { COLORS } from "@/src/ui/tokens/colors";
 import { FONTS } from "@/src/ui/tokens/typography";
-import { Dimensions, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Dimensions,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import Svg, {
   Circle,
   Defs,
@@ -17,49 +24,71 @@ const CHART_H = 100;
 const PAD_X = 8;
 const PAD_Y = 10;
 
-// Mock data — replace with real store/hook data
-const DATA = [
-  { label: "Jan", value: 89.2 },
-  { label: "Feb", value: 88.1 },
-  { label: "Mar", value: 87.4 },
-  { label: "Apr", value: 86.0 },
-  { label: "May", value: 85.3 },
-  { label: "Jun", value: 84.1 },
-  { label: "Jul", value: 83.5 },
-];
-
-const GOAL = 78.0;
 const COLOR = COLORS.accent;
 
 export function WeightChart() {
-  const values = DATA.map((d) => d.value);
-  const min = Math.min(...values) - 1;
-  const max = Math.max(...values) + 1;
-  const rng = max - min;
+  const { data: pts = [], isPending } = useWeightChart();
+  const { data: goalRec } = useWeightGoal();
+
+  const DATA =
+    pts.length >= 2
+      ? pts
+      : pts.length === 1
+        ? [pts[0], pts[0]]
+        : [];
+
+  const GOAL =
+    typeof goalRec?.goal_weight === "number" && Number.isFinite(goalRec.goal_weight)
+      ? goalRec.goal_weight
+      : pts.at(-1)?.w ?? 0;
+
+  const showChart = DATA.length >= 2;
+
+  const values = showChart ? DATA.map((d) => d.w) : [];
+  const min = showChart ? Math.min(...values) - 1 : 0;
+  const max = showChart ? Math.max(...values) + 1 : 1;
+  const rng = max - min || 1;
 
   const toX = (i: number) =>
-    PAD_X + (i / (DATA.length - 1)) * (CHART_W - PAD_X * 2);
-  const toY = (v: number) => PAD_Y + ((max - v) / rng) * (CHART_H - PAD_Y * 2);
+    PAD_X +
+    ((DATA.length <= 1 ? 0 : i / (DATA.length - 1)) * (CHART_W - PAD_X * 2));
+  const toY = (v: number) =>
+    PAD_Y + ((max - v) / rng) * (CHART_H - PAD_Y * 2);
 
-  const linePath = DATA.map(
-    (d, i) => `${i === 0 ? "M" : "L"}${toX(i)},${toY(d.value)}`,
-  ).join(" ");
+  const linePath = showChart
+    ? DATA.map(
+        (d, i) => `${i === 0 ? "M" : "L"}${toX(i)},${toY(d.w)}`,
+      ).join(" ")
+    : "";
 
-  const areaPath = `${linePath} L${toX(DATA.length - 1)},${CHART_H} L${toX(0)},${CHART_H} Z`;
+  const areaPath = showChart
+    ? `${linePath} L${toX(DATA.length - 1)},${CHART_H} L${toX(0)},${CHART_H} Z`
+    : "";
 
-  const current = DATA[DATA.length - 1].value;
-  const start = DATA[0].value;
+  const current =
+    pts.length > 0 ? pts[pts.length - 1]?.w ?? 0 : showChart ? DATA[DATA.length - 1]?.w : 0;
+  const start =
+    typeof goalRec?.start_weight === "number"
+      ? goalRec.start_weight
+      : pts[0]?.w ?? current;
+
   const dropped = +(start - current).toFixed(1);
+  const journey = Math.abs(start - GOAL) || 1;
   const progress = Math.min(
-    Math.round(((start - current) / (start - GOAL)) * 100),
+    Math.round((Math.abs(start - current) / journey) * 100),
     100,
   );
 
-  const lastX = toX(DATA.length - 1);
-  const lastY = toY(current);
+  const goalY = showChart ? toY(Math.max(GOAL, min + 0.5)) : 0;
 
-  // Goal line Y — clamp inside chart bounds
-  const goalY = toY(Math.max(GOAL, min + 0.5));
+  if (isPending) {
+    return (
+      <View style={[s.card, { alignItems: "center", justifyContent: "center" }]}>
+        <ActivityIndicator color={COLOR} />
+        <Text style={s.mutedFoot}>Loading weight…</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={s.card}>
@@ -68,117 +97,132 @@ export function WeightChart() {
         <View>
           <Text style={s.label}>WEIGHT</Text>
           <View style={s.valueRow}>
-            <Text style={s.value}>{current}</Text>
+            <Text style={s.value}>{pts.length ? current.toFixed(1) : "—"}</Text>
             <Text style={s.unit}>kg</Text>
           </View>
         </View>
         <View style={s.headerRight}>
           <View style={s.deltaPill}>
-            <Text style={s.deltaText}>↓ {dropped} kg</Text>
+            <Text style={s.deltaText}>
+              {pts.length < 2
+                ? "—"
+                : `${dropped >= 0 ? "↓" : "↑"} ${Math.abs(dropped)} kg`}
+            </Text>
           </View>
-          <Text style={s.goalText}>Goal: {GOAL} kg</Text>
+          <Text style={s.goalText}>Goal: {(GOAL ?? 0).toFixed(1)} kg</Text>
         </View>
       </View>
 
       {/* Chart */}
-      <Svg width={CHART_W} height={CHART_H} style={s.chart}>
-        <Defs>
-          <LinearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor={COLOR} stopOpacity="0.2" />
-            <Stop offset="100%" stopColor={COLOR} stopOpacity="0" />
-          </LinearGradient>
-        </Defs>
+      {showChart ? (
+        <>
+          <Svg width={CHART_W} height={CHART_H} style={s.chart}>
+            <Defs>
+              <LinearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0%" stopColor={COLOR} stopOpacity="0.2" />
+                <Stop offset="100%" stopColor={COLOR} stopOpacity="0" />
+              </LinearGradient>
+            </Defs>
 
-        {/* Grid lines */}
-        {[0.25, 0.5, 0.75].map((p, i) => (
-          <Line
-            key={i}
-            x1={PAD_X}
-            y1={PAD_Y + p * (CHART_H - PAD_Y * 2)}
-            x2={CHART_W - PAD_X}
-            y2={PAD_Y + p * (CHART_H - PAD_Y * 2)}
-            stroke={COLORS.border}
-            strokeWidth="1"
-            opacity="0.5"
-          />
-        ))}
+            {/* Grid lines */}
+            {[0.25, 0.5, 0.75].map((p, i) => (
+              <Line
+                key={i}
+                x1={PAD_X}
+                y1={PAD_Y + p * (CHART_H - PAD_Y * 2)}
+                x2={CHART_W - PAD_X}
+                y2={PAD_Y + p * (CHART_H - PAD_Y * 2)}
+                stroke={COLORS.border}
+                strokeWidth="1"
+                opacity="0.5"
+              />
+            ))}
 
-        {/* Goal dashed line */}
-        <Line
-          x1={PAD_X}
-          y1={goalY}
-          x2={CHART_W - PAD_X}
-          y2={goalY}
-          stroke={COLOR}
-          strokeWidth="1"
-          strokeDasharray="4 3"
-          opacity="0.4"
-        />
-        <SvgText
-          x={CHART_W - PAD_X - 2}
-          y={goalY - 3}
-          fontSize="8"
-          fill={COLOR}
-          opacity="0.6"
-          textAnchor="end"
-          fontFamily={FONTS.medium}
-        >
-          GOAL
-        </SvgText>
+            {/* Goal dashed line */}
+            <Line
+              x1={PAD_X}
+              y1={goalY}
+              x2={CHART_W - PAD_X}
+              y2={goalY}
+              stroke={COLOR}
+              strokeWidth="1"
+              strokeDasharray="4 3"
+              opacity="0.4"
+            />
+            <SvgText
+              x={CHART_W - PAD_X - 2}
+              y={goalY - 3}
+              fontSize="8"
+              fill={COLOR}
+              opacity="0.6"
+              textAnchor="end"
+              fontFamily={FONTS.medium}
+            >
+              GOAL
+            </SvgText>
 
-        {/* Area fill */}
-        <Path d={areaPath} fill="url(#wGrad)" />
+            {/* Area fill */}
+            <Path d={areaPath} fill="url(#wGrad)" />
 
-        {/* Line */}
-        <Path
-          d={linePath}
-          fill="none"
-          stroke={COLOR}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+            {/* Line */}
+            <Path
+              d={linePath}
+              fill="none"
+              stroke={COLOR}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
 
-        {/* Data dots */}
-        {DATA.map((d, i) => (
-          <Circle
-            key={i}
-            cx={toX(i)}
-            cy={toY(d.value)}
-            r={i === DATA.length - 1 ? 5 : 3}
-            fill={i === DATA.length - 1 ? COLOR : COLORS.bg3}
-            stroke={COLOR}
-            strokeWidth="1.5"
-          />
-        ))}
-      </Svg>
+            {/* Data dots */}
+            {DATA.map((d, i) => (
+              <Circle
+                key={`${i}-${d.date}`}
+                cx={toX(i)}
+                cy={toY(d.w)}
+                r={i === DATA.length - 1 ? 5 : 3}
+                fill={i === DATA.length - 1 ? COLOR : COLORS.bg3}
+                stroke={COLOR}
+                strokeWidth="1.5"
+              />
+            ))}
+          </Svg>
 
-      {/* X-axis labels */}
-      <View style={s.xAxis}>
-        {DATA.map((d, i) => (
-          <Text
-            key={i}
-            style={[s.xLabel, i === DATA.length - 1 && { color: COLOR }]}
-          >
-            {d.label}
-          </Text>
-        ))}
-      </View>
+          {/* X-axis labels */}
+          <View style={s.xAxis}>
+            {DATA.map((d, i) => (
+              <Text
+                key={`${d.date}-${i}`}
+                style={[
+                  s.xLabel,
+                  i === DATA.length - 1 && { color: COLOR },
+                ]}
+              >
+                {d.date.split(/\s|,/).slice(0, 2).join(" ")}
+              </Text>
+            ))}
+          </View>
+        </>
+      ) : (
+        <Text style={s.mutedFoot}>Log weight at least twice to show the trend chart.</Text>
+      )}
 
       {/* Footer stats */}
       <View style={s.footer}>
         <View style={s.statItem}>
-          <Text style={s.statVal}>{start} kg</Text>
+          <Text style={s.statVal}>
+            {pts.length ? `${start.toFixed(1)} kg` : "—"}
+          </Text>
           <Text style={s.statLabel}>START</Text>
         </View>
         <View style={s.statDivider} />
         <View style={s.statItem}>
-          <Text style={s.statVal}>{GOAL} kg</Text>
+          <Text style={s.statVal}>{(GOAL ?? 0).toFixed(1)} kg</Text>
           <Text style={s.statLabel}>GOAL</Text>
         </View>
         <View style={s.statDivider} />
         <View style={s.statItem}>
-          <Text style={[s.statVal, { color: COLOR }]}>{progress}%</Text>
+          <Text style={[s.statVal, { color: COLOR }]}>{pts.length >= 2 ? `${progress}%` : "—"}</Text>
           <Text style={s.statLabel}>PROGRESS</Text>
         </View>
       </View>
@@ -193,6 +237,15 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     padding: 16,
+    minHeight: 140,
+    justifyContent: "center",
+  },
+  mutedFoot: {
+    fontFamily: FONTS.medium,
+    fontSize: 12,
+    color: COLORS.muted,
+    paddingVertical: 28,
+    textAlign: "center",
   },
   header: {
     flexDirection: "row",
@@ -260,6 +313,7 @@ const s = StyleSheet.create({
     fontSize: 10,
     color: COLORS.muted,
     letterSpacing: 0.3,
+    maxWidth: 56,
   },
   footer: {
     flexDirection: "row",

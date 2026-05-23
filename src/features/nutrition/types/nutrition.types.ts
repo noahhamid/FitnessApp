@@ -27,6 +27,7 @@ export type MealLogEntry = {
   unit: string;
 };
 
+/** Local food catalog item (seed + device AsyncStorage custom foods). */
 export type FoodLibraryItem = {
   id: string;
   user_id: string | null;

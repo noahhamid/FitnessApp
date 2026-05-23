@@ -23,11 +23,15 @@ const config: ExpoConfig = {
     predictiveBackGestureEnabled: false,
   },
   web: {
-    output: "static",
+    // Fixed: "static" → "server" to enable Expo API Routes
+    // API routes (app/api/**+api.ts) require server output to run
+    // Prisma runs inside those routes — never on the device
+    output: "server",
     favicon: "./assets/images/favicon.png",
   },
   plugins: [
     "expo-router",
+    "expo-secure-store",
     [
       "expo-splash-screen",
       {
@@ -43,7 +47,6 @@ const config: ExpoConfig = {
     "expo-font",
   ],
   experiments: {
-    /** Set `true` after running `npx expo start` once so `.expo/types/router.d.ts` matches your routes. */
     typedRoutes: false,
     reactCompiler: true,
   },

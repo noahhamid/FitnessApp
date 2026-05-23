@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Better Auth ──────────────────────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions        Session[]
+  accounts        Account[]
+  workoutSessions WorkoutSession[]
+  nutritionGoal   NutritionGoal?
+  mealLogs        MealLog[]
+  weightLogs      WeightLog[]
+  weightGoal      WeightGoal?
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// ─── Workout ──────────────────────────────────────────────────────────────────
+
+model WorkoutSession {
+  id          String    @id @default(cuid())
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  notes       String?
+
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises WorkoutExercise[]
+
+  @@map("workout_session")
+}
+
+model WorkoutExercise {
+  id           String @id @default(cuid())
+  exerciseName String
+  sets         Json
+
+  sessionId String
+  session   WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("workout_exercise")
+}
+
+// ─── Nutrition ────────────────────────────────────────────────────────────────
+
+model NutritionGoal {
+  id        String   @id @default(cuid())
+  calories  Int
+  protein   Int
+  carbs     Int
+  fat       Int
+  updatedAt DateTime @updatedAt
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("nutrition_goal")
+}
+
+model MealLog {
+  id      String   @id @default(cuid())
+  logDate DateTime @db.Date
+  meal    Meal
+  name    String
+  cal     Int
+  protein Decimal  @db.Decimal(6, 1)
+  carbs   Decimal  @db.Decimal(6, 1)
+  fat     Decimal  @db.Decimal(6, 1)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, logDate])
+  @@map("meal_log")
+}
+
+// ─── Weight ───────────────────────────────────────────────────────────────────
+
+model WeightLog {
+  id      String   @id @default(cuid())
+  logDate DateTime @db.Date
+  weight  Decimal  @db.Decimal(6, 2) // kg
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, logDate])
+  @@map("weight_log")
+}
+
+model WeightGoal {
+  id          String   @id @default(cuid())
+  goalWeight  Decimal  @db.Decimal(6, 2) // kg
+  startWeight Decimal  @db.Decimal(6, 2) // kg
+  updatedAt   DateTime @updatedAt
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("weight_goal")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Meal {
+  Breakfast
+  Lunch
+  Dinner
+  Snack
+}

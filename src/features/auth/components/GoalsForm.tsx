@@ -3,6 +3,7 @@ import { ProgressDots } from "@/src/ui/components/ProgressDots";
 import { C, FONTS } from "@/src/ui/tokens";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   SafeAreaView,
   ScrollView,
@@ -11,13 +12,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSaveGoal } from "../hooks/useGoals";
+import type { GoalId } from "../services/goals.service";
 
 const { width: SW } = Dimensions.get("window");
 
-// Fixed: onNext now passes goalId to the route so it can be stored
 type Props = { onNext: (goalId: string) => void };
 
-const GOALS = [
+const GOALS: { id: GoalId; label: string; sub: string; icon: string }[] = [
   {
     id: "lose",
     label: "Lose Weight",
@@ -30,12 +32,7 @@ const GOALS = [
     sub: "Strength & hypertrophy",
     icon: "💪",
   },
-  {
-    id: "endure",
-    label: "Endurance",
-    sub: "Cardio & stamina",
-    icon: "🏃",
-  },
+  { id: "endure", label: "Endurance", sub: "Cardio & stamina", icon: "🏃" },
   {
     id: "health",
     label: "Stay Healthy",
@@ -47,7 +44,14 @@ const GOALS = [
 const CARD_W = (SW - 64 - 12) / 2;
 
 export function GoalsForm({ onNext }: Props) {
-  const [goal, setGoal] = useState<string | null>(null);
+  const [goal, setGoal] = useState<GoalId | null>(null);
+  const { mutateAsync: saveGoal, isPending, error } = useSaveGoal();
+
+  async function handleContinue() {
+    if (!goal) return;
+    await saveGoal(goal);
+    onNext(goal);
+  }
 
   return (
     <SafeAreaView style={s.safe}>
@@ -84,8 +88,6 @@ export function GoalsForm({ onNext }: Props) {
               <Text style={[s.goalSub, goal === g.id && s.goalSubActive]}>
                 {g.sub}
               </Text>
-
-              {/* Active check indicator */}
               {goal === g.id && (
                 <View style={s.checkDot}>
                   <Text style={s.checkText}>✓</Text>
@@ -95,12 +97,19 @@ export function GoalsForm({ onNext }: Props) {
           ))}
         </View>
 
+        {/* Error */}
+        {error && (
+          <Text style={s.errorText}>
+            Failed to save goal. Please try again.
+          </Text>
+        )}
+
         <Button
-          disabled={!goal}
-          onPress={() => goal && onNext(goal)}
+          disabled={!goal || isPending}
+          onPress={handleContinue}
           style={{ marginTop: 32 }}
         >
-          CONTINUE →
+          {isPending ? <ActivityIndicator color={C.bg} /> : "CONTINUE →"}
         </Button>
       </ScrollView>
     </SafeAreaView>
@@ -138,11 +147,7 @@ const s = StyleSheet.create({
     color: C.muted,
     lineHeight: 21,
   },
-  goalGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
+  goalGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   goalCard: {
     width: CARD_W,
     backgroundColor: C.bg3,
@@ -153,10 +158,7 @@ const s = StyleSheet.create({
     position: "relative",
     minHeight: 140,
   },
-  goalCardActive: {
-    borderColor: C.accent,
-    backgroundColor: `${C.accent}12`,
-  },
+  goalCardActive: { borderColor: C.accent, backgroundColor: `${C.accent}12` },
   iconWrap: {
     width: 48,
     height: 48,
@@ -199,4 +201,11 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   checkText: { fontSize: 11, color: C.bg, fontFamily: FONTS.bold },
+  errorText: {
+    color: "red",
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: 12,
+    fontFamily: FONTS.regular,
+  },
 });

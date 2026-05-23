@@ -34,7 +34,8 @@ export function StatsCard({
         ? COLORS.red
         : COLORS.muted;
 
-  const trendIcon = trend === "up" ? "↑" : trend === "down" ? "↓" : null;
+  // ✅ "neutral" trend shows a dash, not an arrow
+  const trendIcon = trend === "up" ? "↑" : trend === "down" ? "↓" : "–";
 
   return (
     <View style={s.statsCard}>
@@ -103,6 +104,7 @@ export function PrimaryButton({
       useNativeDriver: true,
       speed: 20,
     }).start();
+
   const onPressOut = () =>
     Animated.spring(scale, {
       toValue: 1,
@@ -132,6 +134,8 @@ export function PrimaryButton({
           {
             backgroundColor: bgColor,
             borderColor,
+            // ✅ Use opacity style prop, not a conditional value —
+            // avoids layout thrash and works correctly with Animated.View
             opacity: disabled ? 0.5 : 1,
           },
         ]}
@@ -167,6 +171,8 @@ export function SectionHeader({ title, action, onAction }: SectionHeaderProps) {
           onPress={onAction}
           activeOpacity={0.7}
           style={s.sectionActionBtn}
+          // ✅ Prevent crash when action label is shown but no handler provided
+          disabled={!onAction}
         >
           <Text style={s.sectionAction}>{action}</Text>
           <Text style={[s.sectionAction, { fontSize: 11 }]}>›</Text>

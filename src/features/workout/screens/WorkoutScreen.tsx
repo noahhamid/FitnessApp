@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   Platform,
@@ -16,11 +17,13 @@ import {
 
 // ── Correct imports — NOT from @/src/theme ───────────────────────────────────
 import {
-  WORKOUT_HISTORY,
   WORKOUT_TEMPLATES,
+  fetchWorkoutHistory,
+  type WorkoutHistoryRow,
 } from "@/src/features/workout/services/workout.service";
 import { COLORS } from "@/src/ui/tokens/colors";
 import { FONTS } from "@/src/ui/tokens/typography";
+import { useQuery } from "@tanstack/react-query";
 
 import ExerciseCard from "@/src/features/workout/components/ExerciseCard";
 import HistoryCard from "@/src/features/workout/components/HistoryCard";
@@ -46,15 +49,7 @@ type Template = {
   icon: string;
 };
 
-type HistorySession = {
-  id: string;
-  date: string;
-  name: string;
-  duration: string;
-  volume: string;
-  sets: number;
-  exercises: string[];
-};
+type HistorySession = WorkoutHistoryRow;
 
 // ─── Animated Template Row ────────────────────────────────────────────────────
 
@@ -156,6 +151,11 @@ export default function WorkoutScreen() {
   const [showTimer, setShowTimer] = useState(false);
   const [showPhotos, setShowPhotos] = useState(false);
   const [editingName, setEditingName] = useState(false);
+
+  const { data: historyRows = [], isPending: historyLoading } = useQuery({
+    queryKey: ["workouts", "history", "list"] as const,
+    queryFn: () => fetchWorkoutHistory(50),
+  });
 
   const startWorkout = (name = "Upper Body") => {
     setWorkoutName(name);
@@ -341,11 +341,14 @@ export default function WorkoutScreen() {
 
         {!showPhotos && (
           <View style={s.section}>
-            {/* Fixed: WORKOUT_HISTORY typed — .map works correctly */}
-            {(WORKOUT_HISTORY as HistorySession[]).length === 0 ? (
+            {historyLoading ? (
+              <View style={{ paddingVertical: 28, alignItems: "center" }}>
+                <ActivityIndicator color={COLORS.accent} />
+              </View>
+            ) : historyRows.length === 0 ? (
               <Text style={s.emptyHint}>No sessions logged yet.</Text>
             ) : (
-              (WORKOUT_HISTORY as HistorySession[]).map((h) => (
+              historyRows.map((h: HistorySession) => (
                 <HistoryCard key={h.id} session={h} />
               ))
             )}

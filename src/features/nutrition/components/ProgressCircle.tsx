@@ -3,6 +3,11 @@ import { useEffect, useRef } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, G } from "react-native-svg";
 
+// ✅ Created once at module level — not inside the component.
+// Calling createAnimatedComponent() inside a component body recreates it
+// on every render, which breaks animation state and causes flickering.
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 type Props = {
   pct: number;
   size?: number;
@@ -25,7 +30,6 @@ export function ProgressCircle({
   const clampedPct = Math.min(Math.max(pct, 0), 100);
   const isOver = pct > 100;
 
-  // Animate strokeDashoffset from circ → target
   const animPct = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -41,9 +45,6 @@ export function ProgressCircle({
     inputRange: [0, 100],
     outputRange: [circ, 0],
   });
-
-  // Animated circle via AnimatedComponent
-  const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
   return (
     <View style={[s.wrap, { width: size, height: size }]}>

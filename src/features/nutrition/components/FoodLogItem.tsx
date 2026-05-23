@@ -1,6 +1,6 @@
 import { COLORS, FONTS, spacing } from "@/src/theme";
 import { StyleSheet, Text, View } from "react-native";
-import type { MealEntry } from "../types";
+import type { MealLogEntry } from "../types/nutrition.types";
 
 // ─── Meal accent colors ───────────────────────────────────────────────────────
 const MEAL_COLORS: Record<string, string> = {
@@ -17,11 +17,20 @@ const MEAL_ICONS: Record<string, string> = {
   Snack: "🍎",
 };
 
-type Props = { item: MealEntry };
+type Props = { item: MealLogEntry };
+
+/** Formats a UTC ISO timestamp to a local HH:MM string. */
+function formatTime(isoString: string): string {
+  return new Date(isoString).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export function FoodLogItem({ item }: Props) {
   const mealColor = MEAL_COLORS[item.meal] ?? COLORS.muted;
   const mealIcon = MEAL_ICONS[item.meal] ?? "🍽️";
+  const time = formatTime(item.logged_at);
 
   return (
     <View style={s.row}>
@@ -52,7 +61,7 @@ export function FoodLogItem({ item }: Props) {
               {item.meal}
             </Text>
           </View>
-          <Text style={s.time}>{item.time}</Text>
+          <Text style={s.time}>{time}</Text>
         </View>
       </View>
 
@@ -61,11 +70,11 @@ export function FoodLogItem({ item }: Props) {
         <Text style={s.cal}>{item.cal}</Text>
         <Text style={s.calUnit}>kcal</Text>
         <View style={s.macroRow}>
-          <Text style={s.macro}>P{item.protein}g</Text>
+          <Text style={s.macro}>P{Math.round(item.protein)}g</Text>
           <Text style={s.macroDot}>·</Text>
-          <Text style={s.macro}>C{item.carbs}g</Text>
+          <Text style={s.macro}>C{Math.round(item.carbs)}g</Text>
           <Text style={s.macroDot}>·</Text>
-          <Text style={s.macro}>F{item.fat}g</Text>
+          <Text style={s.macro}>F{Math.round(item.fat)}g</Text>
         </View>
       </View>
     </View>

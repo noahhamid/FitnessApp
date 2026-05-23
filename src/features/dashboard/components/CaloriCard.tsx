@@ -1,5 +1,11 @@
-import { NUTRITION_GOALS } from "@/src/features/nutrition/services/nutrition.service";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  NUTRITION_GOALS,
+} from "@/src/features/nutrition/services/nutrition.service";
+import {
+  useDailyTotals,
+  useNutritionGoals,
+} from "@/src/features/nutrition/hooks/useNutrition";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { RingChart } from "./DashboardComponents";
 
 const T = {
@@ -18,38 +24,56 @@ const T = {
   muted: "#4A4A58",
 };
 
-// ─── Static data (swap for real state/props later) ────────────────────────────
-const EATEN = 1632;
-const BURNED = 512;
-const MACROS = [
-  {
-    label: "Protein",
-    value: 142,
-    max: NUTRITION_GOALS.protein,
-    color: T.blue,
-    icon: "💪",
-  },
-  {
-    label: "Carbs",
-    value: 198,
-    max: NUTRITION_GOALS.carbs,
-    color: T.orange,
-    icon: "⚡",
-  },
-  {
-    label: "Fat",
-    value: 54,
-    max: NUTRITION_GOALS.fat,
-    color: T.red,
-    icon: "🔥",
-  },
-];
-
 export function CalorieCard() {
-  const goal = NUTRITION_GOALS.calories;
-  const net = EATEN - BURNED;
-  const remaining = goal - net;
-  const pct = Math.min(Math.round((net / goal) * 100), 100);
+  const { data: goals } = useNutritionGoals();
+  const {
+    data: totals,
+    isPending: totalsPending,
+  } = useDailyTotals();
+
+  const goalCal =
+    typeof goals?.calories === "number" ? goals.calories : NUTRITION_GOALS.calories;
+  const goalProt =
+    typeof goals?.protein === "number" ? goals.protein : NUTRITION_GOALS.protein;
+  const goalCarbs =
+    typeof goals?.carbs === "number" ? goals.carbs : NUTRITION_GOALS.carbs;
+  const goalFat =
+    typeof goals?.fat === "number" ? goals.fat : NUTRITION_GOALS.fat;
+
+  const eaten = totals?.cal ?? 0;
+  const burned = 0;
+
+  const MACROS = [
+    {
+      label: "Protein",
+      value: totals?.protein ?? 0,
+      max: goalProt || 1,
+      color: T.blue,
+      icon: "💪",
+    },
+    {
+      label: "Carbs",
+      value: totals?.carbs ?? 0,
+      max: goalCarbs || 1,
+      color: T.orange,
+      icon: "⚡",
+    },
+    {
+      label: "Fat",
+      value: totals?.fat ?? 0,
+      max: goalFat || 1,
+      color: T.red,
+      icon: "🔥",
+    },
+  ];
+
+  const net = eaten - burned;
+
+  const remaining = goalCal - net;
+
+  const pct =
+    goalCal > 0 ? Math.min(Math.round((net / goalCal) * 100), 100) : 0;
+
   const isOver = remaining < 0;
 
   const ringColor = pct >= 100 ? T.red : pct >= 75 ? T.orange : T.lime;
@@ -70,6 +94,10 @@ export function CalorieCard() {
           <Text style={s.title}>TODAY'S NUTRITION</Text>
           <Text style={s.subtitle}>Net = eaten − burned</Text>
         </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {totalsPending ? (
+            <ActivityIndicator size="small" color={T.lime} />
+          ) : null}
         <View
           style={[
             s.statusChip,
@@ -83,6 +111,7 @@ export function CalorieCard() {
           <Text style={[s.statusText, { color: status.color }]}>
             {status.label}
           </Text>
+        </View>
         </View>
       </View>
 
@@ -115,9 +144,9 @@ export function CalorieCard() {
         {/* Right stats */}
         <View style={s.statsCol}>
           {[
-            { label: "Goal", value: goal, unit: "kcal", color: T.text },
-            { label: "Eaten", value: EATEN, unit: "kcal", color: T.lime },
-            { label: "Burned", value: BURNED, unit: "kcal", color: T.orange },
+            { label: "Goal", value: goalCal, unit: "kcal", color: T.text },
+            { label: "Eaten", value: eaten, unit: "kcal", color: T.lime },
+            { label: "Burned", value: burned, unit: "kcal", color: T.orange },
             {
               label: remaining < 0 ? "Over" : "Remaining",
               value: Math.abs(remaining),
@@ -130,7 +159,7 @@ export function CalorieCard() {
                 <Text style={s.statLabel}>{label}</Text>
                 <View style={s.statValueRow}>
                   <Text style={[s.statValue, { color }]}>
-                    {value.toLocaleString()}
+                    {(value ?? 0).toLocaleString()}
                   </Text>
                   <Text style={s.statUnit}>{unit}</Text>
                 </View>

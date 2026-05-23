@@ -10,11 +10,13 @@ type Props = {
 };
 
 export function MacroBar({ label, current, goal, color }: Props) {
-  const pct = Math.min((current / goal) * 100, 100);
-  const isOver = current > goal;
+  // ✅ Guard against division by zero if goal hasn't loaded yet
+  const pct = goal > 0 ? Math.min((current / goal) * 100, 100) : 0;
+  const isOver = current > goal && goal > 0;
   const animW = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // ✅ Only animate when pct actually changes, not on every render
     Animated.timing(animW, {
       toValue: pct,
       duration: 900,
@@ -50,7 +52,7 @@ export function MacroBar({ label, current, goal, color }: Props) {
         </View>
 
         <View style={s.valueRow}>
-          <Text style={[s.current, { color }]}>{current}g</Text>
+          <Text style={[s.current, { color }]}>{Math.round(current)}g</Text>
           <Text style={s.separator}>/</Text>
           <Text style={s.goal}>{goal}g</Text>
           <Text style={[s.pctBadge, { color: isOver ? COLORS.red : color }]}>
@@ -76,8 +78,8 @@ export function MacroBar({ label, current, goal, color }: Props) {
       {/* Remaining */}
       <Text style={s.remaining}>
         {isOver
-          ? `${current - goal}g over goal`
-          : `${goal - current}g remaining`}
+          ? `${Math.round(current - goal)}g over goal`
+          : `${Math.round(goal - current)}g remaining`}
       </Text>
     </View>
   );

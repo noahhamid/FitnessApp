@@ -1,10 +1,16 @@
+import { todayLocalYmd } from "@/src/features/workout/services/workout.service";
+import type { WeightChartPoint } from "../types/weight.types";
 import {
-  WEIGHT_GOAL,
-  WEIGHT_LOG,
-} from "@/src/features/nutrition/services/nutrition.service";
+  useLogWeight,
+  useWeightGoal,
+  useWeightLog,
+} from "../hooks/useWeight";
+import { toWeightChartPoints } from "../services/weight.service";
 import { COLORS } from "@/src/theme";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Animated,
   Dimensions,
   KeyboardAvoidingView,
@@ -57,22 +63,33 @@ function AnimatedProgressBar({ progress }: { progress: number }) {
 }
 
 // ─── SVG Line chart ───────────────────────────────────────────────────────────
-function WeightChart() {
+function WeightChart({ series }: { series: WeightChartPoint[] }) {
   const chartW = SW - 48;
   const chartH = 130;
   const padX = 16;
   const padY = 20;
 
-  const weights = WEIGHT_LOG.map((d) => d.w);
+  if (series.length < 2) {
+    return (
+      <View style={{ paddingVertical: 20 }}>
+        <Text style={styles.chartLabel}>
+          Log at least two weights to unlock this chart.
+        </Text>
+      </View>
+    );
+  }
+
+  const weights = series.map((d) => d.w);
   const minW = Math.min(...weights) - 1;
   const maxW = Math.max(...weights) + 1;
+  const div = Math.max(series.length - 1, 1);
 
   const toX = (i: number) =>
-    padX + (i / (WEIGHT_LOG.length - 1)) * (chartW - padX * 2);
+    padX + (i / div) * (chartW - padX * 2);
   const toY = (w: number) =>
     padY + (1 - (w - minW) / (maxW - minW)) * (chartH - padY * 2);
 
-  const pts = WEIGHT_LOG.map((d, i) => ({ x: toX(i), y: toY(d.w), ...d }));
+  const pts = series.map((d, i) => ({ x: toX(i), y: toY(d.w), ...d }));
 
   // Build filled area polygon points string
   const areaPoints = [
@@ -126,7 +143,7 @@ function WeightChart() {
           const isLast = i === pts.length - 1;
           return (
             <Circle
-              key={`dot-${i}`}
+              key={`dot-${i}-${pt.date}`}
               cx={pt.x}
               cy={pt.y}
               r={isLast ? 6 : 4}
@@ -140,11 +157,13 @@ function WeightChart() {
 
       {/* X-axis date labels */}
       <View style={styles.chartXAxis}>
-        {WEIGHT_LOG.filter((_, i) => i % 2 === 0).map((d) => (
-          <Text key={d.date} style={styles.chartLabel}>
-            {d.date.split(" ")[1]}
-          </Text>
-        ))}
+        {series
+          .filter((_, i) => i % 2 === 0)
+          .map((d, i) => (
+            <Text key={`lbl-${i}-${d.date}`} style={styles.chartLabel}>
+              {String(d.date).split(/[\s,]+/).filter(Boolean).slice(-2)[0]}
+            </Text>
+          ))}
       </View>
 
       {/* Latest weight label positioned above last dot */}
@@ -163,6 +182,18 @@ function WeightChart() {
       })()}
     </View>
   );
+}
+
+function displayLogDate(logDate: string): string {
+  try {
+    return new Date(`${logDate}T00:00:00.000Z`).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return logDate;
+  }
 }
 
 // ─── History row ──────────────────────────────────────────────────────────────
@@ -234,41 +265,91 @@ export function WeightSection() {
   const [newWeight, setNewWeight] = useState("");
   const [unit, setUnit] = useState<"kg" | "lbs">("kg");
 
-  const current = WEIGHT_LOG[WEIGHT_LOG.length - 1].w;
-  const start = WEIGHT_LOG[0].w;
-  const lost = (start - current).toFixed(1);
-  const toGo = Math.max(0, current - WEIGHT_GOAL).toFixed(1);
-  const progress = Math.min(
-    100,
-    Math.round(((start - current) / (start - WEIGHT_GOAL)) * 100),
+  const logMut = useLogWeight();
+
+  const { data: rows = [], isPending: logsPending } = useWeightLog();
+  const { data: goalRecord } = useWeightGoal();
+
+  const sorted = useMemo(
+    () => [...rows].sort((a, b) => a.log_date.localeCompare(b.log_date)),
+    [rows],
   );
 
-  const reversed = [...WEIGHT_LOG].reverse();
+  const chartPoints = useMemo(
+    () => toWeightChartPoints(sorted),
+    [sorted],
+  );
+
+  const goalW =
+    typeof goalRecord?.goal_weight === "number"
+      ? goalRecord.goal_weight
+      : sorted.at(-1)?.weight ?? 0;
+  const startW =
+    typeof goalRecord?.start_weight === "number"
+      ? goalRecord.start_weight
+      : sorted[0]?.weight ?? sorted.at(-1)?.weight ?? 0;
+
+  const current = sorted.at(-1)?.weight ?? 0;
+
+  const lostDelta = startW - current;
+  const lostTile = `${lostDelta >= 0 ? "-" : "+"}${Math.abs(lostDelta).toFixed(
+    1,
+  )}`;
+
+  const journey = Math.abs(startW - goalW) || 1;
+  const progressed = Math.abs(startW - current);
+  const progress = Math.min(
+    100,
+    Number.isFinite(journey) ? Math.round((progressed / journey) * 100) : 0,
+  );
+
+  const toGoMag = +(Math.abs(current - goalW)).toFixed(1);
+
+  const reversedHist = useMemo(
+    () =>
+      [...sorted].reverse().map((e) => ({
+        date: displayLogDate(e.log_date),
+        w: e.weight,
+        id: e.id,
+      })),
+    [sorted],
+  );
 
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: 32 }}
     >
+      {logsPending ? (
+        <View style={{ paddingVertical: 16, alignItems: "flex-start" }}>
+          <ActivityIndicator color={COLORS.accent} />
+        </View>
+      ) : null}
       {/* ── Summary cards ── */}
       <View style={styles.cardGrid}>
         {[
           {
             label: "Current",
-            value: `${current}`,
+            value: `${(current ?? 0).toFixed(1)}`,
             unit: "kg",
             color: COLORS.text,
           },
           {
             label: "Lost",
-            value: `-${lost}`,
+            value: `${lostTile}`,
             unit: "kg",
             color: COLORS.accent,
           },
-          { label: "To Goal", value: toGo, unit: "kg", color: COLORS.orange },
+          {
+            label: "To Goal",
+            value:
+              sorted.length === 0 ? `—` : `${toGoMag.toFixed(1)}`,
+            unit: "kg",
+            color: COLORS.orange,
+          },
           {
             label: "Progress",
-            value: `${progress}`,
+            value: `${sorted.length < 2 ? 0 : progress}`,
             unit: "%",
             color: COLORS.blue,
           },
@@ -284,13 +365,13 @@ export function WeightSection() {
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>GOAL PROGRESS</Text>
           <Text style={[styles.sectionValue, { color: COLORS.accent }]}>
-            {progress}%
+            {sorted.length < 2 ? 0 : progress}%
           </Text>
         </View>
-        <AnimatedProgressBar progress={progress} />
+        <AnimatedProgressBar progress={sorted.length < 2 ? 0 : progress} />
         <View style={styles.sectionRow}>
-          <Text style={styles.mutedLabel}>Start: {start} kg</Text>
-          <Text style={styles.mutedLabel}>Goal: {WEIGHT_GOAL} kg</Text>
+          <Text style={styles.mutedLabel}>Start: {startW.toFixed(1)} kg</Text>
+          <Text style={styles.mutedLabel}>Goal: {goalW.toFixed(1)} kg</Text>
         </View>
       </View>
 
@@ -298,7 +379,7 @@ export function WeightSection() {
       <View style={[styles.section, { overflow: "visible" }]}>
         <SectionHeader title="Weight Trend" />
         <View style={{ marginTop: 8 }}>
-          <WeightChart />
+          <WeightChart series={chartPoints} />
         </View>
       </View>
 
@@ -313,15 +394,22 @@ export function WeightSection() {
       {/* ── History ── */}
       <SectionHeader title="History" />
       <View style={styles.section}>
-        {reversed.map((entry, i) => (
-          <HistoryRow
-            key={entry.date}
-            entry={entry}
-            // FIX: prev is the chronologically prior entry = next item in reversed array
-            prev={reversed[i + 1] ?? null}
-            isFirst={i === 0}
-          />
-        ))}
+        {reversedHist.length === 0 ? (
+          <Text style={styles.chartLabel}>No weight entries yet.</Text>
+        ) : (
+          reversedHist.map((entry, i) => (
+            <HistoryRow
+              key={entry.id}
+              entry={{ date: entry.date, w: entry.w }}
+              prev={
+                reversedHist[i + 1]
+                  ? { date: reversedHist[i + 1].date, w: reversedHist[i + 1].w }
+                  : null
+              }
+              isFirst={i === 0}
+            />
+          ))
+        )}
       </View>
 
       {/* ── Log modal ── */}
@@ -394,10 +482,30 @@ export function WeightSection() {
                   <View style={{ width: 12 }} />
                   <View style={{ flex: 1 }}>
                     <PrimaryButton
-                      label="SAVE"
+                      label={logMut.isPending ? "..." : "SAVE"}
                       onPress={() => {
-                        setShowLogModal(false);
-                        setNewWeight("");
+                        const parsed = Number.parseFloat(
+                          newWeight.replace(",", "."),
+                        );
+                        if (!Number.isFinite(parsed) || parsed <= 0) {
+                          Alert.alert("Invalid weight", "Enter a positive number.");
+                          return;
+                        }
+                        const kg = unit === "lbs" ? parsed * 0.45359237 : parsed;
+                        logMut.mutate(
+                          { weight: +kg.toFixed(2), log_date: todayLocalYmd() },
+                          {
+                            onSuccess: () => {
+                              setShowLogModal(false);
+                              setNewWeight("");
+                            },
+                            onError: () =>
+                              Alert.alert(
+                                "Could not save",
+                                "Try again when you are online.",
+                              ),
+                          },
+                        );
                       }}
                     />
                   </View>
