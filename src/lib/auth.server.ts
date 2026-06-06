@@ -21,12 +21,10 @@ export const auth = betterAuth({
   },
 
   trustedOrigins: [
+    "myapp://",
     "http://localhost:8081",
     "exp://localhost:8081",
-    "http://192.168.0.150:8081",
-    "exp://192.168.0.150:8081",
-    "myapp://",
-    process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+    ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
   ],
 });
 

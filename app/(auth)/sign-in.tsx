@@ -1,6 +1,7 @@
 import { OAuthButtons, SignInForm } from "@/src/features/auth";
 import { getPostSignInRoute } from "@/src/lib/routing";
-import { C, FONTS } from "@/src/theme";
+import { C } from "@/src/ui/tokens/colors";
+import { FONTS } from "@/src/ui/tokens/typography";
 import { Link, router } from "expo-router";
 import {
   KeyboardAvoidingView,

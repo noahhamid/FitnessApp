@@ -1,11 +1,9 @@
-import {
-  NUTRITION_GOALS,
-} from "@/src/features/nutrition/services/nutrition.service";
+import { NUTRITION_GOALS } from "@/src/features/nutrition/services/nutrition.service";
 import {
   useDailyTotals,
   useNutritionGoals,
 } from "@/src/features/nutrition/hooks/useNutrition";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { RingChart } from "./DashboardComponents";
 
 const T = {
@@ -26,15 +24,16 @@ const T = {
 
 export function CalorieCard() {
   const { data: goals } = useNutritionGoals();
-  const {
-    data: totals,
-    isPending: totalsPending,
-  } = useDailyTotals();
+  const { data: totals, isPending: totalsPending } = useDailyTotals();
 
   const goalCal =
-    typeof goals?.calories === "number" ? goals.calories : NUTRITION_GOALS.calories;
+    typeof goals?.calories === "number"
+      ? goals.calories
+      : NUTRITION_GOALS.calories;
   const goalProt =
-    typeof goals?.protein === "number" ? goals.protein : NUTRITION_GOALS.protein;
+    typeof goals?.protein === "number"
+      ? goals.protein
+      : NUTRITION_GOALS.protein;
   const goalCarbs =
     typeof goals?.carbs === "number" ? goals.carbs : NUTRITION_GOALS.carbs;
   const goalFat =
@@ -68,17 +67,12 @@ export function CalorieCard() {
   ];
 
   const net = eaten - burned;
-
   const remaining = goalCal - net;
-
   const pct =
     goalCal > 0 ? Math.min(Math.round((net / goalCal) * 100), 100) : 0;
-
   const isOver = remaining < 0;
-
   const ringColor = pct >= 100 ? T.red : pct >= 75 ? T.orange : T.lime;
 
-  // Status chip
   const status =
     pct >= 100
       ? { label: "OVER GOAL", color: T.red }
@@ -98,26 +92,25 @@ export function CalorieCard() {
           {totalsPending ? (
             <ActivityIndicator size="small" color={T.lime} />
           ) : null}
-        <View
-          style={[
-            s.statusChip,
-            {
-              backgroundColor: status.color + "18",
-              borderColor: status.color + "35",
-            },
-          ]}
-        >
-          <View style={[s.statusDot, { backgroundColor: status.color }]} />
-          <Text style={[s.statusText, { color: status.color }]}>
-            {status.label}
-          </Text>
-        </View>
+          <View
+            style={[
+              s.statusChip,
+              {
+                backgroundColor: status.color + "18",
+                borderColor: status.color + "35",
+              },
+            ]}
+          >
+            <View style={[s.statusDot, { backgroundColor: status.color }]} />
+            <Text style={[s.statusText, { color: status.color }]}>
+              {status.label}
+            </Text>
+          </View>
         </View>
       </View>
 
       {/* ── Hero row: ring + stats ──────────────────────────────────────────── */}
       <View style={s.heroRow}>
-        {/* Ring */}
         <View style={s.ringWrap}>
           <RingChart
             pct={pct}
@@ -127,7 +120,6 @@ export function CalorieCard() {
             label={`${net}`}
             sublabel="NET KCAL"
           />
-          {/* Pct badge below ring */}
           <View
             style={[
               s.ringPctBadge,
@@ -141,7 +133,6 @@ export function CalorieCard() {
           </View>
         </View>
 
-        {/* Right stats */}
         <View style={s.statsCol}>
           {[
             { label: "Goal", value: goalCal, unit: "kcal", color: T.text },
@@ -180,7 +171,6 @@ export function CalorieCard() {
 
           return (
             <View key={m.label} style={s.macroRow}>
-              {/* Label side */}
               <View style={s.macroLeft}>
                 <View
                   style={[
@@ -200,7 +190,6 @@ export function CalorieCard() {
                 </View>
               </View>
 
-              {/* Bar + value */}
               <View style={s.macroRight}>
                 <View style={s.macroValueRow}>
                   <Text style={[s.macroValue, { color: m.color }]}>
@@ -237,29 +226,6 @@ export function CalorieCard() {
           );
         })}
       </View>
-
-      {/* ── Divider ─────────────────────────────────────────────────────────── */}
-      <View style={s.divider} />
-
-      {/* ── Footer summary strip ───────────────────────────────────────────── */}
-      <View style={s.footer}>
-        {[
-          { label: "Protein", value: `${MACROS[0].value}g`, color: T.blue },
-          { label: "Carbs", value: `${MACROS[1].value}g`, color: T.orange },
-          { label: "Fat", value: `${MACROS[2].value}g`, color: T.red },
-          { label: "Complete", value: `${pct}%`, color: T.lime },
-        ].map(({ label, value, color }) => (
-          <View key={label} style={s.footerItem}>
-            <Text style={[s.footerValue, { color }]}>{value}</Text>
-            <Text style={s.footerLabel}>{label}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* ── Log food CTA ───────────────────────────────────────────────────── */}
-      <TouchableOpacity style={s.logBtn} activeOpacity={0.8}>
-        <Text style={s.logBtnText}>+ Log Food</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -273,8 +239,6 @@ const s = StyleSheet.create({
     borderColor: T.borderMid,
     padding: 18,
   },
-
-  // ── Header ──────────────────────────────────────────────────────────────────
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -314,8 +278,6 @@ const s = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.6,
   },
-
-  // ── Hero row ────────────────────────────────────────────────────────────────
   heroRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -339,7 +301,6 @@ const s = StyleSheet.create({
   },
   statsCol: {
     flex: 1,
-    gap: 0,
   },
   statRow: {
     flexDirection: "row",
@@ -371,11 +332,8 @@ const s = StyleSheet.create({
     height: 1,
     backgroundColor: T.border,
   },
-
-  // ── Macro section ────────────────────────────────────────────────────────────
   macroSection: {
     gap: 10,
-    marginBottom: 16,
   },
   macroSectionTitle: {
     fontFamily: "BarlowCondensed_700Bold",
@@ -454,46 +412,5 @@ const s = StyleSheet.create({
   macroFill: {
     height: "100%",
     borderRadius: 3,
-  },
-
-  // ── Divider ──────────────────────────────────────────────────────────────────
-  divider: {
-    height: 1,
-    backgroundColor: T.border,
-    marginBottom: 14,
-  },
-
-  // ── Footer ───────────────────────────────────────────────────────────────────
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 14,
-  },
-  footerItem: {
-    alignItems: "center",
-    gap: 2,
-  },
-  footerValue: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 16,
-  },
-  footerLabel: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 10,
-    color: T.muted,
-  },
-
-  // ── Log btn ──────────────────────────────────────────────────────────────────
-  logBtn: {
-    backgroundColor: T.lime,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  logBtnText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 14,
-    color: T.bg1,
-    letterSpacing: 0.5,
   },
 });

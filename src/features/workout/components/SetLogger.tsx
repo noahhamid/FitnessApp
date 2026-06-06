@@ -1,4 +1,5 @@
-import { COLORS, FONTS } from "@/src/theme";
+import { COLORS } from "@/src/ui/tokens/colors";
+import { FONTS } from "@/src/ui/tokens/typography";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 

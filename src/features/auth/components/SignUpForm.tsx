@@ -1,4 +1,5 @@
-import { C, FONTS } from "@/src/theme";
+import { C } from "@/src/ui/tokens/colors";
+import { FONTS } from "@/src/ui/tokens/typography";
 import { Button } from "@/src/ui/components/Button";
 import { Input } from "@/src/ui/components/Input";
 import { useState } from "react";

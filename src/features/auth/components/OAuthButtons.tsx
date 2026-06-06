@@ -2,7 +2,8 @@ import {
   signInWithApple,
   signInWithGoogle,
 } from "@/src/features/auth/services/auth.service";
-import { C, FONTS } from "@/src/theme";
+import { C } from "@/src/ui/tokens/colors";
+import { FONTS } from "@/src/ui/tokens/typography";
 import { useState } from "react";
 import {
   ActivityIndicator,

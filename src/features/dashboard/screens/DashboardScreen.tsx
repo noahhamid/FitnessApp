@@ -1,14 +1,15 @@
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { CalorieCard } from "@/src/features/dashboard/components/CaloriCard";
 import {
-  StatTile,
   WeeklyCard,
   WeightCard,
 } from "@/src/features/dashboard/components/DashboardComponents";
 import { StreakBanner } from "@/src/features/dashboard/components/StreakBanner";
 import { TodaySession } from "@/src/features/dashboard/components/TodaySession";
-import { useMealLog } from "@/src/features/nutrition/hooks/useNutrition";
-import { useWeightGoal, useWeightLog } from "@/src/features/nutrition/hooks/useWeight";
+import {
+  useWeightGoal,
+  useWeightLog,
+} from "@/src/features/nutrition/hooks/useWeight";
 import { fetchDailyTotals } from "@/src/features/nutrition/services/nutrition.service";
 import {
   ApiWorkoutSession,
@@ -18,13 +19,13 @@ import {
   mapIncompleteToTodayPlan,
   todayLocalYmd,
 } from "@/src/features/workout/services/workout.service";
-import { SLEEP_SPARK, STEPS_SPARK } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useMemo } from "react";
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -50,7 +51,6 @@ const T = {
   borderMid: "#FFFFFF18",
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function SectionGap() {
   return <View style={{ height: 16 }} />;
 }
@@ -70,7 +70,6 @@ function SectionLabel({
   );
 }
 
-// ─── Quick action data ────────────────────────────────────────────────────────
 const ACTIONS = [
   {
     icon: "barbell-outline" as const,
@@ -94,7 +93,7 @@ const ACTIONS = [
     icon: "camera-outline" as const,
     label: "PROGRESS\nPHOTO",
     color: T.blue,
-    route: null,
+    route: "/(app)/(tabs)/progress" as const,
   },
 ] as const;
 
@@ -110,14 +109,11 @@ function streakFromCalendarDays(days: Set<string>): number {
   return count;
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
 export default function DashboardScreen() {
   const { user } = useAuth();
 
   const weekDates = useMemo(() => calendarWeekDatesMonSunLocal(new Date()), []);
   const todayYmd = todayLocalYmd(new Date());
-
-  const { data: mealsToday = [] } = useMealLog(todayYmd);
 
   const dailyTotalsQueries = useQueries({
     queries: weekDates.map((date) => ({
@@ -158,12 +154,11 @@ export default function DashboardScreen() {
     });
   }, [weekDates, dailyTotalsQueries, completedWorkouts]);
 
-  const liftDaysWeek = weeklyBars.filter((w) => w.workout).length;
-  const weekCalSum = weeklyBars.reduce((a, d) => a + d.cal, 0);
-
   const streakDays = streakFromCalendarDays(completedDaySet);
   const bestStreakGuess =
-    streakDays > 0 ? Math.max(Math.ceil(streakDays * 1.25), streakDays + 7) : 21;
+    streakDays > 0
+      ? Math.max(Math.ceil(streakDays * 1.25), streakDays + 7)
+      : 21;
 
   const { data: weightRows = [], isPending: weightsPending } = useWeightLog();
   const { data: weightGoalRecord } = useWeightGoal();
@@ -185,41 +180,14 @@ export default function DashboardScreen() {
       return localCalendarYmdFromIso(w.startedAt) === day;
     });
     if (!openToday.length) return [];
-    return openToday.slice(0, 3).map((sess, idx) => mapIncompleteToTodayPlan(sess, idx));
+    return openToday
+      .slice(0, 3)
+      .map((sess, idx) => mapIncompleteToTodayPlan(sess, idx));
   }, [openWorkouts, todayYmd]);
-
-  const weekDateSet = useMemo(() => new Set(weekDates), [weekDates]);
-  const completionsWeekCount = useMemo(
-    () =>
-      completedWorkouts.filter((w) => {
-        if (!w.completedAt) return false;
-        return weekDateSet.has(localCalendarYmdFromIso(w.completedAt));
-      }).length,
-    [completedWorkouts, weekDateSet],
-  );
-
-  const kcalTrendSpark = useMemo(
-    () => weeklyBars.map((b) => Math.max(Math.round((b.cal || 2) / 90 + 14), 4)),
-    [weeklyBars],
-  );
-
-  const todayIdx = weekDates.findIndex((d) => d === todayYmd);
-  const todayTotals =
-    todayIdx >= 0 ? dailyTotalsQueries[todayIdx]?.data : undefined;
-  const completedSessionsToday =
-    typeof todayIdx === "number" && todayIdx >= 0
-      ? weeklyBars[todayIdx]?.workout ?? false
-      : false;
-
-  const avgWeekCalRound =
-    weeklyBars.filter((x) => x.cal > 0).length > 0
-      ? Math.round(
-          weekCalSum / weeklyBars.filter((x) => x.cal > 0).length,
-        )
-      : 0;
 
   const heroFirst =
     user?.name?.trim()?.split(/\s+/)?.[0]?.toUpperCase() ?? "ATHLETE";
+  const firstName = user?.name?.trim()?.split(/\s+/)?.[0] ?? "Athlete";
 
   const hour = new Date().getHours();
   const greeting =
@@ -231,6 +199,17 @@ export default function DashboardScreen() {
       day: "numeric",
     })
     .toUpperCase();
+
+  function handleBellPress() {
+    const currentHour = new Date().getHours();
+    const message =
+      currentHour < 12
+        ? `💪 Time to crush today's workout. Your streak is at ${streakDays} days!`
+        : currentHour < 17
+          ? "🥗 Have you logged your meals today? Stay on track with your nutrition goals."
+          : "🌙 Great work today. Log your workout if you haven't already to keep your streak alive.";
+    Alert.alert(`Hey ${firstName}!`, message);
+  }
 
   return (
     <View style={s.screen}>
@@ -249,18 +228,17 @@ export default function DashboardScreen() {
               <Text style={s.date}>{date}</Text>
             </View>
             <Text style={s.greeting}>{greeting},</Text>
-            <Text style={s.heroName}>
-              {heroFirst} 👊
-            </Text>
+            <Text style={s.heroName}>{heroFirst} 👊</Text>
           </View>
 
-          {/* Notification bell */}
-          <View>
-            <TouchableOpacity style={s.bellBtn} activeOpacity={0.7}>
-              <Ionicons name="notifications-outline" size={20} color={T.text} />
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={s.bellBtn}
+            activeOpacity={0.7}
+            onPress={handleBellPress}
+          >
+            <Ionicons name="notifications-outline" size={20} color={T.text} />
             <View style={s.notifDot} />
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* ── STREAK ───────────────────────────────────────────────────────── */}
@@ -277,57 +255,6 @@ export default function DashboardScreen() {
 
         <SectionGap />
 
-        {/* ── STAT TILES ───────────────────────────────────────────────────── */}
-        <SectionLabel label="TODAY'S METRICS" icon="pulse-outline" />
-        <View style={s.px}>
-          <View style={s.tileRow}>
-            <StatTile
-              icon="👟"
-              label="Steps"
-              value={String(liftDaysWeek)}
-              unit=""
-              note={`${streakDays}-day streak · ${completedSessionsToday ? "Worked out today" : "Rest day"}`}
-              color={T.lime}
-              spark={
-                weeklyBars.some((b) => b.cal > 0 || b.workout)
-                  ? kcalTrendSpark
-                  : STEPS_SPARK
-              }
-            />
-            <StatTile
-              icon="💧"
-              label="Water"
-              value={String(mealsToday.length)}
-              unit=""
-              note={`${todayTotals?.cal ?? 0} kcal today`}
-              color={T.blue}
-              spark={kcalTrendSpark}
-            />
-          </View>
-          <View style={[s.tileRow, { marginTop: 10 }]}>
-            <StatTile
-              icon="😴"
-              label="Sleep"
-              value={`${avgWeekCalRound}`}
-              unit=""
-              note="Avg weekday kcal (week)"
-              color={T.purple}
-              spark={SLEEP_SPARK}
-            />
-            <StatTile
-              icon="❤️"
-              label="Heart rate"
-              value={String(completionsWeekCount)}
-              unit=""
-              note="Completed workouts this calendar week"
-              color={T.red}
-              spark={weeklyBars.map((b) => (b.workout ? 88 : 32))}
-            />
-          </View>
-        </View>
-
-        <SectionGap />
-
         {/* ── QUICK ACTIONS ────────────────────────────────────────────────── */}
         <SectionLabel label="QUICK ACTIONS" icon="grid-outline" />
         <View style={s.px}>
@@ -337,9 +264,7 @@ export default function DashboardScreen() {
                 <View key={action.label} style={s.actionItem}>
                   <TouchableOpacity
                     activeOpacity={0.75}
-                    onPress={() =>
-                      action.route ? router.push(action.route) : null
-                    }
+                    onPress={() => router.push(action.route)}
                     style={[
                       s.actionIconBtn,
                       {
@@ -419,7 +344,6 @@ export default function DashboardScreen() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   screen: {
     flex: 1,
@@ -432,7 +356,6 @@ const s = StyleSheet.create({
   scrollContent: { paddingBottom: 40 },
   px: { paddingHorizontal: 16 },
 
-  // ── Header ──────────────────────────────────────────────────────────────────
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -490,7 +413,6 @@ const s = StyleSheet.create({
     right: 4,
   },
 
-  // ── Section label ────────────────────────────────────────────────────────────
   sectionLabelRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -505,13 +427,6 @@ const s = StyleSheet.create({
     letterSpacing: 1.4,
   },
 
-  // ── Tiles ────────────────────────────────────────────────────────────────────
-  tileRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-
-  // ── Actions ──────────────────────────────────────────────────────────────────
   actionsCard: {
     backgroundColor: T.bg1,
     borderRadius: 20,

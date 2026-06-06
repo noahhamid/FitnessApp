@@ -11,7 +11,8 @@ import {
   Platform,
 } from "react-native";
 import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
-import { COLORS } from "@/src/theme";
+import { COLORS } from "@/src/ui/tokens/colors";
+import { FONTS } from "@/src/ui/tokens/typography";
 
 const C = COLORS;
 
@@ -35,13 +36,11 @@ export default function TimerModal({
   const [running, setRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Animations
   const sheetAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const doneAnim = useRef(new Animated.Value(0)).current;
   const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
-  // Sheet slide-in
   useEffect(() => {
     if (visible) {
       setRemain(total);
@@ -59,7 +58,6 @@ export default function TimerModal({
     }
   }, [visible]);
 
-  // Pulse while running
   useEffect(() => {
     if (running) {
       pulseLoopRef.current = Animated.loop(
@@ -76,19 +74,15 @@ export default function TimerModal({
             easing: Easing.inOut(Easing.sin),
             useNativeDriver: true,
           }),
-        ])
+        ]),
       );
       pulseLoopRef.current.start();
     } else {
       pulseLoopRef.current?.stop();
-      Animated.spring(pulseAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-      }).start();
+      Animated.spring(pulseAnim, { toValue: 1, useNativeDriver: true }).start();
     }
   }, [running]);
 
-  // Countdown
   useEffect(() => {
     if (running) {
       intervalRef.current = setInterval(() => {
@@ -96,13 +90,32 @@ export default function TimerModal({
           if (r <= 1) {
             clearInterval(intervalRef.current!);
             setRunning(false);
-            // Done flash animation
             Animated.sequence([
-              Animated.timing(doneAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-              Animated.timing(doneAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
-              Animated.timing(doneAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-              Animated.timing(doneAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
-              Animated.timing(doneAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+              Animated.timing(doneAnim, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+              Animated.timing(doneAnim, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+              Animated.timing(doneAnim, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+              Animated.timing(doneAnim, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+              Animated.timing(doneAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+              }),
             ]).start();
             onComplete?.();
             return 0;
@@ -119,7 +132,6 @@ export default function TimerModal({
   const isDone = remain === 0;
   const pct = remain / total;
 
-  // SVG ring
   const SIZE = 220;
   const R = 96;
   const STROKE = 9;
@@ -129,10 +141,10 @@ export default function TimerModal({
   const ringColor = isDone
     ? C.accent
     : pct > 0.5
-    ? C.accent
-    : pct > 0.25
-    ? C.orange
-    : C.red ?? "#FF453A";
+      ? C.accent
+      : pct > 0.25
+        ? C.orange
+        : "#FF453A";
 
   const mins = String(Math.floor(remain / 60)).padStart(2, "0");
   const secs = String(remain % 60).padStart(2, "0");
@@ -168,29 +180,36 @@ export default function TimerModal({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      {/* Backdrop */}
       <Pressable style={s.overlay} onPress={onClose}>
         <Animated.View
-          style={[s.backdrop, { opacity: sheetAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }) }]}
+          style={[
+            s.backdrop,
+            {
+              opacity: sheetAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 1],
+              }),
+            },
+          ]}
         />
       </Pressable>
 
-      {/* Sheet */}
       <Animated.View
         style={[s.sheet, { transform: [{ translateY: sheetTranslate }] }]}
       >
-        {/* Done flash overlay */}
         <Animated.View
           pointerEvents="none"
-          style={[StyleSheet.absoluteFillObject, s.doneFlash, { opacity: doneOpacity }]}
+          style={[
+            StyleSheet.absoluteFillObject,
+            s.doneFlash,
+            { opacity: doneOpacity },
+          ]}
         />
 
-        {/* Handle */}
         <View style={s.handleRow}>
           <View style={s.handle} />
         </View>
 
-        {/* Title */}
         <View style={s.titleRow}>
           <Text style={s.titleLabel}>REST TIMER</Text>
           <Pressable onPress={onClose} hitSlop={12} style={s.closeX}>
@@ -198,7 +217,6 @@ export default function TimerModal({
           </Pressable>
         </View>
 
-        {/* Ring */}
         <Animated.View
           style={[s.ringWrapper, { transform: [{ scale: pulseAnim }] }]}
         >
@@ -210,10 +228,13 @@ export default function TimerModal({
             <Defs>
               <LinearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
                 <Stop offset="0%" stopColor={ringColor} stopOpacity="1" />
-                <Stop offset="100%" stopColor={isDone ? C.accent : ringColor} stopOpacity="0.7" />
+                <Stop
+                  offset="100%"
+                  stopColor={isDone ? C.accent : ringColor}
+                  stopOpacity="0.7"
+                />
               </LinearGradient>
             </Defs>
-            {/* Track */}
             <Circle
               cx={SIZE / 2}
               cy={SIZE / 2}
@@ -222,7 +243,6 @@ export default function TimerModal({
               stroke={C.border}
               strokeWidth={STROKE}
             />
-            {/* Progress */}
             <Circle
               cx={SIZE / 2}
               cy={SIZE / 2}
@@ -236,7 +256,6 @@ export default function TimerModal({
             />
           </Svg>
 
-          {/* Center text */}
           <View style={[s.ringCenter, { width: SIZE, height: SIZE }]}>
             <Text style={[s.timeValue, isDone && { color: C.accent }]}>
               {mins}:{secs}
@@ -244,14 +263,12 @@ export default function TimerModal({
             <Text style={s.timeSub}>
               {isDone ? "✓  DONE" : running ? "REMAINING" : "PAUSED"}
             </Text>
-            {/* Subtle pct label */}
             {!isDone && (
               <Text style={s.pctLabel}>{Math.round(pct * 100)}%</Text>
             )}
           </View>
         </Animated.View>
 
-        {/* Preset chips */}
         <View style={s.presetRow}>
           {PRESETS.map((sec) => (
             <TouchableOpacity
@@ -267,23 +284,18 @@ export default function TimerModal({
           ))}
         </View>
 
-        {/* Controls */}
         <View style={s.controls}>
           <TouchableOpacity
             onPress={handleReset}
             style={s.btnSecondary}
             activeOpacity={0.75}
           >
-            <Text style={s.btnSecondaryText}>↺  RESET</Text>
+            <Text style={s.btnSecondaryText}>↺ RESET</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => !isDone && setRunning((r) => !r)}
-            style={[
-              s.btnPrimary,
-              running && s.btnPause,
-              isDone && s.btnDone,
-            ]}
+            style={[s.btnPrimary, running && s.btnPause, isDone && s.btnDone]}
             activeOpacity={0.8}
           >
             <Text style={s.btnPrimaryText}>

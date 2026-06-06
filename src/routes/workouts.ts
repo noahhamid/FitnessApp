@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { err, ok } from "../lib/response";
@@ -16,6 +16,12 @@ const setSchema = z.object({
 const exerciseInputSchema = z.object({
   exerciseName: z.string().min(1),
   sets: z.array(setSchema).min(1),
+});
+
+/** Allow empty sets while a session is in progress (logged at finish via /complete). */
+const exerciseCreateBodySchema = z.object({
+  exerciseName: z.string().min(1),
+  sets: z.array(setSchema).default([]),
 });
 
 const startSessionSchema = z.object({
@@ -75,7 +81,8 @@ async function findOwnedSession(userId: string, sessionId: string) {
 
 export const workoutsRouter = new Hono<AppEnv>().use("*", requireAuth);
 
-workoutsRouter.post("/", async (c) => {
+/** POST/GET session root — register both '' and '/' so clients match /api/workouts (no trailing slash). */
+const createSession = async (c: Context<AppEnv>) => {
   const parsed = await parseJson(c, startSessionSchema);
   if (!parsed.success) return parsed.response;
 
@@ -107,9 +114,9 @@ workoutsRouter.post("/", async (c) => {
   });
 
   return ok(c, serializeSession(session), 201);
-});
+};
 
-workoutsRouter.get("/", async (c) => {
+const listSessions = async (c: Context<AppEnv>) => {
   const query = parseQuery(c, listQuerySchema);
   if (!query.success) return query.response;
 
@@ -129,7 +136,11 @@ workoutsRouter.get("/", async (c) => {
   });
 
   return ok(c, sessions.map(serializeSession));
-});
+};
+
+// Single path (not an array) — array form was parsed as middleware and broke requireAuth's `next`.
+workoutsRouter.post("/", createSession);
+workoutsRouter.get("/", listSessions);
 
 workoutsRouter.get("/:id", async (c) => {
   const user = getUser(c);
@@ -219,7 +230,7 @@ workoutsRouter.delete("/:id", async (c) => {
 });
 
 workoutsRouter.post("/:id/exercises", async (c) => {
-  const parsed = await parseJson(c, exerciseInputSchema);
+  const parsed = await parseJson(c, exerciseCreateBodySchema);
   if (!parsed.success) return parsed.response;
 
   const user = getUser(c);
@@ -234,7 +245,7 @@ workoutsRouter.post("/:id/exercises", async (c) => {
     data: {
       sessionId,
       exerciseName: parsed.data.exerciseName,
-      sets: parsed.data.sets,
+      sets: parsed.data.sets ?? [],
     },
   });
 

@@ -130,6 +130,16 @@ exports.Prisma.UserScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.UserProfileScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  goalId: 'goalId',
+  weightKg: 'weightKg',
+  heightCm: 'heightCm',
+  age: 'age',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SessionScalarFieldEnum = {
   id: 'id',
   expiresAt: 'expiresAt',
@@ -251,6 +261,7 @@ exports.Meal = exports.$Enums.Meal = {
 
 exports.Prisma.ModelName = {
   User: 'User',
+  UserProfile: 'UserProfile',
   Session: 'Session',
   Account: 'Account',
   Verification: 'Verification',

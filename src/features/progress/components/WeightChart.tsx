@@ -1,6 +1,13 @@
-import { useWeightGoal, useWeightChart } from "@/src/features/nutrition/hooks/useWeight";
+import {
+  useWeightGoal,
+  useWeightChart,
+  useWeightLog,
+} from "@/src/features/nutrition/hooks/useWeight";
+import { fetchUserProfile } from "@/src/features/profile/services/profile.service";
 import { COLORS } from "@/src/ui/tokens/colors";
 import { FONTS } from "@/src/ui/tokens/typography";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -26,51 +33,107 @@ const PAD_Y = 10;
 
 const COLOR = COLORS.accent;
 
-export function WeightChart() {
-  const { data: pts = [], isPending } = useWeightChart();
-  const { data: goalRec } = useWeightGoal();
+type WeightChartProps = { periodMonths?: number };
 
-  const DATA =
-    pts.length >= 2
-      ? pts
-      : pts.length === 1
-        ? [pts[0], pts[0]]
-        : [];
+export function WeightChart({ periodMonths }: WeightChartProps) {
+  const { data: allPts = [], isPending } = useWeightChart();
+  const { data: rawLogs = [] } = useWeightLog();
+  const { data: goalRec } = useWeightGoal();
+  const { data: profile } = useQuery({
+    queryKey: ["user", "profile"],
+    queryFn: fetchUserProfile,
+  });
+
+  const pts = useMemo(() => {
+    if (periodMonths === undefined) return allPts;
+    const cutoff = new Date();
+    const daysBack = Math.round(periodMonths * 30);
+    cutoff.setDate(cutoff.getDate() - daysBack);
+    cutoff.setHours(0, 0, 0, 0);
+
+    const validDates = new Set(
+      rawLogs
+        .filter((log) => {
+          const [y, m, d] = log.log_date.split("-").map(Number);
+          const logDate = new Date(y, (m || 1) - 1, d || 1);
+          return logDate >= cutoff;
+        })
+        .map((log) => {
+          const [y, m, d] = log.log_date.split("-").map(Number);
+          const dt = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+          return dt.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
+        }),
+    );
+
+    return allPts.filter((pt) => validDates.has(pt.date));
+  }, [allPts, rawLogs, periodMonths]);
+
+  const baselineWeight = profile?.weightKg ?? 70;
+
+  const syntheticData = useMemo(() => {
+    if (pts.length === 0) {
+      const past = new Date();
+      past.setDate(past.getDate() - 30);
+      return [
+        {
+          w: Number(baselineWeight),
+          date: past.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+        },
+        {
+          w: Number(baselineWeight),
+          date: new Date().toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+        },
+      ];
+    }
+    if (pts.length === 1) return [pts[0], pts[0]];
+    return pts;
+  }, [pts, baselineWeight]);
+
+  const DATA = syntheticData;
+  const showChart = true;
+  const isSynthetic = pts.length < 2;
+  const lineColor = isSynthetic ? COLORS.muted : COLOR;
 
   const GOAL =
-    typeof goalRec?.goal_weight === "number" && Number.isFinite(goalRec.goal_weight)
+    typeof goalRec?.goal_weight === "number" &&
+    Number.isFinite(goalRec.goal_weight)
       ? goalRec.goal_weight
-      : pts.at(-1)?.w ?? 0;
+      : (pts.at(-1)?.w ?? baselineWeight);
 
-  const showChart = DATA.length >= 2;
-
-  const values = showChart ? DATA.map((d) => d.w) : [];
-  const min = showChart ? Math.min(...values) - 1 : 0;
-  const max = showChart ? Math.max(...values) + 1 : 1;
+  const values = DATA.map((d) => d.w);
+  const min = Math.min(...values) - 1;
+  const max = Math.max(...values) + 1;
   const rng = max - min || 1;
 
   const toX = (i: number) =>
     PAD_X +
-    ((DATA.length <= 1 ? 0 : i / (DATA.length - 1)) * (CHART_W - PAD_X * 2));
-  const toY = (v: number) =>
-    PAD_Y + ((max - v) / rng) * (CHART_H - PAD_Y * 2);
+    (DATA.length <= 1 ? 0 : i / (DATA.length - 1)) * (CHART_W - PAD_X * 2);
+  const toY = (v: number) => PAD_Y + ((max - v) / rng) * (CHART_H - PAD_Y * 2);
 
-  const linePath = showChart
-    ? DATA.map(
-        (d, i) => `${i === 0 ? "M" : "L"}${toX(i)},${toY(d.w)}`,
-      ).join(" ")
-    : "";
+  const linePath = DATA.map(
+    (d, i) => `${i === 0 ? "M" : "L"}${toX(i)},${toY(d.w)}`,
+  ).join(" ");
 
-  const areaPath = showChart
-    ? `${linePath} L${toX(DATA.length - 1)},${CHART_H} L${toX(0)},${CHART_H} Z`
-    : "";
+  const areaPath = `${linePath} L${toX(DATA.length - 1)},${CHART_H} L${toX(0)},${CHART_H} Z`;
 
   const current =
-    pts.length > 0 ? pts[pts.length - 1]?.w ?? 0 : showChart ? DATA[DATA.length - 1]?.w : 0;
+    pts.length > 0
+      ? (pts[pts.length - 1]?.w ?? baselineWeight)
+      : baselineWeight;
   const start =
     typeof goalRec?.start_weight === "number"
       ? goalRec.start_weight
-      : pts[0]?.w ?? current;
+      : (pts[0]?.w ?? baselineWeight);
 
   const dropped = +(start - current).toFixed(1);
   const journey = Math.abs(start - GOAL) || 1;
@@ -79,11 +142,13 @@ export function WeightChart() {
     100,
   );
 
-  const goalY = showChart ? toY(Math.max(GOAL, min + 0.5)) : 0;
+  const goalY = toY(Math.max(GOAL, min + 0.5));
 
   if (isPending) {
     return (
-      <View style={[s.card, { alignItems: "center", justifyContent: "center" }]}>
+      <View
+        style={[s.card, { alignItems: "center", justifyContent: "center" }]}
+      >
         <ActivityIndicator color={COLOR} />
         <Text style={s.mutedFoot}>Loading weight…</Text>
       </View>
@@ -92,12 +157,11 @@ export function WeightChart() {
 
   return (
     <View style={s.card}>
-      {/* Header */}
       <View style={s.header}>
         <View>
           <Text style={s.label}>WEIGHT</Text>
           <View style={s.valueRow}>
-            <Text style={s.value}>{pts.length ? current.toFixed(1) : "—"}</Text>
+            <Text style={s.value}>{current.toFixed(1)}</Text>
             <Text style={s.unit}>kg</Text>
           </View>
         </View>
@@ -113,18 +177,16 @@ export function WeightChart() {
         </View>
       </View>
 
-      {/* Chart */}
       {showChart ? (
         <>
           <Svg width={CHART_W} height={CHART_H} style={s.chart}>
             <Defs>
               <LinearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0%" stopColor={COLOR} stopOpacity="0.2" />
-                <Stop offset="100%" stopColor={COLOR} stopOpacity="0" />
+                <Stop offset="0%" stopColor={lineColor} stopOpacity="0.2" />
+                <Stop offset="100%" stopColor={lineColor} stopOpacity="0" />
               </LinearGradient>
             </Defs>
 
-            {/* Grid lines */}
             {[0.25, 0.5, 0.75].map((p, i) => (
               <Line
                 key={i}
@@ -138,7 +200,6 @@ export function WeightChart() {
               />
             ))}
 
-            {/* Goal dashed line */}
             <Line
               x1={PAD_X}
               y1={goalY}
@@ -161,57 +222,57 @@ export function WeightChart() {
               GOAL
             </SvgText>
 
-            {/* Area fill */}
             <Path d={areaPath} fill="url(#wGrad)" />
 
-            {/* Line */}
             <Path
               d={linePath}
               fill="none"
-              stroke={COLOR}
+              stroke={lineColor}
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
 
-            {/* Data dots */}
             {DATA.map((d, i) => (
               <Circle
                 key={`${i}-${d.date}`}
                 cx={toX(i)}
                 cy={toY(d.w)}
                 r={i === DATA.length - 1 ? 5 : 3}
-                fill={i === DATA.length - 1 ? COLOR : COLORS.bg3}
-                stroke={COLOR}
+                fill={i === DATA.length - 1 ? lineColor : COLORS.bg3}
+                stroke={lineColor}
                 strokeWidth="1.5"
               />
             ))}
           </Svg>
 
-          {/* X-axis labels */}
           <View style={s.xAxis}>
             {DATA.map((d, i) => (
               <Text
                 key={`${d.date}-${i}`}
                 style={[
                   s.xLabel,
-                  i === DATA.length - 1 && { color: COLOR },
+                  i === DATA.length - 1 && !isSynthetic && { color: COLOR },
                 ]}
               >
                 {d.date.split(/\s|,/).slice(0, 2).join(" ")}
               </Text>
             ))}
           </View>
-        </>
-      ) : (
-        <Text style={s.mutedFoot}>Log weight at least twice to show the trend chart.</Text>
-      )}
 
-      {/* Footer stats */}
+          {isSynthetic ? (
+            <Text style={s.syntheticNote}>
+              📍 This is your starting baseline. Log your weight to see real
+              progress.
+            </Text>
+          ) : null}
+        </>
+      ) : null}
+
       <View style={s.footer}>
         <View style={s.statItem}>
           <Text style={s.statVal}>
-            {pts.length ? `${start.toFixed(1)} kg` : "—"}
+            {pts.length || isSynthetic ? `${start.toFixed(1)} kg` : "—"}
           </Text>
           <Text style={s.statLabel}>START</Text>
         </View>
@@ -222,7 +283,9 @@ export function WeightChart() {
         </View>
         <View style={s.statDivider} />
         <View style={s.statItem}>
-          <Text style={[s.statVal, { color: COLOR }]}>{pts.length >= 2 ? `${progress}%` : "—"}</Text>
+          <Text style={[s.statVal, { color: COLOR }]}>
+            {pts.length >= 2 ? `${progress}%` : "—"}
+          </Text>
           <Text style={s.statLabel}>PROGRESS</Text>
         </View>
       </View>
@@ -246,6 +309,14 @@ const s = StyleSheet.create({
     color: COLORS.muted,
     paddingVertical: 28,
     textAlign: "center",
+  },
+  syntheticNote: {
+    fontFamily: FONTS.regular,
+    fontSize: 11,
+    color: COLORS.muted,
+    textAlign: "center",
+    paddingTop: 8,
+    marginBottom: 6,
   },
   header: {
     flexDirection: "row",

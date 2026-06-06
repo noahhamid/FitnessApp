@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -8,18 +8,34 @@ import {
   View,
 } from "react-native";
 
-// Fixed: import directly from tokens, NOT from @/src/theme
-import { COLORS } from "@/src/ui/tokens/colors";
-import { FONTS } from "@/src/ui/tokens/typography";
+const T = {
+  bg0: "#0A0A0C",
+  bg1: "#111114",
+  bg2: "#18181D",
+  bg3: "#222228",
+  lime: "#C8F135",
+  orange: "#FF8A00",
+  text: "#F2F2F5",
+  sub: "#7A7A8C",
+  muted: "#4A4A58",
+  border: "#FFFFFF0F",
+  borderMid: "#FFFFFF18",
+};
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-type SetData = {
+export type ExerciseSetData = {
   id: number;
   weight: string;
   reps: string;
   done: boolean;
 };
+
+export function createInitialExerciseSets(): ExerciseSetData[] {
+  return [
+    { id: 1, weight: "", reps: "", done: false },
+    { id: 2, weight: "", reps: "", done: false },
+    { id: 3, weight: "", reps: "", done: false },
+  ];
+}
 
 type Exercise = {
   id: string;
@@ -31,93 +47,19 @@ type Exercise = {
 
 type Props = {
   exercise: Exercise;
+  sets: ExerciseSetData[];
+  onSetsChange: (sets: ExerciseSetData[]) => void;
   onRemove: () => void;
   onTimerOpen: () => void;
 };
 
 type SetRowProps = {
   setNum: number;
-  set: SetData;
-  onChange: (updated: SetData) => void;
+  set: ExerciseSetData;
+  onChange: (updated: ExerciseSetData) => void;
   onDelete: () => void;
   onTimerOpen: () => void;
 };
-
-// ── Set Row ───────────────────────────────────────────────────────────────────
-
-function SetRow({ setNum, set, onChange, onDelete, onTimerOpen }: SetRowProps) {
-  const handleToggleDone = useCallback(() => {
-    const next = !set.done;
-    onChange({ ...set, done: next });
-    if (next) onTimerOpen();
-  }, [set, onChange, onTimerOpen]);
-
-  return (
-    <View style={[s.setRow, set.done && s.setRowDone]}>
-      {/* Set number badge */}
-      <View style={[s.setBadge, set.done && s.setBadgeDone]}>
-        <Text style={[s.setBadgeText, set.done && s.setBadgeTextDone]}>
-          {setNum}
-        </Text>
-      </View>
-
-      {/* Weight input */}
-      <View style={[s.setInputWrap, set.done && s.setInputWrapDone]}>
-        <TextInput
-          value={set.weight}
-          onChangeText={(v) => onChange({ ...set, weight: v })}
-          keyboardType="decimal-pad"
-          placeholder="—"
-          placeholderTextColor={COLORS.muted}
-          style={s.setInput}
-          selectTextOnFocus
-        />
-        <Text style={s.setInputUnit}>kg</Text>
-      </View>
-
-      {/* Fixed: was "×" text node — now proper Text with FONTS token */}
-      <Text style={s.setX}>×</Text>
-
-      {/* Reps input */}
-      <View style={[s.setInputWrap, set.done && s.setInputWrapDone]}>
-        <TextInput
-          value={set.reps}
-          onChangeText={(v) => onChange({ ...set, reps: v })}
-          keyboardType="number-pad"
-          placeholder="—"
-          placeholderTextColor={COLORS.muted}
-          style={s.setInput}
-          selectTextOnFocus
-        />
-        <Text style={s.setInputUnit}>reps</Text>
-      </View>
-
-      {/* Done toggle — Fixed: was "✓" / "○" text — now Ionicons */}
-      <TouchableOpacity
-        onPress={handleToggleDone}
-        style={[s.setDoneBtn, set.done && s.setDoneBtnActive]}
-        activeOpacity={0.7}
-      >
-        <Ionicons
-          name={set.done ? "checkmark" : "ellipse-outline"}
-          size={18}
-          color={set.done ? COLORS.bg : COLORS.muted}
-        />
-      </TouchableOpacity>
-
-      {/* Delete — Fixed: was "✕" text — now Ionicons */}
-      <TouchableOpacity
-        onPress={onDelete}
-        style={s.setDeleteBtn}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Ionicons name="close" size={14} color={COLORS.muted} />
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-// ── Tag → icon (replaces per-exercise emoji field) ────────────────────────────
 
 function getExerciseIcon(tag: string): keyof typeof Ionicons.glyphMap {
   switch (tag) {
@@ -136,37 +78,102 @@ function getExerciseIcon(tag: string): keyof typeof Ionicons.glyphMap {
   }
 }
 
-// ── Exercise Card ─────────────────────────────────────────────────────────────
+// ── Set row ───────────────────────────────────────────────────────────────────
+function SetRow({ setNum, set, onChange, onDelete, onTimerOpen }: SetRowProps) {
+  const handleToggleDone = useCallback(() => {
+    const next = !set.done;
+    onChange({ ...set, done: next });
+    if (next) onTimerOpen();
+  }, [set, onChange, onTimerOpen]);
 
+  return (
+    <View style={[ss.setRow, set.done && ss.setRowDone]}>
+      {/* Set number */}
+      <View style={[ss.setBadge, set.done && ss.setBadgeDone]}>
+        <Text style={[ss.setBadgeText, set.done && ss.setBadgeTextDone]}>
+          {setNum}
+        </Text>
+      </View>
+
+      {/* Weight */}
+      <View style={[ss.inputWrap, set.done && ss.inputWrapDone]}>
+        <TextInput
+          value={set.weight}
+          onChangeText={(v) => onChange({ ...set, weight: v })}
+          keyboardType="decimal-pad"
+          placeholder="—"
+          placeholderTextColor={T.muted}
+          style={ss.input}
+          selectTextOnFocus
+        />
+        <Text style={ss.inputUnit}>kg</Text>
+      </View>
+
+      <Text style={ss.cross}>×</Text>
+
+      {/* Reps */}
+      <View style={[ss.inputWrap, set.done && ss.inputWrapDone]}>
+        <TextInput
+          value={set.reps}
+          onChangeText={(v) => onChange({ ...set, reps: v })}
+          keyboardType="number-pad"
+          placeholder="—"
+          placeholderTextColor={T.muted}
+          style={ss.input}
+          selectTextOnFocus
+        />
+        <Text style={ss.inputUnit}>reps</Text>
+      </View>
+
+      {/* Done toggle */}
+      <TouchableOpacity
+        onPress={handleToggleDone}
+        style={[ss.doneBtn, set.done && ss.doneBtnActive]}
+        activeOpacity={0.7}
+      >
+        <Ionicons
+          name={set.done ? "checkmark" : "ellipse-outline"}
+          size={18}
+          color={set.done ? T.bg0 : T.muted}
+        />
+      </TouchableOpacity>
+
+      {/* Delete */}
+      <TouchableOpacity
+        onPress={onDelete}
+        style={ss.deleteBtn}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Ionicons name="close" size={14} color={T.muted} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ── Exercise Card ─────────────────────────────────────────────────────────────
 export default function ExerciseCard({
   exercise,
+  sets,
+  onSetsChange,
   onRemove,
   onTimerOpen,
 }: Props) {
-  const [sets, setSets] = useState<SetData[]>([
-    { id: 1, weight: "", reps: "", done: false },
-    { id: 2, weight: "", reps: "", done: false },
-    { id: 3, weight: "", reps: "", done: false },
-  ]);
-
   const addSet = useCallback(
     () =>
-      setSets((prev) => [
-        ...prev,
+      onSetsChange([
+        ...sets,
         { id: Date.now(), weight: "", reps: "", done: false },
       ]),
-    [],
+    [sets, onSetsChange],
   );
-
   const updateSet = useCallback(
-    (id: number, updated: SetData) =>
-      setSets((prev) => prev.map((s) => (s.id === id ? updated : s))),
-    [],
+    (id: number, updated: ExerciseSetData) =>
+      onSetsChange(sets.map((s) => (s.id === id ? updated : s))),
+    [sets, onSetsChange],
   );
-
   const removeSet = useCallback(
-    (id: number) => setSets((prev) => prev.filter((s) => s.id !== id)),
-    [],
+    (id: number) => onSetsChange(sets.filter((s) => s.id !== id)),
+    [sets, onSetsChange],
   );
 
   const doneCount = sets.filter((s) => s.done).length;
@@ -189,60 +196,58 @@ export default function ExerciseCard({
       : null;
 
   return (
-    <View style={[s.exerciseCard, allDone && s.exerciseCardDone]}>
+    <View style={[ss.card, allDone && ss.cardDone]}>
       {/* Progress bar */}
-      <View style={s.progressTrack}>
-        <View style={[s.progressFill, { width: `${progressPct * 100}%` }]} />
+      <View style={ss.progressTrack}>
+        <View
+          style={[ss.progressFill, { width: `${progressPct * 100}%` as any }]}
+        />
       </View>
 
       {/* Header */}
-      <View style={s.exerciseCardHeader}>
-        <View style={[s.exerciseIconWrap, allDone && s.exerciseIconWrapDone]}>
-          {/* Fixed: was exercise.icon emoji — now Ionicons mapped from tag */}
+      <View style={ss.cardHeader}>
+        <View style={[ss.iconWrap, allDone && ss.iconWrapDone]}>
           <Ionicons
             name={getExerciseIcon(exercise.tag)}
             size={20}
-            color={allDone ? COLORS.accent : `${COLORS.accent}99`}
+            color={allDone ? T.lime : T.lime + "80"}
           />
         </View>
 
-        <View style={s.exerciseTitleCol}>
-          <Text style={s.exerciseName} numberOfLines={1}>
+        <View style={ss.titleCol}>
+          <Text style={ss.exerciseName} numberOfLines={1}>
             {exercise.name}
           </Text>
-          <View style={s.exerciseMetaRow}>
-            <Text style={s.exerciseMuscle}>{exercise.muscle}</Text>
-            <View style={s.dot} />
-            <Text
-              style={[s.exerciseSets, doneCount > 0 && s.exerciseSetsActive]}
-            >
+          <View style={ss.metaRow}>
+            <Text style={ss.muscleName}>{exercise.muscle}</Text>
+            <View style={ss.dot} />
+            <Text style={[ss.setCount, doneCount > 0 && ss.setCountActive]}>
               {doneCount}/{sets.length} sets
             </Text>
           </View>
         </View>
 
         {volDisplay && (
-          <View style={s.volPill}>
-            <Text style={s.exerciseVol}>{volDisplay}</Text>
+          <View style={ss.volPill}>
+            <Text style={ss.volText}>{volDisplay}</Text>
           </View>
         )}
 
-        {/* Fixed: was "✕" text — now Ionicons, hitSlop fixed to object */}
         <TouchableOpacity
           onPress={onRemove}
-          style={s.exerciseRemove}
+          style={ss.removeBtn}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="close" size={16} color={COLORS.muted} />
+          <Ionicons name="close" size={16} color={T.muted} />
         </TouchableOpacity>
       </View>
 
       {/* Column headers */}
-      <View style={s.setHeaderRow}>
-        <Text style={[s.setHeaderText, { width: 28 }]}>#</Text>
-        <Text style={[s.setHeaderText, { flex: 1 }]}>WEIGHT</Text>
+      <View style={ss.colHeaders}>
+        <Text style={[ss.colHeader, { width: 32 }]}>#</Text>
+        <Text style={[ss.colHeader, { flex: 1 }]}>WEIGHT</Text>
         <View style={{ width: 22 }} />
-        <Text style={[s.setHeaderText, { flex: 1 }]}>REPS</Text>
+        <Text style={[ss.colHeader, { flex: 1 }]}>REPS</Text>
         <View style={{ width: 72 }} />
       </View>
 
@@ -258,33 +263,31 @@ export default function ExerciseCard({
         />
       ))}
 
-      {/* Add set — Fixed: was ＋ emoji text — now Ionicons */}
+      {/* Add set */}
       <TouchableOpacity
         onPress={addSet}
-        style={s.addSetBtn}
+        style={ss.addSetBtn}
         activeOpacity={0.7}
       >
-        <Ionicons name="add" size={14} color={COLORS.muted} />
-        <Text style={s.addSetText}>ADD SET</Text>
+        <Ionicons name="add" size={14} color={T.muted} />
+        <Text style={ss.addSetText}>ADD SET</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
-
-const s = StyleSheet.create({
-  exerciseCard: {
-    backgroundColor: COLORS.card,
+const ss = StyleSheet.create({
+  card: {
+    backgroundColor: T.bg2,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 22,
+    borderColor: T.borderMid,
+    borderRadius: 20,
     padding: 16,
-    marginBottom: 14,
+    marginBottom: 12,
     overflow: "hidden",
   },
-  exerciseCardDone: {
-    borderColor: `${COLORS.accent}55`,
+  cardDone: {
+    borderColor: T.lime + "55",
   },
   progressTrack: {
     position: "absolute",
@@ -292,52 +295,52 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     height: 3,
-    backgroundColor: `${COLORS.accent}18`,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
+    backgroundColor: T.lime + "18",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   progressFill: {
     height: "100%",
-    backgroundColor: COLORS.accent,
+    backgroundColor: T.lime,
     borderRadius: 99,
   },
-  exerciseCardHeader: {
+  cardHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     marginTop: 8,
     marginBottom: 14,
   },
-  exerciseIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
-    backgroundColor: `${COLORS.accent}15`,
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: T.lime + "15",
+    borderWidth: 1,
+    borderColor: T.lime + "25",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: `${COLORS.accent}25`,
   },
-  exerciseIconWrapDone: {
-    backgroundColor: `${COLORS.accent}28`,
-    borderColor: `${COLORS.accent}55`,
+  iconWrapDone: {
+    backgroundColor: T.lime + "28",
+    borderColor: T.lime + "55",
   },
-  exerciseTitleCol: { flex: 1, gap: 3 },
+  titleCol: { flex: 1, gap: 3 },
   exerciseName: {
-    fontFamily: FONTS.bold,
-    fontSize: 19,
-    color: COLORS.text,
-    letterSpacing: 0.2,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 18,
+    color: T.text,
+    letterSpacing: 0.3,
   },
-  exerciseMetaRow: {
+  metaRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  exerciseMuscle: {
-    fontFamily: FONTS.regular,
-    fontSize: 12,
-    color: COLORS.muted,
+  muscleName: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 11,
+    color: T.muted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -345,122 +348,123 @@ const s = StyleSheet.create({
     width: 3,
     height: 3,
     borderRadius: 99,
-    backgroundColor: COLORS.muted,
+    backgroundColor: T.muted,
   },
-  exerciseSets: {
-    fontFamily: FONTS.semiBold,
-    fontSize: 12,
-    color: COLORS.muted,
+  setCount: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 11,
+    color: T.muted,
   },
-  exerciseSetsActive: { color: COLORS.accent },
+  setCountActive: { color: T.lime },
   volPill: {
-    backgroundColor: `${COLORS.accent}18`,
+    backgroundColor: T.lime + "18",
     borderWidth: 1,
-    borderColor: `${COLORS.accent}35`,
+    borderColor: T.lime + "35",
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  exerciseVol: {
-    fontFamily: FONTS.bold,
+  volText: {
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
-    color: COLORS.accent,
+    color: T.lime,
     letterSpacing: 0.3,
   },
-  exerciseRemove: { padding: 6 },
-  setHeaderRow: {
+  removeBtn: { padding: 6 },
+
+  colHeaders: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 2,
     marginBottom: 6,
     gap: 8,
   },
-  setHeaderText: {
-    fontFamily: FONTS.semiBold,
+  colHeader: {
+    fontFamily: "DMSans_500Medium",
     fontSize: 10,
-    color: COLORS.muted,
+    color: T.muted,
     letterSpacing: 1,
   },
+
   setRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     marginBottom: 7,
-    paddingVertical: 1,
   },
-  setRowDone: { opacity: 0.72 },
+  setRowDone: { opacity: 0.7 },
   setBadge: {
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: COLORS.bg3,
+    backgroundColor: T.bg3,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "transparent",
   },
   setBadgeDone: {
-    backgroundColor: `${COLORS.accent}18`,
-    borderColor: `${COLORS.accent}30`,
+    backgroundColor: T.lime + "18",
+    borderColor: T.lime + "30",
   },
   setBadgeText: {
-    fontFamily: FONTS.bold,
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
-    color: COLORS.muted,
+    color: T.muted,
   },
-  setBadgeTextDone: { color: COLORS.accent },
-  setInputWrap: {
+  setBadgeTextDone: { color: T.lime },
+  inputWrap: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.bg3,
+    backgroundColor: T.bg3,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: T.border,
     borderRadius: 11,
     paddingHorizontal: 10,
-    height: 40,
+    height: 42,
   },
-  setInputWrapDone: { borderColor: `${COLORS.accent}30` },
-  setInput: {
+  inputWrapDone: { borderColor: T.lime + "30" },
+  input: {
     flex: 1,
-    fontFamily: FONTS.bold,
-    fontSize: 17,
-    color: COLORS.text,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 18,
+    color: T.text,
     padding: 0,
   },
-  setInputUnit: {
-    fontFamily: FONTS.regular,
+  inputUnit: {
+    fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: COLORS.muted,
+    color: T.muted,
     marginLeft: 2,
   },
-  setX: {
-    fontFamily: FONTS.semiBold,
+  cross: {
+    fontFamily: "DMSans_500Medium",
     fontSize: 14,
-    color: COLORS.muted,
+    color: T.muted,
     width: 14,
     textAlign: "center",
   },
-  setDoneBtn: {
-    width: 38,
-    height: 38,
+  doneBtn: {
+    width: 42,
+    height: 42,
     borderRadius: 11,
-    backgroundColor: COLORS.bg3,
+    backgroundColor: T.bg3,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: T.borderMid,
     alignItems: "center",
     justifyContent: "center",
   },
-  setDoneBtnActive: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
-    shadowColor: COLORS.accent,
+  doneBtnActive: {
+    backgroundColor: T.lime,
+    borderColor: T.lime,
+    shadowColor: T.lime,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.45,
     shadowRadius: 6,
     elevation: 4,
   },
-  setDeleteBtn: { padding: 6 },
+  deleteBtn: { padding: 6 },
   addSetBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -468,15 +472,15 @@ const s = StyleSheet.create({
     gap: 6,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: T.border,
     borderStyle: "dashed",
     borderRadius: 11,
     paddingVertical: 11,
   },
   addSetText: {
-    fontFamily: FONTS.bold,
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
-    color: COLORS.muted,
+    color: T.muted,
     letterSpacing: 1.5,
   },
 });

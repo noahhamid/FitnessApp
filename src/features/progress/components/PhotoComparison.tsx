@@ -1,7 +1,16 @@
+import { useWeightLog } from "@/src/features/nutrition/hooks/useWeight";
+import { fetchWorkoutSessions } from "@/src/features/workout/services/workout.service";
 import { COLORS } from "@/src/ui/tokens/colors";
 import { FONTS } from "@/src/ui/tokens/typography";
+import { Ionicons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system";
+import * as ImagePicker from "expo-image-picker";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Dimensions,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -11,103 +20,205 @@ import {
 const { width: SCREEN_W } = Dimensions.get("window");
 const CARD_W = Math.min(SCREEN_W, 430) - 48;
 const PHOTO_H = 180;
-const PHOTO_W = (CARD_W - 16 - 10) / 2; // 16px card padding each side, 10px gap
+const PHOTO_W = (CARD_W - 16 - 10) / 2;
 
-const MOCK_STATS = {
-  weeksAgo: 7,
-  weightDrop: "3.8 kg",
-  fatDrop: "3.8%",
-  date: "Jul 14, 2025",
-};
+const BEFORE_PATH = "progress_before.jpg";
+const AFTER_PATH = "progress_after.jpg";
+
+function progressPhotoFile(filename: string) {
+  return new FileSystem.File(FileSystem.Paths.document, filename);
+}
 
 function PhotoSlot({
   label,
   tag,
   accent,
+  imageUri,
+  showSaved,
+  onPick,
+  onDelete,
 }: {
   label: string;
   tag: string;
   accent?: boolean;
+  imageUri: string | null;
+  showSaved: boolean;
+  onPick: () => void;
+  onDelete: () => void;
 }) {
   return (
-    <View style={[s.photoSlot, accent && s.photoSlotAccent]}>
-      {/* Placeholder silhouette lines */}
-      <View style={s.silhouette}>
-        <View
-          style={[
-            s.silhouetteLine,
-            { width: 28, height: 28, borderRadius: 14, marginBottom: 8 },
-          ]}
-        />
-        <View
-          style={[s.silhouetteLine, { width: 18, height: 52, borderRadius: 6 }]}
-        />
-        <View
-          style={[
-            s.silhouetteLine,
-            { width: 30, height: 28, borderRadius: 6, marginTop: 4 },
-          ]}
-        />
-      </View>
+    <TouchableOpacity
+      style={[s.photoSlot, accent && s.photoSlotAccent]}
+      activeOpacity={0.7}
+      onPress={onPick}
+      onLongPress={() => {
+        if (!imageUri) return;
+        Alert.alert("Remove photo?", "This will delete the saved progress photo.", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Remove", style: "destructive", onPress: onDelete },
+        ]);
+      }}
+    >
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} style={s.photoImg} resizeMode="cover" />
+      ) : (
+        <View style={s.emptyState}>
+          <Ionicons name="camera-outline" size={28} color={COLORS.muted} />
+          <Text style={s.tapText}>TAP TO ADD</Text>
+        </View>
+      )}
 
-      {/* Label pill */}
       <View style={[s.tagPill, accent && s.tagPillAccent]}>
         <Text style={[s.tagText, accent && s.tagTextAccent]}>{tag}</Text>
       </View>
 
-      {/* Upload hint */}
-      <TouchableOpacity style={s.uploadBtn} activeOpacity={0.7}>
-        <Text style={[s.uploadIcon, accent && { color: COLORS.blue }]}>＋</Text>
-      </TouchableOpacity>
+      {showSaved ? (
+        <View style={s.savedBadge}>
+          <Text style={s.savedText}>SAVED</Text>
+        </View>
+      ) : null}
 
-      <Text style={[s.photoLabel, accent && { color: COLORS.blue }]}>
-        {label}
-      </Text>
-    </View>
+      <Text style={[s.photoLabel, accent && { color: COLORS.blue }]}>{label}</Text>
+    </TouchableOpacity>
   );
 }
 
 export function PhotoComparison() {
+  const [beforePhoto, setBeforePhoto] = useState<string | null>(null);
+  const [afterPhoto, setAfterPhoto] = useState<string | null>(null);
+  const [beforeSaved, setBeforeSaved] = useState(false);
+  const [afterSaved, setAfterSaved] = useState(false);
+  const { data: weightLogs = [] } = useWeightLog();
+  const { data: completedWorkouts = [] } = useQuery({
+    queryKey: ["progress", "workouts"],
+    queryFn: () => fetchWorkoutSessions("?limit=60&completed=true"),
+  });
+
+  useEffect(() => {
+    async function loadSavedPhotos() {
+      const beforeFile = progressPhotoFile(BEFORE_PATH);
+      const afterFile = progressPhotoFile(AFTER_PATH);
+      if (beforeFile.exists) setBeforePhoto(beforeFile.uri);
+      if (afterFile.exists) setAfterPhoto(afterFile.uri);
+    }
+    void loadSavedPhotos();
+  }, []);
+
+  const sortedWeights = useMemo(
+    () => [...weightLogs].sort((a, b) => a.log_date.localeCompare(b.log_date)),
+    [weightLogs],
+  );
+  const first = sortedWeights[0];
+  const last = sortedWeights[sortedWeights.length - 1];
+
+  const weightDeltaLabel = useMemo(() => {
+    if (!first || !last) return "—";
+    const diff = Number((last.weight - first.weight).toFixed(1));
+    return `${diff >= 0 ? "+" : "−"} ${Math.abs(diff).toFixed(1)} kg`;
+  }, [first, last]);
+
+  const durationWeeksLabel = useMemo(() => {
+    if (!first || !last) return "—";
+    const start = new Date(first.log_date).getTime();
+    const end = new Date(last.log_date).getTime();
+    const weeks = Math.max(0, Math.round((end - start) / (1000 * 60 * 60 * 24 * 7)));
+    return `${weeks} wks`;
+  }, [first, last]);
+
+  function flashSaved(slot: "before" | "after") {
+    const setSaved = slot === "before" ? setBeforeSaved : setAfterSaved;
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  }
+
+  async function savePhoto(slot: "before" | "after", sourceUri: string) {
+    const filename = slot === "before" ? BEFORE_PATH : AFTER_PATH;
+    const dest = progressPhotoFile(filename);
+    if (dest.exists) dest.delete();
+    new FileSystem.File(sourceUri).copy(dest);
+    if (slot === "before") setBeforePhoto(dest.uri);
+    else setAfterPhoto(dest.uri);
+    flashSaved(slot);
+  }
+
+  async function deletePhoto(slot: "before" | "after") {
+    const filename = slot === "before" ? BEFORE_PATH : AFTER_PATH;
+    const file = progressPhotoFile(filename);
+    if (file.exists) file.delete();
+    if (slot === "before") setBeforePhoto(null);
+    else setAfterPhoto(null);
+  }
+
+  async function pickPhoto(slot: "before" | "after") {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      await savePhoto(slot, result.assets[0].uri);
+    }
+  }
+
   return (
     <View style={s.card}>
-      {/* Header */}
       <View style={s.header}>
         <View>
           <Text style={s.sectionLabel}>PROGRESS PHOTOS</Text>
           <Text style={s.subtitle}>Visual transformation over time</Text>
         </View>
         <View style={s.weekBadge}>
-          <Text style={s.weekText}>WK {MOCK_STATS.weeksAgo}</Text>
+          <Text style={s.weekText}>{durationWeeksLabel}</Text>
         </View>
       </View>
 
-      {/* Photo slots */}
       <View style={s.photosRow}>
-        <PhotoSlot label="BEFORE" tag="Week 1" />
+        <PhotoSlot
+          label="BEFORE"
+          tag={first?.log_date ?? "Before"}
+          imageUri={beforePhoto}
+          showSaved={beforeSaved}
+          onPick={() => {
+            void pickPhoto("before");
+          }}
+          onDelete={() => {
+            void deletePhoto("before");
+          }}
+        />
         <View style={s.divider}>
           <View style={s.dividerLine} />
           <Text style={s.vsText}>VS</Text>
           <View style={s.dividerLine} />
         </View>
-        <PhotoSlot label="AFTER" tag={MOCK_STATS.date} accent />
+        <PhotoSlot
+          label="AFTER"
+          tag={last?.log_date ?? "After"}
+          accent
+          imageUri={afterPhoto}
+          showSaved={afterSaved}
+          onPick={() => {
+            void pickPhoto("after");
+          }}
+          onDelete={() => {
+            void deletePhoto("after");
+          }}
+        />
       </View>
 
-      {/* Footer delta stats */}
       <View style={s.footer}>
         <View style={s.statItem}>
-          <Text style={s.statVal}>↓ {MOCK_STATS.weightDrop}</Text>
+          <Text style={s.statVal}>{weightDeltaLabel}</Text>
           <Text style={s.statLabel}>WEIGHT</Text>
         </View>
         <View style={s.statDivider} />
         <View style={s.statItem}>
           <Text style={[s.statVal, { color: COLORS.blue }]}>
-            ↓ {MOCK_STATS.fatDrop}
+            {completedWorkouts.length}
           </Text>
-          <Text style={s.statLabel}>BODY FAT</Text>
+          <Text style={s.statLabel}>WORKOUTS</Text>
         </View>
         <View style={s.statDivider} />
         <View style={s.statItem}>
-          <Text style={s.statVal}>{MOCK_STATS.weeksAgo} wks</Text>
+          <Text style={s.statVal}>{durationWeeksLabel}</Text>
           <Text style={s.statLabel}>DURATION</Text>
         </View>
       </View>
@@ -124,7 +235,6 @@ const s = StyleSheet.create({
     padding: 16,
   },
 
-  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -159,7 +269,6 @@ const s = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // Photo row
   photosRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -179,22 +288,27 @@ const s = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
   },
+  photoImg: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+  },
   photoSlotAccent: {
     borderColor: `${COLORS.blue}50`,
     backgroundColor: `${COLORS.blue}08`,
   },
 
-  // Placeholder silhouette
-  silhouette: {
+  emptyState: {
     alignItems: "center",
-    opacity: 0.15,
-    marginBottom: 8,
+    gap: 8,
   },
-  silhouetteLine: {
-    backgroundColor: COLORS.muted,
+  tapText: {
+    fontFamily: FONTS.bold,
+    fontSize: 9,
+    color: COLORS.muted,
+    letterSpacing: 2,
   },
 
-  // Tag pill (top-left corner)
   tagPill: {
     position: "absolute",
     top: 10,
@@ -220,31 +334,33 @@ const s = StyleSheet.create({
     color: COLORS.blue,
   },
 
-  // Upload button
-  uploadBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  savedBadge: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: `${COLORS.accent}22`,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.bg3,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 6,
+    borderColor: `${COLORS.accent}50`,
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  uploadIcon: {
-    fontSize: 18,
-    color: COLORS.muted,
-    lineHeight: 22,
+  savedText: {
+    fontFamily: FONTS.bold,
+    fontSize: 9,
+    color: COLORS.accent,
+    letterSpacing: 1.5,
   },
+
   photoLabel: {
+    position: "absolute",
+    bottom: 10,
     fontFamily: FONTS.bold,
     fontSize: 9,
     color: COLORS.muted,
     letterSpacing: 2,
   },
 
-  // VS divider
   divider: {
     width: 10,
     alignItems: "center",
@@ -264,7 +380,6 @@ const s = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // Footer stats — mirrors BodyFatChart exactly
   footer: {
     flexDirection: "row",
     alignItems: "center",

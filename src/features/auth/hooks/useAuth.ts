@@ -123,13 +123,13 @@ export function useSignUp() {
 
 export function useSignOut() {
   const queryClient = useQueryClient();
-  const { reset }   = useAuthStore();
 
   return useMutation({
     mutationFn: signOut,
-    onSuccess: () => {
-      reset();
+    onSuccess: async () => {
       queryClient.clear();
+      await queryClient.resetQueries();
+      useAuthStore.getState().reset();
     },
   });
 }

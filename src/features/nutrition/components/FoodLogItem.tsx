@@ -1,4 +1,6 @@
-import { COLORS, FONTS, spacing } from "@/src/theme";
+import { COLORS } from "@/src/ui/tokens/colors";
+import { spacing } from "@/src/ui/tokens/spacing";
+import { FONTS } from "@/src/ui/tokens/typography";
 import { StyleSheet, Text, View } from "react-native";
 import type { MealLogEntry } from "../types/nutrition.types";
 

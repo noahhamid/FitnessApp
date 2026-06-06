@@ -1,0 +1,130 @@
+{
+  "apiRoutes": [],
+  "htmlRoutes": [
+    {
+      "file": "./(app)/(tabs)/index.tsx",
+      "page": "/(app)/(tabs)/index",
+      "namedRegex": "^(?:/\\(app\\))?(?:/\\(tabs\\))?(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./index.tsx",
+      "page": "/index",
+      "namedRegex": "^/(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./(auth)/onboarding/ready.tsx",
+      "page": "/(auth)/onboarding/ready",
+      "namedRegex": "^(?:/\\(auth\\))?/onboarding/ready(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./(auth)/onboarding/goals.tsx",
+      "page": "/(auth)/onboarding/goals",
+      "namedRegex": "^(?:/\\(auth\\))?/onboarding/goals(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./(app)/(tabs)/train.tsx",
+      "page": "/(app)/(tabs)/train",
+      "namedRegex": "^(?:/\\(app\\))?(?:/\\(tabs\\))?/train(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./(auth)/onboarding/profile.tsx",
+      "page": "/(auth)/onboarding/profile",
+      "namedRegex": "^(?:/\\(auth\\))?/onboarding/profile(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./(auth)/welcome.tsx",
+      "page": "/(auth)/welcome",
+      "namedRegex": "^(?:/\\(auth\\))?/welcome(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./(auth)/sign-up.tsx",
+      "page": "/(auth)/sign-up",
+      "namedRegex": "^(?:/\\(auth\\))?/sign\\-up(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./(auth)/sign-in.tsx",
+      "page": "/(auth)/sign-in",
+      "namedRegex": "^(?:/\\(auth\\))?/sign\\-in(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./(app)/(tabs)/profile.tsx",
+      "page": "/(app)/(tabs)/profile",
+      "namedRegex": "^(?:/\\(app\\))?(?:/\\(tabs\\))?/profile(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./(app)/(tabs)/progress.tsx",
+      "page": "/(app)/(tabs)/progress",
+      "namedRegex": "^(?:/\\(app\\))?(?:/\\(tabs\\))?/progress(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "expo-router/build/views/Sitemap.js",
+      "page": "/_sitemap",
+      "namedRegex": "^/_sitemap(?:/)?$",
+      "routeKeys": {},
+      "generated": true
+    },
+    {
+      "file": "./(app)/(tabs)/nutrition.tsx",
+      "page": "/(app)/(tabs)/nutrition",
+      "namedRegex": "^(?:/\\(app\\))?(?:/\\(tabs\\))?/nutrition(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./(app)/focus-mode.tsx",
+      "page": "/(app)/focus-mode",
+      "namedRegex": "^(?:/\\(app\\))?/focus\\-mode(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./(app)/workout/active.tsx",
+      "page": "/(app)/workout/active",
+      "namedRegex": "^(?:/\\(app\\))?/workout/active(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./(auth)/onboarding/nutrition-goals.tsx",
+      "page": "/(auth)/onboarding/nutrition-goals",
+      "namedRegex": "^(?:/\\(auth\\))?/onboarding/nutrition\\-goals(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./(app)/workout/[id].tsx",
+      "page": "/(app)/workout/[id]",
+      "namedRegex": "^(?:/\\(app\\))?/workout/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      }
+    },
+    {
+      "file": "./(app)/exercise/[id].tsx",
+      "page": "/(app)/exercise/[id]",
+      "namedRegex": "^(?:/\\(app\\))?/exercise/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      }
+    }
+  ],
+  "notFoundRoutes": [
+    {
+      "file": "./+not-found.tsx",
+      "page": "/+not-found",
+      "namedRegex": "^(?:/(?<notfound>.+?))?(?:/)?$",
+      "routeKeys": {
+        "notfound": "not-found"
+      }
+    }
+  ],
+  "redirects": [],
+  "rewrites": []
+}

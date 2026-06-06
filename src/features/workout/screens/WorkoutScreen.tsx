@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,54 +14,126 @@ import {
   View,
 } from "react-native";
 
-// ── Correct imports — NOT from @/src/theme ───────────────────────────────────
 import {
+  addExerciseToSession,
+  completeWorkoutSession,
+  createWorkoutSession,
+  deleteWorkoutSession,
+  EXERCISES,
   WORKOUT_TEMPLATES,
   fetchWorkoutHistory,
   type WorkoutHistoryRow,
 } from "@/src/features/workout/services/workout.service";
-import { COLORS } from "@/src/ui/tokens/colors";
-import { FONTS } from "@/src/ui/tokens/typography";
-import { useQuery } from "@tanstack/react-query";
+import { api } from "@/src/lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import ExerciseCard from "@/src/features/workout/components/ExerciseCard";
-import HistoryCard from "@/src/features/workout/components/HistoryCard";
+import ExerciseCard, {
+  createInitialExerciseSets,
+  type ExerciseSetData,
+} from "@/src/features/workout/components/ExerciseCard";
 import LibrarySheet from "@/src/features/workout/components/LibrarySheet";
-import ProgressPhotoSection from "@/src/features/workout/components/ProgressPhotoSection";
 import TimerModal from "@/src/features/workout/components/TimerModal";
 import WorkoutHeader from "@/src/features/workout/components/WorkoutHeader";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ── Design tokens (identical to DashboardScreen) ──────────────────────────────
+const T = {
+  bg0: "#0A0A0C",
+  bg1: "#111114",
+  bg2: "#18181D",
+  bg3: "#222228",
+  lime: "#C8F135",
+  red: "#FF3D3D",
+  orange: "#FF8A00",
+  blue: "#3D8EFF",
+  purple: "#9B6DFF",
+  text: "#F2F2F5",
+  sub: "#7A7A8C",
+  muted: "#4A4A58",
+  border: "#FFFFFF0F",
+  borderMid: "#FFFFFF18",
+};
 
+// ── Types ─────────────────────────────────────────────────────────────────────
 type Exercise = {
   id: string;
   name: string;
   muscle: string;
   tag: string;
   uid: string;
+  sessionExerciseId?: string;
 };
+
+function mapSetsForComplete(
+  sets: ExerciseSetData[],
+): Array<{ reps?: number; weight?: number; completed?: boolean }> {
+  const rows = sets.length > 0 ? sets : createInitialExerciseSets();
+  return rows.map((s) => ({
+    reps: Math.max(
+      0,
+      Number.parseInt(String(s.reps || "").replace(/\D/g, "") || "0", 10) || 0,
+    ),
+    weight: Math.max(
+      0,
+      Number(String(s.weight || "").replace(",", ".")) || 0,
+    ),
+    completed: s.done,
+  }));
+}
 
 type Template = {
   id: string;
   name: string;
-  tag: string; // e.g. "Chest · Shoulders · Triceps"
+  tag: string;
   icon: string;
 };
 
-type HistorySession = WorkoutHistoryRow;
+// ── Template → default exercises map ─────────────────────────────────────────
+// When a user taps a template, these exercises are pre-loaded so they can
+// start immediately without confusion.
+const TEMPLATE_EXERCISES: Record<string, string[]> = {
+  t1: ["e1", "e2", "e3", "e9", "e13"], // Push: Bench, Incline DB, Cable Fly, OHP, Tricep
+  t2: ["e5", "e7", "e8", "e6", "e12"], // Pull: Deadlift, BB Row, Lat PD, Pull-Up, Curl
+  t3: ["e15", "e16", "e17", "e18"], // Legs: Squat, RDL, Leg Press, Lunges
+  t4: ["e1", "e5", "e15", "e9", "e19"], // Full body
+};
 
-// ─── Animated Template Row ────────────────────────────────────────────────────
+const TEMPLATE_ACCENTS = [T.lime, T.orange, T.blue, T.purple];
 
-function TemplateRow({
+// ── Shared layout primitives (mirrors Dashboard) ──────────────────────────────
+function SectionGap() {
+  return <View style={{ height: 16 }} />;
+}
+
+function SectionLabel({
+  label,
+  icon,
+}: {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}) {
+  return (
+    <View style={s.sectionLabelRow}>
+      <Ionicons name={icon} size={12} color={T.muted} />
+      <Text style={s.sectionLabel}>{label}</Text>
+    </View>
+  );
+}
+
+// ── Template card ─────────────────────────────────────────────────────────────
+function TemplateCard({
   tpl,
   index,
   onPress,
+  disabled,
 }: {
   tpl: Template;
   index: number;
   onPress: () => void;
+  disabled?: boolean;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
+  const accent = TEMPLATE_ACCENTS[index % TEMPLATE_ACCENTS.length];
+  const presetIds = TEMPLATE_EXERCISES[tpl.id] ?? [];
 
   const onPressIn = () =>
     Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start();
@@ -73,127 +144,410 @@ function TemplateRow({
       useNativeDriver: true,
     }).start();
 
-  // Subtle accent stripe grows slightly per row
-  const accentW = 3 + index * 0.5;
-
   return (
-    <Animated.View style={{ transform: [{ scale }], marginBottom: 10 }}>
+    <Animated.View style={{ transform: [{ scale }], marginBottom: 2 }}>
       <TouchableOpacity
+        disabled={disabled}
         onPress={onPress}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         activeOpacity={1}
-        style={s.templateRow}
+        style={s.templateCard}
       >
-        <View style={[s.templateStripe, { width: accentW }]} />
+        <View style={[s.templateStripe, { backgroundColor: accent }]} />
+        <View
+          style={[
+            s.templateIconWrap,
+            { backgroundColor: accent + "18", borderColor: accent + "30" },
+          ]}
+        >
+          <Ionicons name="barbell-outline" size={18} color={accent} />
+        </View>
         <View style={s.templateContent}>
           <Text style={s.templateName}>{tpl.name}</Text>
-          {/* Fixed: was using tpl.exercises (undefined) — now shows tpl.tag */}
           <Text style={s.templateMeta}>{tpl.tag}</Text>
+          <Text style={[s.templateExCount, { color: accent }]}>
+            {presetIds.length} exercises pre-loaded
+          </Text>
         </View>
-        <Ionicons
-          name="chevron-forward"
-          size={18}
-          color={COLORS.muted}
-          style={{ paddingRight: 16, opacity: 0.5 }}
-        />
+        <View
+          style={[
+            s.startChip,
+            { backgroundColor: accent + "18", borderColor: accent + "30" },
+          ]}
+        >
+          <Text style={[s.startChipText, { color: accent }]}>START</Text>
+          <Ionicons name="chevron-forward" size={12} color={accent} />
+        </View>
       </TouchableOpacity>
     </Animated.View>
   );
 }
 
-// ─── Tab Button ───────────────────────────────────────────────────────────────
-
-function TabButton({
-  label,
-  active,
-  onPress,
+// ── Active workout: step indicator ────────────────────────────────────────────
+function WorkoutSteps({
+  exerciseCount,
+  doneCount,
 }: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
+  exerciseCount: number;
+  doneCount: number;
 }) {
+  if (exerciseCount === 0) return null;
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={[s.tabBtn, active && s.tabBtnActive]}
-      activeOpacity={0.8}
-    >
-      {active && <View style={s.tabBtnIndicator} />}
-      <Text style={[s.tabBtnText, active && s.tabBtnTextActive]}>{label}</Text>
-    </TouchableOpacity>
+    <View style={s.stepsRow}>
+      {Array.from({ length: exerciseCount }).map((_, i) => (
+        <View
+          key={i}
+          style={[
+            s.stepDot,
+            i < doneCount
+              ? s.stepDotDone
+              : i === doneCount
+                ? s.stepDotActive
+                : s.stepDotIdle,
+          ]}
+        />
+      ))}
+    </View>
   );
 }
 
-// ─── Empty State ──────────────────────────────────────────────────────────────
-
+// ── Empty exercise state ───────────────────────────────────────────────────────
 function EmptyExercises({ onAdd }: { onAdd: () => void }) {
   return (
     <TouchableOpacity onPress={onAdd} style={s.emptyCard} activeOpacity={0.8}>
       <View style={s.emptyIconWrap}>
-        <Ionicons name="add" size={28} color={COLORS.accent} />
+        <Ionicons name="add" size={26} color={T.lime} />
       </View>
-      <Text style={s.emptyTitle}>NO EXERCISES YET</Text>
-      <Text style={s.emptyHint}>Tap to add your first exercise</Text>
+      <Text style={s.emptyTitle}>ADD YOUR FIRST EXERCISE</Text>
+      <Text style={s.emptyHint}>Tap to browse the exercise library</Text>
     </TouchableOpacity>
   );
 }
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
+// ── History row ───────────────────────────────────────────────────────────────
+function HistoryRow({
+  session,
+  isLast,
+}: {
+  session: WorkoutHistoryRow;
+  isLast: boolean;
+}) {
+  return (
+    <View style={[s.historyRow, isLast && { borderBottomWidth: 0 }]}>
+      <View style={s.historyLeft}>
+        <Text style={s.historyName} numberOfLines={1}>
+          {session.name}
+        </Text>
+        <Text style={s.historyMeta}>
+          {session.date} · {session.duration}
+        </Text>
+      </View>
+      <View style={s.historyRight}>
+        <Text style={s.historyVol}>{session.volume}</Text>
+        <Text style={s.historySets}>{session.sets} sets</Text>
+      </View>
+    </View>
+  );
+}
+
+// ── Main Screen ───────────────────────────────────────────────────────────────
+const WORKOUT_HISTORY_LIST_KEY = ["workouts", "history", "list"] as const;
 
 export default function WorkoutScreen() {
+  const queryClient = useQueryClient();
   const [activeWorkout, setActiveWorkout] = useState(false);
-  const [workoutName, setWorkoutName] = useState("Upper Body");
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [sessionStarting, setSessionStarting] = useState(false);
+  const [finishingWorkout, setFinishingWorkout] = useState(false);
+
+  const [workoutName, setWorkoutName] = useState("My Workout");
   const [startTime, setStartTime] = useState<number | null>(null);
-  // Fixed: was any[] — now properly typed
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [exerciseSetsByUid, setExerciseSetsByUid] = useState<
+    Record<string, ExerciseSetData[]>
+  >({});
   const [showLibrary, setShowLibrary] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
-  const [showPhotos, setShowPhotos] = useState(false);
   const [editingName, setEditingName] = useState(false);
 
+  /** Synchronous guard so Finish / start cannot double-fire before state updates. */
+  const workoutSaveBusyRef = useRef(false);
+
+  const workoutNameRef = useRef(workoutName);
+  const exercisesRef = useRef(exercises);
+  const exerciseSetsRef = useRef(exerciseSetsByUid);
+  const activeSessionIdRef = useRef(activeSessionId);
+
+  workoutNameRef.current = workoutName;
+  exercisesRef.current = exercises;
+  exerciseSetsRef.current = exerciseSetsByUid;
+  activeSessionIdRef.current = activeSessionId;
+
   const { data: historyRows = [], isPending: historyLoading } = useQuery({
-    queryKey: ["workouts", "history", "list"] as const,
-    queryFn: () => fetchWorkoutHistory(50),
+    queryKey: WORKOUT_HISTORY_LIST_KEY,
+    queryFn: () => fetchWorkoutHistory(20),
   });
 
-  const startWorkout = (name = "Upper Body") => {
-    setWorkoutName(name);
+  const resetActiveWorkoutState = useCallback(() => {
+    setActiveWorkout(false);
     setExercises([]);
-    setStartTime(Date.now());
-    setActiveWorkout(true);
+    setExerciseSetsByUid({});
+    setStartTime(null);
+    setEditingName(false);
+    setActiveSessionId(null);
+  }, []);
+
+  const handleSetsChange = useCallback(
+    (uid: string, sets: ExerciseSetData[]) => {
+      setExerciseSetsByUid((prev) => ({ ...prev, [uid]: sets }));
+    },
+    [],
+  );
+
+  const finalizeWorkoutOnServer = useCallback(async () => {
+    const sid = activeSessionIdRef.current;
+    const exList = exercisesRef.current;
+    const setsByUid = exerciseSetsRef.current;
+
+    try {
+      if (!sid) {
+        resetActiveWorkoutState();
+        return;
+      }
+
+      if (exList.length === 0) {
+        try {
+          await deleteWorkoutSession(sid);
+        } catch (e) {
+          Alert.alert(
+            "Couldn't cancel workout",
+            e instanceof Error ? e.message : "Unknown error",
+          );
+          return;
+        }
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["workouts", "history", "list"] }),
+          queryClient.invalidateQueries({ queryKey: ["dashboard", "workouts", "completed"] }),
+          queryClient.invalidateQueries({ queryKey: ["dashboard", "workouts", "open"] }),
+          queryClient.invalidateQueries({ queryKey: ["progress", "workouts"] }),
+        ]);
+        resetActiveWorkoutState();
+        return;
+      }
+
+      const exercisePayload = exList.map((ex) => ({
+        exerciseName: ex.name,
+        sets: mapSetsForComplete(setsByUid[ex.uid] ?? []),
+      }));
+
+      await completeWorkoutSession(
+        sid,
+        workoutNameRef.current.trim() || "My Workout",
+        exercisePayload,
+      );
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["workouts", "history", "list"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard", "workouts", "completed"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard", "workouts", "open"] }),
+        queryClient.invalidateQueries({ queryKey: ["progress", "workouts"] }),
+      ]);
+      resetActiveWorkoutState();
+    } catch (e) {
+      Alert.alert(
+        "Couldn't save workout",
+        e instanceof Error ? e.message : "Unknown error",
+      );
+    }
+  }, [queryClient, resetActiveWorkoutState]);
+
+  const exerciseCount = exercises.length;
+
+  const syncExerciseToSession = useCallback(
+    async (sessionId: string, ex: Exercise) => {
+      const row = await addExerciseToSession(sessionId, ex.name);
+      setExercises((prev) =>
+        prev.map((item) =>
+          item.uid === ex.uid
+            ? { ...item, sessionExerciseId: row.id }
+            : item,
+        ),
+      );
+    },
+    [],
+  );
+
+  const startFromTemplate = async (tpl: Template) => {
+    if (sessionStarting || workoutSaveBusyRef.current || finishingWorkout) return;
+    setSessionStarting(true);
+    try {
+      let sessionId: string;
+      try {
+        const session = await createWorkoutSession(tpl.name);
+        sessionId = session.id;
+        setActiveSessionId(sessionId);
+      } catch (e) {
+        Alert.alert(
+          "Could not start workout",
+          e instanceof Error ? e.message : "Try again.",
+        );
+        setActiveSessionId(null);
+        return;
+      }
+
+      const ids = TEMPLATE_EXERCISES[tpl.id] ?? [];
+      const preloaded: Exercise[] = ids
+        .map((eid, i) => {
+          const ex = (EXERCISES as typeof EXERCISES).find((e) => e.id === eid);
+          if (!ex) return null;
+          return {
+            ...ex,
+            uid: `${ex.id}_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 8)}`,
+          };
+        })
+        .filter(Boolean) as Exercise[];
+
+      const initialSets: Record<string, ExerciseSetData[]> = {};
+      for (const ex of preloaded) {
+        initialSets[ex.uid] = createInitialExerciseSets();
+      }
+
+      setWorkoutName(tpl.name);
+      setExercises(preloaded);
+      setExerciseSetsByUid(initialSets);
+      setStartTime(Date.now());
+      setActiveWorkout(true);
+
+      for (const ex of preloaded) {
+        try {
+          await syncExerciseToSession(sessionId, ex);
+        } catch (e) {
+          Alert.alert(
+            "Exercise not synced",
+            e instanceof Error ? e.message : "Check your connection.",
+          );
+        }
+      }
+    } finally {
+      setSessionStarting(false);
+    }
   };
 
-  const finishWorkout = () =>
-    Alert.alert("Finish Workout?", "Your session will be saved to history.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "FINISH",
-        style: "destructive",
-        onPress: () => {
-          setActiveWorkout(false);
-          setExercises([]);
-          setStartTime(null);
+  const startBlank = async () => {
+    if (sessionStarting || workoutSaveBusyRef.current || finishingWorkout) return;
+    setSessionStarting(true);
+    try {
+      try {
+        const session = await createWorkoutSession("My Workout");
+        setActiveSessionId(session.id);
+      } catch (e) {
+        Alert.alert(
+          "Could not start workout",
+          e instanceof Error ? e.message : "Try again.",
+        );
+        setActiveSessionId(null);
+        return;
+      }
+
+      setWorkoutName("My Workout");
+      setExercises([]);
+      setExerciseSetsByUid({});
+      setStartTime(Date.now());
+      setActiveWorkout(true);
+    } finally {
+      setSessionStarting(false);
+    }
+  };
+
+  const finishWorkout = useCallback(() => {
+    Alert.alert(
+      "Finish Workout?",
+      exerciseCount === 0
+        ? "No exercises logged. Are you sure?"
+        : `${exerciseCount} exercise${exerciseCount !== 1 ? "s" : ""} will be saved to your history.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "FINISH",
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              if (workoutSaveBusyRef.current) return;
+              workoutSaveBusyRef.current = true;
+              setFinishingWorkout(true);
+              try {
+                await finalizeWorkoutOnServer();
+              } finally {
+                workoutSaveBusyRef.current = false;
+                setFinishingWorkout(false);
+              }
+            })();
+          },
         },
-      },
-    ]);
+      ],
+      { cancelable: true },
+    );
+  }, [exerciseCount, finalizeWorkoutOnServer]);
 
-  // Fixed: typed properly, uid generated cleanly
-  const addExercise = (ex: Omit<Exercise, "uid">) =>
-    setExercises((prev) => [...prev, { ...ex, uid: `${ex.id}_${Date.now()}` }]);
+  const addExercise = useCallback(
+    async (ex: Omit<Exercise, "uid" | "sessionExerciseId">) => {
+      const uid = `${ex.id}_${Date.now()}_${Math.random()}`;
+      const next: Exercise = { ...ex, uid };
+      setExercises((prev) => [...prev, next]);
+      setExerciseSetsByUid((prev) => ({
+        ...prev,
+        [uid]: createInitialExerciseSets(),
+      }));
 
-  const removeExercise = (uid: string) =>
-    setExercises((prev) => prev.filter((e) => e.uid !== uid));
+      const sid = activeSessionIdRef.current;
+      if (!sid) return;
+
+      try {
+        await syncExerciseToSession(sid, next);
+      } catch (e) {
+        Alert.alert(
+          "Exercise not synced",
+          e instanceof Error ? e.message : "Check your connection.",
+        );
+      }
+    },
+    [syncExerciseToSession],
+  );
+
+  const removeExercise = useCallback(
+    async (uid: string) => {
+      const sid = activeSessionIdRef.current;
+      const target = exercisesRef.current.find((e) => e.uid === uid);
+      if (sid && target?.sessionExerciseId) {
+        try {
+          await api.delete(
+            `/api/workouts/${sid}/exercises/${target.sessionExerciseId}`,
+          );
+        } catch {
+          /* best-effort: still drop locally */
+        }
+      }
+      setExerciseSetsByUid((prev) => {
+        const next = { ...prev };
+        delete next[uid];
+        return next;
+      });
+      setExercises((prev) => prev.filter((e) => e.uid !== uid));
+    },
+    [],
+  );
 
   return (
     <View style={s.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.bg} />
+      <StatusBar barStyle="light-content" backgroundColor={T.bg0} />
 
       {activeWorkout && startTime != null && (
         <WorkoutHeader
           startTime={startTime}
           name={workoutName}
           onFinish={finishWorkout}
+          finishDisabled={finishingWorkout}
         />
       )}
 
@@ -206,57 +560,84 @@ export default function WorkoutScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ── Idle page header ── */}
+        {/* ── IDLE HEADER ── */}
         {!activeWorkout && (
-          <View style={s.pageHeader}>
-            <TouchableOpacity
-              onPress={() => router.push("/(app)/(tabs)")}
-              activeOpacity={0.7}
-              style={s.backBtn}
-            >
-              <Ionicons name="arrow-back" size={14} color={COLORS.text} />
-              <Text style={s.backBtnText}>Home</Text>
-            </TouchableOpacity>
-
-            <View style={s.pageTitleBlock}>
-              <Text style={s.pageTitle}>WORKOUT</Text>
-              <View style={s.pageTitleUnderline} />
+          <View style={s.header}>
+            <View style={s.headerLeft}>
+              <View style={s.datePill}>
+                <Ionicons name="barbell-outline" size={10} color={T.muted} />
+                <Text style={s.dateText}>TRAINING</Text>
+              </View>
+              <Text style={s.greeting}>READY TO WORK,</Text>
+              <Text style={s.heroName}>TRAIN 💪</Text>
             </View>
-            <Text style={s.pageSubtitle}>LOG YOUR GAINS</Text>
           </View>
         )}
 
-        {/* ── Workout name editor (active session) ── */}
+        {/* ── ACTIVE: name + progress ── */}
         {activeWorkout && (
-          <View style={s.nameRow}>
-            {editingName ? (
-              <TextInput
-                value={workoutName}
-                onChangeText={setWorkoutName}
-                onBlur={() => setEditingName(false)}
-                autoFocus
-                style={s.nameInput}
-                placeholderTextColor={COLORS.muted}
-              />
-            ) : (
-              <TouchableOpacity
-                onPress={() => setEditingName(true)}
-                style={s.nameEditTouchable}
-                activeOpacity={0.7}
-              >
-                <Text style={s.nameEditText}>{workoutName.toUpperCase()}</Text>
-                <View style={s.editBadge}>
-                  <Ionicons name="pencil" size={9} color={COLORS.muted} />
-                  <Text style={s.editBadgeText}>RENAME</Text>
-                </View>
-              </TouchableOpacity>
+          <View style={s.activeTopBar}>
+            {/* Editable name */}
+            <View style={s.nameRow}>
+              {editingName ? (
+                <TextInput
+                  value={workoutName}
+                  onChangeText={setWorkoutName}
+                  onBlur={() => setEditingName(false)}
+                  autoFocus
+                  style={s.nameInput}
+                  placeholderTextColor={T.muted}
+                />
+              ) : (
+                <TouchableOpacity
+                  onPress={() => setEditingName(true)}
+                  style={s.nameEditTouchable}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.nameEditText}>
+                    {workoutName.toUpperCase()}
+                  </Text>
+                  <View style={s.editBadge}>
+                    <Ionicons name="pencil" size={9} color={T.muted} />
+                    <Text style={s.editBadgeText}>RENAME</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Exercise progress dots */}
+            {exerciseCount > 0 && (
+              <View style={s.progressInfo}>
+                <Text style={s.progressText}>
+                  {exerciseCount} exercise{exerciseCount !== 1 ? "s" : ""} · tap
+                  ✓ on each set when done
+                </Text>
+                <WorkoutSteps exerciseCount={exerciseCount} doneCount={0} />
+              </View>
             )}
           </View>
         )}
 
-        {/* ── Exercise list ── */}
+        {/* ── ACTIVE: how-to hint (first time only) ── */}
+        {activeWorkout && exerciseCount > 0 && (
+          <View style={s.px}>
+            <View style={s.hintCard}>
+              <Ionicons
+                name="information-circle-outline"
+                size={15}
+                color={T.blue}
+              />
+              <Text style={s.hintText}>
+                Enter weight &amp; reps for each set, then tap the{" "}
+                <Text style={{ color: T.lime }}>✓</Text> to mark it done.
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* ── ACTIVE: exercise cards ── */}
         {activeWorkout && (
-          <View style={s.section}>
+          <View style={s.px}>
             {exercises.length === 0 ? (
               <EmptyExercises onAdd={() => setShowLibrary(true)} />
             ) : (
@@ -264,7 +645,9 @@ export default function WorkoutScreen() {
                 <ExerciseCard
                   key={ex.uid}
                   exercise={ex}
-                  onRemove={() => removeExercise(ex.uid)}
+                  sets={exerciseSetsByUid[ex.uid] ?? createInitialExerciseSets()}
+                  onSetsChange={(sets) => handleSetsChange(ex.uid, sets)}
+                  onRemove={() => void removeExercise(ex.uid)}
                   onTimerOpen={() => setShowTimer(true)}
                 />
               ))
@@ -272,90 +655,121 @@ export default function WorkoutScreen() {
           </View>
         )}
 
-        {/* ── Active workout action bar ── */}
+        {/* ── ACTIVE: action bar ── */}
         {activeWorkout && (
           <View style={s.actionBar}>
             <TouchableOpacity
+              disabled={sessionStarting || finishingWorkout}
               onPress={() => setShowLibrary(true)}
               style={s.addExBtn}
               activeOpacity={0.85}
             >
-              <Ionicons name="add" size={18} color={COLORS.accent} />
+              <Ionicons name="add" size={18} color={T.lime} />
               <Text style={s.addExBtnText}>ADD EXERCISE</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
+              disabled={finishingWorkout}
               onPress={() => setShowTimer(true)}
               style={s.timerBtn}
               activeOpacity={0.85}
             >
-              <Ionicons name="timer-outline" size={22} color={COLORS.text} />
+              <Ionicons name="timer-outline" size={20} color={T.text} />
             </TouchableOpacity>
           </View>
         )}
 
-        {/* ── Templates (idle only) ── */}
-        {!activeWorkout && (
-          <View style={s.section}>
-            <Text style={s.sectionLabel}>QUICK START</Text>
-            {/* Fixed: WORKOUT_TEMPLATES now typed — .map works correctly */}
-            {(WORKOUT_TEMPLATES as Template[]).map((tpl, i) => (
-              <TemplateRow
-                key={tpl.id}
-                tpl={tpl}
-                index={i}
-                onPress={() => startWorkout(tpl.name)}
-              />
-            ))}
-
+        {/* ── ACTIVE: finish reminder ── */}
+        {activeWorkout && exerciseCount > 0 && (
+          <View style={s.px}>
             <TouchableOpacity
-              onPress={() => startWorkout("My Workout")}
-              style={s.blankBtn}
+              disabled={finishingWorkout}
+              onPress={finishWorkout}
+              style={s.finishBanner}
               activeOpacity={0.85}
             >
               <Ionicons
-                name="add-circle-outline"
-                size={16}
-                color={COLORS.muted}
+                name="checkmark-circle-outline"
+                size={18}
+                color={T.lime}
               />
-              <Text style={s.blankBtnText}>START BLANK WORKOUT</Text>
+              <Text style={s.finishBannerText}>
+                DONE? TAP TO FINISH &amp; SAVE
+              </Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* ── History / Photos tabs ── */}
-        <View style={s.section}>
-          <View style={s.tabRow}>
-            <TabButton
-              label="HISTORY"
-              active={!showPhotos}
-              onPress={() => setShowPhotos(false)}
-            />
-            <TabButton
-              label="PHOTOS"
-              active={showPhotos}
-              onPress={() => setShowPhotos(true)}
-            />
-          </View>
-        </View>
-
-        {!showPhotos && (
-          <View style={s.section}>
-            {historyLoading ? (
-              <View style={{ paddingVertical: 28, alignItems: "center" }}>
-                <ActivityIndicator color={COLORS.accent} />
+        {/* ── IDLE: quick start ── */}
+        {!activeWorkout && (
+          <>
+            <SectionLabel label="QUICK START" icon="flash-outline" />
+            <View style={s.px}>
+              <View style={s.card}>
+                {(WORKOUT_TEMPLATES as Template[]).map((tpl, i) => (
+                  <TemplateCard
+                    key={tpl.id}
+                    tpl={tpl}
+                    index={i}
+                    disabled={sessionStarting || finishingWorkout}
+                    onPress={() => void startFromTemplate(tpl)}
+                  />
+                ))}
+                <TouchableOpacity
+                  disabled={sessionStarting || finishingWorkout}
+                  onPress={() => void startBlank()}
+                  style={s.blankBtn}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={15}
+                    color={T.muted}
+                  />
+                  <Text style={s.blankBtnText}>START BLANK WORKOUT</Text>
+                </TouchableOpacity>
               </View>
-            ) : historyRows.length === 0 ? (
-              <Text style={s.emptyHint}>No sessions logged yet.</Text>
-            ) : (
-              historyRows.map((h: HistorySession) => (
-                <HistoryCard key={h.id} session={h} />
-              ))
-            )}
-          </View>
+            </View>
+            <SectionGap />
+          </>
         )}
 
-        {showPhotos && <ProgressPhotoSection />}
+        {/* ── IDLE: recent sessions ── */}
+        {!activeWorkout && (
+          <>
+            <SectionLabel label="RECENT SESSIONS" icon="time-outline" />
+            <View style={s.px}>
+              {historyLoading ? (
+                <View style={s.loadingWrap}>
+                  <ActivityIndicator color={T.lime} />
+                </View>
+              ) : historyRows.length === 0 ? (
+                <View style={s.emptyHistory}>
+                  <Ionicons
+                    name="barbell-outline"
+                    size={28}
+                    color={T.muted}
+                    style={{ opacity: 0.4 }}
+                  />
+                  <Text style={s.emptyHistoryTitle}>No sessions yet</Text>
+                  <Text style={s.emptyHistoryText}>
+                    Start a workout above to begin tracking
+                  </Text>
+                </View>
+              ) : (
+                <View style={s.historyCard}>
+                  {historyRows.slice(0, 8).map((h, i, arr) => (
+                    <HistoryRow
+                      key={h.id}
+                      session={h}
+                      isLast={i === arr.length - 1}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+            <SectionGap />
+          </>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -371,166 +785,253 @@ export default function WorkoutScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.bg },
+  screen: {
+    flex: 1,
+    backgroundColor: T.bg0,
+    maxWidth: 430,
+    alignSelf: "center",
+    width: "100%",
+  },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 110 },
+  px: { paddingHorizontal: 16 },
 
-  pageHeader: {
-    paddingHorizontal: 24,
+  // ── Idle header (mirrors Dashboard) ──────────────────────────────────────
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingHorizontal: 16,
     paddingTop: Platform.OS === "ios" ? 56 : 28,
-    paddingBottom: 8,
+    paddingBottom: 20,
   },
-  backBtn: {
+  headerLeft: { gap: 2 },
+  datePill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    marginBottom: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: COLORS.bg2,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  backBtnText: {
-    fontFamily: FONTS.medium,
-    fontSize: 12,
-    color: COLORS.text,
-    letterSpacing: 0.3,
-  },
-  pageTitleBlock: { marginBottom: 4 },
-  pageTitle: {
-    fontFamily: FONTS.black,
-    fontSize: 52,
-    color: COLORS.text,
-    lineHeight: 50,
-    letterSpacing: -0.5,
-  },
-  pageTitleUnderline: {
-    height: 3,
-    width: 48,
-    backgroundColor: COLORS.accent,
-    borderRadius: 2,
-    marginTop: 4,
-  },
-  pageSubtitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 12,
-    color: COLORS.muted,
-    letterSpacing: 3,
-    marginTop: 6,
+    gap: 4,
     marginBottom: 4,
   },
-
-  nameRow: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 4,
+  dateText: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 10,
+    color: T.muted,
+    letterSpacing: 0.8,
   },
+  greeting: {
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 11,
+    color: T.sub,
+    letterSpacing: 1.1,
+  },
+  heroName: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 40,
+    color: T.text,
+    lineHeight: 42,
+  },
+
+  // ── Section labels (mirrors Dashboard) ───────────────────────────────────
+  sectionLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  sectionLabel: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 11,
+    color: T.muted,
+    letterSpacing: 1.4,
+  },
+
+  // ── Card shell (mirrors Dashboard card bg) ────────────────────────────────
+  card: {
+    backgroundColor: T.bg1,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: T.border,
+    overflow: "hidden",
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    gap: 4,
+  },
+
+  // ── Template card ─────────────────────────────────────────────────────────
+  templateCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: T.bg2,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.borderMid,
+    overflow: "hidden",
+    paddingRight: 12,
+    gap: 12,
+  },
+  templateStripe: {
+    width: 3,
+    alignSelf: "stretch",
+    opacity: 0.8,
+  },
+  templateIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 14,
+  },
+  templateContent: { flex: 1, paddingVertical: 14, gap: 2 },
+  templateName: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 16,
+    color: T.text,
+    letterSpacing: 0.4,
+  },
+  templateMeta: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 11,
+    color: T.sub,
+  },
+  templateExCount: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 10,
+    letterSpacing: 0.3,
+    marginTop: 1,
+  },
+  startChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  startChipText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 12,
+    letterSpacing: 1,
+  },
+
+  // ── Blank workout button ──────────────────────────────────────────────────
+  blankBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    marginTop: 2,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 14,
+    borderStyle: "dashed",
+    paddingVertical: 14,
+    marginHorizontal: 2,
+  },
+  blankBtnText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 13,
+    color: T.muted,
+    letterSpacing: 1.4,
+  },
+
+  // ── Active: top area ──────────────────────────────────────────────────────
+  activeTopBar: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+    gap: 10,
+  },
+  nameRow: {},
   nameEditTouchable: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
   nameEditText: {
-    fontFamily: FONTS.black,
-    fontSize: 24,
-    color: COLORS.text,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 28,
+    color: T.text,
     letterSpacing: 0.3,
   },
   editBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: COLORS.bg3,
+    backgroundColor: T.bg3,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: T.borderMid,
     borderRadius: 7,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
   editBadgeText: {
-    fontFamily: FONTS.medium,
+    fontFamily: "DMSans_500Medium",
     fontSize: 9,
-    color: COLORS.muted,
+    color: T.muted,
     letterSpacing: 1.5,
   },
   nameInput: {
-    fontFamily: FONTS.black,
-    fontSize: 24,
-    color: COLORS.text,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 28,
+    color: T.text,
     borderBottomWidth: 2,
-    borderBottomColor: COLORS.accent,
+    borderBottomColor: T.lime,
     paddingBottom: 4,
   },
-
-  section: { paddingHorizontal: 20, paddingTop: 18 },
-  sectionLabel: {
-    fontFamily: FONTS.medium,
-    fontSize: 10,
-    color: COLORS.muted,
-    letterSpacing: 2.5,
-    marginBottom: 12,
+  progressInfo: {
+    gap: 6,
   },
-
-  templateRow: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    overflow: "hidden",
-  },
-  templateStripe: {
-    alignSelf: "stretch",
-    backgroundColor: COLORS.accent,
-    opacity: 0.7,
-  },
-  templateContent: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  templateName: {
-    fontFamily: FONTS.black,
-    fontSize: 17,
-    color: COLORS.text,
-    letterSpacing: 0.3,
-  },
-  // Fixed: was templateMeta showing undefined — now shows tpl.tag string
-  templateMeta: {
-    fontFamily: FONTS.regular,
+  progressText: {
+    fontFamily: "DMSans_400Regular",
     fontSize: 12,
-    color: COLORS.muted,
-    marginTop: 2,
+    color: T.sub,
   },
-  blankBtn: {
+  stepsRow: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: 6,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 16,
-    borderStyle: "dashed",
-    paddingVertical: 14,
+    gap: 4,
+    flexWrap: "wrap",
   },
-  blankBtnText: {
-    fontFamily: FONTS.bold,
-    fontSize: 14,
-    color: COLORS.muted,
-    letterSpacing: 1.5,
+  stepDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  stepDotDone: { backgroundColor: T.lime },
+  stepDotActive: { backgroundColor: T.lime + "60" },
+  stepDotIdle: { backgroundColor: T.muted },
+
+  // ── Hint card ─────────────────────────────────────────────────────────────
+  hintCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: T.blue + "12",
+    borderWidth: 1,
+    borderColor: T.blue + "25",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  hintText: {
+    flex: 1,
+    fontFamily: "DMSans_400Regular",
+    fontSize: 12,
+    color: T.sub,
+    lineHeight: 18,
   },
 
+  // ── Active: action bar ────────────────────────────────────────────────────
   actionBar: {
     flexDirection: "row",
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
     gap: 10,
   },
   addExBtn: {
@@ -539,95 +1040,147 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: `${COLORS.accent}18`,
+    backgroundColor: T.lime + "18",
     borderWidth: 1,
-    borderColor: `${COLORS.accent}44`,
+    borderColor: T.lime + "44",
     borderRadius: 14,
     paddingVertical: 15,
   },
   addExBtnText: {
-    fontFamily: FONTS.black,
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 15,
-    color: COLORS.accent,
+    color: T.lime,
     letterSpacing: 1.2,
   },
   timerBtn: {
     width: 52,
     height: 52,
     borderRadius: 14,
-    backgroundColor: COLORS.bg3,
+    backgroundColor: T.bg3,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: T.borderMid,
     alignItems: "center",
     justifyContent: "center",
   },
 
+  // ── Finish banner ─────────────────────────────────────────────────────────
+  finishBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: T.lime + "12",
+    borderWidth: 1,
+    borderColor: T.lime + "30",
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  finishBannerText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 14,
+    color: T.lime,
+    letterSpacing: 1.2,
+  },
+
+  // ── Empty exercise state ──────────────────────────────────────────────────
   emptyCard: {
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: T.border,
     borderStyle: "dashed",
     borderRadius: 18,
     paddingVertical: 40,
     alignItems: "center",
     gap: 8,
+    marginBottom: 12,
   },
   emptyIconWrap: {
     width: 52,
     height: 52,
     borderRadius: 14,
-    backgroundColor: `${COLORS.accent}18`,
+    backgroundColor: T.lime + "18",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
   emptyTitle: {
-    fontFamily: FONTS.black,
-    fontSize: 16,
-    color: COLORS.text,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 15,
+    color: T.text,
     letterSpacing: 1.5,
-    opacity: 0.5,
+    opacity: 0.7,
   },
   emptyHint: {
-    fontFamily: FONTS.regular,
+    fontFamily: "DMSans_400Regular",
     fontSize: 12,
-    color: COLORS.muted,
-    letterSpacing: 0.3,
+    color: T.sub,
   },
 
-  tabRow: {
-    flexDirection: "row",
-    backgroundColor: COLORS.bg3,
-    borderRadius: 14,
-    padding: 4,
-    gap: 4,
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 11,
+  // ── History ───────────────────────────────────────────────────────────────
+  loadingWrap: {
+    paddingVertical: 28,
     alignItems: "center",
-    position: "relative",
+  },
+  historyCard: {
+    backgroundColor: T.bg1,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: T.border,
     overflow: "hidden",
   },
-  tabBtnActive: {
-    backgroundColor: COLORS.card,
+  historyRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  },
+  historyLeft: { flex: 1, gap: 3, paddingRight: 12 },
+  historyName: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 15,
+    color: T.text,
+    letterSpacing: 0.3,
+  },
+  historyMeta: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 11,
+    color: T.sub,
+  },
+  historyRight: { alignItems: "flex-end", gap: 3 },
+  historyVol: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 15,
+    color: T.lime,
+    letterSpacing: 0.3,
+  },
+  historySets: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 11,
+    color: T.sub,
+  },
+  emptyHistory: {
+    paddingVertical: 36,
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: T.bg1,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: T.border,
   },
-  tabBtnIndicator: {
-    position: "absolute",
-    bottom: 0,
-    left: "25%",
-    right: "25%",
-    height: 2,
-    backgroundColor: COLORS.accent,
-    borderRadius: 1,
+  emptyHistoryTitle: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 16,
+    color: T.text,
+    letterSpacing: 0.5,
+    opacity: 0.6,
   },
-  tabBtnText: {
-    fontFamily: FONTS.bold,
-    fontSize: 13,
-    color: COLORS.muted,
-    letterSpacing: 1.2,
+  emptyHistoryText: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 12,
+    color: T.muted,
   },
-  tabBtnTextActive: { color: COLORS.accent },
 });

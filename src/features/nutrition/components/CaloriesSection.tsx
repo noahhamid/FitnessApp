@@ -5,10 +5,12 @@ import {
   useMealLog,
   useNutritionGoals,
 } from "@/src/features/nutrition/hooks/useNutrition";
+import { requestFoodScanFromImage } from "@/src/utils/gemini";
 import { Ionicons } from "@expo/vector-icons";
 import { readAsStringAsync } from "expo-file-system/legacy";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -54,96 +56,33 @@ const MEAL_META: Record<
 
 const MEAL_TYPES: MealType[] = ["Breakfast", "Snack", "Lunch", "Dinner"];
 
-const today = () => new Date().toISOString().split("T")[0];
+const MAX_DAYS_BACK = 7;
 
-const GEMINI_PROMPT =
-  "Analyze this food image and return ONLY a JSON object with these exact keys: name (string), cal (number), protein (number), carbs (number), fat (number). No explanation, no markdown, just the raw JSON.";
-
-function parseGeminiFoodJson(raw: string): {
-  name: string;
-  cal: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-} | null {
-  try {
-    let t = raw.trim();
-    if (t.startsWith("```")) {
-      t = t
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/\s*```$/u, "")
-        .trim();
-    }
-    const obj = JSON.parse(t) as Record<string, unknown>;
-    const name = typeof obj.name === "string" ? obj.name.trim() : "";
-    const cal = Number(obj.cal);
-    const protein = Number(obj.protein);
-    const carbs = Number(obj.carbs);
-    const fat = Number(obj.fat);
-    if (!name || !Number.isFinite(cal) || cal < 0) return null;
-    return {
-      name,
-      cal,
-      protein: Number.isFinite(protein) ? protein : 0,
-      carbs: Number.isFinite(carbs) ? carbs : 0,
-      fat: Number.isFinite(fat) ? fat : 0,
-    };
-  } catch {
-    return null;
-  }
+function localYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
-async function requestGeminiFoodFromImage(
-  base64: string,
-  mimeType: string,
-): Promise<{
-  name: string;
-  cal: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-} | null> {
-  const key = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-  if (!key) {
-    throw new Error("Missing EXPO_PUBLIC_GEMINI_API_KEY");
-  }
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(key)}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { text: GEMINI_PROMPT },
-            {
-              inline_data: {
-                mime_type: mimeType,
-                data: base64,
-              },
-            },
-          ],
-        },
-      ],
-    }),
-  });
-  const json = (await res.json()) as {
-    error?: { message?: string };
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-  };
-  if (!res.ok) {
-    throw new Error(json.error?.message ?? `Vision request failed (${res.status})`);
-  }
-  if (!json.candidates?.length) {
-    throw new Error(
-      "No analysis result for this image. Try a clearer photo or enter manually.",
-    );
-  }
-  const text = json.candidates[0]?.content?.parts?.[0]?.text;
-  if (!text || typeof text !== "string") {
-    throw new Error("No response from vision model");
-  }
-  return parseGeminiFoodJson(text);
+function dateFromYmd(ymd: string): Date {
+  const [y, m, d] = ymd.split("-").map((v) => Number(v));
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+
+function displayDateLabel(ymd: string, offsetDays: number): string {
+  if (offsetDays === 0) return "Today";
+  if (offsetDays === 1) return "Yesterday";
+  const date = dateFromYmd(ymd);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).formatToParts(date);
+  const weekday = parts.find((p) => p.type === "weekday")?.value ?? "";
+  const month = parts.find((p) => p.type === "month")?.value ?? "";
+  const day = parts.find((p) => p.type === "day")?.value ?? "";
+  return `${weekday} ${month} ${day}`;
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -271,6 +210,7 @@ export function CaloriesSection() {
   const [showAddFood, setShowAddFood] = useState(false);
   const [mealType, setMealType] = useState<MealType>("Breakfast");
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [daysBack, setDaysBack] = useState(0);
 
   type EntryStep = "menu" | "analyzing" | "form";
   const [entryStep, setEntryStep] = useState<EntryStep>("menu");
@@ -281,10 +221,20 @@ export function CaloriesSection() {
   const [manualF, setManualF] = useState("");
   const [geminiError, setGeminiError] = useState<string | null>(null);
 
+  const selectedDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - daysBack);
+    return localYmd(d);
+  }, [daysBack]);
+  const dateLabel = useMemo(
+    () => displayDateLabel(selectedDate, daysBack),
+    [selectedDate, daysBack],
+  );
+
   // ─── Data hooks ──────────────────────────────────────────────────────────────
   const { data: goals, isLoading: goalsLoading } = useNutritionGoals();
-  const { data: mealLog, isLoading: logLoading } = useMealLog();
-  const { data: totals, isLoading: totalsLoading } = useDailyTotals();
+  const { data: mealLog, isLoading: logLoading } = useMealLog(selectedDate);
+  const { data: totals, isLoading: totalsLoading } = useDailyTotals(selectedDate);
   const { mutate: addMeal } = useAddMeal();
   const { mutate: deleteMeal } = useDeleteMeal();
 
@@ -325,7 +275,7 @@ export function CaloriesSection() {
     setAddingId(food.id);
     addMeal(
       {
-        log_date: today(),
+        log_date: selectedDate,
         meal: mealType,
         name: food.name,
         cal: food.cal,
@@ -372,11 +322,11 @@ export function CaloriesSection() {
       const launched =
         source === "camera"
           ? await ImagePicker.launchCameraAsync({
-              quality: 1,
+              quality: 0.8,
             })
           : await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              quality: 1,
+              mediaTypes: ["images"],
+              quality: 0.8,
             });
 
       if (launched.canceled) {
@@ -386,25 +336,23 @@ export function CaloriesSection() {
 
       const asset = launched.assets[0];
       const uri = asset.uri;
-      const mimeType =
-        asset.mimeType ??
-        (uri.toLowerCase().includes(".png") ? "image/png" : "image/jpeg");
 
-      const base64 = await readAsStringAsync(uri, { encoding: "base64" });
+      const resized = await manipulateAsync(
+        uri,
+        [{ resize: { width: 1024 } }],
+        { compress: 0.8, format: SaveFormat.JPEG },
+      );
 
-      const parsed = await requestGeminiFoodFromImage(base64, mimeType);
-      if (!parsed) {
-        setGeminiError(
-          "Could not read nutrition data from this image. Please enter manually.",
-        );
-        setManualName("");
-        setManualCal("");
-        setManualP("");
-        setManualC("");
-        setManualF("");
+      const base64 = await readAsStringAsync(resized.uri, { encoding: "base64" });
+      const mimeType = "image/jpeg";
+
+      if (base64.length > 4 * 1024 * 1024) {
+        setGeminiError("Image is too large. Please try a different photo.");
         setEntryStep("form");
         return;
       }
+
+      const parsed = await requestFoodScanFromImage(base64, mimeType);
 
       setManualName(parsed.name);
       setManualCal(String(parsed.cal));
@@ -479,6 +427,31 @@ export function CaloriesSection() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scroll}
       >
+        <View style={s.dateNavWrap}>
+          <TouchableOpacity
+            onPress={() =>
+              setDaysBack((prev) => Math.min(MAX_DAYS_BACK, prev + 1))
+            }
+            disabled={daysBack >= MAX_DAYS_BACK}
+            style={[s.dateArrowBtn, daysBack >= MAX_DAYS_BACK && s.dateArrowDisabled]}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="chevron-back" size={14} color={T.text} />
+          </TouchableOpacity>
+          <View style={s.datePill}>
+            <Ionicons name="calendar-outline" size={10} color={T.muted} />
+            <Text style={s.datePillText}>{dateLabel}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setDaysBack((prev) => Math.max(0, prev - 1))}
+            disabled={daysBack === 0}
+            style={[s.dateArrowBtn, daysBack === 0 && s.dateArrowDisabled]}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="chevron-forward" size={14} color={T.text} />
+          </TouchableOpacity>
+        </View>
+
         {/* ── HERO ──────────────────────────────────────────────────────────── */}
         <View style={s.heroCard}>
           <ProgressCircle
@@ -730,7 +703,8 @@ export function CaloriesSection() {
                   <TouchableOpacity
                     style={[
                       s.addToLogBtn,
-                      (!canSubmitManual || addingId !== null) && s.addToLogBtnDisabled,
+                      (!canSubmitManual || addingId !== null) &&
+                        s.addToLogBtnDisabled,
                     ]}
                     activeOpacity={0.85}
                     disabled={!canSubmitManual || addingId !== null}
@@ -768,6 +742,43 @@ const s = StyleSheet.create({
   scroll: {
     paddingHorizontal: 16,
     paddingTop: 8,
+  },
+  dateNavWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    marginBottom: 10,
+  },
+  dateArrowBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: T.bg2,
+    borderWidth: 1,
+    borderColor: T.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dateArrowDisabled: {
+    opacity: 0.35,
+  },
+  datePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: T.bg2,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  datePillText: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 10,
+    color: T.muted,
+    letterSpacing: 0.5,
   },
 
   // ── Loading ──────────────────────────────────────────────────────────────────

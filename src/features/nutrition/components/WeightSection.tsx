@@ -6,7 +6,7 @@ import {
   useWeightLog,
 } from "../hooks/useWeight";
 import { toWeightChartPoints } from "../services/weight.service";
-import { COLORS } from "@/src/theme";
+import { FONTS } from "@/src/ui/tokens/typography";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -34,6 +34,25 @@ import Svg, {
 import { PrimaryButton, SectionHeader, StatsCard } from "./StatsCard";
 
 const { width: SW } = Dimensions.get("window");
+const T = {
+  bg: "#0A0A0C",
+  bg0: "#0A0A0C",
+  bg1: "#111114",
+  bg2: "#18181D",
+  bg3: "#222228",
+  lime: "#C8F135",
+  red: "#FF3D3D",
+  orange: "#FF8A00",
+  blue: "#3D8EFF",
+  text: "#F2F2F5",
+  sub: "#7A7A8C",
+  muted: "#4A4A58",
+  border: "#FFFFFF0F",
+  borderMid: "#FFFFFF18",
+  card: "#141414",
+  accent: "#C8F135",
+};
+const COLORS = T;
 
 // ─── Animated progress bar ───────────────────────────────────────────────────
 function AnimatedProgressBar({ progress }: { progress: number }) {
@@ -551,13 +570,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: "700",
+    fontFamily: FONTS.bold,
     color: COLORS.muted,
     letterSpacing: 1,
   },
   sectionValue: {
     fontSize: 18,
-    fontWeight: "800",
+    fontFamily: FONTS.extraBold,
   },
   mutedLabel: {
     fontSize: 11,
@@ -611,7 +630,7 @@ const styles = StyleSheet.create({
   },
   latestBadgeText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontFamily: FONTS.bold,
     color: COLORS.accent,
   },
 
@@ -662,7 +681,7 @@ const styles = StyleSheet.create({
   },
   historyWeight: {
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: FONTS.bold,
     color: COLORS.text,
     marginRight: 8,
   },
@@ -678,7 +697,7 @@ const styles = StyleSheet.create({
   diffNeutral: { backgroundColor: COLORS.bg2 },
   diffText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontFamily: FONTS.bold,
   },
 
   // Modal
@@ -704,7 +723,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "800",
+    fontFamily: FONTS.extraBold,
     color: COLORS.text,
     marginBottom: 20,
     letterSpacing: 0.5,
@@ -732,7 +751,7 @@ const styles = StyleSheet.create({
   },
   unitBtnText: {
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: FONTS.bold,
     color: COLORS.muted,
   },
   unitBtnTextActive: {
@@ -744,7 +763,7 @@ const styles = StyleSheet.create({
   },
   weightInput: {
     fontSize: 24,
-    fontWeight: "700",
+    fontFamily: FONTS.bold,
     color: COLORS.text,
     backgroundColor: COLORS.bg2,
     borderWidth: 2,
@@ -760,7 +779,7 @@ const styles = StyleSheet.create({
     right: 16,
     top: 18,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: FONTS.semiBold,
     color: COLORS.muted,
   },
   modalButtons: {

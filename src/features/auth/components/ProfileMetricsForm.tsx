@@ -17,7 +17,7 @@ import {
 import { useSaveProfile } from "../hooks/useProfile";
 
 type Props = {
-  onNext: () => void;
+  onNext: (metrics: { weightKg: number; heightCm: number; age: number }) => void;
   onBack: () => void;
   goalId?: string;
 };
@@ -57,7 +57,11 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
       weight_unit: unit,
     });
 
-    onNext();
+    onNext({
+      weightKg: weight_kg,
+      heightCm: parseFloat(height),
+      age: parseInt(age, 10),
+    });
   }
 
   return (

@@ -21,12 +21,26 @@ model User {
   sessions        Session[]
   accounts        Account[]
   workoutSessions WorkoutSession[]
+  profile         UserProfile?
   nutritionGoal   NutritionGoal?
   mealLogs        MealLog[]
   weightLogs      WeightLog[]
   weightGoal      WeightGoal?
 
   @@map("user")
+}
+
+model UserProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goalId    String?
+  weightKg  Decimal? @db.Decimal(6, 2)
+  heightCm  Int?
+  age       Int?
+  updatedAt DateTime @updatedAt
+
+  @@map("user_profile")
 }
 
 model Session {

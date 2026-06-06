@@ -1,4 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { router } from "expo-router";
 import { WorkoutRow } from "./DashboardComponents";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -85,7 +86,11 @@ export function TodaySession({ onSeeAll, sessions = [] }: Props) {
       </View>
 
       {/* Start CTA */}
-      <TouchableOpacity style={s.startBtn} activeOpacity={0.85}>
+      <TouchableOpacity
+        style={s.startBtn}
+        activeOpacity={0.85}
+        onPress={() => router.push("/(app)/(tabs)/train")}
+      >
         <Text style={s.startBtnText}>START WORKOUT</Text>
       </TouchableOpacity>
     </View>

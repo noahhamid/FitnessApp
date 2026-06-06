@@ -1,24 +1,5 @@
-import { View, Text, StyleSheet } from "react-native";
-import { useLocalSearchParams, Stack } from "expo-router";
+import { Redirect } from "expo-router";
 
-import { COLORS, FONTS } from "@/src/theme";
-
-export default function WorkoutDetailRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-
-  return (
-    <>
-      <Stack.Screen options={{ title: "Workout", headerShown: true, headerTintColor: COLORS.text }} />
-      <View style={s.wrap}>
-        <Text style={s.title}>Workout</Text>
-        <Text style={s.id}>{id}</Text>
-      </View>
-    </>
-  );
+export default function WorkoutDetailRedirect() {
+  return <Redirect href="/(app)/(tabs)/train" />;
 }
-
-const s = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: COLORS.bg, padding: 24, paddingTop: 16 },
-  title: { fontFamily: FONTS.black, fontSize: 28, color: COLORS.text },
-  id: { fontFamily: FONTS.regular, color: COLORS.muted, marginTop: 8 },
-});

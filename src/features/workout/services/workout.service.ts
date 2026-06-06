@@ -150,6 +150,35 @@ export async function fetchWorkoutSessions(query: string): Promise<ApiWorkoutSes
   return api.get<ApiWorkoutSession[]>(`/api/workouts${query}`);
 }
 
+export async function createWorkoutSession(notes: string) {
+  return api.post<ApiWorkoutSession>("/api/workouts", { notes });
+}
+
+export async function addExerciseToSession(sessionId: string, exerciseName: string) {
+  return api.post<{ id: string; exerciseName: string; sets: unknown }>(
+    `/api/workouts/${sessionId}/exercises`,
+    { exerciseName, sets: [] },
+  );
+}
+
+export async function completeWorkoutSession(
+  sessionId: string,
+  notes: string,
+  exercises: Array<{
+    exerciseName: string;
+    sets: Array<{ reps?: number; weight?: number; completed?: boolean }>;
+  }>,
+) {
+  return api.post<ApiWorkoutSession>(`/api/workouts/${sessionId}/complete`, {
+    notes,
+    exercises,
+  });
+}
+
+export async function deleteWorkoutSession(sessionId: string) {
+  return api.delete<{ deleted: boolean }>(`/api/workouts/${sessionId}`);
+}
+
 /** Completed sessions newest-first, mapped for UI lists. */
 export async function fetchWorkoutHistory(limit = 50): Promise<WorkoutHistoryRow[]> {
   try {

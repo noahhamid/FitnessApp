@@ -1,4 +1,3 @@
-import { DAYS } from "@/src/theme";
 import {
   ActivityIndicator,
   Dimensions,
@@ -19,6 +18,7 @@ import Svg, {
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const CONTENT_W = Math.min(SCREEN_W, 430);
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 const T = {
   bg0: "#0A0A0C",

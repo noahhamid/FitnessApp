@@ -9,20 +9,32 @@ import {
   View,
 } from "react-native";
 
-// Fixed: import directly from tokens, not from @/src/theme
-import { COLORS } from "@/src/ui/tokens/colors";
-import { FONTS } from "@/src/ui/tokens/typography";
+const T = {
+  bg0: "#0A0A0C",
+  bg1: "#111114",
+  bg2: "#18181D",
+  bg3: "#222228",
+  lime: "#C8F135",
+  text: "#F2F2F5",
+  sub: "#7A7A8C",
+  muted: "#4A4A58",
+  border: "#FFFFFF0F",
+  borderMid: "#FFFFFF18",
+};
 
 interface WorkoutHeaderProps {
   startTime: number;
   name?: string;
   onFinish: () => void;
+  /** Disabled while submitting finish (persisting session). */
+  finishDisabled?: boolean;
 }
 
 export default function WorkoutHeader({
   startTime,
   name,
   onFinish,
+  finishDisabled,
 }: WorkoutHeaderProps) {
   const [elapsed, setElapsed] = useState(0);
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -59,7 +71,6 @@ export default function WorkoutHeader({
       toValue: 0.94,
       useNativeDriver: true,
     }).start();
-
   const handlePressOut = () =>
     Animated.spring(pulseAnim, {
       toValue: 1,
@@ -77,22 +88,20 @@ export default function WorkoutHeader({
 
   return (
     <View style={s.container}>
+      {/* Lime accent bar at top — matches dashboard accent usage */}
       <View style={s.accentBar} />
       <View style={s.inner}>
-        {/* Left: workout info */}
-        <View style={s.leftBlock}>
+        {/* Left: live indicator + name + timer */}
+        <View style={s.left}>
           <View style={s.liveRow}>
             <Animated.View style={[s.liveDot, { opacity: dotAnim }]} />
             <Text style={s.liveLabel}>LIVE</Text>
           </View>
-
           <Text style={s.workoutName} numberOfLines={1}>
             {name?.toUpperCase() ?? "WORKOUT"}
           </Text>
-
-          {/* Fixed: was emoji ⏱ — now Ionicons */}
           <View style={s.timerRow}>
-            <Ionicons name="timer-outline" size={13} color={COLORS.muted} />
+            <Ionicons name="timer-outline" size={13} color={T.muted} />
             <Text style={s.timerText}>{fmt}</Text>
           </View>
         </View>
@@ -103,12 +112,13 @@ export default function WorkoutHeader({
             onPress={onFinish}
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
-            style={s.finishBtn}
+            disabled={finishDisabled}
+            style={[s.finishBtn, finishDisabled && { opacity: 0.55 }]}
             activeOpacity={1}
           >
-            <View style={s.finishBtnHighlight} />
-            <Text style={s.finishBtnText}>FINISH</Text>
-            <Text style={s.finishBtnSub}>SESSION</Text>
+            <View style={s.finishHighlight} />
+            <Text style={s.finishText}>FINISH</Text>
+            <Text style={s.finishSub}>SESSION</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -118,32 +128,29 @@ export default function WorkoutHeader({
 
 const s = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.bg2,
+    backgroundColor: T.bg2,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    elevation: 8,
+    borderBottomColor: T.borderMid,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+    elevation: 8,
   },
   accentBar: {
     height: 3,
-    backgroundColor: COLORS.accent,
+    backgroundColor: T.lime,
     opacity: 0.9,
   },
   inner: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: Platform.OS === "ios" ? 52 : 24,
-    paddingBottom: 16,
+    paddingBottom: 14,
   },
-  leftBlock: {
-    flex: 1,
-    marginRight: 16,
-  },
+  left: { flex: 1, marginRight: 16 },
   liveRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -153,37 +160,36 @@ const s = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: COLORS.accent,
+    backgroundColor: T.lime,
     marginRight: 6,
   },
   liveLabel: {
-    // Fixed: FONTS.medium directly — no ?? fallback needed
-    fontFamily: FONTS.medium,
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 10,
-    color: COLORS.accent,
+    color: T.lime,
     letterSpacing: 2.5,
   },
   workoutName: {
-    fontFamily: FONTS.black,
-    fontSize: 28,
-    color: COLORS.text,
-    letterSpacing: 0.5,
-    lineHeight: 30,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 26,
+    color: T.text,
+    letterSpacing: 0.4,
+    lineHeight: 28,
   },
   timerRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 5,
+    marginTop: 4,
     gap: 5,
   },
   timerText: {
-    fontFamily: FONTS.medium,
-    fontSize: 14,
-    color: COLORS.muted,
+    fontFamily: "DMSans_500Medium",
+    fontSize: 13,
+    color: T.muted,
     letterSpacing: 1,
   },
   finishBtn: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: T.lime,
     borderRadius: 14,
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -191,9 +197,8 @@ const s = StyleSheet.create({
     justifyContent: "center",
     minWidth: 76,
     overflow: "hidden",
-    position: "relative",
   },
-  finishBtnHighlight: {
+  finishHighlight: {
     position: "absolute",
     top: 0,
     left: 0,
@@ -203,17 +208,17 @@ const s = StyleSheet.create({
     borderTopLeftRadius: 14,
     borderTopRightRadius: 14,
   },
-  finishBtnText: {
-    fontFamily: FONTS.black,
+  finishText: {
+    fontFamily: "BarlowCondensed_900Black",
     fontSize: 17,
-    color: COLORS.bg,
+    color: T.bg0,
     letterSpacing: 1.5,
     lineHeight: 18,
   },
-  finishBtnSub: {
-    fontFamily: FONTS.medium,
+  finishSub: {
+    fontFamily: "DMSans_500Medium",
     fontSize: 9,
-    color: COLORS.bg,
+    color: T.bg0,
     letterSpacing: 2,
     opacity: 0.7,
     lineHeight: 12,
