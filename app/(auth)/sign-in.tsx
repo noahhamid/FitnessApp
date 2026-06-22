@@ -1,16 +1,11 @@
-import { OAuthButtons, SignInForm } from "@/src/features/auth";
+import { SignInForm } from "@/src/features/auth";
 import { getPostSignInRoute } from "@/src/lib/routing";
-import { C } from "@/src/ui/tokens/colors";
-import { FONTS } from "@/src/ui/tokens/typography";
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
 } from "react-native";
 
 export default function SignInRoute() {
@@ -28,15 +23,11 @@ export default function SignInRoute() {
         contentContainerStyle={s.scroll}
         keyboardShouldPersistTaps="handled"
       >
-        <SignInForm onSuccess={navigateAfterAuth} />
-        <View style={{ paddingHorizontal: 24 }}>
-          <OAuthButtons onSuccess={navigateAfterAuth} />
-        </View>
-        <Link href="/(auth)/sign-up" asChild>
-          <TouchableOpacity style={s.footer}>
-            <Text style={s.footerText}>Create account</Text>
-          </TouchableOpacity>
-        </Link>
+        <SignInForm
+          onSuccess={navigateAfterAuth}
+          onForgotPassword={() => router.push("/(auth)/forgot-password")}
+          onSignUp={() => router.push("/(auth)/sign-up")}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -45,10 +36,6 @@ export default function SignInRoute() {
 const s = StyleSheet.create({
   scroll: {
     flexGrow: 1,
-    paddingTop: 60,
-    backgroundColor: C.bg,
-    paddingBottom: 40,
+    backgroundColor: "#0A0A0C",
   },
-  footer: { padding: 24, alignItems: "center" },
-  footerText: { fontFamily: FONTS.semiBold, color: C.accent },
 });

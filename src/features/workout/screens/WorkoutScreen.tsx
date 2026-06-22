@@ -1,15 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ActivityIndicator,
   Alert,
   Animated,
-  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -35,7 +34,7 @@ import LibrarySheet from "@/src/features/workout/components/LibrarySheet";
 import TimerModal from "@/src/features/workout/components/TimerModal";
 import WorkoutHeader from "@/src/features/workout/components/WorkoutHeader";
 
-// ── Design tokens (identical to DashboardScreen) ──────────────────────────────
+// ── Design tokens ─────────────────────────────────────────────────────────────
 const T = {
   bg0: "#0A0A0C",
   bg1: "#111114",
@@ -43,9 +42,9 @@ const T = {
   bg3: "#222228",
   lime: "#C8F135",
   red: "#FF3D3D",
-  orange: "#FF8A00",
-  blue: "#3D8EFF",
-  purple: "#9B6DFF",
+  orange: "#F97316",
+  blue: "#3B82F6",
+  purple: "#A855F7",
   text: "#F2F2F5",
   sub: "#7A7A8C",
   muted: "#4A4A58",
@@ -99,22 +98,76 @@ const TEMPLATE_EXERCISES: Record<string, string[]> = {
 
 const TEMPLATE_ACCENTS = [T.lime, T.orange, T.blue, T.purple];
 
-// ── Shared layout primitives (mirrors Dashboard) ──────────────────────────────
+// ── Per-template muscle groups + estimated duration ───────────────────────────
+const TEMPLATE_META: Record<string, { muscles: string; duration: number }> = {
+  t1: { muscles: "Chest · Shoulders · Triceps", duration: 55 },
+  t2: { muscles: "Back · Biceps", duration: 60 },
+  t3: { muscles: "Quads · Hamstrings · Glutes", duration: 70 },
+  t4: { muscles: "Compound lifts", duration: 65 },
+};
+
+// ── Shared layout primitives ──────────────────────────────────────────────────
 function SectionGap() {
-  return <View style={{ height: 16 }} />;
+  return <View style={{ height: 24 }} />;
 }
 
 function SectionLabel({
   label,
   icon,
+  right,
 }: {
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Ionicons.glyphMap;
+  right?: React.ReactNode;
 }) {
   return (
-    <View style={s.sectionLabelRow}>
-      <Ionicons name={icon} size={12} color={T.muted} />
-      <Text style={s.sectionLabel}>{label}</Text>
+    <View style={s.sectionHdr}>
+      <View style={s.sectionHdrLeft}>
+        {icon ? <Ionicons name={icon} size={13} color={T.lime} /> : null}
+        <Text style={s.sectionHdrTitle}>{label}</Text>
+      </View>
+      {right ?? null}
+    </View>
+  );
+}
+
+// ── Streak card ───────────────────────────────────────────────────────────────
+function StreakCard({
+  streakDays,
+  thisWeek,
+  weekGoal,
+}: {
+  streakDays: number;
+  thisWeek: number;
+  weekGoal: number;
+}) {
+  return (
+    <View style={s.streakCard}>
+      {/* Left: current streak */}
+      <View style={s.streakLeft}>
+        <View style={s.streakFlameWrap}>
+          <Ionicons name="flame" size={18} color={T.lime} />
+        </View>
+        <View style={s.streakLeftText}>
+          <Text style={s.streakLabel}>CURRENT STREAK</Text>
+          <View style={s.streakValueRow}>
+            <Text style={s.streakValue}>{streakDays}</Text>
+            <Text style={s.streakUnit}> days</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Divider */}
+      <View style={s.streakDivider} />
+
+      {/* Right: this week */}
+      <View style={s.streakRight}>
+        <Text style={s.streakLabel}>THIS WEEK</Text>
+        <View style={s.streakValueRow}>
+          <Text style={s.streakValue}>{thisWeek}</Text>
+          <Text style={s.streakUnit}>/{weekGoal}</Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -132,20 +185,28 @@ function TemplateCard({
   disabled?: boolean;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
+  const textShift = useRef(new Animated.Value(0)).current;
   const accent = TEMPLATE_ACCENTS[index % TEMPLATE_ACCENTS.length];
   const presetIds = TEMPLATE_EXERCISES[tpl.id] ?? [];
+  const meta = TEMPLATE_META[tpl.id];
 
-  const onPressIn = () =>
+  const onPressIn = () => {
     Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start();
-  const onPressOut = () =>
-    Animated.spring(scale, {
-      toValue: 1,
-      friction: 4,
+    // Tactile text-left shift on the START pill
+    Animated.spring(textShift, {
+      toValue: -5,
       useNativeDriver: true,
+      tension: 300,
+      friction: 14,
     }).start();
+  };
+  const onPressOut = () => {
+    Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }).start();
+    Animated.spring(textShift, { toValue: 0, friction: 4, useNativeDriver: true }).start();
+  };
 
   return (
-    <Animated.View style={{ transform: [{ scale }], marginBottom: 2 }}>
+    <Animated.View style={{ transform: [{ scale }] }}>
       <TouchableOpacity
         disabled={disabled}
         onPress={onPress}
@@ -154,30 +215,33 @@ function TemplateCard({
         activeOpacity={1}
         style={s.templateCard}
       >
+        {/* Left accent stripe */}
         <View style={[s.templateStripe, { backgroundColor: accent }]} />
-        <View
-          style={[
-            s.templateIconWrap,
-            { backgroundColor: accent + "18", borderColor: accent + "30" },
-          ]}
-        >
-          <Ionicons name="barbell-outline" size={18} color={accent} />
+
+        {/* Icon */}
+        <View style={[s.templateIconWrap, { backgroundColor: accent + "20" }]}>
+          <Ionicons name="barbell-outline" size={16} color={accent} />
         </View>
+
+        {/* Content */}
         <View style={s.templateContent}>
           <Text style={s.templateName}>{tpl.name}</Text>
-          <Text style={s.templateMeta}>{tpl.tag}</Text>
+          {meta && <Text style={s.templateMuscles}>{meta.muscles}</Text>}
           <Text style={[s.templateExCount, { color: accent }]}>
-            {presetIds.length} exercises pre-loaded
+            {presetIds.length} exercises · {meta?.duration ?? 45} min
           </Text>
         </View>
-        <View
-          style={[
-            s.startChip,
-            { backgroundColor: accent + "18", borderColor: accent + "30" },
-          ]}
-        >
-          <Text style={[s.startChipText, { color: accent }]}>START</Text>
-          <Ionicons name="chevron-forward" size={12} color={accent} />
+
+        {/* Outline START pill — text shifts left on press for tactile feedback */}
+        <View style={[s.startPill, { borderColor: accent }]}>
+          <Animated.Text
+            style={[
+              s.startPillText,
+              { color: accent, transform: [{ translateX: textShift }] },
+            ]}
+          >
+            START ›
+          </Animated.Text>
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -235,6 +299,9 @@ function HistoryRow({
 }) {
   return (
     <View style={[s.historyRow, isLast && { borderBottomWidth: 0 }]}>
+      <View style={s.historyIcon}>
+        <Ionicons name="barbell-outline" size={14} color={T.lime} />
+      </View>
       <View style={s.historyLeft}>
         <Text style={s.historyName} numberOfLines={1}>
           {session.name}
@@ -244,7 +311,9 @@ function HistoryRow({
         </Text>
       </View>
       <View style={s.historyRight}>
-        <Text style={s.historyVol}>{session.volume}</Text>
+        <View style={s.historyVolPill}>
+          <Text style={s.historyVol}>{session.volume}</Text>
+        </View>
         <Text style={s.historySets}>{session.sets} sets</Text>
       </View>
     </View>
@@ -269,7 +338,6 @@ export default function WorkoutScreen() {
   >({});
   const [showLibrary, setShowLibrary] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
-  const [editingName, setEditingName] = useState(false);
 
   /** Synchronous guard so Finish / start cannot double-fire before state updates. */
   const workoutSaveBusyRef = useRef(false);
@@ -289,12 +357,21 @@ export default function WorkoutScreen() {
     queryFn: () => fetchWorkoutHistory(20),
   });
 
+  // Approximate streak & weekly count from available history
+  const streakDays = historyRows.length;
+  const thisWeek = Math.min(
+    historyRows.filter((h) =>
+      /^(Today|Yesterday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)/.test(h.date),
+    ).length,
+    5,
+  );
+  const WEEK_GOAL = 5;
+
   const resetActiveWorkoutState = useCallback(() => {
     setActiveWorkout(false);
     setExercises([]);
     setExerciseSetsByUid({});
     setStartTime(null);
-    setEditingName(false);
     setActiveSessionId(null);
   }, []);
 
@@ -363,6 +440,47 @@ export default function WorkoutScreen() {
   }, [queryClient, resetActiveWorkoutState]);
 
   const exerciseCount = exercises.length;
+
+  // ── Live session metrics ────────────────────────────────────────────────────
+  const completedSets = useMemo(
+    () =>
+      exercises.reduce(
+        (sum, ex) =>
+          sum +
+          (exerciseSetsByUid[ex.uid] ?? []).filter((s) => s.done).length,
+        0,
+      ),
+    [exercises, exerciseSetsByUid],
+  );
+
+  const totalSets = useMemo(
+    () =>
+      exercises.reduce(
+        (sum, ex) => sum + (exerciseSetsByUid[ex.uid] ?? []).length,
+        0,
+      ),
+    [exercises, exerciseSetsByUid],
+  );
+
+  const totalVolumeKg = useMemo(
+    () =>
+      exercises.reduce((sum, ex) => {
+        const sets = exerciseSetsByUid[ex.uid] ?? [];
+        return (
+          sum +
+          sets
+            .filter((s) => s.done)
+            .reduce(
+              (a, s) =>
+                a +
+                parseFloat(s.weight || "0") *
+                  parseInt(s.reps || "0", 10),
+              0,
+            )
+        );
+      }, 0),
+    [exercises, exerciseSetsByUid],
+  );
 
   const syncExerciseToSession = useCallback(
     async (sessionId: string, ex: Exercise) => {
@@ -539,15 +657,21 @@ export default function WorkoutScreen() {
   );
 
   return (
-    <View style={s.screen}>
+    <SafeAreaView edges={["top"]} style={s.screen}>
       <StatusBar barStyle="light-content" backgroundColor={T.bg0} />
 
       {activeWorkout && startTime != null && (
         <WorkoutHeader
           startTime={startTime}
           name={workoutName}
+          onNameChange={setWorkoutName}
           onFinish={finishWorkout}
           finishDisabled={finishingWorkout}
+          onBack={finishWorkout}
+          totalVolume={totalVolumeKg}
+          completedSets={completedSets}
+          totalSets={totalSets}
+          exerciseCount={exerciseCount}
         />
       )}
 
@@ -562,74 +686,44 @@ export default function WorkoutScreen() {
       >
         {/* ── IDLE HEADER ── */}
         {!activeWorkout && (
-          <View style={s.header}>
-            <View style={s.headerLeft}>
-              <View style={s.datePill}>
-                <Ionicons name="barbell-outline" size={10} color={T.muted} />
-                <Text style={s.dateText}>TRAINING</Text>
+          <>
+            <View style={s.header}>
+              <View style={s.headerLeft}>
+                <View style={s.datePill}>
+                  <Ionicons name="barbell-outline" size={10} color={T.muted} />
+                  <Text style={s.dateText}>TRAINING</Text>
+                </View>
+                <Text style={s.greeting}>Ready to build,</Text>
+                <Text style={s.heroName}>TRAIN.</Text>
               </View>
-              <Text style={s.greeting}>READY TO WORK,</Text>
-              <Text style={s.heroName}>TRAIN 💪</Text>
-            </View>
-          </View>
-        )}
-
-        {/* ── ACTIVE: name + progress ── */}
-        {activeWorkout && (
-          <View style={s.activeTopBar}>
-            {/* Editable name */}
-            <View style={s.nameRow}>
-              {editingName ? (
-                <TextInput
-                  value={workoutName}
-                  onChangeText={setWorkoutName}
-                  onBlur={() => setEditingName(false)}
-                  autoFocus
-                  style={s.nameInput}
-                  placeholderTextColor={T.muted}
-                />
-              ) : (
-                <TouchableOpacity
-                  onPress={() => setEditingName(true)}
-                  style={s.nameEditTouchable}
-                  activeOpacity={0.7}
-                >
-                  <Text style={s.nameEditText}>
-                    {workoutName.toUpperCase()}
-                  </Text>
-                  <View style={s.editBadge}>
-                    <Ionicons name="pencil" size={9} color={T.muted} />
-                    <Text style={s.editBadgeText}>RENAME</Text>
-                  </View>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity style={s.menuBtn} activeOpacity={0.7}>
+                <Ionicons name="ellipsis-horizontal" size={20} color={T.sub} />
+              </TouchableOpacity>
             </View>
 
-            {/* Exercise progress dots */}
-            {exerciseCount > 0 && (
-              <View style={s.progressInfo}>
-                <Text style={s.progressText}>
-                  {exerciseCount} exercise{exerciseCount !== 1 ? "s" : ""} · tap
-                  ✓ on each set when done
-                </Text>
-                <WorkoutSteps exerciseCount={exerciseCount} doneCount={0} />
-              </View>
-            )}
-          </View>
+            {/* ── STREAK CARD ── */}
+            <View style={s.px}>
+              <StreakCard
+                streakDays={streakDays}
+                thisWeek={thisWeek}
+                weekGoal={WEEK_GOAL}
+              />
+            </View>
+            <SectionGap />
+          </>
         )}
 
-        {/* ── ACTIVE: how-to hint (first time only) ── */}
+        {/* ── ACTIVE: blue callout tip banner ── */}
         {activeWorkout && exerciseCount > 0 && (
           <View style={s.px}>
             <View style={s.hintCard}>
               <Ionicons
-                name="information-circle-outline"
+                name="information-circle"
                 size={15}
                 color={T.blue}
               />
               <Text style={s.hintText}>
-                Enter weight &amp; reps for each set, then tap the{" "}
-                <Text style={{ color: T.lime }}>✓</Text> to mark it done.
+                Enter weight &amp; reps, then tap the checkmark to log each set.
               </Text>
             </View>
           </View>
@@ -655,30 +749,33 @@ export default function WorkoutScreen() {
           </View>
         )}
 
-        {/* ── ACTIVE: action bar ── */}
+        {/* ── ACTIVE: action bar — ADD EXERCISE + appended timer badge ── */}
         {activeWorkout && (
           <View style={s.actionBar}>
-            <TouchableOpacity
-              disabled={sessionStarting || finishingWorkout}
-              onPress={() => setShowLibrary(true)}
-              style={s.addExBtn}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="add" size={18} color={T.lime} />
-              <Text style={s.addExBtnText}>ADD EXERCISE</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              disabled={finishingWorkout}
-              onPress={() => setShowTimer(true)}
-              style={s.timerBtn}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="timer-outline" size={20} color={T.text} />
-            </TouchableOpacity>
+            <View style={s.addExRow}>
+              <TouchableOpacity
+                disabled={sessionStarting || finishingWorkout}
+                onPress={() => setShowLibrary(true)}
+                style={s.addExBtn}
+                activeOpacity={0.82}
+              >
+                <Ionicons name="add" size={18} color={T.lime} />
+                <Text style={s.addExBtnText}>+ ADD EXERCISE</Text>
+              </TouchableOpacity>
+              {/* Timer badge appended to right edge */}
+              <TouchableOpacity
+                disabled={finishingWorkout}
+                onPress={() => setShowTimer(true)}
+                style={s.timerBadge}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="timer-outline" size={17} color={T.text} />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
-        {/* ── ACTIVE: finish reminder ── */}
+        {/* ── ACTIVE: finish & save — full-width lime banner ── */}
         {activeWorkout && exerciseCount > 0 && (
           <View style={s.px}>
             <TouchableOpacity
@@ -687,13 +784,9 @@ export default function WorkoutScreen() {
               style={s.finishBanner}
               activeOpacity={0.85}
             >
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={18}
-                color={T.lime}
-              />
+              <Ionicons name="checkmark-circle" size={20} color={T.bg0} />
               <Text style={s.finishBannerText}>
-                DONE? TAP TO FINISH &amp; SAVE
+                Done? Finish &amp; save session
               </Text>
             </TouchableOpacity>
           </View>
@@ -702,9 +795,9 @@ export default function WorkoutScreen() {
         {/* ── IDLE: quick start ── */}
         {!activeWorkout && (
           <>
-            <SectionLabel label="QUICK START" icon="flash-outline" />
+            <SectionLabel label="QUICK START" icon="flash" />
             <View style={s.px}>
-              <View style={s.card}>
+              <View style={s.templatesContainer}>
                 {(WORKOUT_TEMPLATES as Template[]).map((tpl, i) => (
                   <TemplateCard
                     key={tpl.id}
@@ -722,10 +815,10 @@ export default function WorkoutScreen() {
                 >
                   <Ionicons
                     name="add-circle-outline"
-                    size={15}
+                    size={14}
                     color={T.muted}
                   />
-                  <Text style={s.blankBtnText}>START BLANK WORKOUT</Text>
+                  <Text style={s.blankBtnText}>Start blank workout</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -736,7 +829,11 @@ export default function WorkoutScreen() {
         {/* ── IDLE: recent sessions ── */}
         {!activeWorkout && (
           <>
-            <SectionLabel label="RECENT SESSIONS" icon="time-outline" />
+            <SectionLabel
+              label="RECENT SESSIONS"
+              icon="time-outline"
+              right={<Text style={s.sectionHdrLink}>View all ›</Text>}
+            />
             <View style={s.px}>
               {historyLoading ? (
                 <View style={s.loadingWrap}>
@@ -780,7 +877,7 @@ export default function WorkoutScreen() {
         onAdd={addExercise}
       />
       <TimerModal visible={showTimer} onClose={() => setShowTimer(false)} />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -797,100 +894,174 @@ const s = StyleSheet.create({
   scrollContent: { paddingBottom: 110 },
   px: { paddingHorizontal: 16 },
 
-  // ── Idle header (mirrors Dashboard) ──────────────────────────────────────
+  // ── Idle header ───────────────────────────────────────────────────────────
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 56 : 28,
+    paddingTop: 12,
     paddingBottom: 20,
   },
-  headerLeft: { gap: 2 },
+  headerLeft: { gap: 2, flex: 1 },
   datePill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    marginBottom: 4,
+    gap: 5,
+    marginBottom: 6,
   },
   dateText: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 10,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 12,
     color: T.muted,
-    letterSpacing: 0.8,
+    letterSpacing: 1.5,
   },
   greeting: {
-    fontFamily: "DMSans_600SemiBold",
-    fontSize: 11,
+    fontFamily: "DMSans_400Regular",
+    fontSize: 13,
     color: T.sub,
-    letterSpacing: 1.1,
   },
   heroName: {
     fontFamily: "BarlowCondensed_900Black",
-    fontSize: 40,
+    fontSize: 38,
     color: T.text,
-    lineHeight: 42,
+    lineHeight: 40,
+    letterSpacing: 0.5,
+  },
+  menuBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: T.bg2,
+    borderWidth: 1,
+    borderColor: T.borderMid,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
   },
 
-  // ── Section labels (mirrors Dashboard) ───────────────────────────────────
-  sectionLabelRow: {
+  // ── Streak card ───────────────────────────────────────────────────────────
+  streakCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 16,
-    marginBottom: 10,
+    backgroundColor: "#0D1A0D",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: T.lime + "18",
+    padding: 16,
+    gap: 0,
   },
-  sectionLabel: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 11,
+  streakLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  streakFlameWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: T.lime + "18",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  streakLeftText: { gap: 2 },
+  streakLabel: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 9,
     color: T.muted,
-    letterSpacing: 1.4,
+    letterSpacing: 1.0,
+  },
+  streakValueRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
+  streakValue: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 28,
+    color: T.text,
+    lineHeight: 30,
+  },
+  streakUnit: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 13,
+    color: T.sub,
+    marginLeft: 3,
+  },
+  streakDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: T.border,
+    marginHorizontal: 16,
+  },
+  streakRight: {
+    alignItems: "flex-end",
+    gap: 2,
   },
 
-  // ── Card shell (mirrors Dashboard card bg) ────────────────────────────────
-  card: {
-    backgroundColor: T.bg1,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: T.border,
-    overflow: "hidden",
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    gap: 4,
+  // ── Section header ────────────────────────────────────────────────────────
+  sectionHdr: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  sectionHdrLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  sectionHdrTitle: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 15,
+    color: T.text,
+    letterSpacing: 1.0,
+  },
+  sectionHdrLink: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 12,
+    color: T.lime,
+  },
+
+  // ── Templates container ───────────────────────────────────────────────────
+  templatesContainer: {
+    gap: 10,
   },
 
   // ── Template card ─────────────────────────────────────────────────────────
   templateCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: T.bg2,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: T.borderMid,
+    backgroundColor: T.bg1,
+    borderRadius: 16,
     overflow: "hidden",
-    paddingRight: 12,
+    paddingRight: 14,
     gap: 12,
   },
   templateStripe: {
-    width: 3,
+    width: 4,
     alignSelf: "stretch",
-    opacity: 0.8,
   },
   templateIconWrap: {
     width: 38,
     height: 38,
     borderRadius: 11,
-    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 14,
+    marginVertical: 16,
   },
-  templateContent: { flex: 1, paddingVertical: 14, gap: 2 },
+  templateContent: { flex: 1, paddingVertical: 16, gap: 3 },
   templateName: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 16,
     color: T.text,
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
+  },
+  templateMuscles: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 11,
+    color: T.sub,
   },
   templateMeta: {
     fontFamily: "DMSans_400Regular",
@@ -899,23 +1070,22 @@ const s = StyleSheet.create({
   },
   templateExCount: {
     fontFamily: "DMSans_500Medium",
-    fontSize: 10,
-    letterSpacing: 0.3,
+    fontSize: 11,
     marginTop: 1,
   },
-  startChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+
+  // Outline START pill — transparent fill, accent-colored border + text
+  startPill: {
+    borderRadius: 999,
+    borderWidth: 1.5,
+    backgroundColor: "transparent",
+    paddingHorizontal: 13,
+    paddingVertical: 7,
   },
-  startChipText: {
+  startPillText: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 12,
-    letterSpacing: 1,
+    fontSize: 13,
+    letterSpacing: 0.5,
   },
 
   // ── Blank workout button ──────────────────────────────────────────────────
@@ -924,115 +1094,49 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 7,
-    marginTop: 2,
-    borderWidth: 1,
-    borderColor: T.border,
-    borderRadius: 14,
-    borderStyle: "dashed",
-    paddingVertical: 14,
-    marginHorizontal: 2,
-  },
-  blankBtnText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
-    color: T.muted,
-    letterSpacing: 1.4,
-  },
-
-  // ── Active: top area ──────────────────────────────────────────────────────
-  activeTopBar: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 4,
-    gap: 10,
-  },
-  nameRow: {},
-  nameEditTouchable: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  nameEditText: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 28,
-    color: T.text,
-    letterSpacing: 0.3,
-  },
-  editBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: T.bg3,
     borderWidth: 1,
     borderColor: T.borderMid,
-    borderRadius: 7,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    borderRadius: 16,
+    paddingVertical: 13,
   },
-  editBadgeText: {
+  blankBtnText: {
     fontFamily: "DMSans_500Medium",
-    fontSize: 9,
-    color: T.muted,
-    letterSpacing: 1.5,
-  },
-  nameInput: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 28,
-    color: T.text,
-    borderBottomWidth: 2,
-    borderBottomColor: T.lime,
-    paddingBottom: 4,
-  },
-  progressInfo: {
-    gap: 6,
-  },
-  progressText: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 12,
+    fontSize: 13,
     color: T.sub,
   },
-  stepsRow: {
-    flexDirection: "row",
-    gap: 4,
-    flexWrap: "wrap",
-  },
-  stepDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  stepDotDone: { backgroundColor: T.lime },
-  stepDotActive: { backgroundColor: T.lime + "60" },
-  stepDotIdle: { backgroundColor: T.muted },
 
-  // ── Hint card ─────────────────────────────────────────────────────────────
+  // ── Hint card (blue callout tip banner) ──────────────────────────────────
   hintCard: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 8,
-    backgroundColor: T.blue + "12",
+    backgroundColor: T.blue + "14",
     borderWidth: 1,
-    borderColor: T.blue + "25",
+    borderColor: T.blue + "30",
     borderRadius: 12,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     marginBottom: 12,
-    marginTop: 4,
+    marginTop: 8,
   },
   hintText: {
     flex: 1,
     fontFamily: "DMSans_400Regular",
     fontSize: 12,
-    color: T.sub,
-    lineHeight: 18,
+    color: T.blue + "CC",
+    lineHeight: 17,
   },
 
-  // ── Active: action bar ────────────────────────────────────────────────────
+  // ── Active: action bar — ADD EXERCISE + appended timer badge ──────────────
   actionBar: {
-    flexDirection: "row",
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
-    gap: 10,
+  },
+  addExRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 0,
   },
   addExBtn: {
     flex: 1,
@@ -1040,49 +1144,61 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: T.lime + "18",
-    borderWidth: 1,
-    borderColor: T.lime + "44",
+    borderWidth: 1.5,
+    borderColor: T.lime + "55",
     borderRadius: 14,
-    paddingVertical: 15,
+    paddingVertical: 13,
+    backgroundColor: "transparent",
   },
   addExBtnText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 15,
     color: T.lime,
-    letterSpacing: 1.2,
+    letterSpacing: 0.8,
   },
-  timerBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: T.bg3,
+  // Stopwatch badge: circular, anchored to right of add-ex button
+  timerBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: T.bg2,
     borderWidth: 1,
     borderColor: T.borderMid,
     alignItems: "center",
     justifyContent: "center",
+    marginLeft: -6, // slight overlap for attached look
   },
 
-  // ── Finish banner ─────────────────────────────────────────────────────────
+  // ── Finish banner — massive full-width solid lime ─────────────────────────
   finishBanner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    backgroundColor: T.lime + "12",
-    borderWidth: 1,
-    borderColor: T.lime + "30",
-    borderRadius: 14,
-    paddingVertical: 14,
+    gap: 10,
+    backgroundColor: T.lime,
+    borderRadius: 16,
+    paddingVertical: 15,
     marginTop: 4,
     marginBottom: 8,
+    shadowColor: T.lime,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
   },
   finishBannerText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 14,
-    color: T.lime,
-    letterSpacing: 1.2,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 18,
+    color: T.bg0,
+    letterSpacing: 0.3,
   },
+
+  // ── Kept for step dots (used in WorkoutSteps helper) ──────────────────────
+  stepsRow: { flexDirection: "row", gap: 4, flexWrap: "wrap" },
+  stepDot: { width: 8, height: 8, borderRadius: 4 },
+  stepDotDone: { backgroundColor: T.lime },
+  stepDotActive: { backgroundColor: T.lime + "60" },
+  stepDotIdle: { backgroundColor: T.muted },
 
   // ── Empty exercise state ──────────────────────────────────────────────────
   emptyCard: {
@@ -1124,58 +1240,76 @@ const s = StyleSheet.create({
   },
   historyCard: {
     backgroundColor: T.bg1,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: T.border,
     overflow: "hidden",
   },
   historyRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: T.border,
   },
-  historyLeft: { flex: 1, gap: 3, paddingRight: 12 },
+  historyIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: T.lime + "14",
+    borderWidth: 1,
+    borderColor: T.lime + "28",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  historyLeft: { flex: 1, gap: 3 },
   historyName: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 15,
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 13,
     color: T.text,
-    letterSpacing: 0.3,
+    letterSpacing: -0.1,
   },
   historyMeta: {
     fontFamily: "DMSans_400Regular",
     fontSize: 11,
     color: T.sub,
   },
-  historyRight: { alignItems: "flex-end", gap: 3 },
+  historyRight: { alignItems: "flex-end", gap: 4 },
+  historyVolPill: {
+    backgroundColor: T.lime + "14",
+    borderWidth: 1,
+    borderColor: T.lime + "28",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
   historyVol: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 15,
+    fontSize: 13,
     color: T.lime,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   historySets: {
     fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: T.sub,
+    color: T.muted,
   },
   emptyHistory: {
     paddingVertical: 36,
     alignItems: "center",
     gap: 8,
     backgroundColor: T.bg1,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: T.border,
   },
   emptyHistoryTitle: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 16,
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 15,
     color: T.text,
-    letterSpacing: 0.5,
+    letterSpacing: -0.1,
     opacity: 0.6,
   },
   emptyHistoryText: {

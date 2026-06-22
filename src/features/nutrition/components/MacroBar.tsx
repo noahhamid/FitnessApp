@@ -1,8 +1,14 @@
-import { COLORS } from "@/src/ui/tokens/colors";
-import { spacing } from "@/src/ui/tokens/spacing";
-import { FONTS } from "@/src/ui/tokens/typography";
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
+
+const T = {
+  bg3: "#222228",
+  lime: "#C8F135",
+  red: "#FF3D3D",
+  text: "#F2F2F5",
+  sub: "#7A7A8C",
+  muted: "#4A4A58",
+};
 
 type Props = {
   label: string;
@@ -12,16 +18,14 @@ type Props = {
 };
 
 export function MacroBar({ label, current, goal, color }: Props) {
-  // ✅ Guard against division by zero if goal hasn't loaded yet
   const pct = goal > 0 ? Math.min((current / goal) * 100, 100) : 0;
   const isOver = current > goal && goal > 0;
   const animW = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // ✅ Only animate when pct actually changes, not on every render
     Animated.timing(animW, {
       toValue: pct,
-      duration: 900,
+      duration: 800,
       useNativeDriver: false,
     }).start();
   }, [pct]);
@@ -31,53 +35,48 @@ export function MacroBar({ label, current, goal, color }: Props) {
     outputRange: ["0%", "100%"],
   });
 
+  const activeColor = isOver ? T.red : color;
+
   return (
     <View style={s.wrap}>
-      {/* Label row */}
+      {/* Label + values row */}
       <View style={s.labelRow}>
         <View style={s.labelLeft}>
-          <View style={[s.dot, { backgroundColor: color }]} />
+          <View style={[s.dot, { backgroundColor: activeColor }]} />
           <Text style={s.label}>{label}</Text>
           {isOver && (
-            <View
-              style={[
-                s.overBadge,
-                {
-                  borderColor: COLORS.red + "40",
-                  backgroundColor: COLORS.red + "15",
-                },
-              ]}
-            >
+            <View style={s.overBadge}>
               <Text style={s.overText}>OVER</Text>
             </View>
           )}
         </View>
-
         <View style={s.valueRow}>
-          <Text style={[s.current, { color }]}>{Math.round(current)}g</Text>
+          <Text style={[s.current, { color: activeColor }]}>
+            {Math.round(current)}
+          </Text>
           <Text style={s.separator}>/</Text>
           <Text style={s.goal}>{goal}g</Text>
-          <Text style={[s.pctBadge, { color: isOver ? COLORS.red : color }]}>
+          <Text style={[s.pct, { color: activeColor }]}>
             {Math.round(pct)}%
           </Text>
         </View>
       </View>
 
-      {/* Track */}
+      {/* Slim track */}
       <View style={s.track}>
         <Animated.View
           style={[
             s.fill,
             {
               width: barWidth,
-              backgroundColor: isOver ? COLORS.red : color,
-              shadowColor: isOver ? COLORS.red : color,
+              backgroundColor: activeColor,
+              shadowColor: activeColor,
             },
           ]}
         />
       </View>
 
-      {/* Remaining */}
+      {/* Remaining hint */}
       <Text style={s.remaining}>
         {isOver
           ? `${Math.round(current - goal)}g over goal`
@@ -89,11 +88,9 @@ export function MacroBar({ label, current, goal, color }: Props) {
 
 const s = StyleSheet.create({
   wrap: {
-    marginBottom: spacing.md,
-    gap: spacing.xs,
+    gap: 5,
   },
 
-  // Label row
   labelRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -102,78 +99,77 @@ const s = StyleSheet.create({
   labelLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.xs,
+    gap: 6,
   },
   dot: {
-    width: 6,
-    height: 6,
+    width: 5,
+    height: 5,
     borderRadius: 3,
   },
   label: {
-    fontFamily: FONTS.semiBold,
+    fontFamily: "DMSans_500Medium",
     fontSize: 12,
-    color: COLORS.text,
-    letterSpacing: 0.3,
+    color: T.text,
   },
   overBadge: {
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 4,
+    backgroundColor: T.red + "18",
     borderWidth: 1,
+    borderColor: T.red + "35",
   },
   overText: {
-    fontFamily: FONTS.bold,
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 9,
-    color: COLORS.red,
+    color: T.red,
     letterSpacing: 0.5,
   },
 
-  // Value row
   valueRow: {
     flexDirection: "row",
     alignItems: "baseline",
     gap: 3,
   },
   current: {
-    fontFamily: FONTS.bold,
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 14,
     lineHeight: 16,
   },
   separator: {
-    fontFamily: FONTS.regular,
+    fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: COLORS.muted,
+    color: T.muted,
   },
   goal: {
-    fontFamily: FONTS.regular,
+    fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: COLORS.muted,
+    color: T.muted,
   },
-  pctBadge: {
-    fontFamily: FONTS.bold,
+  pct: {
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 11,
     marginLeft: 2,
   },
 
-  // Track
+  // Slim 5px track (down from 7px)
   track: {
-    height: 7,
-    backgroundColor: COLORS.muted2,
-    borderRadius: 4,
+    height: 5,
+    backgroundColor: T.bg3,
+    borderRadius: 3,
     overflow: "hidden",
   },
   fill: {
     height: "100%",
-    borderRadius: 4,
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
+    borderRadius: 3,
+    shadowOpacity: 0.55,
+    shadowRadius: 5,
     shadowOffset: { width: 0, height: 0 },
   },
 
-  // Remaining hint
   remaining: {
-    fontFamily: FONTS.regular,
+    fontFamily: "DMSans_400Regular",
     fontSize: 10,
-    color: COLORS.muted,
+    color: T.muted,
   },
 });

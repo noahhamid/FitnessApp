@@ -6,7 +6,7 @@ import {
   useWeightLog,
 } from "../hooks/useWeight";
 import { toWeightChartPoints } from "../services/weight.service";
-import { FONTS } from "@/src/ui/tokens/typography";
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -28,33 +28,32 @@ import Svg, {
   Defs,
   Line,
   LinearGradient,
-  Polygon,
+  Path,
+  Rect,
   Stop,
+  Text as SvgText,
 } from "react-native-svg";
-import { PrimaryButton, SectionHeader, StatsCard } from "./StatsCard";
 
 const { width: SW } = Dimensions.get("window");
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
-  bg: "#0A0A0C",
   bg0: "#0A0A0C",
   bg1: "#111114",
   bg2: "#18181D",
   bg3: "#222228",
   lime: "#C8F135",
   red: "#FF3D3D",
-  orange: "#FF8A00",
-  blue: "#3D8EFF",
+  orange: "#F97316",
+  blue: "#3B82F6",
   text: "#F2F2F5",
   sub: "#7A7A8C",
   muted: "#4A4A58",
   border: "#FFFFFF0F",
   borderMid: "#FFFFFF18",
-  card: "#141414",
-  accent: "#C8F135",
 };
-const COLORS = T;
 
-// ─── Animated progress bar ───────────────────────────────────────────────────
+// ─── Animated goal progress bar ──────────────────────────────────────────────
 function AnimatedProgressBar({ progress }: { progress: number }) {
   const anim = useRef(new Animated.Value(0)).current;
 
@@ -73,26 +72,59 @@ function AnimatedProgressBar({ progress }: { progress: number }) {
   });
 
   return (
-    <View style={styles.progressTrack}>
-      <Animated.View style={[styles.progressFill, { width }]} />
-      {/* Shine overlay */}
-      <Animated.View style={[styles.progressShine, { width }]} />
+    <View style={s.progressTrack}>
+      <Animated.View style={[s.progressFill, { width }]} />
     </View>
   );
 }
 
+// ── Bezier path builder (Catmull-Rom → cubic bezier) ─────────────────────────
+function bezierLine(pts: { x: number; y: number }[]): string {
+  if (pts.length === 0) return "";
+  if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+
+  let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+
+  for (let i = 1; i < pts.length; i++) {
+    const p0 = pts[Math.max(i - 2, 0)];
+    const p1 = pts[i - 1];
+    const p2 = pts[i];
+    const p3 = pts[Math.min(i + 1, pts.length - 1)];
+
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)} ${cp2x.toFixed(1)} ${cp2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+
+  return d;
+}
+
+// Sub-sample to at most maxCount items, always keeping first & last
+function subSample<T>(arr: T[], maxCount: number): T[] {
+  if (arr.length <= maxCount) return arr;
+  const result: T[] = [];
+  const step = (arr.length - 1) / (maxCount - 1);
+  for (let i = 0; i < maxCount; i++) {
+    result.push(arr[Math.round(i * step)]);
+  }
+  return result;
+}
+
 // ─── SVG Line chart ───────────────────────────────────────────────────────────
 function WeightChart({ series }: { series: WeightChartPoint[] }) {
-  const chartW = SW - 48;
-  const chartH = 130;
-  const padX = 16;
-  const padY = 20;
+  const chartW = SW - 64;
+  const chartH = 120;
+  const padX = 10;
+  const padY = 18;   // extra top padding for the floating badge
 
   if (series.length < 2) {
     return (
-      <View style={{ paddingVertical: 20 }}>
-        <Text style={styles.chartLabel}>
-          Log at least two weights to unlock this chart.
+      <View style={{ paddingVertical: 24, alignItems: "center" }}>
+        <Text style={s.emptyChart}>
+          Log at least two weights to see your trend.
         </Text>
       </View>
     );
@@ -103,116 +135,131 @@ function WeightChart({ series }: { series: WeightChartPoint[] }) {
   const maxW = Math.max(...weights) + 1;
   const div = Math.max(series.length - 1, 1);
 
-  const toX = (i: number) =>
-    padX + (i / div) * (chartW - padX * 2);
+  const toX = (i: number) => padX + (i / div) * (chartW - padX * 2);
   const toY = (w: number) =>
     padY + (1 - (w - minW) / (maxW - minW)) * (chartH - padY * 2);
 
-  const pts = series.map((d, i) => ({ x: toX(i), y: toY(d.w), ...d }));
+  const coordPts = series.map((d, i) => ({ x: toX(i), y: toY(d.w) }));
 
-  // Build filled area polygon points string
-  const areaPoints = [
-    `${pts[0].x},${chartH}`,
-    ...pts.map((p) => `${p.x},${p.y}`),
-    `${pts[pts.length - 1].x},${chartH}`,
-  ].join(" ");
+  // Bezier paths
+  const linePath = bezierLine(coordPts);
+  const areaPath =
+    coordPts.length >= 2
+      ? `${linePath} L ${toX(div)} ${chartH} L ${toX(0)} ${chartH} Z`
+      : "";
+
+  // Floating badge for last point
+  const lastPt = coordPts[coordPts.length - 1];
+  const lastW = series[series.length - 1].w;
+  const badgeLabel = `${lastW.toFixed(1)} kg`;
+  const badgeW = badgeLabel.length * 6.5 + 14;
+  const badgeH = 17;
+  const badgeX = Math.min(
+    Math.max(lastPt.x - badgeW / 2, padX),
+    chartW - badgeW - padX,
+  );
+  const badgeY = Math.max(lastPt.y - badgeH - 7, 2);
+
+  // X-axis labels — at most 4, clean format "Jun 22"
+  const allLabels = series.map((d) => d.date.replace(/,.*$/, ""));
+  const xLabels = subSample(allLabels, 4);
 
   return (
     <View>
       <Svg width={chartW} height={chartH}>
         <Defs>
           <LinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor={COLORS.accent} stopOpacity="0.35" />
-            <Stop offset="100%" stopColor={COLORS.accent} stopOpacity="0.0" />
+            <Stop offset="0%" stopColor={T.lime} stopOpacity="0.26" />
+            <Stop offset="80%" stopColor={T.lime} stopOpacity="0.04" />
+            <Stop offset="100%" stopColor={T.lime} stopOpacity="0" />
           </LinearGradient>
         </Defs>
 
-        {/* Filled area */}
-        <Polygon points={areaPoints} fill="url(#areaGrad)" />
-
         {/* Grid lines */}
-        {[0, 0.33, 0.66, 1].map((f, i) => (
+        {[0, 0.5, 1].map((f, i) => (
           <Line
             key={i}
             x1={0}
             y1={padY + f * (chartH - padY * 2)}
             x2={chartW}
             y2={padY + f * (chartH - padY * 2)}
-            stroke={COLORS.border}
+            stroke={T.border}
             strokeWidth={1}
           />
         ))}
 
-        {/* Connecting lines */}
-        {pts.slice(0, -1).map((pt, i) => (
-          <Line
-            key={`line-${i}`}
-            x1={pt.x}
-            y1={pt.y}
-            x2={pts[i + 1].x}
-            y2={pts[i + 1].y}
-            stroke={COLORS.accent}
-            strokeWidth={2.5}
-            strokeLinecap="round"
+        {/* Gradient area fill */}
+        <Path d={areaPath} fill="url(#areaGrad)" />
+
+        {/* Smooth bezier line */}
+        <Path
+          d={linePath}
+          fill="none"
+          stroke={T.lime}
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Intermediate dots */}
+        {coordPts.slice(0, -1).map((pt, i) => (
+          <Circle
+            key={`dot-${i}`}
+            cx={pt.x}
+            cy={pt.y}
+            r={2.5}
+            fill={T.bg2}
+            stroke={T.lime}
+            strokeWidth="1.5"
           />
         ))}
 
-        {/* Data dots */}
-        {pts.map((pt, i) => {
-          const isLast = i === pts.length - 1;
-          return (
-            <Circle
-              key={`dot-${i}-${pt.date}`}
-              cx={pt.x}
-              cy={pt.y}
-              r={isLast ? 6 : 4}
-              fill={isLast ? COLORS.accent : COLORS.card}
-              stroke={COLORS.accent}
-              strokeWidth={isLast ? 0 : 2}
-            />
-          );
-        })}
+        {/* Last dot — larger filled */}
+        <Circle
+          cx={lastPt.x}
+          cy={lastPt.y}
+          r={5.5}
+          fill={T.lime}
+          stroke={T.bg0}
+          strokeWidth="1.5"
+        />
+
+        {/* Floating current-weight badge */}
+        <Rect
+          x={badgeX}
+          y={badgeY}
+          width={badgeW}
+          height={badgeH}
+          rx={8.5}
+          fill={T.lime + "22"}
+          stroke={T.lime + "77"}
+          strokeWidth="1"
+        />
+        <SvgText
+          x={badgeX + badgeW / 2}
+          y={badgeY + 11.5}
+          textAnchor="middle"
+          fontSize="9.5"
+          fill={T.lime}
+          fontFamily="DMSans_500Medium"
+        >
+          {badgeLabel}
+        </SvgText>
       </Svg>
 
-      {/* X-axis date labels */}
-      <View style={styles.chartXAxis}>
-        {series
-          .filter((_, i) => i % 2 === 0)
-          .map((d, i) => (
-            <Text key={`lbl-${i}-${d.date}`} style={styles.chartLabel}>
-              {String(d.date).split(/[\s,]+/).filter(Boolean).slice(-2)[0]}
-            </Text>
-          ))}
-      </View>
-
-      {/* Latest weight label positioned above last dot */}
-      {(() => {
-        const last = pts[pts.length - 1];
-        return (
-          <View
-            style={[
-              styles.latestBadge,
-              { left: last.x - 32, top: last.y - 34 },
-            ]}
+      {/* X-axis — subsampled, no duplicates */}
+      <View style={s.chartXAxis}>
+        {xLabels.map((lbl, i) => (
+          <Text
+            key={`xl-${i}`}
+            style={[s.chartLabel, i === xLabels.length - 1 && { color: T.lime }]}
           >
-            <Text style={styles.latestBadgeText}>{last.w} kg</Text>
-          </View>
-        );
-      })()}
+            {lbl}
+          </Text>
+        ))}
+      </View>
     </View>
   );
-}
-
-function displayLogDate(logDate: string): string {
-  try {
-    return new Date(`${logDate}T00:00:00.000Z`).toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return logDate;
-  }
 }
 
 // ─── History row ──────────────────────────────────────────────────────────────
@@ -220,60 +267,60 @@ function HistoryRow({
   entry,
   prev,
   isFirst,
+  isLast,
 }: {
   entry: { date: string; w: number };
   prev: { date: string; w: number } | null;
   isFirst: boolean;
+  isLast: boolean;
 }) {
-  // FIX: diff = current entry vs previous chronological entry
   const diff = prev !== null ? +(entry.w - prev.w).toFixed(1) : null;
   const isDown = diff !== null && diff < 0;
   const isUp = diff !== null && diff > 0;
 
   return (
-    <View
-      style={[
-        styles.historyRow,
-        isFirst && { borderTopWidth: 1, borderTopColor: COLORS.border },
-      ]}
-    >
-      <View style={[styles.historyDot, isFirst && styles.historyDotActive]} />
-      <View style={styles.historyInfo}>
-        <Text style={[styles.historyDate, isFirst && { color: COLORS.accent }]}>
+    <View style={[s.historyRow, isLast && { borderBottomWidth: 0 }]}>
+      {/* Left: dot timeline marker */}
+      <View style={s.historyTimeline}>
+        <View style={[s.historyDot, isFirst && s.historyDotActive]} />
+        {!isLast && <View style={s.historyLine} />}
+      </View>
+
+      {/* Center: date */}
+      <View style={s.historyInfo}>
+        <Text style={[s.historyDate, isFirst && { color: T.lime }]}>
           {entry.date}
         </Text>
-        {isFirst && <Text style={styles.historyBadge}>latest</Text>}
+        {isFirst && (
+          <View style={s.latestPill}>
+            <Text style={s.latestPillText}>LATEST</Text>
+          </View>
+        )}
       </View>
-      <Text style={[styles.historyWeight, isFirst && { color: COLORS.accent }]}>
-        {entry.w} kg
-      </Text>
-      {diff !== null && (
-        <View
-          style={[
-            styles.diffBadge,
-            isDown
-              ? styles.diffDown
-              : isUp
-                ? styles.diffUp
-                : styles.diffNeutral,
-          ]}
-        >
-          <Text
+
+      {/* Right: weight + diff badge */}
+      <View style={s.historyRight}>
+        <Text style={[s.historyWeight, isFirst && { color: T.lime }]}>
+          {entry.w} kg
+        </Text>
+        {diff !== null && (
+          <View
             style={[
-              styles.diffText,
-              {
-                color: isDown
-                  ? COLORS.accent
-                  : isUp
-                    ? COLORS.red
-                    : COLORS.muted,
-              },
+              s.diffBadge,
+              isDown ? s.diffDown : isUp ? s.diffUp : s.diffNeutral,
             ]}
           >
-            {isDown ? "↓" : isUp ? "↑" : "–"} {Math.abs(diff)}
-          </Text>
-        </View>
-      )}
+            <Text
+              style={[
+                s.diffText,
+                { color: isDown ? T.lime : isUp ? T.red : T.muted },
+              ]}
+            >
+              {isDown ? "↓" : isUp ? "↑" : "—"} {Math.abs(diff)}
+            </Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -294,10 +341,7 @@ export function WeightSection() {
     [rows],
   );
 
-  const chartPoints = useMemo(
-    () => toWeightChartPoints(sorted),
-    [sorted],
-  );
+  const chartPoints = useMemo(() => toWeightChartPoints(sorted), [sorted]);
 
   const goalW =
     typeof goalRecord?.goal_weight === "number"
@@ -311,9 +355,7 @@ export function WeightSection() {
   const current = sorted.at(-1)?.weight ?? 0;
 
   const lostDelta = startW - current;
-  const lostTile = `${lostDelta >= 0 ? "-" : "+"}${Math.abs(lostDelta).toFixed(
-    1,
-  )}`;
+  const lostTile = `${lostDelta >= 0 ? "−" : "+"}${Math.abs(lostDelta).toFixed(1)}`;
 
   const journey = Math.abs(startW - goalW) || 1;
   const progressed = Math.abs(startW - current);
@@ -326,97 +368,100 @@ export function WeightSection() {
 
   const reversedHist = useMemo(
     () =>
-      [...sorted].reverse().map((e) => ({
-        date: displayLogDate(e.log_date),
-        w: e.weight,
-        id: e.id,
-      })),
+      [...sorted].reverse().map((e) => {
+        const d = new Date(`${e.log_date}T00:00:00.000Z`);
+        const label = d.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+        return { date: label, w: e.weight, id: e.id };
+      }),
     [sorted],
   );
+
+  // 4 independent stat cards
+  const statCards = [
+    { label: "Current", value: current > 0 ? current.toFixed(1) : "—", unit: "kg", color: T.text },
+    { label: "Lost", value: lostTile, unit: "kg", color: T.lime },
+    { label: "To Goal", value: sorted.length === 0 ? "—" : `${toGoMag.toFixed(1)}`, unit: "kg", color: T.orange },
+    { label: "Progress", value: `${sorted.length < 2 ? 0 : progress}`, unit: "%", color: T.blue },
+  ];
 
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 32 }}
+      contentContainerStyle={s.scroll}
     >
-      {logsPending ? (
-        <View style={{ paddingVertical: 16, alignItems: "flex-start" }}>
-          <ActivityIndicator color={COLORS.accent} />
+      {logsPending && (
+        <View style={s.loadingRow}>
+          <ActivityIndicator size="small" color={T.lime} />
         </View>
-      ) : null}
-      {/* ── Summary cards ── */}
-      <View style={styles.cardGrid}>
-        {[
-          {
-            label: "Current",
-            value: `${(current ?? 0).toFixed(1)}`,
-            unit: "kg",
-            color: COLORS.text,
-          },
-          {
-            label: "Lost",
-            value: `${lostTile}`,
-            unit: "kg",
-            color: COLORS.accent,
-          },
-          {
-            label: "To Goal",
-            value:
-              sorted.length === 0 ? `—` : `${toGoMag.toFixed(1)}`,
-            unit: "kg",
-            color: COLORS.orange,
-          },
-          {
-            label: "Progress",
-            value: `${sorted.length < 2 ? 0 : progress}`,
-            unit: "%",
-            color: COLORS.blue,
-          },
-        ].map((card) => (
-          <View key={card.label} style={styles.cardCell}>
-            <StatsCard {...card} />
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          4 INDEPENDENT FLOATING STAT CARDS
+      ══════════════════════════════════════════════════════════════════ */}
+      <View style={s.statsRow}>
+        {statCards.map((stat) => (
+          <View key={stat.label} style={s.statCard}>
+            <Text style={[s.statValue, { color: stat.color }]}>
+              {stat.value}
+            </Text>
+            <Text style={s.statUnit}>{stat.unit}</Text>
+            <Text style={s.statLabel}>{stat.label}</Text>
           </View>
         ))}
       </View>
 
-      {/* ── Goal progress ── */}
-      <View style={styles.section}>
-        <View style={styles.sectionRow}>
-          <Text style={styles.sectionTitle}>GOAL PROGRESS</Text>
-          <Text style={[styles.sectionValue, { color: COLORS.accent }]}>
+      {/* ══════════════════════════════════════════════════════════════════
+          GOAL PROGRESS CARD
+      ══════════════════════════════════════════════════════════════════ */}
+      <View style={s.card}>
+        <View style={s.cardHeader}>
+          <Text style={s.cardTitle}>Goal Progress</Text>
+          <Text style={[s.cardBadge, { color: T.lime }]}>
             {sorted.length < 2 ? 0 : progress}%
           </Text>
         </View>
         <AnimatedProgressBar progress={sorted.length < 2 ? 0 : progress} />
-        <View style={styles.sectionRow}>
-          <Text style={styles.mutedLabel}>Start: {startW.toFixed(1)} kg</Text>
-          <Text style={styles.mutedLabel}>Goal: {goalW.toFixed(1)} kg</Text>
+        <View style={s.progressLabels}>
+          <Text style={s.progressLabel}>Start · {startW.toFixed(1)} kg</Text>
+          <Text style={s.progressLabel}>Goal · {goalW.toFixed(1)} kg</Text>
         </View>
       </View>
 
-      {/* ── Weight trend ── */}
-      <View style={[styles.section, { overflow: "visible" }]}>
-        <SectionHeader title="Weight Trend" />
-        <View style={{ marginTop: 8 }}>
-          <WeightChart series={chartPoints} />
+      {/* ══════════════════════════════════════════════════════════════════
+          WEIGHT TREND CHART
+      ══════════════════════════════════════════════════════════════════ */}
+      <View style={s.card}>
+        <View style={s.cardHeader}>
+          <Text style={s.cardTitle}>Weight Trend</Text>
         </View>
+        <WeightChart series={chartPoints} />
       </View>
 
-      {/* ── Log button ── */}
-      <View style={{ marginBottom: 28 }}>
-        <PrimaryButton
-          label="⚖️  LOG TODAY'S WEIGHT"
-          onPress={() => setShowLogModal(true)}
-        />
-      </View>
+      {/* ══════════════════════════════════════════════════════════════════
+          LOG WEIGHT — full-width solid lime pill button
+      ══════════════════════════════════════════════════════════════════ */}
+      <TouchableOpacity
+        style={s.logBtn}
+        activeOpacity={0.82}
+        onPress={() => setShowLogModal(true)}
+      >
+        <Ionicons name="barbell-outline" size={16} color={T.bg0} />
+        <Text style={s.logBtnText}>Log Weight</Text>
+      </TouchableOpacity>
 
-      {/* ── History ── */}
-      <SectionHeader title="History" />
-      <View style={styles.section}>
-        {reversedHist.length === 0 ? (
-          <Text style={styles.chartLabel}>No weight entries yet.</Text>
-        ) : (
-          reversedHist.map((entry, i) => (
+      {/* ══════════════════════════════════════════════════════════════════
+          HISTORY — single unified dark surface card
+      ══════════════════════════════════════════════════════════════════ */}
+      {reversedHist.length > 0 && (
+        <View style={s.historyCard}>
+          <View style={s.cardHeader}>
+            <Text style={s.cardTitle}>History</Text>
+          </View>
+          {reversedHist.map((entry, i) => (
             <HistoryRow
               key={entry.id}
               entry={{ date: entry.date, w: entry.w }}
@@ -426,10 +471,19 @@ export function WeightSection() {
                   : null
               }
               isFirst={i === 0}
+              isLast={i === reversedHist.length - 1}
             />
-          ))
-        )}
-      </View>
+          ))}
+        </View>
+      )}
+
+      {reversedHist.length === 0 && !logsPending && (
+        <View style={s.emptyState}>
+          <Ionicons name="scale-outline" size={30} color={T.muted} />
+          <Text style={s.emptyStateText}>No weight entries yet</Text>
+          <Text style={s.emptyStateSub}>Tap Log Weight to get started</Text>
+        </View>
+      )}
 
       {/* ── Log modal ── */}
       <Modal visible={showLogModal} animationType="slide" transparent>
@@ -438,34 +492,35 @@ export function WeightSection() {
           style={{ flex: 1 }}
         >
           <TouchableOpacity
-            style={styles.modalBackdrop}
+            style={s.modalBackdrop}
             activeOpacity={1}
             onPress={() => setShowLogModal(false)}
           >
             <TouchableOpacity activeOpacity={1}>
-              <View style={styles.modalSheet}>
-                {/* Handle */}
-                <View style={styles.modalHandle} />
+              <View style={s.modalSheet}>
+                <View style={s.modalHandle} />
 
-                <Text style={styles.modalTitle}>LOG WEIGHT</Text>
+                <View style={s.modalHeader}>
+                  <Text style={s.modalTitle}>Log Weight</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowLogModal(false)}
+                    style={s.modalCloseBtn}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="close" size={14} color={T.sub} />
+                  </TouchableOpacity>
+                </View>
 
                 {/* Unit toggle */}
-                <View style={styles.unitToggle}>
+                <View style={s.unitToggle}>
                   {(["kg", "lbs"] as const).map((u) => (
                     <TouchableOpacity
                       key={u}
                       onPress={() => setUnit(u)}
-                      style={[
-                        styles.unitBtn,
-                        unit === u && styles.unitBtnActive,
-                      ]}
+                      style={[s.unitBtn, unit === u && s.unitBtnActive]}
+                      activeOpacity={0.8}
                     >
-                      <Text
-                        style={[
-                          styles.unitBtnText,
-                          unit === u && styles.unitBtnTextActive,
-                        ]}
-                      >
+                      <Text style={[s.unitBtnText, unit === u && s.unitBtnTextActive]}>
                         {u.toUpperCase()}
                       </Text>
                     </TouchableOpacity>
@@ -473,61 +528,54 @@ export function WeightSection() {
                 </View>
 
                 {/* Input */}
-                <View style={styles.inputWrapper}>
+                <View style={s.inputWrapper}>
                   <TextInput
                     value={newWeight}
                     onChangeText={setNewWeight}
                     placeholder={unit === "kg" ? "82.0" : "180.0"}
-                    placeholderTextColor={COLORS.muted}
+                    placeholderTextColor={T.muted}
                     keyboardType="decimal-pad"
-                    style={styles.weightInput}
+                    style={s.weightInput}
                     autoFocus
                   />
-                  <Text style={styles.inputUnit}>{unit}</Text>
+                  <Text style={s.inputUnit}>{unit}</Text>
                 </View>
 
                 {/* Buttons */}
-                <View style={styles.modalButtons}>
-                  <View style={{ flex: 1 }}>
-                    <PrimaryButton
-                      label="CANCEL"
-                      onPress={() => {
-                        setShowLogModal(false);
-                        setNewWeight("");
-                      }}
-                      outline
-                    />
-                  </View>
-                  <View style={{ width: 12 }} />
-                  <View style={{ flex: 1 }}>
-                    <PrimaryButton
-                      label={logMut.isPending ? "..." : "SAVE"}
-                      onPress={() => {
-                        const parsed = Number.parseFloat(
-                          newWeight.replace(",", "."),
-                        );
-                        if (!Number.isFinite(parsed) || parsed <= 0) {
-                          Alert.alert("Invalid weight", "Enter a positive number.");
-                          return;
-                        }
-                        const kg = unit === "lbs" ? parsed * 0.45359237 : parsed;
-                        logMut.mutate(
-                          { weight: +kg.toFixed(2), log_date: todayLocalYmd() },
-                          {
-                            onSuccess: () => {
-                              setShowLogModal(false);
-                              setNewWeight("");
-                            },
-                            onError: () =>
-                              Alert.alert(
-                                "Could not save",
-                                "Try again when you are online.",
-                              ),
-                          },
-                        );
-                      }}
-                    />
-                  </View>
+                <View style={s.modalButtons}>
+                  <TouchableOpacity
+                    style={s.cancelBtn}
+                    activeOpacity={0.8}
+                    onPress={() => { setShowLogModal(false); setNewWeight(""); }}
+                  >
+                    <Text style={s.cancelBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <View style={{ width: 10 }} />
+                  <TouchableOpacity
+                    style={[s.saveBtn, logMut.isPending && { opacity: 0.6 }]}
+                    activeOpacity={0.85}
+                    disabled={logMut.isPending}
+                    onPress={() => {
+                      const parsed = Number.parseFloat(newWeight.replace(",", "."));
+                      if (!Number.isFinite(parsed) || parsed <= 0) {
+                        Alert.alert("Invalid weight", "Enter a positive number.");
+                        return;
+                      }
+                      const kg = unit === "lbs" ? parsed * 0.45359237 : parsed;
+                      logMut.mutate(
+                        { weight: +kg.toFixed(2), log_date: todayLocalYmd() },
+                        {
+                          onSuccess: () => { setShowLogModal(false); setNewWeight(""); },
+                          onError: () =>
+                            Alert.alert("Could not save", "Try again when online."),
+                        },
+                      );
+                    }}
+                  >
+                    <Text style={s.saveBtnText}>
+                      {logMut.isPending ? "Saving…" : "Save"}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </TouchableOpacity>
@@ -539,56 +587,81 @@ export function WeightSection() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  // Grid
-  cardGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginHorizontal: -8,
-    marginBottom: 20,
+const s = StyleSheet.create({
+  scroll: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 100,
   },
-  cardCell: {
-    width: "50%",
-    paddingHorizontal: 8,
-    marginBottom: 12,
+  loadingRow: {
+    paddingVertical: 12,
+    alignItems: "flex-start",
   },
 
-  // Section card
-  section: {
-    backgroundColor: COLORS.card,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+  // ══ 4 independent floating stat cards ════════════════════════════════════════
+  statsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 12,
   },
-  sectionRow: {
+  statCard: {
+    flex: 1,
+    backgroundColor: T.bg1,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    gap: 2,
+  },
+  statValue: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 22,
+    lineHeight: 24,
+    letterSpacing: -0.5,
+  },
+  statUnit: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 10,
+    color: T.sub,
+    lineHeight: 12,
+  },
+  statLabel: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 9,
+    color: T.muted,
+    letterSpacing: 0.6,
+    marginTop: 2,
+  },
+
+  // ══ Shared card ═══════════════════════════════════════════════════════════════
+  card: {
+    backgroundColor: T.bg1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+  },
+  cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 14,
   },
-  sectionTitle: {
-    fontSize: 12,
-    fontFamily: FONTS.bold,
-    color: COLORS.muted,
-    letterSpacing: 1,
+  cardTitle: {
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 14,
+    color: T.text,
   },
-  sectionValue: {
-    fontSize: 18,
-    fontFamily: FONTS.extraBold,
-  },
-  mutedLabel: {
-    fontSize: 11,
-    color: COLORS.muted,
-    marginTop: 8,
+  cardBadge: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 20,
+    lineHeight: 22,
   },
 
-  // Progress bar
+  // ══ Goal progress bar ═════════════════════════════════════════════════════════
   progressTrack: {
-    height: 10,
-    backgroundColor: COLORS.bg2,
-    borderRadius: 5,
+    height: 5,
+    backgroundColor: T.bg3,
+    borderRadius: 3,
     overflow: "hidden",
   },
   progressFill: {
@@ -596,193 +669,292 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: COLORS.accent,
-    borderRadius: 5,
+    backgroundColor: T.lime,
+    borderRadius: 3,
+    shadowColor: T.lime,
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 0 },
   },
-  progressShine: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    height: 4,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    borderRadius: 5,
+  progressLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  progressLabel: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 10,
+    color: T.muted,
   },
 
-  // Chart
+  // ══ Chart ════════════════════════════════════════════════════════════════════
+  emptyChart: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 12,
+    color: T.muted,
+    textAlign: "center",
+  },
   chartXAxis: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 6,
-    paddingHorizontal: 8,
+    marginTop: 4,
+    paddingHorizontal: 4,
   },
   chartLabel: {
+    fontFamily: "DMSans_400Regular",
     fontSize: 10,
-    color: COLORS.muted,
-  },
-  latestBadge: {
-    position: "absolute",
-    backgroundColor: COLORS.accent + "22",
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: COLORS.accent + "55",
-  },
-  latestBadgeText: {
-    fontSize: 11,
-    fontFamily: FONTS.bold,
-    color: COLORS.accent,
+    color: T.muted,
   },
 
-  // History
-  historyRow: {
+  // ══ Log Weight button (full-width solid lime) ══════════════════════════════════
+  logBtn: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: T.lime,
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginBottom: 12,
+    shadowColor: T.lime,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
+  },
+  logBtnText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 16,
+    color: T.bg0,
+    letterSpacing: 0.3,
+  },
+
+  // ══ History card (single unified dark surface) ════════════════════════════════
+  historyCard: {
+    backgroundColor: T.bg1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+  },
+  historyRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: T.border,
+    gap: 10,
+  },
+  // Timeline node (dot + vertical line)
+  historyTimeline: {
+    alignItems: "center",
+    width: 16,
+    paddingTop: 3,
   },
   historyDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.bg3,
-    borderWidth: 2,
-    borderColor: COLORS.muted,
-    marginRight: 12,
+    backgroundColor: T.bg3,
+    borderWidth: 1.5,
+    borderColor: T.muted,
   },
   historyDotActive: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
+    backgroundColor: T.lime,
+    borderColor: T.lime,
     width: 10,
     height: 10,
     borderRadius: 5,
+  },
+  historyLine: {
+    width: 1,
+    flex: 1,
+    backgroundColor: T.border,
+    marginTop: 3,
   },
   historyInfo: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
+    paddingTop: 1,
   },
   historyDate: {
-    fontSize: 13,
-    color: COLORS.text,
+    fontFamily: "DMSans_500Medium",
+    fontSize: 12,
+    color: T.text,
   },
-  historyBadge: {
-    fontSize: 9,
-    fontWeight: "700",
-    color: COLORS.accent,
-    backgroundColor: COLORS.accent + "22",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  latestPill: {
+    backgroundColor: T.lime + "1A",
     borderRadius: 4,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  latestPillText: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 8,
+    color: T.lime,
+    letterSpacing: 0.6,
+  },
+  historyRight: {
+    alignItems: "flex-end",
+    gap: 4,
+    paddingTop: 1,
   },
   historyWeight: {
-    fontSize: 13,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-    marginRight: 8,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 15,
+    color: T.text,
   },
   diffBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    minWidth: 52,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    minWidth: 50,
     alignItems: "center",
   },
-  diffDown: { backgroundColor: COLORS.accent + "18" },
-  diffUp: { backgroundColor: COLORS.red + "18" },
-  diffNeutral: { backgroundColor: COLORS.bg2 },
+  diffDown: { backgroundColor: T.lime + "18" },
+  diffUp: { backgroundColor: T.red + "18" },
+  diffNeutral: { backgroundColor: T.bg3 },
   diffText: {
-    fontSize: 11,
-    fontFamily: FONTS.bold,
+    fontFamily: "DMSans_500Medium",
+    fontSize: 10,
   },
 
-  // Modal
+  // Empty state
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 40,
+    gap: 6,
+  },
+  emptyStateText: {
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 14,
+    color: T.sub,
+  },
+  emptyStateSub: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 12,
+    color: T.muted,
+  },
+
+  // ── Log Weight Modal ──────────────────────────────────────────────────────────
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
+    backgroundColor: "rgba(0,0,0,0.78)",
     justifyContent: "flex-end",
   },
   modalSheet: {
-    backgroundColor: COLORS.card,
+    backgroundColor: T.bg1,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: Platform.OS === "ios" ? 44 : 32,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: T.borderMid,
+    padding: 20,
+    paddingBottom: Platform.OS === "ios" ? 40 : 28,
   },
   modalHandle: {
     width: 36,
     height: 4,
-    backgroundColor: COLORS.border,
+    backgroundColor: T.bg3,
     borderRadius: 2,
     alignSelf: "center",
-    marginBottom: 24,
+    marginBottom: 18,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 18,
-    fontFamily: FONTS.extraBold,
-    color: COLORS.text,
-    marginBottom: 20,
-    letterSpacing: 0.5,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 20,
+    color: T.text,
+    letterSpacing: -0.2,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: T.bg3,
+    alignItems: "center",
+    justifyContent: "center",
   },
   unitToggle: {
     flexDirection: "row",
-    backgroundColor: COLORS.bg2,
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 20,
+    backgroundColor: T.bg2,
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: 16,
   },
   unitBtn: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 9,
+    paddingVertical: 8,
+    borderRadius: 8,
     alignItems: "center",
   },
-  unitBtnActive: {
-    backgroundColor: COLORS.accent,
-    shadowColor: COLORS.accent,
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
-  },
+  unitBtnActive: { backgroundColor: T.lime },
   unitBtnText: {
-    fontSize: 13,
-    fontFamily: FONTS.bold,
-    color: COLORS.muted,
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 12,
+    color: T.muted,
+    letterSpacing: 0.4,
   },
-  unitBtnTextActive: {
-    color: COLORS.bg,
-  },
+  unitBtnTextActive: { color: T.bg0 },
   inputWrapper: {
     position: "relative",
-    marginBottom: 24,
+    marginBottom: 20,
   },
   weightInput: {
-    fontSize: 24,
-    fontFamily: FONTS.bold,
-    color: COLORS.text,
-    backgroundColor: COLORS.bg2,
-    borderWidth: 2,
-    borderColor: COLORS.border,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 32,
+    color: T.text,
+    backgroundColor: T.bg2,
+    borderWidth: 1,
+    borderColor: T.border,
     borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    paddingRight: 56,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingRight: 52,
     textAlign: "center",
   },
   inputUnit: {
     position: "absolute",
-    right: 16,
-    top: 18,
-    fontSize: 16,
-    fontFamily: FONTS.semiBold,
-    color: COLORS.muted,
+    right: 14,
+    top: 17,
+    fontFamily: "DMSans_500Medium",
+    fontSize: 14,
+    color: T.muted,
   },
   modalButtons: {
     flexDirection: "row",
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: T.borderMid,
+    backgroundColor: T.bg3,
+    alignItems: "center",
+  },
+  cancelBtnText: {
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 14,
+    color: T.sub,
+  },
+  saveBtn: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 12,
+    backgroundColor: T.lime,
+    alignItems: "center",
+  },
+  saveBtnText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 14,
+    color: T.bg0,
+    letterSpacing: 0.5,
   },
 });

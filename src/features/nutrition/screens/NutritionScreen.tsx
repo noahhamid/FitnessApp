@@ -1,5 +1,6 @@
 import { CaloriesSection } from "@/src/features/nutrition/components/CaloriesSection";
 import { WeightSection } from "@/src/features/nutrition/components/WeightSection";
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -9,7 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const TABS = ["Nutrition", "Weight"] as const;
 type Tab = (typeof TABS)[number];
@@ -24,12 +25,12 @@ const T = {
   sub: "#7A7A8C",
   muted: "#4A4A58",
   border: "#FFFFFF0F",
-  borderMid: "#FFFFFF18",
+  borderMid: "#FFFFFF22",
 };
 
-const TAB_META: Record<Tab, { emoji: string }> = {
-  Nutrition: { emoji: "🥗" },
-  Weight: { emoji: "⚖️" },
+const TAB_ICONS: Record<Tab, keyof typeof Ionicons.glyphMap> = {
+  Nutrition: "nutrition-outline",
+  Weight: "scale-outline",
 };
 
 // ─── Animated sliding tab bar ─────────────────────────────────────────────────
@@ -44,23 +45,21 @@ function SlideTabBar({
   const [barWidth, setBarWidth] = useState(0);
 
   useEffect(() => {
-    const idx = TABS.indexOf(active);
     Animated.spring(slideAnim, {
-      toValue: idx,
+      toValue: TABS.indexOf(active),
       useNativeDriver: true,
-      tension: 68,
-      friction: 11,
+      tension: 72,
+      friction: 12,
     }).start();
   }, [active]);
 
-  const pillW = barWidth / TABS.length - 6;
+  const pillW = barWidth > 0 ? barWidth / TABS.length - 6 : 0;
 
   return (
     <View
       style={styles.tabBar}
       onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
     >
-      {/* Sliding pill */}
       {barWidth > 0 && (
         <Animated.View
           style={[
@@ -82,15 +81,20 @@ function SlideTabBar({
 
       {TABS.map((tab) => {
         const isActive = tab === active;
-        const { emoji } = TAB_META[tab];
         return (
           <Pressable
             key={tab}
             onPress={() => onChange(tab)}
             style={styles.tabItem}
           >
+            <Ionicons
+              name={TAB_ICONS[tab]}
+              size={13}
+              color={isActive ? T.bg0 : T.text}
+              style={{ marginRight: 5 }}
+            />
             <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
-              {emoji} {tab}
+              {tab}
             </Text>
           </Pressable>
         );
@@ -108,13 +112,13 @@ function FadeContent({ activeTab }: { activeTab: Tab }) {
     if (activeTab === displayedTab) return;
     Animated.timing(fadeAnim, {
       toValue: 0,
-      duration: 120,
+      duration: 100,
       useNativeDriver: true,
     }).start(() => {
       setDisplayedTab(activeTab);
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 200,
+        duration: 180,
         useNativeDriver: true,
       }).start();
     });
@@ -130,24 +134,25 @@ function FadeContent({ activeTab }: { activeTab: Tab }) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function NutritionScreen() {
   const [activeTab, setActiveTab] = useState<Tab>("Nutrition");
-  const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* FIX: configure status bar explicitly */}
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={T.bg0}
-        translucent={false}
-      />
+    <SafeAreaView edges={["top"]} style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor={T.bg0} translucent={false} />
 
       {/* ── Header ── */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>NUTRITION</Text>
-        <View style={styles.headerUnderline} />
+        <View style={styles.headerLeft}>
+          <View style={styles.headerLabel}>
+            <Ionicons name="restaurant-outline" size={10} color={T.muted} />
+            <Text style={styles.headerLabelText}>NUTRITION &amp; DIET</Text>
+          </View>
+          <Text style={styles.headerSub}>Fuel your progress,</Text>
+          <Text style={styles.headerHero}>
+            {activeTab === "Nutrition" ? "DIET." : "WEIGHT."}
+          </Text>
+        </View>
       </View>
 
-      {/* Thin divider */}
       <View style={styles.divider} />
 
       {/* ── Tab bar ── */}
@@ -156,10 +161,10 @@ export default function NutritionScreen() {
       </View>
 
       {/* ── Content ── */}
-      <View style={[styles.content, { paddingBottom: insets.bottom }]}>
+      <View style={styles.content}>
         <FadeContent activeTab={activeTab} />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -172,78 +177,92 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingTop: 6,
+    paddingBottom: 10,
   },
-  headerTitle: {
+  headerLeft: { gap: 1 },
+  headerLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginBottom: 4,
+  },
+  headerLabelText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 12,
+    color: T.muted,
+    letterSpacing: 1.5,
+  },
+  headerSub: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 13,
+    color: T.sub,
+  },
+  headerHero: {
     fontFamily: "BarlowCondensed_900Black",
-    fontSize: 32,
+    fontSize: 38,
     color: T.text,
-    letterSpacing: 0.3,
-  },
-  headerUnderline: {
-    marginTop: 4,
-    width: 48,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: T.lime,
+    lineHeight: 40,
+    letterSpacing: 0.5,
   },
 
   divider: {
     height: 1,
     backgroundColor: T.border,
-    marginHorizontal: 0,
   },
 
-  // Tab bar
+  // Tab bar — full-width capsule with bright inactive text for legibility
   tabBarWrapper: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   tabBar: {
     flexDirection: "row",
     backgroundColor: T.bg2,
-    borderRadius: 14,
+    borderRadius: 12,
     padding: 3,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: T.borderMid,
     position: "relative",
-    height: 44,
+    height: 42,
     alignItems: "center",
   },
   tabPill: {
     position: "absolute",
     top: 3,
-    height: 36,
+    height: 34,
     backgroundColor: T.lime,
-    borderRadius: 11,
-    // Subtle glow
+    borderRadius: 10,
     shadowColor: T.lime,
-    shadowOpacity: 0.45,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 0 },
     elevation: 4,
   },
   tabItem: {
     flex: 1,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1,
   },
+  // Inactive tab: crisp white text — high contrast against dark bg2 track
   tabText: {
+    fontFamily: "DMSans_600SemiBold",
     fontSize: 13,
-    fontWeight: "600",
-    color: T.muted,
+    color: T.text,
   },
+  // Active tab: near-black text on lime pill
   tabTextActive: {
     color: T.bg0,
-    fontWeight: "700",
   },
 
-  // Content
+  // Content area
   content: {
     flex: 1,
-    paddingHorizontal: 16,
   },
 });

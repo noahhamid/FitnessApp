@@ -1,4 +1,3 @@
-import { Button } from "@/src/ui/components/Button";
 import { ProgressDots } from "@/src/ui/components/ProgressDots";
 import { C, FONTS } from "@/src/ui/tokens";
 import { useState } from "react";
@@ -45,12 +44,29 @@ const CARD_W = (SW - 64 - 12) / 2;
 
 export function GoalsForm({ onNext }: Props) {
   const [goal, setGoal] = useState<GoalId | null>(null);
-  const { mutateAsync: saveGoal, isPending, error } = useSaveGoal();
+  const [loading, setLoading] = useState(false);
+  const { mutateAsync: saveGoal, error } = useSaveGoal();
+
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   async function handleContinue() {
     if (!goal) return;
-    await saveGoal(goal);
-    onNext(goal);
+    setLoading(true);
+    try {
+      await Promise.all([
+        saveGoal(goal),
+        new Promise((r) => setTimeout(r, 1500)),
+      ]);
+      onNext(goal);
+    } catch {
+      if (mountedRef.current) setLoading(false);
+    }
   }
 
   return (
@@ -60,7 +76,6 @@ export function GoalsForm({ onNext }: Props) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={s.header}>
           <Text style={s.counter}>STEP 1 OF 2</Text>
           <ProgressDots total={2} current={0} />
@@ -70,7 +85,6 @@ export function GoalsForm({ onNext }: Props) {
           </Text>
         </View>
 
-        {/* Goal grid */}
         <View style={s.goalGrid}>
           {GOALS.map((g) => (
             <TouchableOpacity
@@ -97,20 +111,27 @@ export function GoalsForm({ onNext }: Props) {
           ))}
         </View>
 
-        {/* Error */}
         {error && (
           <Text style={s.errorText}>
             Failed to save goal. Please try again.
           </Text>
         )}
 
-        <Button
-          disabled={!goal || isPending}
+        <TouchableOpacity
+          disabled={!goal || loading}
           onPress={handleContinue}
-          style={{ marginTop: 32 }}
+          activeOpacity={0.8}
+          style={[s.continueBtn, (!goal || loading) && s.continueBtnDisabled]}
         >
-          {isPending ? <ActivityIndicator color={C.bg} /> : "CONTINUE →"}
-        </Button>
+          {loading ? (
+            <View style={s.loadingRow}>
+              <ActivityIndicator color={C.bg} size="small" />
+              <Text style={s.continueBtnText}>Saving...</Text>
+            </View>
+          ) : (
+            <Text style={s.continueBtnText}>CONTINUE →</Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -207,5 +228,25 @@ const s = StyleSheet.create({
     textAlign: "center",
     marginTop: 12,
     fontFamily: FONTS.regular,
+  },
+  continueBtn: {
+    marginTop: 32,
+    backgroundColor: C.accent,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  continueBtnDisabled: { opacity: 0.45 },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  continueBtnText: {
+    fontFamily: FONTS.bold,
+    fontSize: 15,
+    color: C.bg,
+    letterSpacing: 1,
   },
 });

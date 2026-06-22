@@ -3,17 +3,11 @@ import {
   type UserProfile,
 } from "@/src/features/profile/services/profile.service";
 import { api } from "@/src/lib/api";
-import {
-  requestNutritionGoalsFromGemini,
-  type GeminiNutritionProfileInput,
-} from "@/src/utils/gemini";
+import { calculateNutritionGoals } from "@/src/utils/nutritionCalculator";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Animated,
-  Easing,
   StyleSheet,
   Text,
   TextInput,
@@ -30,14 +24,6 @@ const T = {
   muted: "#4A4A58",
   sub: "#7A7A8C",
   border: "#FFFFFF18",
-};
-
-type GoalRecommendation = {
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  note?: string;
 };
 
 const PLACEHOLDERS = {
@@ -61,15 +47,7 @@ export default function NutritionGoalsOnboardingRoute() {
     goalId?: string;
   }>();
   const queryClient = useQueryClient();
-  const pulse = useRef(new Animated.Value(0.8)).current;
-  const [isGenerating, setIsGenerating] = useState(true);
-  const [manualFallback, setManualFallback] = useState(false);
-  const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
-  const [calories, setCalories] = useState("");
-  const [protein, setProtein] = useState("");
-  const [carbs, setCarbs] = useState("");
-  const [fat, setFat] = useState("");
 
   const cachedProfile = queryClient.getQueryData<UserProfile | null>([
     "user",
@@ -80,7 +58,8 @@ export default function NutritionGoalsOnboardingRoute() {
     queryFn: fetchUserProfile,
     initialData: cachedProfile ?? undefined,
   });
-  const profileForGemini = useMemo<GeminiNutritionProfileInput>(() => {
+
+  const profileForCalc = useMemo(() => {
     const parsedWeight = params.weightKg ? Number(params.weightKg) : null;
     const parsedHeight = params.heightCm ? Number(params.heightCm) : null;
     const parsedAge = params.age ? Number(params.age) : null;
@@ -102,70 +81,35 @@ export default function NutritionGoalsOnboardingRoute() {
     };
   }, [params.age, params.goalId, params.heightCm, params.weightKg, profile]);
 
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 0.8,
-          duration: 900,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [pulse]);
-
-  useEffect(() => {
-    let active = true;
-    async function generate() {
-      if (
-        !profileForGemini ||
-        (!profileForGemini.weightKg &&
-          !profileForGemini.heightCm &&
-          !profileForGemini.age)
-      ) {
-        if (!active) return;
-        setManualFallback(true);
-        setIsGenerating(false);
-        setNote("");
-        return;
-      }
-      setIsGenerating(true);
-      try {
-        const rec = await requestNutritionGoalsFromGemini(profileForGemini);
-        if (!active) return;
-        setCalories(String(rec.calories));
-        setProtein(String(rec.protein));
-        setCarbs(String(rec.carbs));
-        setFat(String(rec.fat));
-        setNote(rec.note ?? "");
-        setManualFallback(false);
-      } catch {
-        if (!active) return;
-        setCalories("");
-        setProtein("");
-        setCarbs("");
-        setFat("");
-        setNote("");
-        setManualFallback(true);
-      } finally {
-        if (active) setIsGenerating(false);
-      }
+  const calculated = useMemo(() => {
+    if (
+      !profileForCalc.weightKg &&
+      !profileForCalc.heightCm &&
+      !profileForCalc.age
+    ) {
+      return null;
     }
+    return calculateNutritionGoals({
+      weightKg: Number(profileForCalc.weightKg ?? 70),
+      heightCm: Number(profileForCalc.heightCm ?? 170),
+      age: Number(profileForCalc.age ?? 25),
+      goalId: profileForCalc.goalId ?? "health",
+    });
+  }, [profileForCalc]);
 
-    void generate();
-    return () => {
-      active = false;
-    };
-  }, [profileForGemini]);
+  const [calories, setCalories] = useState(
+    calculated ? String(calculated.calories) : "",
+  );
+  const [protein, setProtein] = useState(
+    calculated ? String(calculated.protein) : "",
+  );
+  const [carbs, setCarbs] = useState(
+    calculated ? String(calculated.carbs) : "",
+  );
+  const [fat, setFat] = useState(calculated ? String(calculated.fat) : "");
+
+  const note = calculated?.note ?? "";
+  const manualFallback = calculated === null;
 
   const canSave = useMemo(() => {
     return (
@@ -195,7 +139,7 @@ export default function NutritionGoalsOnboardingRoute() {
       router.push({
         pathname: "/(auth)/onboarding/ready",
         params: {
-          goalId: params.goalId ?? profileForGemini.goalId ?? undefined,
+          goalId: params.goalId ?? profileForCalc.goalId ?? undefined,
         },
       });
     } finally {
@@ -206,31 +150,17 @@ export default function NutritionGoalsOnboardingRoute() {
   function handleSkip() {
     router.push({
       pathname: "/(auth)/onboarding/ready",
-      params: { goalId: params.goalId ?? profileForGemini.goalId ?? undefined },
+      params: { goalId: params.goalId ?? profileForCalc.goalId ?? undefined },
     });
-  }
-
-  if (isGenerating) {
-    return (
-      <SafeAreaView style={s.screen}>
-        <View style={s.loadingWrap}>
-          <Animated.View
-            style={[s.pulseDot, { transform: [{ scale: pulse }] }]}
-          />
-          <Text style={s.loadingTitle}>Calculating your goals...</Text>
-          <ActivityIndicator color={T.lime} />
-        </View>
-      </SafeAreaView>
-    );
   }
 
   return (
     <SafeAreaView style={s.screen}>
       <View style={s.container}>
-        <Text style={s.eyebrow}>AI NUTRITION TARGETS</Text>
+        <Text style={s.eyebrow}>YOUR CALCULATED GOALS</Text>
         <Text style={s.title}>YOUR DAILY GOALS</Text>
         <Text style={s.subtitle}>
-          Review and adjust your personalized nutrition targets.
+          Based on your body metrics and goal
         </Text>
 
         <View style={s.card}>
@@ -286,7 +216,7 @@ export default function NutritionGoalsOnboardingRoute() {
 
           {manualFallback ? (
             <Text style={s.fallbackText}>
-              AI unavailable — set your goals manually.
+              No metrics found — set your goals manually.
             </Text>
           ) : note ? (
             <Text style={s.noteText}>{note}</Text>
@@ -328,27 +258,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 36,
     paddingBottom: 28,
-  },
-  loadingWrap: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-    paddingHorizontal: 24,
-  },
-  pulseDot: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
-    backgroundColor: `${T.lime}22`,
-    borderWidth: 1,
-    borderColor: `${T.lime}88`,
-  },
-  loadingTitle: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 32,
-    color: T.text,
-    letterSpacing: 0.4,
   },
   eyebrow: {
     fontFamily: "DMSans_400Regular",

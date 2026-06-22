@@ -14,7 +14,7 @@ const T = {
   bg2: "#18181D",
   bg3: "#222228",
   lime: "#C8F135",
-  orange: "#FF8A00",
+  blue: "#3B82F6",
   text: "#F2F2F5",
   sub: "#7A7A8C",
   muted: "#4A4A58",
@@ -27,6 +27,7 @@ export type ExerciseSetData = {
   weight: string;
   reps: string;
   done: boolean;
+  previous?: string;
 };
 
 export function createInitialExerciseSets(): ExerciseSetData[] {
@@ -63,22 +64,16 @@ type SetRowProps = {
 
 function getExerciseIcon(tag: string): keyof typeof Ionicons.glyphMap {
   switch (tag) {
-    case "Compound":
-      return "barbell-outline";
-    case "Isolation":
-      return "git-pull-request-outline";
-    case "Bodyweight":
-      return "body-outline";
-    case "Machine":
-      return "settings-outline";
-    case "Cardio":
-      return "heart-outline";
-    default:
-      return "fitness-outline";
+    case "Compound": return "barbell-outline";
+    case "Isolation": return "git-pull-request-outline";
+    case "Bodyweight": return "body-outline";
+    case "Machine": return "settings-outline";
+    case "Cardio": return "heart-outline";
+    default: return "fitness-outline";
   }
 }
 
-// ── Set row ───────────────────────────────────────────────────────────────────
+// ── Set Row ───────────────────────────────────────────────────────────────────
 function SetRow({ setNum, set, onChange, onDelete, onTimerOpen }: SetRowProps) {
   const handleToggleDone = useCallback(() => {
     const next = !set.done;
@@ -86,16 +81,23 @@ function SetRow({ setNum, set, onChange, onDelete, onTimerOpen }: SetRowProps) {
     if (next) onTimerOpen();
   }, [set, onChange, onTimerOpen]);
 
+  const prevLabel = set.previous ?? "—";
+
   return (
     <View style={[ss.setRow, set.done && ss.setRowDone]}>
-      {/* Set number */}
+      {/* Column 1: Set number badge */}
       <View style={[ss.setBadge, set.done && ss.setBadgeDone]}>
         <Text style={[ss.setBadgeText, set.done && ss.setBadgeTextDone]}>
           {setNum}
         </Text>
       </View>
 
-      {/* Weight */}
+      {/* Column 2: Previous history */}
+      <Text style={ss.prevText} numberOfLines={1}>
+        {prevLabel}
+      </Text>
+
+      {/* Column 3: KG input */}
       <View style={[ss.inputWrap, set.done && ss.inputWrapDone]}>
         <TextInput
           value={set.weight}
@@ -106,12 +108,9 @@ function SetRow({ setNum, set, onChange, onDelete, onTimerOpen }: SetRowProps) {
           style={ss.input}
           selectTextOnFocus
         />
-        <Text style={ss.inputUnit}>kg</Text>
       </View>
 
-      <Text style={ss.cross}>×</Text>
-
-      {/* Reps */}
+      {/* Column 4: Reps input */}
       <View style={[ss.inputWrap, set.done && ss.inputWrapDone]}>
         <TextInput
           value={set.reps}
@@ -122,29 +121,29 @@ function SetRow({ setNum, set, onChange, onDelete, onTimerOpen }: SetRowProps) {
           style={ss.input}
           selectTextOnFocus
         />
-        <Text style={ss.inputUnit}>reps</Text>
       </View>
 
-      {/* Done toggle */}
+      {/* Column 5: Circular checkmark toggle */}
       <TouchableOpacity
         onPress={handleToggleDone}
         style={[ss.doneBtn, set.done && ss.doneBtnActive]}
         activeOpacity={0.7}
+        hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
       >
         <Ionicons
-          name={set.done ? "checkmark" : "ellipse-outline"}
-          size={18}
+          name="checkmark"
+          size={16}
           color={set.done ? T.bg0 : T.muted}
         />
       </TouchableOpacity>
 
-      {/* Delete */}
+      {/* Delete set (subtle) */}
       <TouchableOpacity
         onPress={onDelete}
         style={ss.deleteBtn}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
       >
-        <Ionicons name="close" size={14} color={T.muted} />
+        <Ionicons name="close" size={12} color={T.muted + "70"} />
       </TouchableOpacity>
     </View>
   );
@@ -166,11 +165,13 @@ export default function ExerciseCard({
       ]),
     [sets, onSetsChange],
   );
+
   const updateSet = useCallback(
     (id: number, updated: ExerciseSetData) =>
       onSetsChange(sets.map((s) => (s.id === id ? updated : s))),
     [sets, onSetsChange],
   );
+
   const removeSet = useCallback(
     (id: number) => onSetsChange(sets.filter((s) => s.id !== id)),
     [sets, onSetsChange],
@@ -195,63 +196,66 @@ export default function ExerciseCard({
         : `${totalVol.toFixed(1)} kg`
       : null;
 
+  const muscleTag =
+    `${exercise.muscle.toUpperCase()} · ${exercise.tag.toUpperCase()}`;
+
   return (
     <View style={[ss.card, allDone && ss.cardDone]}>
-      {/* Progress bar */}
+      {/* Top progress stripe */}
       <View style={ss.progressTrack}>
-        <View
-          style={[ss.progressFill, { width: `${progressPct * 100}%` as any }]}
-        />
+        <View style={[ss.progressFill, { width: `${progressPct * 100}%` as any }]} />
       </View>
 
-      {/* Header */}
+      {/* ── Card header ── */}
       <View style={ss.cardHeader}>
+        {/* Icon badge */}
         <View style={[ss.iconWrap, allDone && ss.iconWrapDone]}>
           <Ionicons
             name={getExerciseIcon(exercise.tag)}
-            size={20}
-            color={allDone ? T.lime : T.lime + "80"}
+            size={18}
+            color={T.lime}
           />
         </View>
 
+        {/* Name + muscle·tag */}
         <View style={ss.titleCol}>
           <Text style={ss.exerciseName} numberOfLines={1}>
             {exercise.name}
           </Text>
-          <View style={ss.metaRow}>
-            <Text style={ss.muscleName}>{exercise.muscle}</Text>
-            <View style={ss.dot} />
-            <Text style={[ss.setCount, doneCount > 0 && ss.setCountActive]}>
-              {doneCount}/{sets.length} sets
-            </Text>
-          </View>
+          <Text style={ss.muscleTag}>{muscleTag}</Text>
         </View>
 
-        {volDisplay && (
-          <View style={ss.volPill}>
-            <Text style={ss.volText}>{volDisplay}</Text>
-          </View>
-        )}
-
-        <TouchableOpacity
-          onPress={onRemove}
-          style={ss.removeBtn}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="close" size={16} color={T.muted} />
-        </TouchableOpacity>
+        {/* Set count + volume + trash */}
+        <View style={ss.headerRight}>
+          {volDisplay && (
+            <View style={ss.volPill}>
+              <Text style={ss.volText}>{volDisplay}</Text>
+            </View>
+          )}
+          <Text style={[ss.setCountText, doneCount > 0 && ss.setCountActive]}>
+            {doneCount}/{sets.length} SETS
+          </Text>
+          <TouchableOpacity
+            onPress={onRemove}
+            style={ss.removeBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="trash-outline" size={14} color={T.muted} />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Column headers */}
+      {/* ── Column headers: SET | PREVIOUS | KG | REPS | ✓ ── */}
       <View style={ss.colHeaders}>
-        <Text style={[ss.colHeader, { width: 32 }]}>#</Text>
-        <Text style={[ss.colHeader, { flex: 1 }]}>WEIGHT</Text>
-        <View style={{ width: 22 }} />
-        <Text style={[ss.colHeader, { flex: 1 }]}>REPS</Text>
-        <View style={{ width: 72 }} />
+        <Text style={[ss.colHeader, ss.colSet]}>SET</Text>
+        <Text style={[ss.colHeader, ss.colPrev]}>PREVIOUS</Text>
+        <Text style={[ss.colHeader, ss.colInput]}>KG</Text>
+        <Text style={[ss.colHeader, ss.colInput]}>REPS</Text>
+        {/* Spacer for checkmark column */}
+        <View style={ss.colCheck} />
       </View>
 
-      {/* Sets */}
+      {/* ── Set rows ── */}
       {sets.map((set, i) => (
         <SetRow
           key={set.id}
@@ -263,32 +267,37 @@ export default function ExerciseCard({
         />
       ))}
 
-      {/* Add set */}
-      <TouchableOpacity
-        onPress={addSet}
-        style={ss.addSetBtn}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="add" size={14} color={T.muted} />
-        <Text style={ss.addSetText}>ADD SET</Text>
+      {/* ── Add set link ── */}
+      <TouchableOpacity onPress={addSet} style={ss.addSetBtn} activeOpacity={0.7}>
+        <Text style={ss.addSetText}>+ Add set</Text>
       </TouchableOpacity>
     </View>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const COL_SET = 26;
+const COL_PREV = 58;
+const COL_CHECK = 34;
+const COL_DELETE = 22;
 
 const ss = StyleSheet.create({
   card: {
     backgroundColor: T.bg2,
     borderWidth: 1,
     borderColor: T.borderMid,
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingTop: 6,
+    paddingBottom: 4,
     marginBottom: 12,
     overflow: "hidden",
   },
   cardDone: {
     borderColor: T.lime + "55",
   },
+
+  // Progress stripe at top
   progressTrack: {
     position: "absolute",
     top: 0,
@@ -296,25 +305,27 @@ const ss = StyleSheet.create({
     right: 0,
     height: 3,
     backgroundColor: T.lime + "18",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
   },
   progressFill: {
     height: "100%",
     backgroundColor: T.lime,
     borderRadius: 99,
   },
+
+  // ── Card header ──────────────────────────────────────────────────────────────
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginTop: 8,
+    marginTop: 10,
     marginBottom: 14,
   },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: T.lime + "15",
     borderWidth: 1,
     borderColor: T.lime + "25",
@@ -322,81 +333,87 @@ const ss = StyleSheet.create({
     justifyContent: "center",
   },
   iconWrapDone: {
-    backgroundColor: T.lime + "28",
-    borderColor: T.lime + "55",
+    backgroundColor: T.lime + "30",
+    borderColor: T.lime + "60",
   },
-  titleCol: { flex: 1, gap: 3 },
+  titleCol: {
+    flex: 1,
+    gap: 3,
+  },
   exerciseName: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 18,
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 14,
     color: T.text,
-    letterSpacing: 0.3,
+    letterSpacing: -0.1,
   },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  muscleName: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 11,
-    color: T.muted,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 99,
-    backgroundColor: T.muted,
-  },
-  setCount: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 11,
-    color: T.muted,
-  },
-  setCountActive: { color: T.lime },
-  volPill: {
-    backgroundColor: T.lime + "18",
-    borderWidth: 1,
-    borderColor: T.lime + "35",
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  volText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
-    color: T.lime,
-    letterSpacing: 0.3,
-  },
-  removeBtn: { padding: 6 },
-
-  colHeaders: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 2,
-    marginBottom: 6,
-    gap: 8,
-  },
-  colHeader: {
+  muscleTag: {
     fontFamily: "DMSans_500Medium",
     fontSize: 10,
     color: T.muted,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+  },
+  headerRight: {
+    alignItems: "flex-end",
+    gap: 4,
+  },
+  volPill: {
+    backgroundColor: T.lime + "14",
+    borderWidth: 1,
+    borderColor: T.lime + "30",
+    borderRadius: 7,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  volText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 11,
+    color: T.lime,
+    letterSpacing: 0.2,
+  },
+  setCountText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 12,
+    color: T.muted,
+    letterSpacing: 0.5,
+  },
+  setCountActive: { color: T.lime },
+  removeBtn: {
+    padding: 2,
   },
 
+  // ── Column headers ───────────────────────────────────────────────────────────
+  colHeaders: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+    gap: 6,
+  },
+  colHeader: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 9,
+    color: T.muted,
+    letterSpacing: 0.8,
+    textAlign: "center",
+  },
+  colSet: { width: COL_SET },
+  colPrev: { width: COL_PREV, textAlign: "center" },
+  colInput: { flex: 1 },
+  colCheck: { width: COL_CHECK },
+
+  // ── Set rows ─────────────────────────────────────────────────────────────────
   setRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     marginBottom: 7,
   },
-  setRowDone: { opacity: 0.7 },
+  setRowDone: { opacity: 0.6 },
+
+  // Set number badge (small circle)
   setBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    width: COL_SET,
+    height: COL_SET,
+    borderRadius: 13,
     backgroundColor: T.bg3,
     alignItems: "center",
     justifyContent: "center",
@@ -410,9 +427,20 @@ const ss = StyleSheet.create({
   setBadgeText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
-    color: T.muted,
+    color: T.blue,
   },
   setBadgeTextDone: { color: T.lime },
+
+  // Previous history text
+  prevText: {
+    width: COL_PREV,
+    fontFamily: "DMSans_400Regular",
+    fontSize: 11,
+    color: T.muted,
+    textAlign: "center",
+  },
+
+  // Input wrappers (KG / REPS)
   inputWrap: {
     flex: 1,
     flexDirection: "row",
@@ -420,38 +448,28 @@ const ss = StyleSheet.create({
     backgroundColor: T.bg3,
     borderWidth: 1,
     borderColor: T.border,
-    borderRadius: 11,
-    paddingHorizontal: 10,
-    height: 42,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    height: 36,
   },
   inputWrapDone: { borderColor: T.lime + "30" },
   input: {
     flex: 1,
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 18,
+    fontSize: 16,
     color: T.text,
     padding: 0,
-  },
-  inputUnit: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 11,
-    color: T.muted,
-    marginLeft: 2,
-  },
-  cross: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 14,
-    color: T.muted,
-    width: 14,
     textAlign: "center",
   },
+
+  // ── Circular checkmark toggle ─────────────────────────────────────────────────
   doneBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 11,
+    width: COL_CHECK,
+    height: COL_CHECK,
+    borderRadius: COL_CHECK / 2,   // fully circular
     backgroundColor: T.bg3,
-    borderWidth: 1,
-    borderColor: T.borderMid,
+    borderWidth: 1.5,
+    borderColor: T.muted + "55",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -460,27 +478,27 @@ const ss = StyleSheet.create({
     borderColor: T.lime,
     shadowColor: T.lime,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.45,
+    shadowOpacity: 0.5,
     shadowRadius: 6,
     elevation: 4,
   },
-  deleteBtn: { padding: 6 },
-  addSetBtn: {
-    flexDirection: "row",
+
+  // Delete set button
+  deleteBtn: {
+    width: COL_DELETE,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: T.border,
-    borderStyle: "dashed",
-    borderRadius: 11,
-    paddingVertical: 11,
+  },
+
+  // ── Add set link ──────────────────────────────────────────────────────────────
+  addSetBtn: {
+    alignItems: "center",
+    paddingVertical: 12,
+    marginTop: 2,
   },
   addSetText: {
-    fontFamily: "BarlowCondensed_700Bold",
+    fontFamily: "DMSans_500Medium",
     fontSize: 13,
     color: T.muted,
-    letterSpacing: 1.5,
   },
 });

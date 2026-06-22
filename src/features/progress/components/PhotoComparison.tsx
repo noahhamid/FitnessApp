@@ -1,7 +1,5 @@
 import { useWeightLog } from "@/src/features/nutrition/hooks/useWeight";
 import { fetchWorkoutSessions } from "@/src/features/workout/services/workout.service";
-import { COLORS } from "@/src/ui/tokens/colors";
-import { FONTS } from "@/src/ui/tokens/typography";
 import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
@@ -17,10 +15,25 @@ import {
   View,
 } from "react-native";
 
+const T = {
+  bg0: "#0A0A0C",
+  bg1: "#111114",
+  bg2: "#18181D",
+  bg3: "#222228",
+  lime: "#C8F135",
+  blue: "#3D8EFF",
+  red: "#FF3D3D",
+  text: "#F2F2F5",
+  sub: "#7A7A8C",
+  muted: "#4A4A58",
+  border: "#FFFFFF0F",
+  borderMid: "#FFFFFF18",
+};
+
 const { width: SCREEN_W } = Dimensions.get("window");
 const CARD_W = Math.min(SCREEN_W, 430) - 48;
-const PHOTO_H = 180;
-const PHOTO_W = (CARD_W - 16 - 10) / 2;
+const PHOTO_H = 190;
+const PHOTO_W = (CARD_W - 10 - 10) / 2; // gap of 10 between slots
 
 const BEFORE_PATH = "progress_before.jpg";
 const AFTER_PATH = "progress_after.jpg";
@@ -29,10 +42,11 @@ function progressPhotoFile(filename: string) {
   return new FileSystem.File(FileSystem.Paths.document, filename);
 }
 
+// ── Photo slot ────────────────────────────────────────────────────────────────
 function PhotoSlot({
   label,
   tag,
-  accent,
+  isAfter,
   imageUri,
   showSaved,
   onPick,
@@ -40,54 +54,97 @@ function PhotoSlot({
 }: {
   label: string;
   tag: string;
-  accent?: boolean;
+  isAfter?: boolean;
   imageUri: string | null;
   showSaved: boolean;
   onPick: () => void;
   onDelete: () => void;
 }) {
+  const accentColor = isAfter ? T.lime : T.blue;
+
   return (
     <TouchableOpacity
-      style={[s.photoSlot, accent && s.photoSlotAccent]}
-      activeOpacity={0.7}
+      style={[
+        s.photoSlot,
+        {
+          borderColor: accentColor + "30",
+          backgroundColor: accentColor + "08",
+        },
+      ]}
+      activeOpacity={0.75}
       onPress={onPick}
       onLongPress={() => {
         if (!imageUri) return;
-        Alert.alert("Remove photo?", "This will delete the saved progress photo.", [
-          { text: "Cancel", style: "cancel" },
-          { text: "Remove", style: "destructive", onPress: onDelete },
-        ]);
+        Alert.alert(
+          "Remove photo?",
+          "This will delete the saved progress photo.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Remove", style: "destructive", onPress: onDelete },
+          ],
+        );
       }}
     >
       {imageUri ? (
-        <Image source={{ uri: imageUri }} style={s.photoImg} resizeMode="cover" />
+        <Image
+          source={{ uri: imageUri }}
+          style={s.photoImg}
+          resizeMode="cover"
+        />
       ) : (
-        <View style={s.emptyState}>
-          <Ionicons name="camera-outline" size={28} color={COLORS.muted} />
-          <Text style={s.tapText}>TAP TO ADD</Text>
+        <View style={s.emptySlot}>
+          <View
+            style={[
+              s.cameraIconWrap,
+              {
+                backgroundColor: accentColor + "18",
+                borderColor: accentColor + "30",
+              },
+            ]}
+          >
+            <Ionicons name="camera-outline" size={22} color={accentColor} />
+          </View>
+          <Text style={[s.tapText, { color: accentColor }]}>TAP TO ADD</Text>
+          <Text style={s.tapHint}>{label} photo</Text>
         </View>
       )}
 
-      <View style={[s.tagPill, accent && s.tagPillAccent]}>
-        <Text style={[s.tagText, accent && s.tagTextAccent]}>{tag}</Text>
+      {/* Tag pill — top left */}
+      <View
+        style={[
+          s.tagPill,
+          {
+            backgroundColor: accentColor + "22",
+            borderColor: accentColor + "40",
+          },
+        ]}
+      >
+        <Text style={[s.tagText, { color: accentColor }]}>{tag}</Text>
       </View>
 
-      {showSaved ? (
+      {/* Saved badge — top right */}
+      {showSaved && (
         <View style={s.savedBadge}>
+          <Ionicons name="checkmark" size={9} color={T.lime} />
           <Text style={s.savedText}>SAVED</Text>
         </View>
-      ) : null}
+      )}
 
-      <Text style={[s.photoLabel, accent && { color: COLORS.blue }]}>{label}</Text>
+      {/* Label — bottom center */}
+      <View style={[s.labelPill, { backgroundColor: accentColor + "22" }]}>
+        <Text style={[s.labelText, { color: accentColor }]}>{label}</Text>
+      </View>
     </TouchableOpacity>
   );
 }
 
+// ── Main ──────────────────────────────────────────────────────────────────────
 export function PhotoComparison() {
   const [beforePhoto, setBeforePhoto] = useState<string | null>(null);
   const [afterPhoto, setAfterPhoto] = useState<string | null>(null);
   const [beforeSaved, setBeforeSaved] = useState(false);
   const [afterSaved, setAfterSaved] = useState(false);
+
   const { data: weightLogs = [] } = useWeightLog();
   const { data: completedWorkouts = [] } = useQuery({
     queryKey: ["progress", "workouts"],
@@ -111,17 +168,24 @@ export function PhotoComparison() {
   const first = sortedWeights[0];
   const last = sortedWeights[sortedWeights.length - 1];
 
-  const weightDeltaLabel = useMemo(() => {
-    if (!first || !last) return "—";
-    const diff = Number((last.weight - first.weight).toFixed(1));
-    return `${diff >= 0 ? "+" : "−"} ${Math.abs(diff).toFixed(1)} kg`;
+  const weightDelta = useMemo(() => {
+    if (!first || !last) return null;
+    return Number((last.weight - first.weight).toFixed(1));
   }, [first, last]);
+
+  const weightDeltaLabel = useMemo(() => {
+    if (weightDelta === null) return "—";
+    return `${weightDelta >= 0 ? "+" : "−"} ${Math.abs(weightDelta).toFixed(1)} kg`;
+  }, [weightDelta]);
 
   const durationWeeksLabel = useMemo(() => {
     if (!first || !last) return "—";
     const start = new Date(first.log_date).getTime();
     const end = new Date(last.log_date).getTime();
-    const weeks = Math.max(0, Math.round((end - start) / (1000 * 60 * 60 * 24 * 7)));
+    const weeks = Math.max(
+      0,
+      Math.round((end - start) / (1000 * 60 * 60 * 24 * 7)),
+    );
     return `${weeks} wks`;
   }, [first, last]);
 
@@ -159,59 +223,66 @@ export function PhotoComparison() {
     }
   }
 
+  const deltaPositive = weightDelta !== null && weightDelta < 0; // losing = good
+  const deltaColor =
+    weightDelta === null ? T.muted : deltaPositive ? T.lime : T.red;
+
   return (
     <View style={s.card}>
+      {/* Header */}
       <View style={s.header}>
-        <View>
-          <Text style={s.sectionLabel}>PROGRESS PHOTOS</Text>
-          <Text style={s.subtitle}>Visual transformation over time</Text>
+        <View style={s.headerLeft}>
+          <Text style={s.cardLabel}>PROGRESS PHOTOS</Text>
+          <Text style={s.subtitle}>Tap to add · Long press to remove</Text>
         </View>
-        <View style={s.weekBadge}>
-          <Text style={s.weekText}>{durationWeeksLabel}</Text>
+        <View style={s.durationPill}>
+          <Ionicons name="calendar-outline" size={11} color={T.blue} />
+          <Text style={s.durationText}>{durationWeeksLabel}</Text>
         </View>
       </View>
 
+      {/* Photos row */}
       <View style={s.photosRow}>
         <PhotoSlot
           label="BEFORE"
-          tag={first?.log_date ?? "Before"}
+          tag={first?.log_date ?? "Start"}
           imageUri={beforePhoto}
           showSaved={beforeSaved}
-          onPick={() => {
-            void pickPhoto("before");
-          }}
-          onDelete={() => {
-            void deletePhoto("before");
-          }}
+          onPick={() => void pickPhoto("before")}
+          onDelete={() => void deletePhoto("before")}
         />
-        <View style={s.divider}>
-          <View style={s.dividerLine} />
-          <Text style={s.vsText}>VS</Text>
-          <View style={s.dividerLine} />
+
+        {/* VS divider */}
+        <View style={s.vsDivider}>
+          <View style={s.vsLine} />
+          <View style={s.vsCircle}>
+            <Text style={s.vsText}>VS</Text>
+          </View>
+          <View style={s.vsLine} />
         </View>
+
         <PhotoSlot
           label="AFTER"
-          tag={last?.log_date ?? "After"}
-          accent
+          tag={last?.log_date ?? "Now"}
+          isAfter
           imageUri={afterPhoto}
           showSaved={afterSaved}
-          onPick={() => {
-            void pickPhoto("after");
-          }}
-          onDelete={() => {
-            void deletePhoto("after");
-          }}
+          onPick={() => void pickPhoto("after")}
+          onDelete={() => void deletePhoto("after")}
         />
       </View>
 
+      {/* Footer stats */}
       <View style={s.footer}>
         <View style={s.statItem}>
-          <Text style={s.statVal}>{weightDeltaLabel}</Text>
+          <Text style={[s.statVal, { color: deltaColor }]}>
+            {weightDeltaLabel}
+          </Text>
           <Text style={s.statLabel}>WEIGHT</Text>
         </View>
         <View style={s.statDivider} />
         <View style={s.statItem}>
-          <Text style={[s.statVal, { color: COLORS.blue }]}>
+          <Text style={[s.statVal, { color: T.lime }]}>
             {completedWorkouts.length}
           </Text>
           <Text style={s.statLabel}>WORKOUTS</Text>
@@ -228,164 +299,186 @@ export function PhotoComparison() {
 
 const s = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.card,
+    backgroundColor: T.bg1,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: T.border,
     padding: 16,
+    marginBottom: 8,
   },
 
+  // ── Header ────────────────────────────────────────────────────────────────
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  sectionLabel: {
-    fontFamily: FONTS.bold,
+  headerLeft: { gap: 3 },
+  cardLabel: {
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 11,
-    color: COLORS.muted,
-    letterSpacing: 2,
-    marginBottom: 3,
+    color: T.muted,
+    letterSpacing: 1.4,
   },
   subtitle: {
-    fontFamily: FONTS.regular,
-    fontSize: 12,
-    color: COLORS.muted,
+    fontFamily: "DMSans_400Regular",
+    fontSize: 11,
+    color: T.muted,
     opacity: 0.7,
   },
-  weekBadge: {
-    backgroundColor: `${COLORS.blue}18`,
+  durationPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: T.blue + "18",
     borderWidth: 1,
-    borderColor: `${COLORS.blue}35`,
+    borderColor: T.blue + "35",
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  weekText: {
-    fontFamily: FONTS.semiBold,
-    fontSize: 11,
-    color: COLORS.blue,
-    letterSpacing: 1,
+  durationText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 12,
+    color: T.blue,
+    letterSpacing: 0.5,
   },
 
+  // ── Photos row ────────────────────────────────────────────────────────────
   photosRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 16,
-    gap: 0,
   },
   photoSlot: {
     width: PHOTO_W,
     height: PHOTO_H,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
     borderStyle: "dashed",
-    backgroundColor: COLORS.bg3,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    position: "relative",
   },
   photoImg: {
     ...StyleSheet.absoluteFillObject,
     width: "100%",
     height: "100%",
   },
-  photoSlotAccent: {
-    borderColor: `${COLORS.blue}50`,
-    backgroundColor: `${COLORS.blue}08`,
-  },
-
-  emptyState: {
+  emptySlot: {
     alignItems: "center",
     gap: 8,
   },
+  cameraIconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
+  },
   tapText: {
-    fontFamily: FONTS.bold,
-    fontSize: 9,
-    color: COLORS.muted,
-    letterSpacing: 2,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 11,
+    letterSpacing: 1.5,
+  },
+  tapHint: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 10,
+    color: T.muted,
   },
 
+  // Tag pill
   tagPill: {
     position: "absolute",
     top: 10,
     left: 10,
-    backgroundColor: COLORS.bg3,
     borderWidth: 1,
-    borderColor: COLORS.border,
     borderRadius: 20,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  tagPillAccent: {
-    backgroundColor: `${COLORS.blue}18`,
-    borderColor: `${COLORS.blue}35`,
-  },
   tagText: {
-    fontFamily: FONTS.semiBold,
+    fontFamily: "DMSans_500Medium",
     fontSize: 9,
-    color: COLORS.muted,
     letterSpacing: 0.5,
   },
-  tagTextAccent: {
-    color: COLORS.blue,
-  },
 
+  // Saved badge
   savedBadge: {
     position: "absolute",
     top: 10,
     right: 10,
-    backgroundColor: `${COLORS.accent}22`,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: T.lime + "22",
     borderWidth: 1,
-    borderColor: `${COLORS.accent}50`,
+    borderColor: T.lime + "50",
     borderRadius: 20,
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 3,
   },
   savedText: {
-    fontFamily: FONTS.bold,
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 9,
-    color: COLORS.accent,
+    color: T.lime,
+    letterSpacing: 1.2,
+  },
+
+  // Label pill at bottom
+  labelPill: {
+    position: "absolute",
+    bottom: 10,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  labelText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 10,
     letterSpacing: 1.5,
   },
 
-  photoLabel: {
-    position: "absolute",
-    bottom: 10,
-    fontFamily: FONTS.bold,
-    fontSize: 9,
-    color: COLORS.muted,
-    letterSpacing: 2,
-  },
-
-  divider: {
+  // VS divider
+  vsDivider: {
     width: 10,
-    alignItems: "center",
     height: PHOTO_H,
+    alignItems: "center",
     justifyContent: "center",
-    gap: 4,
   },
-  dividerLine: {
+  vsLine: {
     width: 1,
     flex: 1,
-    backgroundColor: COLORS.border,
+    backgroundColor: T.borderMid,
+  },
+  vsCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: T.bg3,
+    borderWidth: 1,
+    borderColor: T.borderMid,
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 4,
   },
   vsText: {
-    fontFamily: FONTS.black,
-    fontSize: 8,
-    color: COLORS.muted,
-    letterSpacing: 1,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 7,
+    color: T.muted,
+    letterSpacing: 0.5,
   },
 
+  // ── Footer stats ──────────────────────────────────────────────────────────
   footer: {
     flexDirection: "row",
     alignItems: "center",
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: T.border,
   },
   statItem: {
     flex: 1,
@@ -395,18 +488,18 @@ const s = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 28,
-    backgroundColor: COLORS.border,
+    backgroundColor: T.border,
   },
   statVal: {
-    fontFamily: FONTS.black,
-    fontSize: 16,
-    color: COLORS.text,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 17,
+    color: T.text,
     letterSpacing: -0.3,
   },
   statLabel: {
-    fontFamily: FONTS.medium,
+    fontFamily: "DMSans_500Medium",
     fontSize: 9,
-    color: COLORS.muted,
+    color: T.muted,
     letterSpacing: 1.5,
   },
 });

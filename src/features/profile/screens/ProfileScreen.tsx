@@ -3,16 +3,16 @@ import {
   fetchUserProfile,
   saveUserProfile,
 } from "@/src/features/profile/services/profile.service";
+import { fetchWorkoutHistory } from "@/src/features/workout/services/workout.service";
 import { api } from "@/src/lib/api";
-import { requestNutritionGoalsFromGemini } from "@/src/utils/gemini";
-import { Button } from "@/src/ui/components/Button";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { calculateNutritionGoals } from "@/src/utils/nutritionCalculator";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ActivityIndicator,
   Alert,
-  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -22,7 +22,7 @@ import {
   View,
 } from "react-native";
 
-// Align with DashboardScreen design tokens (same hex / hierarchy)
+// ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
   bg0: "#0A0A0C",
   bg1: "#111114",
@@ -30,6 +30,9 @@ const T = {
   bg3: "#222228",
   lime: "#C8F135",
   red: "#FF3D3D",
+  orange: "#F97316",
+  blue: "#3B82F6",
+  purple: "#A855F7",
   text: "#F2F2F5",
   sub: "#7A7A8C",
   muted: "#4A4A58",
@@ -37,15 +40,16 @@ const T = {
   borderMid: "#FFFFFF18",
 };
 
+// ─── Fitness goals ────────────────────────────────────────────────────────────
 const GOALS = [
-  { id: "lose", label: "Lose" },
-  { id: "build", label: "Build" },
-  { id: "endure", label: "Endure" },
-  { id: "health", label: "Health" },
+  { id: "lose",   label: "Lose Weight",   icon: "trending-down-outline" as const, color: T.blue },
+  { id: "build",  label: "Build Muscle",  icon: "barbell-outline" as const,       color: T.lime },
+  { id: "endure", label: "Endurance",     icon: "heart-outline" as const,         color: T.orange },
+  { id: "health", label: "Stay Healthy",  icon: "leaf-outline" as const,          color: T.purple },
 ] as const;
 
+type GoalId = (typeof GOALS)[number]["id"];
 type SaveState = "idle" | "saving" | "saved";
-type RecalcState = "idle" | "loading" | "saved";
 
 function parsePositiveNumber(value: string): number | null {
   const parsed = Number(value.trim().replace(",", "."));
@@ -53,57 +57,113 @@ function parsePositiveNumber(value: string): number | null {
   return parsed;
 }
 
+// ─── Settings row data ────────────────────────────────────────────────────────
+const SETTINGS = [
+  {
+    id: "body",
+    label: "Body & Health",
+    sub: "Weight · Height · Age",
+    icon: "body-outline" as const,
+    color: T.lime,
+  },
+  {
+    id: "goal",
+    label: "Fitness Goal",
+    sub: null,
+    icon: "trending-up-outline" as const,
+    color: T.orange,
+  },
+  {
+    id: "account",
+    label: "Account Info",
+    sub: null,
+    icon: "person-outline" as const,
+    color: T.blue,
+  },
+  {
+    id: "help",
+    label: "Help & Support",
+    sub: "FAQ · Contact us",
+    icon: "help-circle-outline" as const,
+    color: T.purple,
+  },
+];
+
+// ─── Compact metric mini (right-column of avatar card) ───────────────────────
+function MetricMini({
+  value,
+  unit,
+  accent,
+}: {
+  value: string | number;
+  unit: string;
+  accent?: boolean;
+}) {
+  return (
+    <View style={s.metricMini}>
+      <Text style={[s.metricMiniValue, accent && { color: T.lime }]}>
+        {value}
+      </Text>
+      <Text style={s.metricMiniUnit}>{unit}</Text>
+    </View>
+  );
+}
+
+// ─── Main screen ─────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
   const { user, isPending: authPending } = useAuth();
   const signOutMutation = useSignOut();
   const qc = useQueryClient();
+
   const { data: profile, isPending: profilePending } = useQuery({
     queryKey: ["user", "profile"],
     queryFn: fetchUserProfile,
   });
+
+  const { data: historyRows = [] } = useQuery({
+    queryKey: ["workouts", "history", "list"] as const,
+    queryFn: () => fetchWorkoutHistory(20),
+  });
+
   const [editMode, setEditMode] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [weightInput, setWeightInput] = useState("");
   const [heightInput, setHeightInput] = useState("");
   const [ageInput, setAgeInput] = useState("");
-  const [goalInput, setGoalInput] = useState<(typeof GOALS)[number]["id"]>("health");
+  const [goalInput, setGoalInput] = useState<GoalId>("health");
   const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [recalcState, setRecalcState] = useState<RecalcState>("idle");
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const recalcTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const goalLabel = useMemo(() => {
-    switch (profile?.goalId) {
-      case "lose":
-        return "Lose Weight";
-      case "build":
-        return "Build Muscle";
-      case "endure":
-        return "Endurance";
-      case "health":
-        return "Stay Healthy";
-      default:
-        return "—";
-    }
-  }, [profile?.goalId]);
 
   const loading = authPending || profilePending;
   const name = user?.name?.trim() || "Athlete";
   const email = user?.email?.trim() || "—";
-
   const weightKg =
     typeof profile?.weightKg === "number" && Number.isFinite(profile.weightKg)
-      ? profile.weightKg
-      : 0;
+      ? profile.weightKg : 0;
   const heightCm =
-    typeof profile?.heightCm === "number" &&
-    Number.isFinite(profile.heightCm)
-      ? profile.heightCm
-      : 0;
+    typeof profile?.heightCm === "number" && Number.isFinite(profile.heightCm)
+      ? profile.heightCm : 0;
   const ageYears =
     typeof profile?.age === "number" && Number.isFinite(profile.age)
-      ? profile.age
-      : 0;
+      ? profile.age : 0;
+  const activeGoal = GOALS.find((g) => g.id === profile?.goalId) ?? GOALS[3];
+  const initials = (user?.name?.trim() ?? "A")
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  const bmi =
+    weightKg > 0 && heightCm > 0
+      ? (weightKg / Math.pow(heightCm / 100, 2)).toFixed(1)
+      : null;
+
+  const streakDays = historyRows.length;
+  const thisWeek = Math.min(
+    historyRows.filter((h) =>
+      /^(Today|Yesterday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)/.test(h.date),
+    ).length, 7,
+  );
 
   useEffect(() => {
     if (editMode) return;
@@ -112,11 +172,10 @@ export default function ProfileScreen() {
     setHeightInput(heightCm > 0 ? String(heightCm) : "");
     setAgeInput(ageYears > 0 ? String(ageYears) : "");
     setGoalInput(
-      profile?.goalId === "lose" ||
-        profile?.goalId === "build" ||
-        profile?.goalId === "endure" ||
-        profile?.goalId === "health"
-        ? profile.goalId
+      (["lose", "build", "endure", "health"] as GoalId[]).includes(
+        profile?.goalId as GoalId,
+      )
+        ? (profile!.goalId as GoalId)
         : "health",
     );
   }, [ageYears, editMode, heightCm, name, profile?.goalId, weightKg]);
@@ -124,7 +183,6 @@ export default function ProfileScreen() {
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      if (recalcTimeoutRef.current) clearTimeout(recalcTimeoutRef.current);
     };
   }, []);
 
@@ -134,261 +192,383 @@ export default function ProfileScreen() {
     const nextHeight = parsePositiveNumber(heightInput);
     const nextAge = parsePositiveNumber(ageInput);
 
-    if (!nextName) {
-      Alert.alert("Invalid name", "Please enter a valid name.");
+    if (!nextName) { Alert.alert("Invalid name", "Please enter a valid name."); return; }
+    if (!nextWeight || !nextHeight || !nextAge) {
+      Alert.alert("Incomplete profile", "Weight, height, and age must be valid numbers.");
       return;
     }
 
-    if (!nextWeight || !nextHeight || !nextAge) {
-      Alert.alert("Invalid profile", "Weight, height, and age must be valid numbers.");
-      return;
-    }
+    const savedWeight = Number(nextWeight.toFixed(2));
+    const savedHeight = Math.round(nextHeight);
+    const savedAge = Math.round(nextAge);
 
     setSaveState("saving");
     try {
       await saveUserProfile({
-        name: nextName,
-        goalId: goalInput,
-        weightKg: Number(nextWeight.toFixed(2)),
-        heightCm: Math.round(nextHeight),
-        age: Math.round(nextAge),
+        name: nextName, goalId: goalInput, weightKg: savedWeight,
+        heightCm: savedHeight, age: savedAge,
       });
-
       await qc.invalidateQueries({ queryKey: ["auth", "session"] });
-
-      await Promise.all([
-        qc.invalidateQueries({ queryKey: ["user", "profile"] }),
-        qc.invalidateQueries({ queryKey: ["nutrition", "goals"] }),
-      ]);
-
+      await qc.invalidateQueries({ queryKey: ["user", "profile"] });
       setSaveState("saved");
       saveTimeoutRef.current = setTimeout(() => {
         setSaveState("idle");
         setEditMode(false);
-      }, 1500);
+      }, 1400);
+
+      void (async () => {
+        try {
+          const result = calculateNutritionGoals({
+            weightKg: savedWeight, heightCm: savedHeight,
+            age: savedAge, goalId: goalInput,
+          });
+          await api.put("/api/nutrition/goals", {
+            calories: result.calories, protein: result.protein,
+            carbs: result.carbs, fat: result.fat,
+          });
+          await qc.invalidateQueries({ queryKey: ["nutrition", "goals"] });
+        } catch (err) {
+          console.error("[profile] background nutrition update failed:", err);
+        }
+      })();
     } catch (err) {
       setSaveState("idle");
-      Alert.alert(
-        "Save failed",
-        err instanceof Error ? err.message : "Unable to save profile changes.",
-      );
+      Alert.alert("Save failed", err instanceof Error ? err.message : "Unable to save profile.");
     }
   }
-
-  async function handleRecalculateGoals() {
-    const sourceWeight = editMode ? parsePositiveNumber(weightInput) : weightKg || null;
-    const sourceHeight = editMode ? parsePositiveNumber(heightInput) : heightCm || null;
-    const sourceAge = editMode ? parsePositiveNumber(ageInput) : ageYears || null;
-    const sourceGoal = editMode ? goalInput : profile?.goalId ?? "health";
-
-    if (!sourceWeight && !sourceHeight && !sourceAge) {
-      Alert.alert(
-        "Missing profile data",
-        "Add your weight, height, and age before recalculating goals.",
-      );
-      return;
-    }
-
-    setRecalcState("loading");
-    try {
-      const result = await requestNutritionGoalsFromGemini({
-        weightKg: sourceWeight ? Number(sourceWeight.toFixed(2)) : null,
-        heightCm: sourceHeight ? Math.round(sourceHeight) : null,
-        age: sourceAge ? Math.round(sourceAge) : null,
-        goalId: sourceGoal,
-      });
-
-      await api.put("/api/nutrition/goals", {
-        calories: result.calories,
-        protein: result.protein,
-        carbs: result.carbs,
-        fat: result.fat,
-      });
-
-      await qc.invalidateQueries({ queryKey: ["nutrition", "goals"] });
-      setRecalcState("saved");
-      recalcTimeoutRef.current = setTimeout(() => {
-        setRecalcState("idle");
-      }, 1500);
-    } catch (err) {
-      setRecalcState("idle");
-      Alert.alert(
-        "Recalculation failed",
-        err instanceof Error
-          ? err.message
-          : "Could not update nutrition goals with AI.",
-      );
-    }
-  }
-
-  const weightDisplay = weightKg > 0 ? `${weightKg} kg` : "—";
-  const heightDisplay = heightCm > 0 ? `${heightCm} cm` : "—";
-  const ageDisplay = ageYears > 0 ? String(ageYears) : "—";
 
   return (
-    <View style={s.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={T.bg0} />
-      <ScrollView
-        contentContainerStyle={s.inner}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {loading ? (
-          <View style={s.loader}>
-            <ActivityIndicator color={T.lime} />
-          </View>
-        ) : null}
+    <SafeAreaView edges={["top"]} style={s.safe}>
+      <StatusBar barStyle="light-content" backgroundColor={T.bg0} translucent={false} />
+      <View style={s.screen}>
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ══════════════════════════════════════════════════════════════
+              1. PREMIUM HEADER
+          ══════════════════════════════════════════════════════════════ */}
+          <View style={s.header}>
+            <View style={s.headerLeft}>
+              <View style={s.headerLabelRow}>
+                <Ionicons name="shield-checkmark-outline" size={11} color={T.muted} />
+                <Text style={s.headerLabelText}>ATHLETE PROFILE</Text>
+              </View>
+              <Text style={s.headerGreeting}>Manage your account,</Text>
+              <Text style={s.headerHero}>ACCOUNT.</Text>
+            </View>
 
-        <View style={s.topRow}>
-          <Text style={s.pageTitle}>My Profile</Text>
-          <TouchableOpacity
-            style={s.iconBtn}
-            onPress={() => {
-              if (editMode) {
-                void handleSaveProfile();
-              } else {
-                setEditMode(true);
-              }
-            }}
-            disabled={saveState === "saving"}
-          >
-            {saveState === "saved" ? (
-              <Text style={s.savedText}>Saved ✓</Text>
-            ) : (
-              <Ionicons
-                name={editMode ? "checkmark-done" : "create-outline"}
-                size={18}
-                color={T.lime}
+            {/* Edit / Save button */}
+            <TouchableOpacity
+              style={[s.editBtn, editMode && s.editBtnActive]}
+              onPress={() => editMode ? void handleSaveProfile() : setEditMode(true)}
+              disabled={saveState === "saving"}
+              activeOpacity={0.8}
+            >
+              {saveState === "saving" ? (
+                <ActivityIndicator size="small" color={T.bg0} style={{ width: 40 }} />
+              ) : saveState === "saved" ? (
+                <>
+                  <Ionicons name="checkmark" size={13} color={T.bg0} />
+                  <Text style={s.editBtnActiveText}>Saved</Text>
+                </>
+              ) : editMode ? (
+                <>
+                  <Ionicons name="checkmark" size={13} color={T.bg0} />
+                  <Text style={s.editBtnActiveText}>Save</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="pencil-outline" size={12} color={T.lime} />
+                  <Text style={s.editBtnText}>Edit</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {loading && (
+            <View style={{ paddingBottom: 8, paddingLeft: 16 }}>
+              <ActivityIndicator color={T.lime} size="small" />
+            </View>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════
+              2. AVATAR + BIOMETRICS CARD (horizontal)
+          ══════════════════════════════════════════════════════════════ */}
+          <View style={s.userCard}>
+            {/* Left: circular avatar with lime ring */}
+            <View style={s.avatarRing}>
+              <View style={s.avatar}>
+                <Text style={s.initials}>{initials}</Text>
+              </View>
+              <View style={[s.goalDot, { backgroundColor: activeGoal.color }]} />
+            </View>
+
+            {/* Center: name + tier + email */}
+            <View style={s.userInfo}>
+              <Text style={s.userName} numberOfLines={1}>{name}</Text>
+              <View style={s.memberBadge}>
+                <Ionicons name="checkmark-circle" size={11} color={T.lime} />
+                <Text style={s.memberText}>Premium Member</Text>
+              </View>
+              <Text style={s.userEmail} numberOfLines={1}>{email}</Text>
+            </View>
+
+            {/* Right: compact vertical metrics */}
+            <View style={s.userMetrics}>
+              <MetricMini
+                value={weightKg > 0 ? weightKg.toFixed(1) : "—"}
+                unit="KG"
               />
+              <View style={s.metricDivLine} />
+              <MetricMini
+                value={heightCm > 0 ? heightCm : "—"}
+                unit="CM"
+              />
+              <View style={s.metricDivLine} />
+              <MetricMini
+                value={bmi ?? "—"}
+                unit="BMI"
+                accent={!!bmi}
+              />
+            </View>
+          </View>
+
+          {/* ══════════════════════════════════════════════════════════════
+              3. EDIT SECTION (conditional)
+          ══════════════════════════════════════════════════════════════ */}
+          {editMode && (
+            <View style={s.editSection}>
+              <View style={s.editSectionHeader}>
+                <Text style={s.editSectionTitle}>Edit Profile</Text>
+                <TouchableOpacity
+                  onPress={() => { setEditMode(false); setSaveState("idle"); }}
+                  activeOpacity={0.7}
+                  style={s.cancelBtn}
+                >
+                  <Text style={s.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Name */}
+              <View style={s.editField}>
+                <Text style={s.editFieldLabel}>Name</Text>
+                <TextInput
+                  value={nameInput}
+                  onChangeText={setNameInput}
+                  placeholder="Your name"
+                  placeholderTextColor={T.muted}
+                  style={s.editInput}
+                />
+              </View>
+
+              {/* Metrics row */}
+              <View style={s.editFieldRow}>
+                <View style={[s.editField, { flex: 1 }]}>
+                  <Text style={s.editFieldLabel}>Weight (kg)</Text>
+                  <TextInput
+                    value={weightInput}
+                    onChangeText={setWeightInput}
+                    keyboardType="decimal-pad"
+                    placeholder="75"
+                    placeholderTextColor={T.muted}
+                    style={s.editInput}
+                    selectTextOnFocus
+                  />
+                </View>
+                <View style={[s.editField, { flex: 1 }]}>
+                  <Text style={s.editFieldLabel}>Height (cm)</Text>
+                  <TextInput
+                    value={heightInput}
+                    onChangeText={setHeightInput}
+                    keyboardType="number-pad"
+                    placeholder="175"
+                    placeholderTextColor={T.muted}
+                    style={s.editInput}
+                    selectTextOnFocus
+                  />
+                </View>
+                <View style={[s.editField, { flex: 1 }]}>
+                  <Text style={s.editFieldLabel}>Age</Text>
+                  <TextInput
+                    value={ageInput}
+                    onChangeText={setAgeInput}
+                    keyboardType="number-pad"
+                    placeholder="25"
+                    placeholderTextColor={T.muted}
+                    style={s.editInput}
+                    selectTextOnFocus
+                  />
+                </View>
+              </View>
+
+              {/* Goal picker */}
+              <Text style={s.editFieldLabel}>Fitness Goal</Text>
+              <View style={s.goalGrid}>
+                {GOALS.map((goal) => {
+                  const active = goalInput === goal.id;
+                  return (
+                    <TouchableOpacity
+                      key={goal.id}
+                      onPress={() => setGoalInput(goal.id)}
+                      activeOpacity={0.75}
+                      style={[
+                        s.goalChip,
+                        active && {
+                          backgroundColor: goal.color + "20",
+                          borderColor: goal.color + "60",
+                        },
+                      ]}
+                    >
+                      <Ionicons name={goal.icon} size={13} color={active ? goal.color : T.muted} />
+                      <Text style={[s.goalChipText, active && { color: goal.color }]}>
+                        {goal.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════
+              4. PERFORMANCE SNAPSHOT
+          ══════════════════════════════════════════════════════════════ */}
+          <Text style={s.sectionLabel}>PERFORMANCE SNAPSHOT</Text>
+          <View style={s.snapshotRow}>
+            {/* Streak card */}
+            <View style={s.snapshotCard}>
+              <View style={[s.snapshotIconBox, { backgroundColor: T.orange + "18" }]}>
+                <Ionicons name="flame" size={18} color={T.orange} />
+              </View>
+              <Text style={s.snapshotValue}>{streakDays}</Text>
+              <Text style={s.snapshotLabel}>Total Sessions</Text>
+            </View>
+
+            {/* This week card */}
+            <View style={s.snapshotCard}>
+              <View style={[s.snapshotIconBox, { backgroundColor: T.lime + "18" }]}>
+                <Ionicons name="calendar-outline" size={18} color={T.lime} />
+              </View>
+              <Text style={[s.snapshotValue, { color: T.lime }]}>{thisWeek}</Text>
+              <Text style={s.snapshotLabel}>This Week</Text>
+            </View>
+
+            {/* Active goal card */}
+            <View style={s.snapshotCard}>
+              <View style={[s.snapshotIconBox, { backgroundColor: activeGoal.color + "18" }]}>
+                <Ionicons name={activeGoal.icon} size={18} color={activeGoal.color} />
+              </View>
+              <Text style={[s.snapshotValue, { color: activeGoal.color, fontSize: 13, lineHeight: 15 }]}>
+                {activeGoal.label.split(" ")[0]}
+              </Text>
+              <Text style={s.snapshotLabel}>Goal</Text>
+            </View>
+          </View>
+
+          {/* ══════════════════════════════════════════════════════════════
+              5. SETTINGS CARD (unified dark surface)
+          ══════════════════════════════════════════════════════════════ */}
+          <Text style={s.sectionLabel}>APP SETTINGS</Text>
+          <View style={s.settingsCard}>
+            {SETTINGS.map((setting, i) => {
+              const isLast = i === SETTINGS.length - 1;
+
+              // Build the right-side value for specific rows
+              let rightValue: string | null = null;
+              if (setting.id === "goal") rightValue = activeGoal.label;
+              if (setting.id === "account") rightValue = email;
+
+              return (
+                <TouchableOpacity
+                  key={setting.id}
+                  style={[s.settingRow, isLast && { borderBottomWidth: 0 }]}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (setting.id === "body" || setting.id === "goal") {
+                      setEditMode(true);
+                    } else if (setting.id === "help") {
+                      Alert.alert(
+                        "Help & Support",
+                        "For assistance, contact support@fitnessapp.com",
+                        [{ text: "OK" }],
+                      );
+                    }
+                  }}
+                >
+                  {/* Icon badge */}
+                  <View
+                    style={[
+                      s.settingIconBadge,
+                      { backgroundColor: setting.color + "18" },
+                    ]}
+                  >
+                    <Ionicons name={setting.icon} size={16} color={setting.color} />
+                  </View>
+
+                  {/* Title + optional sub */}
+                  <View style={s.settingContent}>
+                    <Text style={s.settingTitle}>{setting.label}</Text>
+                    {rightValue && (
+                      <Text style={s.settingValue} numberOfLines={1}>
+                        {rightValue}
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* Right: value or chevron */}
+                  <Ionicons
+                    name="chevron-forward"
+                    size={14}
+                    color={T.muted}
+                  />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* ══════════════════════════════════════════════════════════════
+              6. SIGN OUT
+          ══════════════════════════════════════════════════════════════ */}
+          <TouchableOpacity
+            onPress={() =>
+              Alert.alert(
+                "Sign out?",
+                "You'll need to sign back in to access your data.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Sign Out",
+                    style: "destructive",
+                    onPress: () => signOutMutation.mutate(),
+                  },
+                ],
+              )
+            }
+            activeOpacity={0.8}
+            style={s.signOutBtn}
+          >
+            {signOutMutation.isPending ? (
+              <ActivityIndicator size="small" color={T.red} />
+            ) : (
+              <>
+                <Ionicons name="log-out-outline" size={16} color={T.red} />
+                <Text style={s.signOutText}>Sign Out</Text>
+              </>
             )}
           </TouchableOpacity>
-        </View>
 
-        <View style={s.card}>
-          <View style={s.cardHeader}>
-            <View style={s.cardTitleRow}>
-              <Ionicons name="body-outline" size={14} color={T.lime} />
-              <Text style={s.cardTitle}>BODY PROFILE</Text>
-            </View>
-          </View>
-          <View style={s.metricDivider} />
-
-          <Text style={s.metricLabel}>Name</Text>
-          {editMode ? (
-            <TextInput
-              value={nameInput}
-              onChangeText={setNameInput}
-              placeholder="Your name"
-              placeholderTextColor={T.muted}
-              style={s.input}
-            />
-          ) : (
-            <Text style={s.valueText}>{name}</Text>
-          )}
-
-          <Text style={s.metricLabel}>Email</Text>
-          <Text style={s.readonlyEmail}>{email}</Text>
-
-          <Text style={s.metricLabel}>Weight (kg)</Text>
-          {editMode ? (
-            <TextInput
-              value={weightInput}
-              onChangeText={setWeightInput}
-              keyboardType="decimal-pad"
-              placeholder="75"
-              placeholderTextColor={T.muted}
-              style={s.input}
-            />
-          ) : (
-            <Text style={s.valueText}>{weightDisplay}</Text>
-          )}
-
-          <Text style={s.metricLabel}>Height (cm)</Text>
-          {editMode ? (
-            <TextInput
-              value={heightInput}
-              onChangeText={setHeightInput}
-              keyboardType="number-pad"
-              placeholder="175"
-              placeholderTextColor={T.muted}
-              style={s.input}
-            />
-          ) : (
-            <Text style={s.valueText}>{heightDisplay}</Text>
-          )}
-
-          <Text style={s.metricLabel}>Age</Text>
-          {editMode ? (
-            <TextInput
-              value={ageInput}
-              onChangeText={setAgeInput}
-              keyboardType="number-pad"
-              placeholder="25"
-              placeholderTextColor={T.muted}
-              style={s.input}
-            />
-          ) : (
-            <Text style={s.valueText}>{ageDisplay}</Text>
-          )}
-
-          <Text style={s.metricLabel}>Goal</Text>
-          {editMode ? (
-            <View style={s.goalChips}>
-              {GOALS.map((goal) => {
-                const selected = goalInput === goal.id;
-                return (
-                  <TouchableOpacity
-                    key={goal.id}
-                    style={[s.goalChip, selected && s.goalChipSelected]}
-                    onPress={() => setGoalInput(goal.id)}
-                  >
-                    <Text
-                      style={[s.goalChipText, selected && s.goalChipTextSelected]}
-                    >
-                      {goal.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ) : (
-            <Text style={s.valueText}>{goalLabel}</Text>
-          )}
-
-          {!profile && !profilePending ? (
-            <Text style={s.hint}>
-              Add metrics during onboarding to personalize your plan.
-            </Text>
-          ) : null}
-        </View>
-
-        <Button
-          onPress={() => {
-            void handleRecalculateGoals();
-          }}
-          disabled={recalcState === "loading"}
-          style={s.recalcBtn}
-        >
-          {recalcState === "loading"
-            ? "Recalculating..."
-            : recalcState === "saved"
-              ? "Goals updated ✓"
-              : "Recalculate nutrition goals with AI"}
-        </Button>
-
-        <TouchableOpacity
-          onPress={() => signOutMutation.mutate()}
-          activeOpacity={0.8}
-          style={s.signOutBtn}
-        >
-          <Text style={s.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: T.bg0 },
   screen: {
     flex: 1,
     backgroundColor: T.bg0,
@@ -396,159 +576,372 @@ const s = StyleSheet.create({
     alignSelf: "center",
     width: "100%",
   },
-  inner: {
+  scroll: {
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 56 : 28,
+    paddingTop: 8,
     paddingBottom: 32,
   },
-  loader: {
-    marginBottom: 12,
-    alignItems: "flex-start",
-  },
-  topRow: {
+
+  // ── 1. Premium header ──────────────────────────────────────────────────────
+  header: {
     flexDirection: "row",
+    alignItems: "flex-end",
     justifyContent: "space-between",
+    paddingTop: 6,
+    paddingBottom: 20,
+  },
+  headerLeft: { gap: 2 },
+  headerLabelRow: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingTop: 8,
-    marginBottom: 20,
-  },
-  pageTitle: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 38,
-    color: T.text,
-    letterSpacing: 0.4,
-  },
-  iconBtn: {
-    minHeight: 34,
-    minWidth: 34,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: T.borderMid,
-    backgroundColor: T.bg2,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
-  },
-  savedText: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 12,
-    color: T.lime,
-  },
-  card: {
-    backgroundColor: T.bg1,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: T.borderMid,
-    padding: 18,
-    marginBottom: 12,
-  },
-  cardHeader: {
+    gap: 5,
     marginBottom: 4,
   },
-  cardTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  cardTitle: {
+  headerLabelText: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
-    color: T.text,
-    letterSpacing: 1.0,
-  },
-  metricDivider: {
-    height: 1,
-    backgroundColor: T.border,
-    marginVertical: 12,
-  },
-  metricRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  metricLabel: {
-    fontFamily: "DMSans_500Medium",
     fontSize: 12,
     color: T.muted,
-    marginTop: 8,
-    marginBottom: 6,
+    letterSpacing: 1.5,
   },
-  valueText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 24,
-    color: T.lime,
-    marginBottom: 2,
-  },
-  readonlyEmail: {
+  headerGreeting: {
     fontFamily: "DMSans_400Regular",
     fontSize: 13,
     color: T.sub,
-    marginBottom: 2,
   },
-  input: {
+  headerHero: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 38,
+    color: T.text,
+    lineHeight: 40,
+    letterSpacing: 0.5,
+  },
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: T.bg3,
     borderWidth: 1,
     borderColor: T.borderMid,
-    backgroundColor: T.bg2,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  editBtnActive: {
+    backgroundColor: T.lime,
+    borderColor: T.lime,
+    shadowColor: T.lime,
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
+  },
+  editBtnText: {
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 13,
+    color: T.lime,
+  },
+  editBtnActiveText: {
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 13,
+    color: T.bg0,
+  },
+
+  // ── 2. Avatar + biometrics card ────────────────────────────────────────────
+  userCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: T.bg1,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 12,
+    gap: 14,
+  },
+
+  // Avatar with lime ring
+  avatarRing: {
+    position: "relative",
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: T.bg3,
+    borderWidth: 1.5,
+    borderColor: T.lime + "AA",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: T.lime,
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 3,
+  },
+  initials: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 24,
     color: T.text,
+    letterSpacing: 1,
+  },
+  goalDot: {
+    position: "absolute",
+    bottom: 1,
+    right: 1,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: T.bg1,
+  },
+
+  // Center: user info
+  userInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  userName: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 20,
+    color: T.text,
+    letterSpacing: 0.2,
+    lineHeight: 22,
+  },
+  memberBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "flex-start",
+    backgroundColor: T.lime + "14",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  memberText: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 9,
+    color: T.lime,
+    letterSpacing: 0.4,
+  },
+  userEmail: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 11,
+    color: T.muted,
+  },
+
+  // Right: compact metrics column
+  userMetrics: {
+    alignItems: "flex-end",
+    gap: 2,
+  },
+  metricMini: {
+    alignItems: "flex-end",
+    gap: 0,
+  },
+  metricMiniValue: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 16,
+    color: T.text,
+    lineHeight: 18,
+    letterSpacing: -0.3,
+  },
+  metricMiniUnit: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 8,
+    color: T.muted,
+    letterSpacing: 0.5,
+    lineHeight: 10,
+  },
+  metricDivLine: {
+    width: 28,
+    height: 1,
+    backgroundColor: T.border,
+    marginVertical: 4,
+    alignSelf: "flex-end",
+  },
+
+  // ── 3. Edit section ────────────────────────────────────────────────────────
+  editSection: {
+    backgroundColor: T.bg1,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 12,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: T.lime + "22",
+  },
+  editSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  editSectionTitle: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 16,
+    color: T.text,
+    letterSpacing: 0.3,
+  },
+  cancelBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 10,
+    backgroundColor: T.bg3,
+    borderWidth: 1,
+    borderColor: T.borderMid,
+  },
+  cancelBtnText: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 12,
+    color: T.sub,
+  },
+  editField: {
+    gap: 6,
+  },
+  editFieldRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  editFieldLabel: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 10,
+    color: T.muted,
+    letterSpacing: 0.4,
+  },
+  editInput: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 14,
+    color: T.text,
+    backgroundColor: T.bg2,
+    borderWidth: 1,
+    borderColor: T.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontFamily: "DMSans_400Regular",
-    fontSize: 14,
-    marginBottom: 2,
   },
-  goalChips: {
+
+  // Goal picker grid
+  goalGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
     marginTop: 2,
   },
   goalChip: {
-    borderWidth: 1,
-    borderColor: T.borderMid,
-    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     backgroundColor: T.bg2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: T.border,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  goalChipSelected: {
-    backgroundColor: `${T.lime}22`,
-    borderColor: `${T.lime}66`,
-  },
   goalChipText: {
-    fontFamily: "DMSans_400Regular",
+    fontFamily: "DMSans_500Medium",
     fontSize: 12,
-    color: T.sub,
+    color: T.muted,
   },
-  goalChipTextSelected: {
-    color: T.lime,
+
+  // ── 4. Performance snapshot ────────────────────────────────────────────────
+  sectionLabel: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 13,
+    color: T.text,
+    letterSpacing: 1.2,
+    marginBottom: 10,
+    marginTop: 8,
   },
-  hint: {
-    marginTop: 10,
+  snapshotRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 12,
+  },
+  snapshotCard: {
+    flex: 1,
+    backgroundColor: T.bg1,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    gap: 6,
+  },
+  snapshotIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
+  },
+  snapshotValue: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 22,
+    color: T.text,
+    lineHeight: 24,
+    letterSpacing: -0.3,
+  },
+  snapshotLabel: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 9,
+    color: T.muted,
+    letterSpacing: 0.4,
+    textAlign: "center",
+  },
+
+  // ── 5. Settings card ──────────────────────────────────────────────────────
+  settingsCard: {
+    backgroundColor: T.bg1,
+    borderRadius: 20,
+    overflow: "hidden",
+    marginBottom: 16,
+  },
+  settingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  },
+  settingIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  settingContent: {
+    flex: 1,
+    gap: 2,
+  },
+  settingTitle: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 14,
+    color: T.text,
+  },
+  settingValue: {
     fontFamily: "DMSans_400Regular",
     fontSize: 11,
     color: T.muted,
-    lineHeight: 16,
   },
-  recalcBtn: {
-    marginTop: 8,
-    borderRadius: 12,
-    backgroundColor: T.lime,
-  },
+
+  // ── 6. Sign out ───────────────────────────────────────────────────────────
   signOutBtn: {
-    marginTop: 8,
-    minHeight: 52,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
-    borderColor: T.borderMid,
-    borderWidth: 1,
-    backgroundColor: T.bg3,
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: T.red + "40",
+    backgroundColor: "transparent",
+    borderRadius: 16,
+    paddingVertical: 14,
   },
   signOutText: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 14,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 16,
     color: T.red,
+    letterSpacing: 0.3,
   },
 });

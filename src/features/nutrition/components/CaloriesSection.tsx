@@ -10,10 +10,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { readAsStringAsync } from "expo-file-system/legacy";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Modal,
   ScrollView,
   StyleSheet,
@@ -23,8 +24,6 @@ import {
   View,
 } from "react-native";
 import type { MealType } from "../types/nutrition.types";
-import { MacroBar } from "./MacroBar";
-import { ProgressCircle } from "./ProgressCircle";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -34,8 +33,9 @@ const T = {
   bg3: "#222228",
   lime: "#C8F135",
   red: "#FF3D3D",
-  orange: "#FF8A00",
-  blue: "#3D8EFF",
+  orange: "#F97316",
+  blue: "#3B82F6",
+  purple: "#A855F7",
   text: "#F2F2F5",
   sub: "#7A7A8C",
   muted: "#4A4A58",
@@ -51,13 +51,13 @@ const MEAL_META: Record<
   Breakfast: { icon: "sunny-outline", color: T.orange },
   Snack: { icon: "leaf-outline", color: T.lime },
   Lunch: { icon: "partly-sunny-outline", color: T.blue },
-  Dinner: { icon: "moon-outline", color: "#9B6DFF" },
+  Dinner: { icon: "moon-outline", color: T.purple },
 };
 
-const MEAL_TYPES: MealType[] = ["Breakfast", "Snack", "Lunch", "Dinner"];
-
+const MEAL_TYPES: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"];
 const MAX_DAYS_BACK = 7;
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function localYmd(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -65,15 +65,11 @@ function localYmd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function dateFromYmd(ymd: string): Date {
-  const [y, m, d] = ymd.split("-").map((v) => Number(v));
-  return new Date(y, (m || 1) - 1, d || 1);
-}
-
 function displayDateLabel(ymd: string, offsetDays: number): string {
   if (offsetDays === 0) return "Today";
   if (offsetDays === 1) return "Yesterday";
-  const date = dateFromYmd(ymd);
+  const [y, mo, d] = ymd.split("-").map(Number);
+  const date = new Date(y, (mo || 1) - 1, d || 1);
   const parts = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     month: "short",
@@ -81,34 +77,58 @@ function displayDateLabel(ymd: string, offsetDays: number): string {
   }).formatToParts(date);
   const weekday = parts.find((p) => p.type === "weekday")?.value ?? "";
   const month = parts.find((p) => p.type === "month")?.value ?? "";
-  const day = parts.find((p) => p.type === "day")?.value ?? "";
-  return `${weekday} ${month} ${day}`;
+  const day2 = parts.find((p) => p.type === "day")?.value ?? "";
+  return `${weekday} ${month} ${day2}`;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function HeroStat({
+// ─── Macro Cell: individual floating card ─────────────────────────────────────
+function MacroCell({
   label,
-  value,
-  unit,
-  color = T.text,
+  current,
+  goal,
+  color,
 }: {
   label: string;
-  value: string | number;
-  unit?: string;
-  color?: string;
+  current: number;
+  goal: number;
+  color: string;
 }) {
+  const pct = goal > 0 ? Math.min((current / goal) * 100, 100) : 0;
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: pct,
+      duration: 900,
+      useNativeDriver: false,
+    }).start();
+  }, [pct]);
+
+  const barW = anim.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] });
+
   return (
-    <View style={s.heroStat}>
-      <Text style={s.heroStatLabel}>{label}</Text>
-      <View style={s.heroStatValueRow}>
-        <Text style={[s.heroStatValue, { color }]}>{value}</Text>
-        {unit ? <Text style={s.heroStatUnit}>{unit}</Text> : null}
+    <View style={s.macroCell}>
+      {/* Value + goal */}
+      <Text style={[s.macroCellValue, { color }]}>{Math.round(current)}g</Text>
+      <Text style={s.macroCellGoal}>/ {goal}g</Text>
+
+      {/* Thin accent progress line */}
+      <View style={s.macroCellTrack}>
+        <Animated.View
+          style={[
+            s.macroCellFill,
+            { width: barW, backgroundColor: color, shadowColor: color },
+          ]}
+        />
       </View>
+
+      {/* Label */}
+      <Text style={s.macroCellLabel}>{label}</Text>
     </View>
   );
 }
 
+// ─── Food row inside a meal group ─────────────────────────────────────────────
 function FoodRow({
   item,
   onDelete,
@@ -126,7 +146,7 @@ function FoodRow({
   return (
     <View style={s.foodRow}>
       <View style={s.foodRowLeft}>
-        <Text style={s.foodName}>{item.name}</Text>
+        <Text style={s.foodName} numberOfLines={1}>{item.name}</Text>
         <Text style={s.foodMacros}>
           P {item.protein}g · C {item.carbs}g · F {item.fat}g
         </Text>
@@ -142,13 +162,14 @@ function FoodRow({
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="trash-outline" size={14} color={T.muted} />
+          <Ionicons name="trash-outline" size={13} color={T.muted} />
         </TouchableOpacity>
       )}
     </View>
   );
 }
 
+// ─── Meal group card ──────────────────────────────────────────────────────────
 function MealGroup({
   mealGroup,
   items,
@@ -173,28 +194,23 @@ function MealGroup({
 
   return (
     <View style={s.mealGroup}>
+      {/* Header row */}
       <View style={s.mealGroupHeader}>
         <View style={s.mealGroupLeft}>
-          <View style={[s.mealIconBox, { backgroundColor: meta.color + "1A" }]}>
+          <View style={[s.mealIconBox, { backgroundColor: meta.color + "20" }]}>
             <Ionicons name={meta.icon} size={15} color={meta.color} />
           </View>
           <Text style={s.mealGroupName}>{mealGroup}</Text>
         </View>
-        <View
-          style={[
-            s.mealCalBadge,
-            {
-              backgroundColor: meta.color + "15",
-              borderColor: meta.color + "30",
-            },
-          ]}
-        >
+        {/* Calorie pill — fixed layout to prevent clipping */}
+        <View style={[s.mealCalBadge, { backgroundColor: meta.color + "18" }]}>
           <Text style={[s.mealCalBadgeText, { color: meta.color }]}>
             {groupCal} kcal
           </Text>
         </View>
       </View>
 
+      {/* Food rows */}
       {items.map((item, idx) => (
         <View key={item.id}>
           {idx > 0 && <View style={s.itemDivider} />}
@@ -226,6 +242,7 @@ export function CaloriesSection() {
     d.setDate(d.getDate() - daysBack);
     return localYmd(d);
   }, [daysBack]);
+
   const dateLabel = useMemo(
     () => displayDateLabel(selectedDate, daysBack),
     [selectedDate, daysBack],
@@ -253,11 +270,13 @@ export function CaloriesSection() {
 
   // ─── Derived values ───────────────────────────────────────────────────────────
   const goalCal = goals?.calories ?? 2400;
-  const burned = 0;
   const totalCal = totals?.cal ?? 0;
   const totalP = totals?.protein ?? 0;
   const totalC = totals?.carbs ?? 0;
   const totalF = totals?.fat ?? 0;
+  const goalP = goals?.protein ?? 180;
+  const goalC = goals?.carbs ?? 280;
+  const goalF = goals?.fat ?? 80;
 
   const remaining = goalCal - totalCal;
   const pct = Math.min(Math.round((totalCal / goalCal) * 100), 100);
@@ -295,25 +314,22 @@ export function CaloriesSection() {
     );
   }
 
-  function handleDeleteFood(id: string) {
-    deleteMeal(id);
-  }
-
   async function pickAndAnalyzeWithGemini(source: "camera" | "library") {
+    if (entryStep === "analyzing") return;
     setEntryStep("analyzing");
     setGeminiError(null);
     try {
       if (source === "camera") {
         const cam = await ImagePicker.requestCameraPermissionsAsync();
         if (!cam.granted) {
-          setGeminiError("Camera permission is required to scan.");
+          setGeminiError("Camera permission required.");
           setEntryStep("form");
           return;
         }
       } else {
         const lib = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!lib.granted) {
-          setGeminiError("Photo library permission is required to scan.");
+          setGeminiError("Photo library permission required.");
           setEntryStep("form");
           return;
         }
@@ -321,39 +337,29 @@ export function CaloriesSection() {
 
       const launched =
         source === "camera"
-          ? await ImagePicker.launchCameraAsync({
-              quality: 0.8,
-            })
+          ? await ImagePicker.launchCameraAsync({ quality: 0.8 })
           : await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ["images"],
               quality: 0.8,
             });
 
-      if (launched.canceled) {
-        setEntryStep("menu");
-        return;
-      }
-
-      const asset = launched.assets[0];
-      const uri = asset.uri;
+      if (launched.canceled) { setEntryStep("menu"); return; }
 
       const resized = await manipulateAsync(
-        uri,
-        [{ resize: { width: 1024 } }],
-        { compress: 0.8, format: SaveFormat.JPEG },
+        launched.assets[0].uri,
+        [{ resize: { width: 768 } }],
+        { compress: 0.7, format: SaveFormat.JPEG },
       );
 
       const base64 = await readAsStringAsync(resized.uri, { encoding: "base64" });
-      const mimeType = "image/jpeg";
 
       if (base64.length > 4 * 1024 * 1024) {
-        setGeminiError("Image is too large. Please try a different photo.");
+        setGeminiError("Image too large. Try a different photo.");
         setEntryStep("form");
         return;
       }
 
-      const parsed = await requestFoodScanFromImage(base64, mimeType);
-
+      const parsed = await requestFoodScanFromImage(base64, "image/jpeg");
       setManualName(parsed.name);
       setManualCal(String(parsed.cal));
       setManualP(String(parsed.protein));
@@ -362,27 +368,15 @@ export function CaloriesSection() {
       setGeminiError(null);
       setEntryStep("form");
     } catch (e) {
-      const msg =
-        e instanceof Error ? e.message : "Scan failed. Please enter manually.";
-      setGeminiError(msg);
+      setGeminiError(e instanceof Error ? e.message : "Scan failed. Enter manually.");
       setEntryStep("form");
     }
   }
 
   function openScanSourcePicker() {
     Alert.alert("Scan food", "Choose a photo source", [
-      {
-        text: "Camera",
-        onPress: () => {
-          void pickAndAnalyzeWithGemini("camera");
-        },
-      },
-      {
-        text: "Photo library",
-        onPress: () => {
-          void pickAndAnalyzeWithGemini("library");
-        },
-      },
+      { text: "Camera", onPress: () => void pickAndAnalyzeWithGemini("camera") },
+      { text: "Photo library", onPress: () => void pickAndAnalyzeWithGemini("library") },
       { text: "Cancel", style: "cancel" },
     ]);
   }
@@ -391,11 +385,9 @@ export function CaloriesSection() {
     const name = manualName.trim();
     const cal = Number(manualCal.replace(",", "."));
     if (!name || !Number.isFinite(cal) || cal <= 0) return;
-
     const protein = Number(manualP.replace(",", ".")) || 0;
     const carbs = Number(manualC.replace(",", ".")) || 0;
     const fat = Number(manualF.replace(",", ".")) || 0;
-
     handleAddFood({
       id: `manual-${Date.now()}`,
       name,
@@ -408,11 +400,8 @@ export function CaloriesSection() {
 
   const manualCalNum = Number(manualCal.replace(",", "."));
   const canSubmitManual =
-    manualName.trim().length > 0 &&
-    Number.isFinite(manualCalNum) &&
-    manualCalNum > 0;
+    manualName.trim().length > 0 && Number.isFinite(manualCalNum) && manualCalNum > 0;
 
-  // ─── Loading state ────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <View style={s.loadingWrap}>
@@ -427,13 +416,12 @@ export function CaloriesSection() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scroll}
       >
+        {/* ── Date nav ─────────────────────────────────────────────────────── */}
         <View style={s.dateNavWrap}>
           <TouchableOpacity
-            onPress={() =>
-              setDaysBack((prev) => Math.min(MAX_DAYS_BACK, prev + 1))
-            }
+            onPress={() => setDaysBack((p) => Math.min(MAX_DAYS_BACK, p + 1))}
             disabled={daysBack >= MAX_DAYS_BACK}
-            style={[s.dateArrowBtn, daysBack >= MAX_DAYS_BACK && s.dateArrowDisabled]}
+            style={[s.dateArrowBtn, daysBack >= MAX_DAYS_BACK && s.dimmed]}
             activeOpacity={0.75}
           >
             <Ionicons name="chevron-back" size={14} color={T.text} />
@@ -443,84 +431,125 @@ export function CaloriesSection() {
             <Text style={s.datePillText}>{dateLabel}</Text>
           </View>
           <TouchableOpacity
-            onPress={() => setDaysBack((prev) => Math.max(0, prev - 1))}
+            onPress={() => setDaysBack((p) => Math.max(0, p - 1))}
             disabled={daysBack === 0}
-            style={[s.dateArrowBtn, daysBack === 0 && s.dateArrowDisabled]}
+            style={[s.dateArrowBtn, daysBack === 0 && s.dimmed]}
             activeOpacity={0.75}
           >
             <Ionicons name="chevron-forward" size={14} color={T.text} />
           </TouchableOpacity>
         </View>
 
-        {/* ── HERO ──────────────────────────────────────────────────────────── */}
-        <View style={s.heroCard}>
-          <ProgressCircle
-            pct={pct}
-            size={128}
-            stroke={11}
-            color={pct > 90 ? T.red : T.lime}
-            label={`${totalCal}`}
-            sub="KCAL EATEN"
-          />
-          <View style={s.heroDivider} />
-          <View style={s.heroStats}>
-            <HeroStat label="Goal" value={goalCal} unit="kcal" />
-            <View style={s.heroStatDivider} />
-            <HeroStat
-              label={isOver ? "Over" : "Remaining"}
-              value={Math.abs(remaining)}
-              unit="kcal"
-              color={isOver ? T.red : T.lime}
-            />
-            <View style={s.heroStatDivider} />
-            <HeroStat
-              label="Burned"
-              value={burned}
-              unit="kcal"
-              color={T.orange}
-            />
+        {/* ══════════════════════════════════════════════════════════════════
+            CALORIE DASHBOARD CARD
+        ══════════════════════════════════════════════════════════════════ */}
+        <View style={s.calCard}>
+          {/* Main stats row */}
+          <View style={s.calStatsRow}>
+            {/* Left: percentage eaten */}
+            <View style={s.calLeft}>
+              <Text style={[s.calPct, { color: isOver ? T.red : T.lime }]}>
+                {pct}%
+              </Text>
+              <Text style={s.calEatenLabel}>EATEN</Text>
+            </View>
+
+            <View style={s.calMidDivider} />
+
+            {/* Right: calories breakdown */}
+            <View style={s.calRight}>
+              <Text style={s.calCategoryLabel}>CALORIES</Text>
+              <View style={s.calValueRow}>
+                <Text style={s.calCurrent}>
+                  {totalCal.toLocaleString()}
+                </Text>
+                <Text style={s.calGoalText}>
+                  {" "}/ {goalCal.toLocaleString()}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Bottom: lime badge + progress track */}
+          <View style={s.calBottom}>
+            <View
+              style={[
+                s.calBadge,
+                { borderColor: isOver ? T.red + "55" : T.lime + "55" },
+              ]}
+            >
+              <Ionicons
+                name="flash"
+                size={12}
+                color={isOver ? T.red : T.lime}
+              />
+              <Text style={[s.calBadgeText, { color: isOver ? T.red : T.lime }]}>
+                {isOver
+                  ? `${Math.abs(remaining).toLocaleString()} kcal over`
+                  : `${remaining.toLocaleString()} kcal left`}
+              </Text>
+            </View>
+            <View style={s.calTrack}>
+              <View
+                style={[
+                  s.calFill,
+                  {
+                    width: `${pct}%`,
+                    backgroundColor: isOver ? T.red : T.lime,
+                  },
+                ]}
+              />
+            </View>
           </View>
         </View>
 
-        {/* ── MACROS ────────────────────────────────────────────────────────── */}
-        <View style={s.macroCard}>
-          <View style={s.macroCardHeader}>
-            <Text style={s.cardTitle}>MACROS</Text>
-            <Text style={s.macroKcal}>
-              {(totalP * 4 + totalC * 4 + totalF * 9).toLocaleString()} kcal
-              logged
-            </Text>
-          </View>
-          <MacroBar
-            label="Protein"
+        {/* ══════════════════════════════════════════════════════════════════
+            MACRO GRID — 3 separate floating cards
+        ══════════════════════════════════════════════════════════════════ */}
+        <View style={s.macroGrid}>
+          <MacroCell
+            label="PROTEIN"
             current={totalP}
-            goal={goals?.protein ?? 180}
-            color={T.blue}
+            goal={goalP}
+            color={T.lime}
           />
-          <MacroBar
-            label="Carbs"
+          <MacroCell
+            label="CARBS"
             current={totalC}
-            goal={goals?.carbs ?? 280}
+            goal={goalC}
             color={T.orange}
           />
-          <MacroBar
-            label="Fat"
+          <MacroCell
+            label="FAT"
             current={totalF}
-            goal={goals?.fat ?? 80}
-            color={T.red}
+            goal={goalF}
+            color={T.blue}
           />
         </View>
 
-        {/* ── MEALS ─────────────────────────────────────────────────────────── */}
+        {/* ══════════════════════════════════════════════════════════════════
+            LOG FOOD — full-width lime pill button
+        ══════════════════════════════════════════════════════════════════ */}
+        <TouchableOpacity
+          style={s.logFoodBtn}
+          activeOpacity={0.85}
+          onPress={() => setShowAddFood(true)}
+        >
+          <Ionicons name="add" size={18} color={T.bg0} />
+          <Text style={s.logFoodBtnText}>Log Food</Text>
+        </TouchableOpacity>
+
+        {/* ══════════════════════════════════════════════════════════════════
+            TODAY'S MEALS
+        ══════════════════════════════════════════════════════════════════ */}
         <View style={s.mealsHeader}>
-          <Text style={s.cardTitle}>TODAY'S MEALS</Text>
+          <Text style={s.sectionTitle}>TODAY&apos;S MEALS</Text>
           <TouchableOpacity
-            style={s.addFoodBtn}
-            activeOpacity={0.8}
             onPress={() => setShowAddFood(true)}
+            style={s.addMoreLink}
+            activeOpacity={0.75}
           >
-            <Ionicons name="add" size={14} color={T.bg0} />
-            <Text style={s.addFoodBtnText}>Add Food</Text>
+            <Text style={s.addMoreLinkText}>+ Add</Text>
           </TouchableOpacity>
         </View>
 
@@ -533,35 +562,34 @@ export function CaloriesSection() {
                 key={mealGroup}
                 mealGroup={mealGroup}
                 items={items}
-                onDelete={handleDeleteFood}
+                onDelete={(id) => deleteMeal(id)}
               />
             );
           })}
 
         {mealLog?.length === 0 && (
           <View style={s.emptyMeals}>
-            <Ionicons name="restaurant-outline" size={32} color={T.muted} />
-            <Text style={s.emptyMealsText}>No meals logged today</Text>
-            <Text style={s.emptyMealsSub}>Tap + Add Food to get started</Text>
+            <Ionicons name="restaurant-outline" size={30} color={T.muted} />
+            <Text style={s.emptyMealsText}>No meals logged</Text>
+            <Text style={s.emptyMealsSub}>Tap Log Food to get started</Text>
           </View>
         )}
 
         <View style={{ height: 24 }} />
       </ScrollView>
 
-      {/* ── ADD FOOD MODAL ──────────────────────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          ADD FOOD MODAL
+      ══════════════════════════════════════════════════════════════════════ */}
       <Modal visible={showAddFood} animationType="slide" transparent>
         <View style={s.modalOverlay}>
           <View style={s.sheet}>
             <View style={s.sheetHandle} />
 
-            {/* Header */}
             <View style={s.sheetHeader}>
-              <Text style={s.sheetTitle}>ADD FOOD</Text>
+              <Text style={s.sheetTitle}>Add food</Text>
               <TouchableOpacity
-                onPress={() => {
-                  setShowAddFood(false);
-                }}
+                onPress={() => setShowAddFood(false)}
                 style={s.sheetCloseBtn}
                 activeOpacity={0.7}
               >
@@ -569,7 +597,7 @@ export function CaloriesSection() {
               </TouchableOpacity>
             </View>
 
-            {/* Meal type selector */}
+            {/* Meal type chips */}
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -585,10 +613,7 @@ export function CaloriesSection() {
                     activeOpacity={0.75}
                     style={[
                       s.mealTypeChip,
-                      active && {
-                        backgroundColor: T.lime,
-                        borderColor: T.lime,
-                      },
+                      active && { backgroundColor: T.lime, borderColor: T.lime },
                     ]}
                   >
                     <Ionicons
@@ -604,13 +629,12 @@ export function CaloriesSection() {
               })}
             </ScrollView>
 
-            {/* Add-food flow: AI scan vs manual */}
             <ScrollView
               style={s.modalBodyScroll}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              {entryStep === "menu" ? (
+              {entryStep === "menu" && (
                 <View style={s.entryMenu}>
                   <TouchableOpacity
                     style={s.scanPrimaryBtn}
@@ -625,86 +649,52 @@ export function CaloriesSection() {
                     activeOpacity={0.8}
                     onPress={() => {
                       setGeminiError(null);
-                      setManualName("");
-                      setManualCal("");
-                      setManualP("");
-                      setManualC("");
-                      setManualF("");
+                      setManualName(""); setManualCal(""); setManualP("");
+                      setManualC(""); setManualF("");
                       setEntryStep("form");
                     }}
                   >
                     <Text style={s.manualSecondaryBtnText}>Enter manually</Text>
                   </TouchableOpacity>
                 </View>
-              ) : null}
+              )}
 
-              {entryStep === "analyzing" ? (
+              {entryStep === "analyzing" && (
                 <View style={s.analyzingWrap}>
                   <ActivityIndicator size="large" color={T.lime} />
                   <Text style={s.analyzingText}>Analyzing food…</Text>
                 </View>
-              ) : null}
+              )}
 
-              {entryStep === "form" ? (
+              {entryStep === "form" && (
                 <View style={s.manualForm}>
-                  {geminiError ? (
+                  {geminiError && (
                     <Text style={s.geminiErrorText}>{geminiError}</Text>
-                  ) : null}
-
-                  <Text style={s.formLabel}>Food name</Text>
-                  <TextInput
-                    value={manualName}
-                    onChangeText={setManualName}
-                    placeholder="Food name"
-                    placeholderTextColor={T.muted}
-                    style={s.formInput}
-                  />
-
-                  <Text style={s.formLabel}>Calories</Text>
-                  <TextInput
-                    value={manualCal}
-                    onChangeText={setManualCal}
-                    placeholder="Calories"
-                    placeholderTextColor={T.muted}
-                    style={s.formInput}
-                    keyboardType="numeric"
-                  />
-
-                  <Text style={s.formLabel}>Protein (g)</Text>
-                  <TextInput
-                    value={manualP}
-                    onChangeText={setManualP}
-                    placeholder="0"
-                    placeholderTextColor={T.muted}
-                    style={s.formInput}
-                    keyboardType="numeric"
-                  />
-
-                  <Text style={s.formLabel}>Carbs (g)</Text>
-                  <TextInput
-                    value={manualC}
-                    onChangeText={setManualC}
-                    placeholder="0"
-                    placeholderTextColor={T.muted}
-                    style={s.formInput}
-                    keyboardType="numeric"
-                  />
-
-                  <Text style={s.formLabel}>Fat (g)</Text>
-                  <TextInput
-                    value={manualF}
-                    onChangeText={setManualF}
-                    placeholder="0"
-                    placeholderTextColor={T.muted}
-                    style={s.formInput}
-                    keyboardType="numeric"
-                  />
+                  )}
+                  {[
+                    { label: "Food name", value: manualName, setter: setManualName, keyboard: "default" as const, placeholder: "Food name" },
+                    { label: "Calories", value: manualCal, setter: setManualCal, keyboard: "numeric" as const, placeholder: "0" },
+                    { label: "Protein (g)", value: manualP, setter: setManualP, keyboard: "numeric" as const, placeholder: "0" },
+                    { label: "Carbs (g)", value: manualC, setter: setManualC, keyboard: "numeric" as const, placeholder: "0" },
+                    { label: "Fat (g)", value: manualF, setter: setManualF, keyboard: "numeric" as const, placeholder: "0" },
+                  ].map(({ label, value, setter, keyboard, placeholder }) => (
+                    <View key={label}>
+                      <Text style={s.formLabel}>{label}</Text>
+                      <TextInput
+                        value={value}
+                        onChangeText={setter}
+                        placeholder={placeholder}
+                        placeholderTextColor={T.muted}
+                        style={s.formInput}
+                        keyboardType={keyboard}
+                      />
+                    </View>
+                  ))}
 
                   <TouchableOpacity
                     style={[
                       s.addToLogBtn,
-                      (!canSubmitManual || addingId !== null) &&
-                        s.addToLogBtnDisabled,
+                      (!canSubmitManual || addingId !== null) && s.addToLogBtnDisabled,
                     ]}
                     activeOpacity={0.85}
                     disabled={!canSubmitManual || addingId !== null}
@@ -720,15 +710,12 @@ export function CaloriesSection() {
                   <TouchableOpacity
                     style={s.formBackBtn}
                     activeOpacity={0.75}
-                    onPress={() => {
-                      setGeminiError(null);
-                      setEntryStep("menu");
-                    }}
+                    onPress={() => { setGeminiError(null); setEntryStep("menu"); }}
                   >
                     <Text style={s.formBackBtnText}>← Back</Text>
                   </TouchableOpacity>
                 </View>
-              ) : null}
+              )}
             </ScrollView>
           </View>
         </View>
@@ -741,14 +728,25 @@ export function CaloriesSection() {
 const s = StyleSheet.create({
   scroll: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 4,
+    paddingBottom: 100,
   },
+
+  // ── Loading ──────────────────────────────────────────────────────────────────
+  loadingWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 80,
+  },
+
+  // ── Date nav ─────────────────────────────────────────────────────────────────
   dateNavWrap: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    marginBottom: 10,
+    marginBottom: 14,
   },
   dateArrowBtn: {
     width: 28,
@@ -760,9 +758,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  dateArrowDisabled: {
-    opacity: 0.35,
-  },
+  dimmed: { opacity: 0.3 },
   datePill: {
     flexDirection: "row",
     alignItems: "center",
@@ -781,122 +777,201 @@ const s = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // ── Loading ──────────────────────────────────────────────────────────────────
-  loadingWrap: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 80,
-  },
-
-  // ── Hero card ────────────────────────────────────────────────────────────────
-  heroCard: {
-    flexDirection: "row",
-    alignItems: "center",
+  // ══ Calorie Card ══════════════════════════════════════════════════════════════
+  calCard: {
     backgroundColor: T.bg1,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: T.borderMid,
-    padding: 18,
+    padding: 20,
     marginBottom: 12,
     gap: 16,
   },
-  heroDivider: {
+  calStatsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  calLeft: {
+    alignItems: "center",
+    gap: 4,
+    paddingRight: 4,
+    minWidth: 80,
+  },
+  calPct: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 52,
+    lineHeight: 54,
+    letterSpacing: -2,
+  },
+  calEatenLabel: {
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 10,
+    color: T.muted,
+    letterSpacing: 1.5,
+  },
+  calMidDivider: {
     width: 1,
-    height: 80,
+    height: 56,
     backgroundColor: T.border,
+    marginHorizontal: 18,
   },
-  heroStats: {
+  calRight: {
     flex: 1,
-    gap: 10,
+    gap: 4,
   },
-  heroStat: {
-    gap: 1,
-  },
-  heroStatLabel: {
+  calCategoryLabel: {
     fontFamily: "DMSans_500Medium",
     fontSize: 10,
     color: T.muted,
-    letterSpacing: 0.5,
+    letterSpacing: 1.2,
   },
-  heroStatValueRow: {
+  calValueRow: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: 3,
+    flexWrap: "nowrap",
   },
-  heroStatValue: {
+  calCurrent: {
     fontFamily: "BarlowCondensed_900Black",
-    fontSize: 20,
+    fontSize: 40,
     color: T.text,
-    lineHeight: 22,
+    lineHeight: 42,
+    letterSpacing: -1,
   },
-  heroStatUnit: {
+  calGoalText: {
     fontFamily: "DMSans_400Regular",
-    fontSize: 10,
-    color: T.sub,
-  },
-  heroStatDivider: {
-    height: 1,
-    backgroundColor: T.border,
+    fontSize: 15,
+    color: T.muted,
+    lineHeight: 20,
+    marginLeft: 2,
   },
 
-  // ── Macro card ───────────────────────────────────────────────────────────────
-  macroCard: {
-    backgroundColor: T.bg1,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: 16,
-    marginBottom: 20,
+  // Bottom badge + track
+  calBottom: {
     gap: 10,
   },
-  macroCardHeader: {
+  calBadge: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 4,
+    gap: 6,
+    alignSelf: "flex-start",
+    backgroundColor: T.lime + "10",
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  cardTitle: {
+  calBadgeText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
-    color: T.text,
-    letterSpacing: 1.0,
+    letterSpacing: 0.3,
   },
-  macroKcal: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 11,
-    color: T.muted,
+  calTrack: {
+    height: 4,
+    backgroundColor: T.bg3,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  calFill: {
+    height: "100%",
+    borderRadius: 2,
   },
 
-  // ── Meals section ────────────────────────────────────────────────────────────
+  // ══ Macro Grid ════════════════════════════════════════════════════════════════
+  macroGrid: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 14,
+  },
+  macroCell: {
+    flex: 1,
+    backgroundColor: T.bg1,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    gap: 4,
+  },
+  macroCellValue: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 24,
+    lineHeight: 26,
+    letterSpacing: -0.5,
+  },
+  macroCellGoal: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 10,
+    color: T.muted,
+    lineHeight: 12,
+  },
+  macroCellTrack: {
+    width: "100%",
+    height: 3,
+    backgroundColor: T.bg3,
+    borderRadius: 2,
+    overflow: "hidden",
+    marginTop: 4,
+  },
+  macroCellFill: {
+    height: "100%",
+    borderRadius: 2,
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  macroCellLabel: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 9,
+    color: T.muted,
+    letterSpacing: 1.0,
+    marginTop: 2,
+  },
+
+  // ══ Log Food Button (full-width lime) ═════════════════════════════════════════
+  logFoodBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: T.lime,
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginBottom: 24,
+    shadowColor: T.lime,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
+  },
+  logFoodBtnText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 16,
+    color: T.bg0,
+    letterSpacing: 0.5,
+  },
+
+  // ══ Meals section ════════════════════════════════════════════════════════════
   mealsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
   },
-  addFoodBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: T.lime,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  addFoodBtnText: {
+  sectionTitle: {
     fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 14,
+    color: T.text,
+    letterSpacing: 1.0,
+  },
+  addMoreLink: {
+    paddingHorizontal: 4,
+  },
+  addMoreLinkText: {
+    fontFamily: "DMSans_600SemiBold",
     fontSize: 13,
-    color: T.bg0,
-    letterSpacing: 0.5,
+    color: T.lime,
   },
 
-  // ── Meal group ───────────────────────────────────────────────────────────────
   mealGroup: {
     backgroundColor: T.bg1,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: T.border,
     padding: 14,
     marginBottom: 10,
   },
@@ -912,33 +987,31 @@ const s = StyleSheet.create({
     gap: 8,
   },
   mealIconBox: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
-  mealIcon: {
-    fontSize: 14,
-  },
   mealGroupName: {
     fontFamily: "DMSans_600SemiBold",
-    fontSize: 13,
+    fontSize: 14,
     color: T.text,
   },
+  // Fixed calorie badge — no border, just tinted bg, prevents clipping
   mealCalBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 7,
-    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    maxWidth: 100,
   },
   mealCalBadgeText: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 12,
-    letterSpacing: 0.3,
+    fontSize: 13,
+    letterSpacing: 0.2,
   },
 
-  // ── Food rows ────────────────────────────────────────────────────────────────
+  // Food rows
   itemDivider: {
     height: 1,
     backgroundColor: T.border,
@@ -946,7 +1019,6 @@ const s = StyleSheet.create({
   },
   foodRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     gap: 8,
   },
@@ -983,13 +1055,11 @@ const s = StyleSheet.create({
     height: 28,
     borderRadius: 8,
     backgroundColor: T.red + "12",
-    borderWidth: 1,
-    borderColor: T.red + "25",
     alignItems: "center",
     justifyContent: "center",
   },
 
-  // ── Empty meals ───────────────────────────────────────────────────────────────
+  // Empty state
   emptyMeals: {
     alignItems: "center",
     justifyContent: "center",
@@ -1007,10 +1077,10 @@ const s = StyleSheet.create({
     color: T.muted,
   },
 
-  // ── Modal ────────────────────────────────────────────────────────────────────
+  // ══ Add food modal ════════════════════════════════════════════════════════════
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.75)",
+    backgroundColor: "rgba(0,0,0,0.78)",
     justifyContent: "flex-end",
   },
   sheet: {
@@ -1038,10 +1108,10 @@ const s = StyleSheet.create({
     marginBottom: 18,
   },
   sheetTitle: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 18,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 20,
     color: T.text,
-    letterSpacing: 1.0,
+    letterSpacing: -0.2,
   },
   sheetCloseBtn: {
     width: 32,
@@ -1051,16 +1121,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  sheetCloseText: {
-    fontSize: 12,
-    color: T.sub,
-  },
-
-  // ── Meal type chips ───────────────────────────────────────────────────────────
-  mealTypeScroll: {
-    gap: 8,
-    paddingBottom: 16,
-  },
+  mealTypeScroll: { gap: 8, paddingBottom: 16 },
   mealTypeChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -1072,125 +1133,13 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: T.border,
   },
-  mealTypeIcon: {
-    fontSize: 13,
-  },
   mealTypeText: {
     fontFamily: "DMSans_600SemiBold",
     fontSize: 12,
     color: T.text,
   },
-
-  // ── Search ────────────────────────────────────────────────────────────────────
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: T.bg3,
-    borderWidth: 1,
-    borderColor: T.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    marginBottom: 12,
-    gap: 8,
-  },
-  searchIcon: {
-    fontSize: 14,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    fontFamily: "DMSans_400Regular",
-    fontSize: 13,
-    color: T.text,
-  },
-  searchClear: {
-    fontSize: 11,
-    color: T.muted,
-    padding: 4,
-  },
-  searchLoading: {
-    paddingVertical: 40,
-    alignItems: "center",
-  },
-
-  // ── Food list ─────────────────────────────────────────────────────────────────
-  foodList: {
-    maxHeight: 360,
-  },
-  listDivider: {
-    height: 1,
-    backgroundColor: T.border,
-  },
-  listItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    gap: 10,
-  },
-  listItemLeft: {
-    flex: 1,
-    gap: 2,
-  },
-  listItemName: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 13,
-    color: T.text,
-  },
-  listItemMacros: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 11,
-    color: T.muted,
-  },
-  listItemRight: {
-    alignItems: "flex-end",
-  },
-  listItemCal: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 15,
-    color: T.lime,
-    lineHeight: 16,
-  },
-  listItemCalUnit: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 9,
-    color: T.muted,
-  },
-  listItemAdd: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: T.lime + "1A",
-    borderWidth: 1,
-    borderColor: T.lime + "40",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  listItemAddText: {
-    fontSize: 16,
-    color: T.lime,
-    lineHeight: 18,
-  },
-
-  // ── Empty state ───────────────────────────────────────────────────────────────
-  emptyState: {
-    paddingVertical: 32,
-    alignItems: "center",
-    gap: 8,
-  },
-  emptyStateText: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 13,
-    color: T.muted,
-  },
-
-  // ── Add food modal: scan / manual ───────────────────────────────────────────
-  modalBodyScroll: {
-    maxHeight: 420,
-  },
-  entryMenu: {
-    gap: 12,
-    paddingBottom: 8,
-  },
+  modalBodyScroll: { maxHeight: 420 },
+  entryMenu: { gap: 12, paddingBottom: 8 },
   scanPrimaryBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1231,10 +1180,7 @@ const s = StyleSheet.create({
     fontSize: 14,
     color: T.sub,
   },
-  manualForm: {
-    gap: 8,
-    paddingBottom: 12,
-  },
+  manualForm: { gap: 8, paddingBottom: 12 },
   geminiErrorText: {
     fontFamily: "DMSans_400Regular",
     fontSize: 12,
@@ -1246,17 +1192,18 @@ const s = StyleSheet.create({
     fontFamily: "DMSans_500Medium",
     fontSize: 11,
     color: T.muted,
-    marginTop: 4,
+    marginTop: 6,
+    marginBottom: 2,
   },
   formInput: {
     backgroundColor: T.bg3,
     borderWidth: 1,
     borderColor: T.border,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingVertical: 10,
     fontFamily: "DMSans_400Regular",
-    fontSize: 13,
+    fontSize: 14,
     color: T.text,
   },
   addToLogBtn: {
@@ -1267,9 +1214,7 @@ const s = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: T.lime,
   },
-  addToLogBtnDisabled: {
-    opacity: 0.45,
-  },
+  addToLogBtnDisabled: { opacity: 0.45 },
   addToLogBtnText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 15,

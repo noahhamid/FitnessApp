@@ -4,8 +4,6 @@ import {
   useWeightLog,
 } from "@/src/features/nutrition/hooks/useWeight";
 import { fetchUserProfile } from "@/src/features/profile/services/profile.service";
-import { COLORS } from "@/src/ui/tokens/colors";
-import { FONTS } from "@/src/ui/tokens/typography";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
@@ -21,17 +19,72 @@ import Svg, {
   Line,
   LinearGradient,
   Path,
+  Rect,
   Stop,
   Text as SvgText,
 } from "react-native-svg";
 
+const T = {
+  bg0: "#0A0A0C",
+  bg1: "#111114",
+  bg2: "#18181D",
+  bg3: "#222228",
+  lime: "#C8F135",
+  text: "#F2F2F5",
+  sub: "#7A7A8C",
+  muted: "#4A4A58",
+  border: "#FFFFFF0F",
+  borderMid: "#FFFFFF18",
+};
+
 const { width: SCREEN_W } = Dimensions.get("window");
 const CHART_W = Math.min(SCREEN_W, 430) - 48;
-const CHART_H = 100;
+const CHART_H = 110;
 const PAD_X = 8;
-const PAD_Y = 10;
+const PAD_Y = 14;
 
-const COLOR = COLORS.accent;
+// ── Bezier path builder (Catmull-Rom → cubic bezier) ─────────────────────────
+// Produces smooth curves through each data point without overshoot.
+function bezierLine(pts: { x: number; y: number }[]): string {
+  if (pts.length === 0) return "";
+  if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+
+  let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+
+  for (let i = 1; i < pts.length; i++) {
+    const p0 = pts[Math.max(i - 2, 0)];
+    const p1 = pts[i - 1];
+    const p2 = pts[i];
+    const p3 = pts[Math.min(i + 1, pts.length - 1)];
+
+    // Catmull-Rom tangent → bezier control points (tension = 1/6 chord)
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)} ${cp2x.toFixed(1)} ${cp2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+
+  return d;
+}
+
+// ── Sub-sample an array to at most `maxCount` items (always keeps first & last) ──
+function subSample<T>(arr: T[], maxCount: number): T[] {
+  if (arr.length <= maxCount) return arr;
+  const result: T[] = [];
+  const step = (arr.length - 1) / (maxCount - 1);
+  for (let i = 0; i < maxCount; i++) {
+    result.push(arr[Math.round(i * step)]);
+  }
+  return result;
+}
+
+// ── Short date label ("Jun 22") from the full date string ────────────────────
+function shortDate(fullDate: string): string {
+  // formatDisplayDate produces e.g. "Jun 22, 2026" — strip the year
+  return fullDate.replace(/,.*$/, "");
+}
 
 type WeightChartProps = { periodMonths?: number };
 
@@ -44,11 +97,11 @@ export function WeightChart({ periodMonths }: WeightChartProps) {
     queryFn: fetchUserProfile,
   });
 
+  // ── Period filter (already-deduplicated allPts) ────────────────────────────
   const pts = useMemo(() => {
     if (periodMonths === undefined) return allPts;
     const cutoff = new Date();
-    const daysBack = Math.round(periodMonths * 30);
-    cutoff.setDate(cutoff.getDate() - daysBack);
+    cutoff.setDate(cutoff.getDate() - Math.round(periodMonths * 30));
     cutoff.setHours(0, 0, 0, 0);
 
     const validDates = new Set(
@@ -60,12 +113,10 @@ export function WeightChart({ periodMonths }: WeightChartProps) {
         })
         .map((log) => {
           const [y, m, d] = log.log_date.split("-").map(Number);
-          const dt = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
-          return dt.toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          });
+          return new Date(Date.UTC(y, (m || 1) - 1, d || 1)).toLocaleDateString(
+            undefined,
+            { month: "short", day: "numeric", year: "numeric" },
+          );
         }),
     );
 
@@ -74,6 +125,7 @@ export function WeightChart({ periodMonths }: WeightChartProps) {
 
   const baselineWeight = profile?.weightKg ?? 70;
 
+  // ── Synthetic placeholder when no real data ───────────────────────────────
   const syntheticData = useMemo(() => {
     if (pts.length === 0) {
       const past = new Date();
@@ -81,17 +133,11 @@ export function WeightChart({ periodMonths }: WeightChartProps) {
       return [
         {
           w: Number(baselineWeight),
-          date: past.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          }),
+          date: past.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         },
         {
           w: Number(baselineWeight),
-          date: new Date().toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          }),
+          date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         },
       ];
     }
@@ -100,9 +146,8 @@ export function WeightChart({ periodMonths }: WeightChartProps) {
   }, [pts, baselineWeight]);
 
   const DATA = syntheticData;
-  const showChart = true;
   const isSynthetic = pts.length < 2;
-  const lineColor = isSynthetic ? COLORS.muted : COLOR;
+  const lineColor = isSynthetic ? T.muted : T.lime;
 
   const GOAL =
     typeof goalRec?.goal_weight === "number" &&
@@ -110,6 +155,7 @@ export function WeightChart({ periodMonths }: WeightChartProps) {
       ? goalRec.goal_weight
       : (pts.at(-1)?.w ?? baselineWeight);
 
+  // ── Coordinate helpers ────────────────────────────────────────────────────
   const values = DATA.map((d) => d.w);
   const min = Math.min(...values) - 1;
   const max = Math.max(...values) + 1;
@@ -120,12 +166,27 @@ export function WeightChart({ periodMonths }: WeightChartProps) {
     (DATA.length <= 1 ? 0 : i / (DATA.length - 1)) * (CHART_W - PAD_X * 2);
   const toY = (v: number) => PAD_Y + ((max - v) / rng) * (CHART_H - PAD_Y * 2);
 
-  const linePath = DATA.map(
-    (d, i) => `${i === 0 ? "M" : "L"}${toX(i)},${toY(d.w)}`,
-  ).join(" ");
+  // ── Bezier paths ──────────────────────────────────────────────────────────
+  const coordPts = DATA.map((d, i) => ({ x: toX(i), y: toY(d.w) }));
+  const linePath = bezierLine(coordPts);
+  const areaPath =
+    coordPts.length >= 2
+      ? `${linePath} L ${toX(DATA.length - 1)} ${CHART_H} L ${toX(0)} ${CHART_H} Z`
+      : "";
 
-  const areaPath = `${linePath} L${toX(DATA.length - 1)},${CHART_H} L${toX(0)},${CHART_H} Z`;
+  // ── Last-point badge ──────────────────────────────────────────────────────
+  const lastPt = coordPts[coordPts.length - 1];
+  const lastWeight = DATA[DATA.length - 1].w;
+  const badgeLabel = `${lastWeight.toFixed(1)} kg`;
+  const badgeW = badgeLabel.length * 6.5 + 14;
+  const badgeH = 18;
+  const badgeX = Math.min(lastPt.x - badgeW / 2, CHART_W - badgeW - PAD_X);
+  const badgeY = lastPt.y - badgeH - 8;
 
+  // ── Goal line ─────────────────────────────────────────────────────────────
+  const goalY = toY(Math.max(GOAL, min + 0.5));
+
+  // ── Summary stats ─────────────────────────────────────────────────────────
   const current =
     pts.length > 0
       ? (pts[pts.length - 1]?.w ?? baselineWeight)
@@ -142,138 +203,193 @@ export function WeightChart({ periodMonths }: WeightChartProps) {
     100,
   );
 
-  const goalY = toY(Math.max(GOAL, min + 0.5));
+  // ── X-axis labels: at most 5, always includes first + last ────────────────
+  const allXLabels = DATA.map((d, i) => ({ label: shortDate(d.date), x: toX(i) }));
+  const xLabels = subSample(allXLabels, 5);
 
   if (isPending) {
     return (
-      <View
-        style={[s.card, { alignItems: "center", justifyContent: "center" }]}
-      >
-        <ActivityIndicator color={COLOR} />
-        <Text style={s.mutedFoot}>Loading weight…</Text>
+      <View style={{ alignItems: "center", justifyContent: "center", paddingVertical: 24 }}>
+        <ActivityIndicator color={T.lime} />
+        <Text style={s.loadingText}>Loading weight…</Text>
       </View>
     );
   }
 
   return (
     <View style={s.card}>
+      {/* Header */}
       <View style={s.header}>
         <View>
-          <Text style={s.label}>WEIGHT</Text>
+          <Text style={s.cardLabel}>CURRENT WEIGHT</Text>
           <View style={s.valueRow}>
             <Text style={s.value}>{current.toFixed(1)}</Text>
             <Text style={s.unit}>kg</Text>
           </View>
         </View>
         <View style={s.headerRight}>
-          <View style={s.deltaPill}>
-            <Text style={s.deltaText}>
+          <View
+            style={[
+              s.deltaPill,
+              {
+                backgroundColor: (dropped >= 0 ? T.lime : "#FF3D3D") + "18",
+                borderColor: (dropped >= 0 ? T.lime : "#FF3D3D") + "35",
+              },
+            ]}
+          >
+            <Text
+              style={[
+                s.deltaText,
+                { color: dropped >= 0 ? T.lime : "#FF3D3D" },
+              ]}
+            >
               {pts.length < 2
                 ? "—"
                 : `${dropped >= 0 ? "↓" : "↑"} ${Math.abs(dropped)} kg`}
             </Text>
           </View>
-          <Text style={s.goalText}>Goal: {(GOAL ?? 0).toFixed(1)} kg</Text>
+          <Text style={s.goalLabel}>Goal: {(GOAL ?? 0).toFixed(1)} kg</Text>
         </View>
       </View>
 
-      {showChart ? (
-        <>
-          <Svg width={CHART_W} height={CHART_H} style={s.chart}>
-            <Defs>
-              <LinearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0%" stopColor={lineColor} stopOpacity="0.2" />
-                <Stop offset="100%" stopColor={lineColor} stopOpacity="0" />
-              </LinearGradient>
-            </Defs>
+      {/* Chart */}
+      <Svg width={CHART_W} height={CHART_H} style={s.chart}>
+        <Defs>
+          <LinearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%" stopColor={lineColor} stopOpacity="0.24" />
+            <Stop offset="85%" stopColor={lineColor} stopOpacity="0.04" />
+            <Stop offset="100%" stopColor={lineColor} stopOpacity="0" />
+          </LinearGradient>
+        </Defs>
 
-            {[0.25, 0.5, 0.75].map((p, i) => (
-              <Line
-                key={i}
-                x1={PAD_X}
-                y1={PAD_Y + p * (CHART_H - PAD_Y * 2)}
-                x2={CHART_W - PAD_X}
-                y2={PAD_Y + p * (CHART_H - PAD_Y * 2)}
-                stroke={COLORS.border}
-                strokeWidth="1"
-                opacity="0.5"
-              />
-            ))}
+        {/* Grid lines */}
+        {[0.25, 0.5, 0.75].map((p, i) => (
+          <Line
+            key={i}
+            x1={PAD_X}
+            y1={PAD_Y + p * (CHART_H - PAD_Y * 2)}
+            x2={CHART_W - PAD_X}
+            y2={PAD_Y + p * (CHART_H - PAD_Y * 2)}
+            stroke={T.border}
+            strokeWidth="1"
+            opacity="0.6"
+          />
+        ))}
 
-            <Line
-              x1={PAD_X}
-              y1={goalY}
-              x2={CHART_W - PAD_X}
-              y2={goalY}
-              stroke={COLOR}
+        {/* Goal dashed line */}
+        <Line
+          x1={PAD_X}
+          y1={goalY}
+          x2={CHART_W - PAD_X}
+          y2={goalY}
+          stroke={T.lime}
+          strokeWidth="1"
+          strokeDasharray="4 3"
+          opacity="0.4"
+        />
+        <SvgText
+          x={CHART_W - PAD_X - 2}
+          y={goalY - 3}
+          fontSize="8"
+          fill={T.lime}
+          opacity="0.65"
+          textAnchor="end"
+          fontFamily="DMSans_500Medium"
+        >
+          GOAL
+        </SvgText>
+
+        {/* Gradient area fill */}
+        {areaPath ? <Path d={areaPath} fill="url(#wGrad)" /> : null}
+
+        {/* Smooth bezier line */}
+        <Path
+          d={linePath}
+          fill="none"
+          stroke={lineColor}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Intermediate dots (small) */}
+        {coordPts.slice(0, -1).map((pt, i) => (
+          <Circle
+            key={`dot-${i}`}
+            cx={pt.x}
+            cy={pt.y}
+            r={2.5}
+            fill={T.bg2}
+            stroke={lineColor}
+            strokeWidth="1.5"
+          />
+        ))}
+
+        {/* Last point: larger filled dot */}
+        {!isSynthetic && (
+          <Circle
+            cx={lastPt.x}
+            cy={lastPt.y}
+            r={5}
+            fill={lineColor}
+            stroke={T.bg0}
+            strokeWidth="1.5"
+          />
+        )}
+
+        {/* Floating current-weight badge at last point */}
+        {!isSynthetic && badgeY > 0 && (
+          <>
+            <Rect
+              x={badgeX}
+              y={badgeY}
+              width={badgeW}
+              height={badgeH}
+              rx={9}
+              fill={T.lime + "22"}
+              stroke={T.lime + "77"}
               strokeWidth="1"
-              strokeDasharray="4 3"
-              opacity="0.4"
             />
             <SvgText
-              x={CHART_W - PAD_X - 2}
-              y={goalY - 3}
-              fontSize="8"
-              fill={COLOR}
-              opacity="0.6"
-              textAnchor="end"
-              fontFamily={FONTS.medium}
+              x={badgeX + badgeW / 2}
+              y={badgeY + 12}
+              textAnchor="middle"
+              fontSize="9.5"
+              fill={T.lime}
+              fontFamily="DMSans_500Medium"
+              fontWeight="600"
             >
-              GOAL
+              {badgeLabel}
             </SvgText>
+          </>
+        )}
+      </Svg>
 
-            <Path d={areaPath} fill="url(#wGrad)" />
+      {/* X-axis labels — subsampled, max 5, no duplicates */}
+      <View style={s.xAxis}>
+        {xLabels.map((lbl, i) => (
+          <Text
+            key={`xl-${i}`}
+            style={[
+              s.xLabel,
+              i === xLabels.length - 1 && !isSynthetic && { color: T.lime },
+            ]}
+          >
+            {lbl.label}
+          </Text>
+        ))}
+      </View>
 
-            <Path
-              d={linePath}
-              fill="none"
-              stroke={lineColor}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+      {isSynthetic && (
+        <Text style={s.syntheticNote}>
+          Log your weight to start tracking real progress
+        </Text>
+      )}
 
-            {DATA.map((d, i) => (
-              <Circle
-                key={`${i}-${d.date}`}
-                cx={toX(i)}
-                cy={toY(d.w)}
-                r={i === DATA.length - 1 ? 5 : 3}
-                fill={i === DATA.length - 1 ? lineColor : COLORS.bg3}
-                stroke={lineColor}
-                strokeWidth="1.5"
-              />
-            ))}
-          </Svg>
-
-          <View style={s.xAxis}>
-            {DATA.map((d, i) => (
-              <Text
-                key={`${d.date}-${i}`}
-                style={[
-                  s.xLabel,
-                  i === DATA.length - 1 && !isSynthetic && { color: COLOR },
-                ]}
-              >
-                {d.date.split(/\s|,/).slice(0, 2).join(" ")}
-              </Text>
-            ))}
-          </View>
-
-          {isSynthetic ? (
-            <Text style={s.syntheticNote}>
-              📍 This is your starting baseline. Log your weight to see real
-              progress.
-            </Text>
-          ) : null}
-        </>
-      ) : null}
-
+      {/* Footer stats */}
       <View style={s.footer}>
         <View style={s.statItem}>
-          <Text style={s.statVal}>
-            {pts.length || isSynthetic ? `${start.toFixed(1)} kg` : "—"}
-          </Text>
+          <Text style={s.statVal}>{start.toFixed(1)} kg</Text>
           <Text style={s.statLabel}>START</Text>
         </View>
         <View style={s.statDivider} />
@@ -283,7 +399,7 @@ export function WeightChart({ periodMonths }: WeightChartProps) {
         </View>
         <View style={s.statDivider} />
         <View style={s.statItem}>
-          <Text style={[s.statVal, { color: COLOR }]}>
+          <Text style={[s.statVal, { color: T.lime }]}>
             {pts.length >= 2 ? `${progress}%` : "—"}
           </Text>
           <Text style={s.statLabel}>PROGRESS</Text>
@@ -295,58 +411,44 @@ export function WeightChart({ periodMonths }: WeightChartProps) {
 
 const s = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-    minHeight: 140,
-    justifyContent: "center",
+    marginBottom: 0,
   },
-  mutedFoot: {
-    fontFamily: FONTS.medium,
+  loadingText: {
+    fontFamily: "DMSans_400Regular",
     fontSize: 12,
-    color: COLORS.muted,
-    paddingVertical: 28,
-    textAlign: "center",
+    color: T.muted,
+    marginTop: 8,
   },
-  syntheticNote: {
-    fontFamily: FONTS.regular,
-    fontSize: 11,
-    color: COLORS.muted,
-    textAlign: "center",
-    paddingTop: 8,
-    marginBottom: 6,
-  },
+
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 16,
   },
-  label: {
-    fontFamily: FONTS.bold,
+  cardLabel: {
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 11,
-    color: COLORS.muted,
-    letterSpacing: 2,
+    color: T.muted,
+    letterSpacing: 1.4,
     marginBottom: 4,
   },
   valueRow: {
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: 2,
+    gap: 3,
   },
   value: {
-    fontFamily: FONTS.black,
-    fontSize: 32,
-    color: COLORS.text,
-    lineHeight: 34,
-    letterSpacing: -0.5,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 28,
+    color: T.text,
+    lineHeight: 30,
+    letterSpacing: -0.3,
   },
   unit: {
-    fontFamily: FONTS.bold,
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 16,
-    color: COLORS.muted,
+    color: T.muted,
     marginBottom: 4,
   },
   headerRight: {
@@ -354,44 +456,51 @@ const s = StyleSheet.create({
     gap: 6,
   },
   deltaPill: {
-    backgroundColor: `${COLOR}18`,
     borderWidth: 1,
-    borderColor: `${COLOR}35`,
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   deltaText: {
-    fontFamily: FONTS.semiBold,
-    fontSize: 12,
-    color: COLOR,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 13,
+    letterSpacing: 0.3,
   },
-  goalText: {
-    fontFamily: FONTS.regular,
+  goalLabel: {
+    fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: COLORS.muted,
+    color: T.muted,
   },
+
   chart: { alignSelf: "center" },
   xAxis: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: PAD_X,
     marginTop: 6,
-    marginBottom: 14,
+    marginBottom: 12,
   },
   xLabel: {
-    fontFamily: FONTS.medium,
+    fontFamily: "DMSans_400Regular",
     fontSize: 10,
-    color: COLORS.muted,
+    color: T.muted,
     letterSpacing: 0.3,
-    maxWidth: 56,
   },
+  syntheticNote: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 11,
+    color: T.muted,
+    textAlign: "center",
+    paddingBottom: 10,
+    opacity: 0.7,
+  },
+
   footer: {
     flexDirection: "row",
     alignItems: "center",
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: T.border,
   },
   statItem: {
     flex: 1,
@@ -401,18 +510,18 @@ const s = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 28,
-    backgroundColor: COLORS.border,
+    backgroundColor: T.border,
   },
   statVal: {
-    fontFamily: FONTS.black,
-    fontSize: 16,
-    color: COLORS.text,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 17,
+    color: T.text,
     letterSpacing: -0.3,
   },
   statLabel: {
-    fontFamily: FONTS.medium,
+    fontFamily: "DMSans_500Medium",
     fontSize: 9,
-    color: COLORS.muted,
+    color: T.muted,
     letterSpacing: 1.5,
   },
 });

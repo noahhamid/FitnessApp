@@ -1,15 +1,10 @@
-import { OAuthButtons, SignUpForm } from "@/src/features/auth";
-import { C } from "@/src/ui/tokens/colors";
-import { FONTS } from "@/src/ui/tokens/typography";
-import { Link, router } from "expo-router";
+import { SignUpForm } from "@/src/features/auth";
+import { router } from "expo-router";
 import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
 } from "react-native";
 
 export default function SignUpRoute() {
@@ -24,17 +19,8 @@ export default function SignUpRoute() {
       >
         <SignUpForm
           onSuccess={() => router.replace("/(auth)/onboarding/goals")}
+          onSignIn={() => router.push("/(auth)/sign-in")}
         />
-        <View style={{ paddingHorizontal: 24 }}>
-          <OAuthButtons
-            onSuccess={() => router.replace("/(auth)/onboarding/goals")}
-          />
-        </View>
-        <Link href="/(auth)/sign-in" asChild>
-          <TouchableOpacity style={s.footer}>
-            <Text style={s.footerText}>Already have an account? Sign in</Text>
-          </TouchableOpacity>
-        </Link>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -43,14 +29,6 @@ export default function SignUpRoute() {
 const s = StyleSheet.create({
   scroll: {
     flexGrow: 1,
-    paddingTop: 60,
-    backgroundColor: C.bg,
-    paddingBottom: 40,
-  },
-  footer: { padding: 24, alignItems: "center" },
-  footerText: {
-    fontFamily: FONTS.semiBold,
-    color: C.accent,
-    textAlign: "center",
+    backgroundColor: "#0A0A0C",
   },
 });

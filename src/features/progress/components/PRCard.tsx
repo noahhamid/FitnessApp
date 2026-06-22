@@ -1,27 +1,54 @@
-import { COLORS } from "@/src/ui/tokens/colors";
-import { FONTS } from "@/src/ui/tokens/typography";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
-type Props = { name: string; date?: string; duration?: string; sets?: number };
+const T = {
+  bg0: "#0A0A0C",
+  bg1: "#111114",
+  bg2: "#18181D",
+  bg3: "#222228",
+  lime: "#C8F135",
+  text: "#F2F2F5",
+  sub: "#7A7A8C",
+  muted: "#4A4A58",
+  border: "#FFFFFF0F",
+  borderMid: "#FFFFFF18",
+};
+
+type Props = {
+  name: string;
+  date?: string;
+  duration?: string;
+  sets?: number;
+};
 
 export function PRCard({ name, date, duration, sets }: Props) {
   return (
     <View style={s.card}>
-      <View style={s.iconBadge}>
-        <Ionicons name="barbell-outline" size={22} color={COLORS.accent} />
+      {/* Left accent stripe */}
+      <View style={s.stripe} />
+
+      {/* Icon */}
+      <View style={s.iconWrap}>
+        <Ionicons name="barbell-outline" size={20} color={T.lime} />
       </View>
 
+      {/* Name + date */}
       <View style={s.middle}>
-        <Text style={s.name}>{name}</Text>
+        <Text style={s.name} numberOfLines={1}>
+          {name}
+        </Text>
         {date ? <Text style={s.date}>{date}</Text> : null}
       </View>
 
+      {/* Duration + sets */}
       <View style={s.right}>
-        {duration ? <Text style={s.duration}>{duration}</Text> : null}
-        {sets != null ? (
-          <Text style={s.sets}>{sets} sets</Text>
+        {duration ? (
+          <View style={s.durationPill}>
+            <Ionicons name="timer-outline" size={11} color={T.lime} />
+            <Text style={s.durationText}>{duration}</Text>
+          </View>
         ) : null}
+        {sets != null ? <Text style={s.sets}>{sets} sets</Text> : null}
       </View>
     </View>
   );
@@ -32,56 +59,70 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 14,
-    borderRadius: 20,
-    backgroundColor: COLORS.card,
+    backgroundColor: T.bg2,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: 10,
+    borderColor: T.border,
+    borderRadius: 12,
+    overflow: "hidden",
+    paddingRight: 14,
   },
-
-  iconBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: `${COLORS.accent}15`,
+  stripe: {
+    width: 3,
+    alignSelf: "stretch",
+    backgroundColor: T.lime,
+    opacity: 0.7,
+  },
+  iconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: T.lime + "18",
     borderWidth: 1,
-    borderColor: `${COLORS.accent}30`,
+    borderColor: T.lime + "30",
     alignItems: "center",
     justifyContent: "center",
+    marginVertical: 14,
   },
-
   middle: {
     flex: 1,
     gap: 3,
+    paddingVertical: 14,
   },
   name: {
-    fontFamily: FONTS.bold,
-    fontSize: 14,
-    color: COLORS.text,
-    letterSpacing: 0.1,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 15,
+    color: T.text,
+    letterSpacing: 0.3,
   },
   date: {
-    fontFamily: FONTS.regular,
+    fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: COLORS.muted,
-    letterSpacing: 0.2,
+    color: T.sub,
   },
-
   right: {
     alignItems: "flex-end",
-    gap: 3,
+    gap: 4,
   },
-  duration: {
-    fontFamily: FONTS.semiBold,
+  durationPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: T.lime + "18",
+    borderWidth: 1,
+    borderColor: T.lime + "30",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  durationText: {
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
-    color: COLORS.text,
-    letterSpacing: 0.1,
+    color: T.lime,
+    letterSpacing: 0.3,
   },
   sets: {
-    fontFamily: FONTS.regular,
+    fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: COLORS.muted,
-    letterSpacing: 0.2,
+    color: T.muted,
   },
 });

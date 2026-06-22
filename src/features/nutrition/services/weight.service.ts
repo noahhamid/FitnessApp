@@ -49,11 +49,26 @@ function toWeightGoalRecord(row: ApiWeightGoal): WeightGoalRecord {
   };
 }
 
+/**
+ * Converts raw weight-log rows into chart points with ONE point per calendar day.
+ * When multiple entries share the same date, the LATEST logged weight is used.
+ * This prevents duplicate X-axis labels and crowded charts.
+ */
 export function toWeightChartPoints(rows: WeightLogEntry[]): WeightChartPoint[] {
-  return rows.map((row) => ({
-    date: formatDisplayDate(row.log_date),
-    w: row.weight,
-  }));
+  // Sort chronologically so later entries overwrite earlier ones in the Map.
+  const sorted = [...rows].sort((a, b) => a.log_date.localeCompare(b.log_date));
+
+  const byDate = new Map<string, number>();
+  for (const row of sorted) {
+    byDate.set(row.log_date, row.weight); // last write wins → latest weight for that day
+  }
+
+  return Array.from(byDate.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([isoDate, weight]) => ({
+      date: formatDisplayDate(isoDate),
+      w: weight,
+    }));
 }
 
 export async function fetchWeightLog(): Promise<WeightLogEntry[]> {
