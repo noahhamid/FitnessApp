@@ -1,8 +1,8 @@
-import { Button } from "@/src/ui/components/Button";
 import { Input } from "@/src/ui/components/Input";
 import { ProgressDots } from "@/src/ui/components/ProgressDots";
 import { C, FONTS } from "@/src/ui/tokens";
-import { useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -17,7 +17,11 @@ import {
 import { useSaveProfile } from "../hooks/useProfile";
 
 type Props = {
-  onNext: (metrics: { weightKg: number; heightCm: number; age: number }) => void;
+  onNext: (metrics: {
+    weightKg: number;
+    heightCm: number;
+    age: number;
+  }) => void;
   onBack: () => void;
   goalId?: string;
 };
@@ -34,34 +38,54 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
   const [height, setHeight] = useState("");
   const [age, setAge] = useState("");
   const [unit, setUnit] = useState<"kg" | "lbs">("kg");
+  const [loading, setLoading] = useState(false);
+  const mountedRef = useRef(true);
 
-  const { mutateAsync: saveProfile, isPending, error } = useSaveProfile();
+  const { mutateAsync: saveProfile, error } = useSaveProfile();
 
   const canFinish = !!(weight && height && age);
   const subCopy = goalId
     ? GOAL_COPY[goalId]
     : "We need your stats to personalise your plan.";
 
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(false);
+    }, []),
+  );
+
   async function handleFinish() {
     if (!canFinish) return;
+    setLoading(true);
 
-    // Convert lbs → kg if needed before saving
     const rawWeight = parseFloat(weight);
     const weight_kg =
       unit === "lbs" ? +(rawWeight / 2.205).toFixed(2) : rawWeight;
 
-    await saveProfile({
-      weight_kg,
-      height_cm: parseFloat(height),
-      age: parseInt(age, 10),
-      weight_unit: unit,
-    });
-
-    onNext({
-      weightKg: weight_kg,
-      heightCm: parseFloat(height),
-      age: parseInt(age, 10),
-    });
+    try {
+      await Promise.all([
+        saveProfile({
+          weight_kg,
+          height_cm: parseFloat(height),
+          age: parseInt(age, 10),
+          weight_unit: unit,
+        }),
+        new Promise((r) => setTimeout(r, 1500)),
+      ]);
+      onNext({
+        weightKg: weight_kg,
+        heightCm: parseFloat(height),
+        age: parseInt(age, 10),
+      });
+    } catch {
+      if (mountedRef.current) setLoading(false);
+    }
   }
 
   return (
@@ -75,7 +99,6 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
           <View style={s.header}>
             <Text style={s.counter}>STEP 2 OF 2</Text>
             <ProgressDots total={2} current={1} />
@@ -83,7 +106,6 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
             <Text style={s.sub}>{subCopy}</Text>
           </View>
 
-          {/* Unit toggle */}
           <View style={s.unitRow}>
             <Text style={s.unitLabel}>UNIT</Text>
             <View style={s.unitToggle}>
@@ -104,7 +126,6 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
             </View>
           </View>
 
-          {/* Inputs */}
           <Input
             label={`Weight (${unit})`}
             value={weight}
@@ -127,38 +148,43 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
             keyboardType="numeric"
           />
 
-          {/* Privacy note */}
           <Text style={s.privacy}>
             Your data is stored securely and never shared.
           </Text>
 
-          {/* Error */}
           {error && (
             <Text style={s.errorText}>
               Failed to save your stats. Please try again.
             </Text>
           )}
 
-          {/* Nav */}
           <View style={s.nav}>
             <TouchableOpacity
               style={s.backBtn}
               onPress={onBack}
-              disabled={isPending}
+              disabled={loading}
             >
               <Text style={s.backText}>← BACK</Text>
             </TouchableOpacity>
-            <Button
-              disabled={!canFinish || isPending}
+
+            <TouchableOpacity
+              disabled={!canFinish || loading}
               onPress={handleFinish}
-              style={[s.flex2, { marginLeft: 12 }]}
+              activeOpacity={0.8}
+              style={[
+                s.finishBtn,
+                (!canFinish || loading) && s.finishBtnDisabled,
+              ]}
             >
-              {isPending ? (
-                <ActivityIndicator color={C.bg} />
+              {loading ? (
+                <View style={s.loadingRow}>
+                  <ActivityIndicator color={C.bg} size="small" />
+                  <Text style={s.finishBtnText}>Saving...</Text>
+                </View>
               ) : (
-                "FINISH SETUP →"
+                <Text style={s.finishBtnText}>FINISH SETUP →</Text>
               )}
-            </Button>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -246,7 +272,7 @@ const s = StyleSheet.create({
     marginTop: 8,
     fontFamily: FONTS.regular,
   },
-  nav: { flexDirection: "row", marginTop: 24 },
+  nav: { flexDirection: "row", marginTop: 24, gap: 12 },
   backBtn: {
     flex: 1,
     borderWidth: 1.5,
@@ -262,5 +288,24 @@ const s = StyleSheet.create({
     color: C.text,
     letterSpacing: 0.8,
   },
-  flex2: { flex: 2 },
+  finishBtn: {
+    flex: 2,
+    backgroundColor: C.accent,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  finishBtnDisabled: { opacity: 0.45 },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  finishBtnText: {
+    fontFamily: FONTS.bold,
+    fontSize: 15,
+    color: C.bg,
+    letterSpacing: 1,
+  },
 });

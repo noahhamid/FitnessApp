@@ -18,6 +18,13 @@ export const auth = betterAuth({
     minPasswordLength: 8,
   },
 
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    },
+  },
+
   session: {
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24,
@@ -27,6 +34,8 @@ export const auth = betterAuth({
     "myapp://",
     "http://localhost:8081",
     "exp://localhost:8081",
+    "exp://192.168.1.9:8081",
+    "exp://",
     ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
   ],
 });

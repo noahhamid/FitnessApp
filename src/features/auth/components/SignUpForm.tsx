@@ -8,7 +8,12 @@ import {
   View,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import * as WebBrowser from "expo-web-browser";
 import { useSignUp } from "../hooks/useAuth";
+import { authClient } from "@/src/lib/auth-client";
+
+// Required: lets the WebBrowser dismiss itself after OAuth redirect
+WebBrowser.maybeCompleteAuthSession();
 
 const COLORS = {
   canvas: "#0A0A0C",
@@ -68,9 +73,13 @@ export function SignUpForm({ onSuccess, onSignIn }: Props) {
   const [password, setPassword] = useState("");
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [ssoLoading, setSsoLoading] = useState<"google" | "apple" | null>(null);
+  const [ssoError, setSsoError] = useState<string | null>(null);
 
   const { mutateAsync: signUp, isPending, error } = useSignUp();
-  const isLoading = isPending;
+
+  // Any loading happening — email/pass OR SSO
+  const isLoading = isPending || ssoLoading !== null;
 
   async function handleSubmit() {
     if (!email || password.length < 8 || isLoading) return;
@@ -78,12 +87,48 @@ export function SignUpForm({ onSuccess, onSignIn }: Props) {
     onSuccess();
   }
 
-  async function handleGoogleSSO() {
-    // Wire to your OAuth flow here.
+  async function handleGoogleSignUp() {
+    if (isLoading) return;
+    setSsoError(null);
+    setSsoLoading("google");
+    try {
+      const { error } = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/", // deep-linked back to your app by the expo plugin
+      });
+      if (error) {
+        setSsoError(
+          error.message ?? "Google sign-in failed. Please try again.",
+        );
+        return;
+      }
+      onSuccess();
+    } catch (e: any) {
+      setSsoError(e?.message ?? "Google sign-in failed. Please try again.");
+    } finally {
+      setSsoLoading(null);
+    }
   }
 
-  async function handleAppleSSO() {
-    // Wire to your OAuth flow here.
+  async function handleAppleSignUp() {
+    if (isLoading) return;
+    setSsoError(null);
+    setSsoLoading("apple");
+    try {
+      const { error } = await authClient.signIn.social({
+        provider: "apple",
+        callbackURL: "/",
+      });
+      if (error) {
+        setSsoError(error.message ?? "Apple sign-in failed. Please try again.");
+        return;
+      }
+      onSuccess();
+    } catch (e: any) {
+      setSsoError(e?.message ?? "Apple sign-in failed. Please try again.");
+    } finally {
+      setSsoLoading(null);
+    }
   }
 
   const passwordTooShort = password.length > 0 && password.length < 8;
@@ -154,11 +199,13 @@ export function SignUpForm({ onSuccess, onSignIn }: Props) {
           )}
         </View>
 
-        {/* API error */}
-        {error && (
+        {/* API errors */}
+        {(error || ssoError) && (
           <View style={s.errorBanner}>
             <Text style={s.errorText}>
-              {(error as Error).message ?? "Sign up failed. Please try again."}
+              {ssoError ??
+                ((error as Error)?.message ||
+                  "Sign up failed. Please try again.")}
             </Text>
           </View>
         )}
@@ -173,7 +220,7 @@ export function SignUpForm({ onSuccess, onSignIn }: Props) {
             pressed && canSubmit && s.primaryBtnPressed,
           ]}
         >
-          {isLoading ? (
+          {isPending ? (
             <View style={s.loadingRow}>
               <ActivityIndicator color={COLORS.canvas} size="small" />
               <Text style={s.primaryBtnLabel}>CREATING ACCOUNT…</Text>
@@ -193,33 +240,45 @@ export function SignUpForm({ onSuccess, onSignIn }: Props) {
         {/* ── SSO Buttons ──────────────────────────────── */}
         <View style={s.ssoStack}>
           <Pressable
-            onPress={handleGoogleSSO}
+            onPress={handleGoogleSignUp}
             disabled={isLoading}
             style={({ pressed }) => [
               s.ssoBtn,
-              pressed && s.ssoBtnPressed,
+              pressed && !isLoading && s.ssoBtnPressed,
               isLoading && s.ssoBtnDisabled,
             ]}
           >
             <View style={s.ssoIconBox}>
-              <GoogleIcon />
+              {ssoLoading === "google" ? (
+                <ActivityIndicator color={COLORS.textPrimary} size="small" />
+              ) : (
+                <GoogleIcon />
+              )}
             </View>
-            <Text style={s.ssoBtnLabel}>Continue with Google</Text>
+            <Text style={s.ssoBtnLabel}>
+              {ssoLoading === "google" ? "Connecting…" : "Continue with Google"}
+            </Text>
           </Pressable>
 
           <Pressable
-            onPress={handleAppleSSO}
+            onPress={handleAppleSignUp}
             disabled={isLoading}
             style={({ pressed }) => [
               s.ssoBtn,
-              pressed && s.ssoBtnPressed,
+              pressed && !isLoading && s.ssoBtnPressed,
               isLoading && s.ssoBtnDisabled,
             ]}
           >
             <View style={s.ssoIconBox}>
-              <AppleIcon />
+              {ssoLoading === "apple" ? (
+                <ActivityIndicator color={COLORS.textPrimary} size="small" />
+              ) : (
+                <AppleIcon />
+              )}
             </View>
-            <Text style={s.ssoBtnLabel}>Continue with Apple</Text>
+            <Text style={s.ssoBtnLabel}>
+              {ssoLoading === "apple" ? "Connecting…" : "Continue with Apple"}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -227,7 +286,7 @@ export function SignUpForm({ onSuccess, onSignIn }: Props) {
       {/* ── Footer ─────────────────────────────────────── */}
       <Text style={s.footerText}>
         Already have an account?{" "}
-        <Text style={s.footerLink} onPress={onSignIn}>
+        <Text style={s.footerLink} onPress={!isLoading ? onSignIn : undefined}>
           Sign in
         </Text>
       </Text>

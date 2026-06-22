@@ -1,6 +1,7 @@
 import { ProgressDots } from "@/src/ui/components/ProgressDots";
 import { C, FONTS } from "@/src/ui/tokens";
-import { useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -45,15 +46,20 @@ const CARD_W = (SW - 64 - 12) / 2;
 export function GoalsForm({ onNext }: Props) {
   const [goal, setGoal] = useState<GoalId | null>(null);
   const [loading, setLoading] = useState(false);
-  const { mutateAsync: saveGoal, error } = useSaveGoal();
-
   const mountedRef = useRef(true);
+  const { mutateAsync: saveGoal, error } = useSaveGoal();
 
   useEffect(() => {
     return () => {
       mountedRef.current = false;
     };
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(false);
+    }, []),
+  );
 
   async function handleContinue() {
     if (!goal) return;
