@@ -1,8 +1,8 @@
 import type { ExpoConfig } from "expo/config";
 
 const config: ExpoConfig = {
-  name: "my-app",
-  slug: "my-app",
+name: "Exo",
+slug: "exo-fitness",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
@@ -13,6 +13,7 @@ const config: ExpoConfig = {
     supportsTablet: true,
   },
   android: {
+     package: "com.exo.fitness",
     adaptiveIcon: {
       backgroundColor: "#E6F4FE",
       foregroundImage: "./assets/images/android-icon-foreground.png",
