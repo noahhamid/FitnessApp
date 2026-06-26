@@ -2,22 +2,21 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { WorkoutRow } from "./DashboardComponents";
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+// ─── Design Tokens ────────────────────────────────────────────────────────────
 const T = {
-  bg1: "#111114",
-  bg3: "#222228",
-  border: "#FFFFFF0F",
-  borderMid: "#FFFFFF18",
-  lime: "#C8F135",
-  orange: "#FF8A00",
-  blue: "#3D8EFF",
-  purple: "#9B6DFF",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
+  bg1: "#1E1E1E",
+  bg2: "#282828",
+  bg3: "#303030",
+  border: "#FFFFFF0A",
+  borderMid: "#FFFFFF14",
+  gold: "#FFC700",
+  goldDim: "#FFC70020",
+  goldBorder: "#FFC70030",
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#555555",
 };
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 type Session = {
   title: string;
   duration: string;
@@ -31,26 +30,25 @@ type Props = {
   sessions?: Session[];
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
 export function TodaySession({ onSeeAll, sessions = [] }: Props) {
   const totalMins = sessions.reduce(
     (acc, s) =>
-      acc + (Number.parseInt(String(s.duration).replace(/\D/g, "") || "0", 10) || 0),
+      acc + (parseInt(String(s.duration).replace(/\D/g, "") || "0", 10) || 0),
     0,
   );
-  const totalExercises = sessions.length;
 
   return (
     <View style={s.card}>
-      {/* Header */}
+      {/* ── Header ── */}
       <View style={s.header}>
-        <View>
+        <View style={s.headerLeft}>
           <Text style={s.title}>TODAY'S PLAN</Text>
           <Text style={s.subtitle}>
-            {totalExercises} sessions · {totalMins} min total
+            {sessions.length} session{sessions.length !== 1 ? "s" : ""} ·{" "}
+            {totalMins} min
           </Text>
         </View>
-        {onSeeAll ? (
+        {onSeeAll && (
           <TouchableOpacity
             onPress={onSeeAll}
             activeOpacity={0.7}
@@ -58,19 +56,26 @@ export function TodaySession({ onSeeAll, sessions = [] }: Props) {
           >
             <Text style={s.seeAllText}>See all →</Text>
           </TouchableOpacity>
-        ) : null}
+        )}
       </View>
 
-      {/* Progress indicators row */}
-      <View style={s.progressRow}>
+      {/* ── Progress strip ── */}
+      <View style={s.progressTrack}>
         {sessions.map((session, i) => (
           <View
             key={i}
             style={[
-              s.progressPill,
+              s.progressSeg,
               {
-                backgroundColor: session.tagColor,
-                flex: parseInt(session.duration),
+                // All segments gold — vary opacity to show composition
+                // without breaking the monochromatic system
+                backgroundColor: T.gold,
+                opacity: 1 - i * (0.25 / Math.max(sessions.length - 1, 1)),
+                flex:
+                  parseInt(
+                    String(session.duration).replace(/\D/g, "") || "1",
+                    10,
+                  ) || 1,
               },
             ]}
           />
@@ -78,14 +83,21 @@ export function TodaySession({ onSeeAll, sessions = [] }: Props) {
       </View>
       <Text style={s.progressLabel}>{totalMins} min planned · 0 completed</Text>
 
-      {/* Workout rows */}
-      <View style={s.rows}>
-        {sessions.map((session, i) => (
-          <WorkoutRow key={i} {...session} />
-        ))}
-      </View>
+      {/* ── Session rows ── */}
+      {sessions.length > 0 ? (
+        <View style={s.rows}>
+          {sessions.map((session, i) => (
+            <WorkoutRow key={i} {...session} />
+          ))}
+        </View>
+      ) : (
+        <View style={s.emptyState}>
+          <Text style={s.emptyTitle}>No sessions planned</Text>
+          <Text style={s.emptySub}>Head to Train to build today's workout</Text>
+        </View>
+      )}
 
-      {/* Start CTA */}
+      {/* ── CTA ── */}
       <TouchableOpacity
         style={s.startBtn}
         activeOpacity={0.85}
@@ -105,28 +117,32 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: T.borderMid,
     marginHorizontal: 16,
-    padding: 18,
+    padding: 20,
+    gap: 10,
   },
+
+  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 14,
   },
+  headerLeft: { gap: 3 },
   title: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
-    color: T.text,
-    letterSpacing: 1.0,
+    fontSize: 12,
+    color: T.sub,
+    letterSpacing: 1.5,
   },
   subtitle: {
     fontFamily: "DMSans_400Regular",
     fontSize: 11,
     color: T.muted,
-    marginTop: 3,
   },
   seeAllBtn: {
-    backgroundColor: T.bg3,
+    backgroundColor: T.goldDim,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
@@ -134,33 +150,55 @@ const s = StyleSheet.create({
   seeAllText: {
     fontFamily: "DMSans_600SemiBold",
     fontSize: 11,
-    color: T.lime,
+    color: T.gold,
   },
-  progressRow: {
+
+  // Progress strip
+  progressTrack: {
     flexDirection: "row",
-    gap: 3,
     height: 4,
+    backgroundColor: T.bg3,
     borderRadius: 2,
     overflow: "hidden",
-    marginBottom: 6,
+    gap: 2,
   },
-  progressPill: {
+  progressSeg: {
     height: "100%",
     borderRadius: 2,
-    opacity: 0.75,
   },
   progressLabel: {
     fontFamily: "DMSans_400Regular",
     fontSize: 10,
     color: T.muted,
-    marginBottom: 10,
   },
+
+  // Session rows
   rows: {
-    // Last WorkoutRow border hidden since card has its own bottom
+    marginTop: 4,
+    gap: 0,
   },
+
+  // Empty state
+  emptyState: {
+    paddingVertical: 20,
+    alignItems: "center",
+    gap: 4,
+  },
+  emptyTitle: {
+    fontFamily: "DMSans_600SemiBold",
+    fontSize: 13,
+    color: T.sub,
+  },
+  emptySub: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 11,
+    color: T.muted,
+  },
+
+  // CTA
   startBtn: {
-    marginTop: 16,
-    backgroundColor: T.lime,
+    marginTop: 6,
+    backgroundColor: T.gold,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
@@ -168,7 +206,7 @@ const s = StyleSheet.create({
   startBtnText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 15,
-    color: "#0A0A0C",
-    letterSpacing: 1.2,
+    color: "#121212",
+    letterSpacing: 1.4,
   },
 });

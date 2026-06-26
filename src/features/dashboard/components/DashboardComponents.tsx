@@ -20,22 +20,20 @@ const { width: SCREEN_W } = Dimensions.get("window");
 const CONTENT_W = Math.min(SCREEN_W, 430);
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
+// ─── Design Tokens ────────────────────────────────────────────────────────────
 const T = {
-  bg0: "#0A0A0C",
-  bg1: "#111114",
-  bg2: "#18181D",
-  bg3: "#222228",
-  lime: "#C8F135",
-  limeD: "#A3C820",
-  red: "#FF3D3D",
-  orange: "#FF8A00",
-  blue: "#3D8EFF",
-  purple: "#9B6DFF",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
-  border: "#FFFFFF0F",
-  borderMid: "#FFFFFF18",
+  bg0: "#121212",
+  bg1: "#1E1E1E",
+  bg2: "#282828",
+  bg3: "#303030",
+  border: "#FFFFFF0A",
+  borderMid: "#FFFFFF14",
+  gold: "#FFC700",
+  goldDim: "#FFC70020",
+  goldBorder: "#FFC70030",
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#555555",
   r8: 8,
   r12: 12,
   r16: 16,
@@ -52,20 +50,16 @@ function Divider() {
   );
 }
 
-type ChipProps = {
-  label: string;
-  color?: string;
-};
-
-function Chip({ label, color = T.lime }: ChipProps) {
+type ChipProps = { label: string; color?: string };
+function Chip({ label, color = T.gold }: ChipProps) {
   return (
     <View
       style={[
-        styles.chip,
+        s.chip,
         { backgroundColor: color + "1A", borderColor: color + "33" },
       ]}
     >
-      <Text style={[styles.chipText, { color }]}>{label}</Text>
+      <Text style={[s.chipText, { color }]}>{label}</Text>
     </View>
   );
 }
@@ -86,7 +80,7 @@ export function RingChart({
   pct,
   size = 128,
   stroke = 10,
-  color = T.lime,
+  color = T.gold,
   bgColor = T.bg3,
   label,
   sublabel,
@@ -122,9 +116,9 @@ export function RingChart({
           strokeDashoffset={`${dash}`}
         />
       </Svg>
-      <View style={styles.ringLabel}>
-        <Text style={styles.ringValue}>{label}</Text>
-        {sublabel ? <Text style={styles.ringSubLabel}>{sublabel}</Text> : null}
+      <View style={s.ringLabel}>
+        <Text style={s.ringValue}>{label}</Text>
+        {sublabel ? <Text style={s.ringSubLabel}>{sublabel}</Text> : null}
       </View>
     </View>
   );
@@ -137,27 +131,31 @@ type MacroBarProps = {
   value: number;
   max: number;
   unit: string;
-  color: string;
+  color?: string;
 };
 
-export function MacroBar({ label, value, max, unit, color }: MacroBarProps) {
+export function MacroBar({
+  label,
+  value,
+  max,
+  unit,
+  color = T.gold,
+}: MacroBarProps) {
   const pct = Math.min((value / max) * 100, 100);
-
   return (
-    <View style={styles.macroBarContainer}>
-      <View style={styles.macroBarHeader}>
-        <Text style={styles.macroBarLabel}>{label}</Text>
-        <Text style={styles.macroBarValue}>
-          {value}
-          <Text style={styles.macroBarUnit}> {unit}</Text>
-        </Text>
-      </View>
-      <View style={styles.macroBarTrack}>
+    <View style={s.macroBarContainer}>
+      {label ? (
+        <View style={s.macroBarHeader}>
+          <Text style={s.macroBarLabel}>{label}</Text>
+          <Text style={s.macroBarValue}>
+            {value}
+            <Text style={s.macroBarUnit}> {unit}</Text>
+          </Text>
+        </View>
+      ) : null}
+      <View style={s.macroBarTrack}>
         <View
-          style={[
-            styles.macroBarFill,
-            { width: `${pct}%`, backgroundColor: color },
-          ]}
+          style={[s.macroBarFill, { width: `${pct}%`, backgroundColor: color }]}
         />
       </View>
     </View>
@@ -175,30 +173,26 @@ type SparklineProps = {
 
 export function Sparkline({
   data,
-  color = T.lime,
+  color = T.gold,
   height = 36,
   width = 80,
 }: SparklineProps) {
   if (!data?.length || data.length < 2) return null;
-
   const min = Math.min(...data);
   const max = Math.max(...data);
   const rng = max - min || 1;
   const pad = 4;
-
   const pts = data.map(
     (v, i) =>
       `${(i / (data.length - 1)) * (width - pad * 2) + pad},${
         height - pad - ((v - min) / rng) * (height - pad * 2)
       }`,
   );
-  const polyPts = pts.join(" ");
   const last = pts[pts.length - 1].split(",");
-
   return (
     <Svg width={width} height={height}>
       <Polyline
-        points={polyPts}
+        points={pts.join(" ")}
         fill="none"
         stroke={color}
         strokeWidth="1.5"
@@ -234,26 +228,26 @@ export function StatTile({
   value,
   unit,
   note,
-  color = T.lime,
+  color = T.gold,
   spark,
 }: StatTileProps) {
   return (
-    <View style={styles.statTile}>
-      <View style={styles.statTileTop}>
-        <View style={[styles.statIconWrap, { backgroundColor: color + "1A" }]}>
-          <Text style={styles.statIcon}>{icon}</Text>
+    <View style={s.statTile}>
+      <View style={s.statTileTop}>
+        <View style={[s.statIconWrap, { backgroundColor: color + "1A" }]}>
+          <Text style={s.statIcon}>{icon}</Text>
         </View>
         {spark ? <Sparkline data={spark} color={color} /> : null}
       </View>
-      <Text style={styles.statValue}>
+      <Text style={s.statValue}>
         {value}
-        <Text style={styles.statUnit}> {unit}</Text>
+        <Text style={s.statUnit}> {unit}</Text>
       </Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={s.statLabel}>{label}</Text>
       {note ? (
-        <View style={styles.statNoteRow}>
-          <View style={[styles.statNoteDot, { backgroundColor: color }]} />
-          <Text style={[styles.statNote, { color }]}>{note}</Text>
+        <View style={s.statNoteRow}>
+          <View style={[s.statNoteDot, { backgroundColor: color }]} />
+          <Text style={[s.statNote, { color }]}>{note}</Text>
         </View>
       ) : null}
     </View>
@@ -270,27 +264,21 @@ type SectionTitleProps = {
 
 export function SectionTitle({ title, action, onAction }: SectionTitleProps) {
   return (
-    <View style={styles.sectionTitleRow}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={s.sectionTitleRow}>
+      <Text style={s.sectionTitle}>{title}</Text>
       {action ? (
         <TouchableOpacity onPress={onAction} activeOpacity={0.7}>
-          <Text style={styles.sectionAction}>{action}</Text>
+          <Text style={s.sectionAction}>{action}</Text>
         </TouchableOpacity>
       ) : null}
     </View>
   );
 }
 
-// ─── 7. WeeklyCard ───────────────────────────────────────────────────────────
+// ─── 6. WeeklyCard ───────────────────────────────────────────────────────────
 
-type WeeklyBarItem = {
-  cal: number;
-  workout: boolean;
-};
-
-type WeeklyBarsProps = {
-  data: WeeklyBarItem[];
-};
+type WeeklyBarItem = { cal: number; workout: boolean };
+type WeeklyBarsProps = { data: WeeklyBarItem[] };
 
 const BAR_MAX_H = 64;
 const BAR_W = 26;
@@ -308,12 +296,12 @@ function WeeklyBars({ data }: WeeklyBarsProps) {
 
   return (
     <View>
-      <View style={styles.weeklyChartArea}>
-        <View style={[styles.weeklyAvgLine, { bottom: 24 + avgH }]}>
-          <View style={styles.weeklyAvgDash} />
-          <Text style={styles.weeklyAvgLabel}>avg {avg}</Text>
+      <View style={s.weeklyChartArea}>
+        <View style={[s.weeklyAvgLine, { bottom: 24 + avgH }]}>
+          <View style={s.weeklyAvgDash} />
+          <Text style={s.weeklyAvgLabel}>avg {avg}</Text>
         </View>
-        <View style={styles.weeklyBars}>
+        <View style={s.weeklyBars}>
           {data.map((d, i) => {
             const h = d.cal > 0 ? Math.max((d.cal / max) * BAR_MAX_H, 6) : 6;
             const active = i === todayIdx;
@@ -321,11 +309,9 @@ function WeeklyBars({ data }: WeeklyBarsProps) {
             const future = !d.cal && i > todayIdx;
 
             return (
-              <View key={i} style={styles.barColumn}>
+              <View key={i} style={s.barColumn}>
                 {(active || done) && d.cal > 0 ? (
-                  <Text
-                    style={[styles.barCalLabel, active && { color: T.lime }]}
-                  >
+                  <Text style={[s.barCalLabel, active && { color: T.gold }]}>
                     {d.cal}
                   </Text>
                 ) : (
@@ -333,28 +319,23 @@ function WeeklyBars({ data }: WeeklyBarsProps) {
                 )}
                 <View
                   style={[
-                    styles.bar,
+                    s.bar,
                     { height: h },
                     active
-                      ? styles.barActive
+                      ? s.barActive
                       : done
-                        ? styles.barDone
+                        ? s.barDone
                         : future
-                          ? styles.barFuture
-                          : styles.barEmpty,
+                          ? s.barFuture
+                          : s.barEmpty,
                   ]}
                 />
                 {d.workout ? (
-                  <View
-                    style={[
-                      styles.workoutDot,
-                      active && styles.workoutDotActive,
-                    ]}
-                  />
+                  <View style={[s.workoutDot, active && s.workoutDotActive]} />
                 ) : (
                   <View style={{ height: 6 }} />
                 )}
-                <Text style={[styles.barDay, active && styles.barDayActive]}>
+                <Text style={[s.barDay, active && s.barDayActive]}>
                   {DAYS[i]}
                 </Text>
               </View>
@@ -366,11 +347,7 @@ function WeeklyBars({ data }: WeeklyBarsProps) {
   );
 }
 
-type WeeklyCardProps = {
-  onReport?: () => void;
-  /** Mon–Sun; falls back to empty week if omitted */
-  weeklyBars?: WeeklyBarItem[];
-};
+type WeeklyCardProps = { onReport?: () => void; weeklyBars?: WeeklyBarItem[] };
 
 export function WeeklyCard({ onReport, weeklyBars }: WeeklyCardProps) {
   const bars: WeeklyBarItem[] =
@@ -385,49 +362,47 @@ export function WeeklyCard({ onReport, weeklyBars }: WeeklyCardProps) {
   const calsLogged = bars.filter((d) => d.cal > 0);
   const totalCal = bars.reduce((a, d) => a + d.cal, 0);
   const avgCal =
-    calsLogged.length > 0
-      ? Math.round(totalCal / calsLogged.length)
-      : 0;
-
-  const totalTrainMinsEstimate = Math.max(
-    totalWorkouts * 40,
-    calsLogged.length * 45,
-    0,
-  );
+    calsLogged.length > 0 ? Math.round(totalCal / calsLogged.length) : 0;
+  const totalMins = Math.max(totalWorkouts * 40, calsLogged.length * 45, 0);
   const totalTimeLabel =
-    totalTrainMinsEstimate >= 60
-      ? `${Math.floor(totalTrainMinsEstimate / 60)}h ${totalTrainMinsEstimate % 60}m`
-      : `${totalTrainMinsEstimate}m`;
+    totalMins >= 60
+      ? `${Math.floor(totalMins / 60)}h ${totalMins % 60}m`
+      : `${totalMins}m`;
 
   return (
-    <View style={styles.card}>
-      <View style={styles.weeklyHeader}>
+    <View style={s.card}>
+      <View style={s.weeklyHeader}>
         <View>
-          <Text style={styles.sectionTitle}>WEEKLY ACTIVITY</Text>
-          <Text style={styles.weeklySubtitle}>
+          <Text style={s.sectionTitle}>WEEKLY ACTIVITY</Text>
+          <Text style={s.weeklySubtitle}>
             {totalWorkouts} workouts this week
           </Text>
         </View>
         <TouchableOpacity
           onPress={onReport}
-          style={styles.reportBtn}
+          style={s.reportBtn}
           activeOpacity={0.75}
         >
-          <Text style={styles.reportBtnText}>Full report</Text>
-          <Text style={styles.reportBtnArrow}>→</Text>
+          <Text style={s.reportBtnText}>Full report →</Text>
         </TouchableOpacity>
       </View>
       <WeeklyBars data={bars} />
       <Divider />
-      <View style={styles.cardSummary}>
+      <View style={s.cardSummary}>
         {[
-          { v: `${totalWorkouts}`, l: "Workouts", color: T.lime },
-          { v: `${avgCal}`, l: "Avg kcal", color: T.text },
-          { v: totalTrainMinsEstimate > 0 ? totalTimeLabel : "0m", l: "Total", color: T.text },
-        ].map(({ v, l, color }) => (
-          <View key={l} style={styles.summaryItem}>
-            <Text style={[styles.summaryValue, { color }]}>{v}</Text>
-            <Text style={styles.summaryLabel}>{l}</Text>
+          { v: `${totalWorkouts}`, l: "Workouts", highlight: true },
+          { v: `${avgCal}`, l: "Avg kcal", highlight: false },
+          {
+            v: totalMins > 0 ? totalTimeLabel : "0m",
+            l: "Total",
+            highlight: false,
+          },
+        ].map(({ v, l, highlight }) => (
+          <View key={l} style={s.summaryItem}>
+            <Text style={[s.summaryValue, highlight && { color: T.gold }]}>
+              {v}
+            </Text>
+            <Text style={s.summaryLabel}>{l}</Text>
           </View>
         ))}
       </View>
@@ -435,17 +410,10 @@ export function WeeklyCard({ onReport, weeklyBars }: WeeklyCardProps) {
   );
 }
 
-// ─── 8. WeightCard ───────────────────────────────────────────────────────────
+// ─── 7. WeightCard ───────────────────────────────────────────────────────────
 
-type WeightPoint = {
-  w: number;
-  date: string;
-};
-
-type Point = {
-  x: number;
-  y: number;
-};
+type WeightPoint = { w: number; date: string };
+type Point = { x: number; y: number };
 
 function smoothPath(pts: Point[]): string {
   if (pts.length < 2) return "";
@@ -459,11 +427,7 @@ function smoothPath(pts: Point[]): string {
   return d;
 }
 
-type WeightLineProps = {
-  data: WeightPoint[];
-};
-
-function WeightLine({ data }: WeightLineProps) {
+function WeightLine({ data }: { data: WeightPoint[] }) {
   const YAXIS_W = 36;
   const W = CONTENT_W - 64 - YAXIS_W - 6;
   const H = 96;
@@ -473,8 +437,8 @@ function WeightLine({ data }: WeightLineProps) {
   const rng = hi - lo;
   const padX = 8;
   const padY = 10;
-
   const divisor = vals.length <= 1 ? 1 : vals.length - 1;
+
   const pts: Point[] = vals.map((v, i) => ({
     x: padX + (i / divisor) * (W - padX * 2),
     y: padY + ((hi - v) / rng) * (H - padY * 2),
@@ -490,10 +454,10 @@ function WeightLine({ data }: WeightLineProps) {
   }));
 
   return (
-    <View style={styles.weightChartWrap}>
-      <View style={styles.weightYAxis}>
+    <View style={s.weightChartWrap}>
+      <View style={s.weightYAxis}>
         {[...refYs].reverse().map((r) => (
-          <Text key={r.label} style={styles.weightAxisLabel}>
+          <Text key={r.label} style={s.weightAxisLabel}>
             {r.label}
           </Text>
         ))}
@@ -501,8 +465,8 @@ function WeightLine({ data }: WeightLineProps) {
       <Svg width={W} height={H}>
         <Defs>
           <LinearGradient id="wg2" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor={T.lime} stopOpacity="0.20" />
-            <Stop offset="100%" stopColor={T.lime} stopOpacity="0" />
+            <Stop offset="0%" stopColor={T.gold} stopOpacity="0.18" />
+            <Stop offset="100%" stopColor={T.gold} stopOpacity="0" />
           </LinearGradient>
         </Defs>
         {refYs.map((r) => (
@@ -518,7 +482,7 @@ function WeightLine({ data }: WeightLineProps) {
         <Path
           d={linePath}
           fill="none"
-          stroke={T.lime}
+          stroke={T.gold}
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -530,7 +494,7 @@ function WeightLine({ data }: WeightLineProps) {
             cy={p.y}
             r={2.5}
             fill={T.bg2}
-            stroke={T.lime}
+            stroke={T.gold}
             strokeWidth="1.5"
           />
         ))}
@@ -538,10 +502,10 @@ function WeightLine({ data }: WeightLineProps) {
           cx={lastPt.x}
           cy={lastPt.y}
           r={9}
-          fill={T.lime}
+          fill={T.gold}
           opacity={0.12}
         />
-        <Circle cx={lastPt.x} cy={lastPt.y} r={5} fill={T.lime} />
+        <Circle cx={lastPt.x} cy={lastPt.y} r={5} fill={T.gold} />
         <Circle cx={lastPt.x} cy={lastPt.y} r={2} fill={T.bg0} />
       </Svg>
     </View>
@@ -567,100 +531,90 @@ export function WeightCard({
 }: WeightCardProps) {
   const seriesRaw =
     chartData && chartData.length > 0
-      ? [...chartData].sort((a, b) => {
-          const ai = `${a.date}`.localeCompare(`${b.date}`);
-          return ai;
-        })
+      ? [...chartData].sort((a, b) => `${a.date}`.localeCompare(`${b.date}`))
       : [];
 
   const startW =
-    typeof startWProp === "number" && Number.isFinite(startWProp)
+    typeof startWProp === "number" && isFinite(startWProp)
       ? startWProp
-      : seriesRaw.length > 0
-        ? seriesRaw[0].w
-        : 0;
-
+      : (seriesRaw[0]?.w ?? 0);
   const currentW =
-    typeof currentWProp === "number" && Number.isFinite(currentWProp)
+    typeof currentWProp === "number" && isFinite(currentWProp)
       ? currentWProp
-      : seriesRaw.length > 0
-        ? seriesRaw[seriesRaw.length - 1].w
-        : startW;
-
+      : (seriesRaw[seriesRaw.length - 1]?.w ?? startW);
   const goalW =
-    typeof goalWProp === "number" && Number.isFinite(goalWProp)
-      ? goalWProp
-      : currentW || 0;
+    typeof goalWProp === "number" && isFinite(goalWProp) ? goalWProp : currentW;
 
   const journey = Math.abs(startW - goalW);
   const progressed = Math.abs(startW - currentW);
   const progressPct =
-    journey < 1e-6 ? 0 : Math.min(100, Math.round((progressed / journey) * 100));
-
+    journey < 1e-6
+      ? 0
+      : Math.min(100, Math.round((progressed / journey) * 100));
   const deltaNum = +(startW - currentW).toFixed(1);
   const lossLabel =
     seriesRaw.length < 2
       ? "Log twice to trend"
       : `${deltaNum >= 0 ? "↓" : "↑"} ${Math.abs(deltaNum).toFixed(1)} kg`;
-
-  const toGoMag = +(Math.abs(currentW - goalW)).toFixed(1);
-
-  const chartInner =
-    isLoading ? (
-      <View style={[styles.weightChartWrap, { height: 96, justifyContent: "center" }]}>
-        <ActivityIndicator color={T.lime} />
-      </View>
-    ) : seriesRaw.length < 2 ? (
-      <Text style={{ fontFamily: "DMSans_400Regular", fontSize: 11, color: T.muted, marginVertical: 20 }}>
-        Add weight logs to see your trend chart.
-      </Text>
-    ) : (
-      <WeightLine
-        data={
-          seriesRaw.length >= 2
-            ? seriesRaw
-            : [seriesRaw[0], seriesRaw[0]]
-        }
-      />
-    );
+  const toGoMag = +Math.abs(currentW - goalW).toFixed(1);
 
   return (
-    <View style={styles.card}>
-      <View style={styles.weightHeader}>
+    <View style={s.card}>
+      <View style={s.weightHeader}>
         <View style={{ gap: 3 }}>
-          <Text style={styles.sectionTitle}>WEIGHT TREND</Text>
-          <Text style={styles.weightSubTitle}>{subtitle}</Text>
+          <Text style={s.sectionTitle}>WEIGHT TREND</Text>
+          <Text style={s.weightSubTitle}>{subtitle}</Text>
         </View>
-        <View style={styles.weightRight}>
-          <View style={styles.weightValueRow}>
-            <Text style={styles.weightValue}>
+        <View style={s.weightRight}>
+          <View style={s.weightValueRow}>
+            <Text style={s.weightValue}>
               {isLoading ? "—" : currentW.toFixed(1)}
             </Text>
-            <Text style={styles.weightUnit}> kg</Text>
+            <Text style={s.weightUnit}> kg</Text>
           </View>
-          <Text style={styles.weightDelta}>{lossLabel}</Text>
+          <Text style={s.weightDelta}>{lossLabel}</Text>
         </View>
       </View>
-      {chartInner}
-      <View style={styles.weightGoalRow}>
-        <Text style={styles.weightGoalLabel}>{toGoMag.toFixed(1)} kg to goal</Text>
-        <Text style={styles.weightGoalPct}>{progressPct}%</Text>
+
+      {isLoading ? (
+        <View
+          style={[s.weightChartWrap, { height: 96, justifyContent: "center" }]}
+        >
+          <ActivityIndicator color={T.gold} />
+        </View>
+      ) : seriesRaw.length < 2 ? (
+        <Text style={s.weightEmptyText}>
+          Add weight logs to see your trend chart.
+        </Text>
+      ) : (
+        <WeightLine data={seriesRaw} />
+      )}
+
+      <View style={s.weightGoalRow}>
+        <Text style={s.weightGoalLabel}>{toGoMag.toFixed(1)} kg to goal</Text>
+        <Text style={s.weightGoalPct}>{progressPct}%</Text>
       </View>
-      <View style={styles.weightProgressTrack}>
-        <View style={[styles.weightProgressFill, { width: `${progressPct}%` }]} />
+      <View style={s.weightProgressTrack}>
+        <View style={[s.weightProgressFill, { width: `${progressPct}%` }]} />
       </View>
       <Divider />
-      <View style={styles.cardSummary}>
+      <View style={s.cardSummary}>
         {[
-          { v: `${startW.toFixed(1)} kg`, l: "Start", color: T.sub },
-          { v: `${goalW.toFixed(1)} kg`, l: "Goal", color: T.lime },
-          { v: `${progressPct}%`, l: "Progress", color: T.text },
-        ].map(({ v, l, color }) => (
-          <View key={l} style={styles.summaryItem}>
-            <Text style={[styles.summaryValue, { fontSize: 15, color }]}>
+          { v: `${startW.toFixed(1)} kg`, l: "Start", highlight: false },
+          { v: `${goalW.toFixed(1)} kg`, l: "Goal", highlight: true },
+          { v: `${progressPct}%`, l: "Progress", highlight: false },
+        ].map(({ v, l, highlight }) => (
+          <View key={l} style={s.summaryItem}>
+            <Text
+              style={[
+                s.summaryValue,
+                { fontSize: 15 },
+                highlight && { color: T.gold },
+              ]}
+            >
               {seriesRaw.length ? v : "--"}
             </Text>
-            <Text style={styles.summaryLabel}>{l}</Text>
+            <Text style={s.summaryLabel}>{l}</Text>
           </View>
         ))}
       </View>
@@ -668,7 +622,7 @@ export function WeightCard({
   );
 }
 
-// ─── 9. WorkoutRow ───────────────────────────────────────────────────────────
+// ─── 8. WorkoutRow ───────────────────────────────────────────────────────────
 
 type WorkoutRowProps = {
   title: string;
@@ -685,30 +639,36 @@ export function WorkoutRow({
   tag,
   tagColor,
 }: WorkoutRowProps) {
+  // Remap any legacy colors to gold system
+  const resolvedColor = T.gold;
+
   return (
-    <View style={styles.workoutRow}>
-      <View style={styles.workoutLeft}>
-        <View style={[styles.workoutAccent, { backgroundColor: tagColor }]} />
+    <View style={s.workoutRow}>
+      <View style={s.workoutLeft}>
+        <View style={[s.workoutAccent, { backgroundColor: resolvedColor }]} />
         <View>
-          <Text style={styles.workoutTitle}>{title}</Text>
-          <Text style={styles.workoutMeta}>
+          <Text style={s.workoutTitle}>{title}</Text>
+          <Text style={s.workoutMeta}>
             {duration} · {sets}
           </Text>
         </View>
       </View>
       <View
         style={[
-          styles.workoutTag,
-          { backgroundColor: tagColor + "20", borderColor: tagColor + "40" },
+          s.workoutTag,
+          {
+            backgroundColor: resolvedColor + "20",
+            borderColor: resolvedColor + "40",
+          },
         ]}
       >
-        <Text style={[styles.workoutTagText, { color: tagColor }]}>{tag}</Text>
+        <Text style={[s.workoutTagText, { color: resolvedColor }]}>{tag}</Text>
       </View>
     </View>
   );
 }
 
-// ─── 10. ActionBtn ───────────────────────────────────────────────────────────
+// ─── 9. ActionBtn ────────────────────────────────────────────────────────────
 
 type ActionBtnProps = {
   icon: string;
@@ -720,37 +680,33 @@ type ActionBtnProps = {
 export function ActionBtn({
   icon,
   label,
-  color = T.lime,
+  color = T.gold,
   onPress,
 }: ActionBtnProps) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        styles.actionBtn,
+        s.actionBtn,
         pressed && { opacity: 0.75, transform: [{ scale: 0.95 }] },
       ]}
     >
       <View
         style={[
-          styles.actionBtnIcon,
+          s.actionBtnIcon,
           { backgroundColor: color + "1A", borderColor: color + "30" },
         ]}
       >
-        <Text style={styles.actionBtnEmoji}>{icon}</Text>
+        <Text style={s.actionBtnEmoji}>{icon}</Text>
       </View>
-      <Text style={styles.actionBtnLabel}>{label}</Text>
+      <Text style={s.actionBtnLabel}>{label}</Text>
     </Pressable>
   );
 }
 
-// ─── 11. BottomNav ───────────────────────────────────────────────────────────
+// ─── 10. BottomNav ───────────────────────────────────────────────────────────
 
-type NavItem = {
-  id: string;
-  icon: string;
-  label: string;
-};
+type NavItem = { id: string; icon: string; label: string };
 
 const NAV_ITEMS: NavItem[] = [
   { id: "home", icon: "⊞", label: "Home" },
@@ -760,36 +716,32 @@ const NAV_ITEMS: NavItem[] = [
   { id: "profile", icon: "👤", label: "Profile" },
 ];
 
-type BottomNavProps = {
-  active: string;
-  onChange: (id: string) => void;
-};
+type BottomNavProps = { active: string; onChange: (id: string) => void };
 
 export function BottomNav({ active, onChange }: BottomNavProps) {
   return (
-    <View style={styles.bottomNav}>
+    <View style={s.bottomNav}>
       {NAV_ITEMS.map((item) => {
         const isActive = item.id === active;
         const isFocus = item.id === "focus";
-
         return (
           <TouchableOpacity
             key={item.id}
             onPress={() => onChange(item.id)}
-            style={styles.navItem}
+            style={s.navItem}
             activeOpacity={0.7}
           >
             {isFocus ? (
-              <View style={styles.focusBtn}>
+              <View style={s.focusBtn}>
                 <Text style={{ fontSize: 20 }}>{item.icon}</Text>
               </View>
             ) : (
-              <Text style={[styles.navIcon, { opacity: isActive ? 1 : 0.28 }]}>
+              <Text style={[s.navIcon, { opacity: isActive ? 1 : 0.28 }]}>
                 {item.icon}
               </Text>
             )}
-            {isActive && !isFocus ? <View style={styles.navDot} /> : null}
-            <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+            {isActive && !isFocus ? <View style={s.navDot} /> : null}
+            <Text style={[s.navLabel, isActive && s.navLabelActive]}>
               {item.label}
             </Text>
           </TouchableOpacity>
@@ -799,12 +751,10 @@ export function BottomNav({ active, onChange }: BottomNavProps) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// STYLES
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  // ── Chip ────────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  // Chip
   chip: {
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -817,7 +767,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
 
-  // ── Ring Chart ──────────────────────────────────────────────────────────────
+  // Ring
   ringLabel: {
     position: "absolute",
     inset: 0,
@@ -838,20 +788,14 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 
-  // ── Macro Bar ───────────────────────────────────────────────────────────────
-  macroBarContainer: {
-    marginBottom: 9,
-  },
+  // MacroBar
+  macroBarContainer: { marginBottom: 4 },
   macroBarHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 5,
   },
-  macroBarLabel: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 11,
-    color: T.sub,
-  },
+  macroBarLabel: { fontFamily: "DMSans_500Medium", fontSize: 11, color: T.sub },
   macroBarValue: {
     fontFamily: "DMSans_600SemiBold",
     fontSize: 11,
@@ -868,18 +812,15 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     overflow: "hidden",
   },
-  macroBarFill: {
-    height: "100%",
-    borderRadius: 2,
-  },
+  macroBarFill: { height: "100%", borderRadius: 2 },
 
-  // ── Stat Tile ───────────────────────────────────────────────────────────────
+  // StatTile
   statTile: {
     flex: 1,
     backgroundColor: T.bg1,
     borderRadius: T.r16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: T.borderMid,
     padding: 14,
   },
   statTileTop: {
@@ -895,20 +836,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  statIcon: {
-    fontSize: 18,
-  },
+  statIcon: { fontSize: 18 },
   statValue: {
     fontFamily: "BarlowCondensed_900Black",
     fontSize: 26,
     color: T.text,
     lineHeight: 28,
   },
-  statUnit: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 12,
-    color: T.sub,
-  },
+  statUnit: { fontFamily: "DMSans_400Regular", fontSize: 12, color: T.sub },
   statLabel: {
     fontFamily: "DMSans_500Medium",
     fontSize: 11,
@@ -921,17 +856,10 @@ const styles = StyleSheet.create({
     marginTop: 6,
     gap: 4,
   },
-  statNoteDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-  },
-  statNote: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 10,
-  },
+  statNoteDot: { width: 4, height: 4, borderRadius: 2 },
+  statNote: { fontFamily: "DMSans_400Regular", fontSize: 10 },
 
-  // ── Section Title ────────────────────────────────────────────────────────────
+  // SectionTitle
   sectionTitleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -940,60 +868,26 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
-    color: T.text,
-    letterSpacing: 1.0,
+    fontSize: 12,
+    color: T.sub,
+    letterSpacing: 1.5,
   },
   sectionAction: {
     fontFamily: "DMSans_600SemiBold",
     fontSize: 12,
-    color: T.lime,
+    color: T.gold,
   },
 
-  // ── Calorie Card ─────────────────────────────────────────────────────────────
-  calorieCard: {
+  // Card shell
+  card: {
     backgroundColor: T.bg1,
     borderRadius: T.r20,
     borderWidth: 1,
     borderColor: T.borderMid,
     padding: 18,
   },
-  calorieCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  calorieCardTitle: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
-    color: T.text,
-    letterSpacing: 1.0,
-  },
-  calorieRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
-  calorieRight: {
-    flex: 1,
-  },
-  calorieGoal: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 10,
-    color: T.muted,
-    letterSpacing: 0.8,
-    marginBottom: 10,
-  },
-  calorieSummary: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-
-  // ── Summary Item ─────────────────────────────────────────────────────────────
-  summaryItem: {
-    alignItems: "center",
-  },
+  cardSummary: { flexDirection: "row", justifyContent: "space-around" },
+  summaryItem: { alignItems: "center" },
   summaryValue: {
     fontFamily: "BarlowCondensed_900Black",
     fontSize: 18,
@@ -1006,7 +900,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 
-  // ── Weekly Bars ──────────────────────────────────────────────────────────────
+  // Weekly
   weeklyHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1020,30 +914,19 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   reportBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: T.bg3,
+    backgroundColor: T.goldDim,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 9,
-    borderWidth: 1,
-    borderColor: T.border,
   },
   reportBtnText: {
     fontFamily: "DMSans_600SemiBold",
     fontSize: 11,
-    color: T.lime,
+    color: T.gold,
   },
-  reportBtnArrow: {
-    fontFamily: "DMSans_600SemiBold",
-    fontSize: 11,
-    color: T.lime,
-  },
-  weeklyChartArea: {
-    position: "relative",
-    marginBottom: 4,
-  },
+  weeklyChartArea: { position: "relative", marginBottom: 4 },
   weeklyAvgLine: {
     position: "absolute",
     left: 0,
@@ -1073,11 +956,7 @@ const styles = StyleSheet.create({
     height: BAR_MAX_H + 50,
     paddingTop: 14,
   },
-  barColumn: {
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 0,
-  },
+  barColumn: { alignItems: "center", justifyContent: "flex-end" },
   barCalLabel: {
     fontFamily: "DMSans_600SemiBold",
     fontSize: 9,
@@ -1085,62 +964,24 @@ const styles = StyleSheet.create({
     marginBottom: 3,
     height: 14,
   },
-  bar: {
-    width: BAR_W,
-    borderRadius: 7,
-  },
-  barActive: {
-    backgroundColor: T.lime,
-    borderRadius: 7,
-  },
-  barDone: {
-    backgroundColor: T.bg3,
-    borderRadius: 7,
-  },
-  barFuture: {
-    backgroundColor: T.bg3,
-    opacity: 0.25,
-    borderRadius: 7,
-  },
-  barEmpty: {
-    backgroundColor: T.bg3,
-    opacity: 0.35,
-    borderRadius: 7,
-  },
+  bar: { width: BAR_W, borderRadius: 7 },
+  barActive: { backgroundColor: T.gold },
+  barDone: { backgroundColor: T.bg3 },
+  barFuture: { backgroundColor: T.bg3, opacity: 0.25 },
+  barEmpty: { backgroundColor: T.bg3, opacity: 0.35 },
   workoutDot: {
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor: T.sub,
+    backgroundColor: T.muted,
     marginTop: 5,
     marginBottom: 4,
   },
-  workoutDotActive: {
-    backgroundColor: T.lime,
-  },
-  barDay: {
-    fontFamily: "DMSans_600SemiBold",
-    fontSize: 10,
-    color: T.muted,
-  },
-  barDayActive: {
-    color: T.lime,
-  },
+  workoutDotActive: { backgroundColor: T.gold },
+  barDay: { fontFamily: "DMSans_600SemiBold", fontSize: 10, color: T.muted },
+  barDayActive: { color: T.gold },
 
-  // ── Card ─────────────────────────────────────────────────────────────────────
-  card: {
-    backgroundColor: T.bg1,
-    borderRadius: T.r20,
-    borderWidth: 1,
-    borderColor: T.border,
-    padding: 18,
-  },
-  cardSummary: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-
-  // ── Weight Card ──────────────────────────────────────────────────────────────
+  // Weight
   weightHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1152,28 +993,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: T.muted,
   },
-  weightRight: {
-    alignItems: "flex-end",
-  },
-  weightValueRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-  },
+  weightRight: { alignItems: "flex-end" },
+  weightValueRow: { flexDirection: "row", alignItems: "baseline" },
   weightValue: {
     fontFamily: "BarlowCondensed_900Black",
     fontSize: 28,
     color: T.text,
     lineHeight: 30,
   },
-  weightUnit: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 13,
-    color: T.sub,
-  },
+  weightUnit: { fontFamily: "DMSans_400Regular", fontSize: 13, color: T.sub },
   weightDelta: {
     fontFamily: "DMSans_500Medium",
     fontSize: 11,
-    color: T.lime,
+    color: T.gold,
     marginTop: 2,
   },
   weightChartWrap: {
@@ -1207,7 +1039,7 @@ const styles = StyleSheet.create({
   weightGoalPct: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
-    color: T.lime,
+    color: T.gold,
   },
   weightProgressTrack: {
     height: 4,
@@ -1218,11 +1050,17 @@ const styles = StyleSheet.create({
   },
   weightProgressFill: {
     height: "100%",
-    backgroundColor: T.lime,
+    backgroundColor: T.gold,
     borderRadius: 2,
   },
+  weightEmptyText: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 11,
+    color: T.muted,
+    marginVertical: 20,
+  },
 
-  // ── Workout Row ──────────────────────────────────────────────────────────────
+  // WorkoutRow
   workoutRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1231,16 +1069,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: T.border,
   },
-  workoutLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  workoutAccent: {
-    width: 3,
-    height: 32,
-    borderRadius: 2,
-  },
+  workoutLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  workoutAccent: { width: 3, height: 32, borderRadius: 2 },
   workoutTitle: {
     fontFamily: "DMSans_600SemiBold",
     fontSize: 13,
@@ -1264,12 +1094,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
 
-  // ── Action Button ─────────────────────────────────────────────────────────────
-  actionBtn: {
-    flex: 1,
-    alignItems: "center",
-    marginHorizontal: 5,
-  },
+  // ActionBtn
+  actionBtn: { flex: 1, alignItems: "center", marginHorizontal: 5 },
   actionBtnIcon: {
     width: 58,
     height: 58,
@@ -1279,9 +1105,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  actionBtnEmoji: {
-    fontSize: 24,
-  },
+  actionBtnEmoji: { fontSize: 24 },
   actionBtnLabel: {
     fontFamily: "DMSans_600SemiBold",
     fontSize: 10,
@@ -1290,7 +1114,7 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
 
-  // ── Bottom Navigation ────────────────────────────────────────────────────────
+  // BottomNav
   bottomNav: {
     position: "absolute",
     bottom: 0,
@@ -1301,7 +1125,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     backgroundColor: T.bg0,
     borderTopWidth: 1,
-    borderTopColor: T.border,
+    borderTopColor: T.borderMid,
     paddingVertical: 8,
     height: 78,
   },
@@ -1312,30 +1136,21 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     gap: 2,
   },
-  navIcon: {
-    fontSize: 20,
-  },
+  navIcon: { fontSize: 20 },
   navDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: T.lime,
+    backgroundColor: T.gold,
     marginVertical: 1,
   },
-  navLabel: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 10,
-    color: T.muted,
-  },
-  navLabelActive: {
-    color: T.lime,
-    fontFamily: "DMSans_600SemiBold",
-  },
+  navLabel: { fontFamily: "DMSans_500Medium", fontSize: 10, color: T.muted },
+  navLabelActive: { color: T.gold, fontFamily: "DMSans_600SemiBold" },
   focusBtn: {
     width: 46,
     height: 46,
     borderRadius: T.r12,
-    backgroundColor: T.lime,
+    backgroundColor: T.gold,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 2,

@@ -6,20 +6,20 @@ import {
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { RingChart } from "./DashboardComponents";
 
+// ─── Design Tokens ────────────────────────────────────────────────────────────
 const T = {
-  bg1: "#111114",
-  bg2: "#18181D",
-  bg3: "#222228",
-  border: "#FFFFFF0F",
-  borderMid: "#FFFFFF18",
-  lime: "#C8F135",
-  blue: "#3D8EFF",
-  orange: "#FF8A00",
-  red: "#FF3D3D",
-  purple: "#9B6DFF",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
+  bg0: "#121212", // page background
+  bg1: "#1E1E1E", // card surface
+  bg2: "#282828", // inset / track
+  bg3: "#303030", // subtle divider fill
+  border: "#FFFFFF0A",
+  borderMid: "#FFFFFF14",
+  gold: "#FFC700", // primary accent — ring, highlights, key values
+  goldDim: "#FFC70030", // translucent gold for badges/tracks
+  goldBorder: "#FFC70025",
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#555555",
 };
 
 export function CalorieCard() {
@@ -41,186 +41,107 @@ export function CalorieCard() {
 
   const eaten = totals?.cal ?? 0;
   const burned = 0;
-
-  const MACROS = [
-    {
-      label: "Protein",
-      value: totals?.protein ?? 0,
-      max: goalProt || 1,
-      color: T.blue,
-      icon: "💪",
-    },
-    {
-      label: "Carbs",
-      value: totals?.carbs ?? 0,
-      max: goalCarbs || 1,
-      color: T.orange,
-      icon: "⚡",
-    },
-    {
-      label: "Fat",
-      value: totals?.fat ?? 0,
-      max: goalFat || 1,
-      color: T.red,
-      icon: "🔥",
-    },
-  ];
-
   const net = eaten - burned;
   const remaining = goalCal - net;
   const pct =
     goalCal > 0 ? Math.min(Math.round((net / goalCal) * 100), 100) : 0;
   const isOver = remaining < 0;
-  const ringColor = pct >= 100 ? T.red : pct >= 75 ? T.orange : T.lime;
 
-  const status =
-    pct >= 100
-      ? { label: "OVER GOAL", color: T.red }
-      : pct >= 75
-        ? { label: "ALMOST THERE", color: T.orange }
-        : { label: "ON TRACK", color: T.lime };
+  // Ring shifts to white at 100%+ so gold doesn't read as "success" when over
+  const ringColor = pct >= 100 ? T.text : T.gold;
+
+  const MACROS = [
+    { label: "Protein", value: totals?.protein ?? 0, max: goalProt || 1 },
+    { label: "Carbs", value: totals?.carbs ?? 0, max: goalCarbs || 1 },
+    { label: "Fat", value: totals?.fat ?? 0, max: goalFat || 1 },
+  ];
 
   return (
     <View style={s.card}>
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/* ── Header ── */}
       <View style={s.header}>
-        <View style={s.headerLeft}>
-          <Text style={s.title}>TODAY'S NUTRITION</Text>
-          <Text style={s.subtitle}>Net = eaten − burned</Text>
-        </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          {totalsPending ? (
-            <ActivityIndicator size="small" color={T.lime} />
-          ) : null}
-          <View
-            style={[
-              s.statusChip,
-              {
-                backgroundColor: status.color + "18",
-                borderColor: status.color + "35",
-              },
-            ]}
-          >
-            <View style={[s.statusDot, { backgroundColor: status.color }]} />
-            <Text style={[s.statusText, { color: status.color }]}>
-              {status.label}
-            </Text>
-          </View>
-        </View>
+        <Text style={s.title}>NUTRITION</Text>
+        {totalsPending && <ActivityIndicator size="small" color={T.gold} />}
       </View>
 
-      {/* ── Hero row: ring + stats ──────────────────────────────────────────── */}
+      {/* ── Hero: ring + key stats ── */}
       <View style={s.heroRow}>
+        {/* Ring */}
         <View style={s.ringWrap}>
           <RingChart
             pct={pct}
-            size={124}
-            stroke={10}
+            size={128}
+            stroke={11}
             color={ringColor}
-            label={`${net}`}
-            sublabel="NET KCAL"
+            label={`${Math.abs(remaining).toLocaleString()}`}
+            sublabel={isOver ? "KCAL OVER" : "KCAL LEFT"}
           />
-          <View
-            style={[
-              s.ringPctBadge,
-              {
-                backgroundColor: ringColor + "18",
-                borderColor: ringColor + "30",
-              },
-            ]}
-          >
-            <Text style={[s.ringPctText, { color: ringColor }]}>{pct}%</Text>
+          <View style={[s.pctPill, { borderColor: ringColor + "30" }]}>
+            <Text style={[s.pctText, { color: ringColor }]}>{pct}%</Text>
           </View>
         </View>
 
+        {/* Stats column */}
         <View style={s.statsCol}>
           {[
-            { label: "Goal", value: goalCal, unit: "kcal", color: T.text },
-            { label: "Eaten", value: eaten, unit: "kcal", color: T.lime },
-            { label: "Burned", value: burned, unit: "kcal", color: T.orange },
-            {
-              label: remaining < 0 ? "Over" : "Remaining",
-              value: Math.abs(remaining),
-              unit: "kcal",
-              color: isOver ? T.red : T.sub,
-            },
-          ].map(({ label, value, unit, color }, i, arr) => (
+            { label: "Goal", value: goalCal, highlight: false },
+            { label: "Eaten", value: eaten, highlight: true },
+            { label: "Burned", value: burned, highlight: false },
+          ].map(({ label, value, highlight }, i, arr) => (
             <View key={label}>
               <View style={s.statRow}>
                 <Text style={s.statLabel}>{label}</Text>
                 <View style={s.statValueRow}>
-                  <Text style={[s.statValue, { color }]}>
+                  <Text style={[s.statValue, highlight && { color: T.gold }]}>
                     {(value ?? 0).toLocaleString()}
                   </Text>
-                  <Text style={s.statUnit}>{unit}</Text>
+                  <Text style={s.statUnit}>kcal</Text>
                 </View>
               </View>
-              {i < arr.length - 1 && <View style={s.statDivider} />}
+              {i < arr.length - 1 && <View style={s.divider} />}
             </View>
           ))}
         </View>
       </View>
 
-      {/* ── Macro bars ─────────────────────────────────────────────────────── */}
+      {/* ── Macro bars ── */}
       <View style={s.macroSection}>
-        <Text style={s.macroSectionTitle}>MACROS</Text>
+        <Text style={s.sectionLabel}>MACRONUTRIENTS</Text>
         {MACROS.map((m) => {
           const mPct = Math.min(Math.round((m.value / m.max) * 100), 100);
-          const mRemaining = m.max - m.value;
           const mIsOver = m.value > m.max;
+          const mLeft = m.max - m.value;
 
           return (
             <View key={m.label} style={s.macroRow}>
-              <View style={s.macroLeft}>
-                <View
-                  style={[
-                    s.macroIconBadge,
-                    { backgroundColor: m.color + "18" },
-                  ]}
-                >
-                  <Text style={s.macroIcon}>{m.icon}</Text>
-                </View>
-                <View>
-                  <Text style={s.macroLabel}>{m.label}</Text>
-                  <Text style={s.macroRemaining}>
-                    {mIsOver
-                      ? `${m.value - m.max}g over`
-                      : `${mRemaining}g left`}
-                  </Text>
-                </View>
+              {/* Label + remainder */}
+              <View style={s.macroMeta}>
+                <Text style={s.macroLabel}>{m.label}</Text>
+                <Text style={s.macroSub}>
+                  {mIsOver
+                    ? `${(m.value - m.max).toFixed(0)}g over`
+                    : `${mLeft.toFixed(0)}g left`}
+                </Text>
               </View>
 
-              <View style={s.macroRight}>
-                <View style={s.macroValueRow}>
-                  <Text style={[s.macroValue, { color: m.color }]}>
-                    {m.value}g
-                  </Text>
-                  <Text style={s.macroMax}>/{m.max}g</Text>
-                  <View
-                    style={[
-                      s.macroPctBadge,
-                      {
-                        backgroundColor: m.color + "15",
-                        borderColor: m.color + "30",
-                      },
-                    ]}
-                  >
-                    <Text style={[s.macroPctText, { color: m.color }]}>
-                      {mPct}%
-                    </Text>
-                  </View>
-                </View>
+              {/* Bar + value */}
+              <View style={s.macroBarWrap}>
                 <View style={s.macroTrack}>
                   <View
                     style={[
                       s.macroFill,
                       {
                         width: `${mPct}%`,
-                        backgroundColor: mIsOver ? T.red : m.color,
+                        backgroundColor: mIsOver ? T.text : T.gold,
+                        opacity: mIsOver ? 0.5 : 1,
                       },
                     ]}
                   />
                 </View>
+                <Text style={[s.macroValue, mIsOver && { color: T.sub }]}>
+                  {m.value}
+                  <Text style={s.macroMax}>/{m.max}g</Text>
+                </Text>
               </View>
             </View>
           );
@@ -237,68 +158,47 @@ const s = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: T.borderMid,
-    padding: 18,
+    padding: 20,
+    gap: 20,
   },
+
+  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 18,
-  },
-  headerLeft: {
-    gap: 3,
+    alignItems: "center",
   },
   title: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
-    color: T.text,
-    letterSpacing: 1.0,
+    fontSize: 12,
+    color: T.sub,
+    letterSpacing: 1.5,
   },
-  subtitle: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 10,
-    color: T.muted,
-  },
-  statusChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  statusDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-  },
-  statusText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 11,
-    letterSpacing: 0.6,
-  },
+
+  // Hero row
   heroRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 18,
-    marginBottom: 20,
+    gap: 20,
   },
   ringWrap: {
     alignItems: "center",
-    gap: 6,
+    gap: 7,
   },
-  ringPctBadge: {
-    paddingHorizontal: 8,
+  pctPill: {
+    paddingHorizontal: 9,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 20,
     borderWidth: 1,
+    backgroundColor: T.goldDim,
   },
-  ringPctText: {
+  pctText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 11,
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
   },
+
+  // Stats column
   statsCol: {
     flex: 1,
   },
@@ -306,12 +206,12 @@ const s = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 6,
+    paddingVertical: 7,
   },
   statLabel: {
-    fontFamily: "DMSans_500Medium",
+    fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: T.muted,
+    color: T.sub,
   },
   statValueRow: {
     flexDirection: "row",
@@ -320,97 +220,73 @@ const s = StyleSheet.create({
   },
   statValue: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 15,
-    lineHeight: 17,
+    fontSize: 16,
+    color: T.text,
+    lineHeight: 18,
   },
   statUnit: {
     fontFamily: "DMSans_400Regular",
     fontSize: 10,
     color: T.muted,
   },
-  statDivider: {
+  divider: {
     height: 1,
     backgroundColor: T.border,
   },
+
+  // Macros
   macroSection: {
-    gap: 10,
+    gap: 11,
   },
-  macroSectionTitle: {
+  sectionLabel: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 11,
     color: T.muted,
-    letterSpacing: 1.0,
+    letterSpacing: 1.4,
     marginBottom: 2,
   },
   macroRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
   },
-  macroLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    width: 110,
-  },
-  macroIconBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 7,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  macroIcon: {
-    fontSize: 13,
+  macroMeta: {
+    width: 68,
+    gap: 1,
   },
   macroLabel: {
     fontFamily: "DMSans_600SemiBold",
     fontSize: 12,
     color: T.text,
   },
-  macroRemaining: {
+  macroSub: {
     fontFamily: "DMSans_400Regular",
     fontSize: 9,
     color: T.muted,
   },
-  macroRight: {
+  macroBarWrap: {
     flex: 1,
     gap: 4,
   },
-  macroValueRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
+  macroTrack: {
+    height: 4,
+    backgroundColor: T.bg2,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  macroFill: {
+    height: "100%",
+    borderRadius: 2,
   },
   macroValue: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
+    color: T.gold,
     lineHeight: 15,
   },
   macroMax: {
     fontFamily: "DMSans_400Regular",
     fontSize: 10,
     color: T.muted,
-    flex: 1,
-  },
-  macroPctBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
-    borderWidth: 1,
-  },
-  macroPctText: {
-    fontFamily: "DMSans_600SemiBold",
-    fontSize: 9,
-  },
-  macroTrack: {
-    height: 5,
-    backgroundColor: T.bg3,
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  macroFill: {
-    height: "100%",
-    borderRadius: 3,
   },
 });

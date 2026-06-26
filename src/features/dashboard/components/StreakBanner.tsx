@@ -1,75 +1,59 @@
 import { StyleSheet, Text, View } from "react-native";
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+// ─── Design Tokens ────────────────────────────────────────────────────────────
 const T = {
-  bg1: "#111114",
-  bg3: "#222228",
-  border: "#FFFFFF0F",
-  lime: "#C8F135",
-  orange: "#FF8A00",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
+  bg1: "#1E1E1E",
+  bg2: "#282828",
+  border: "#FFFFFF0A",
+  borderMid: "#FFFFFF14",
+  gold: "#FFC700",
+  goldDim: "#FFC70020",
+  goldBorder: "#FFC70030",
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#555555",
 };
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 type Props = {
   days?: number;
   message?: string;
-  /** Optional best streak to compare against */
   best?: number;
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
 export function StreakBanner({ days = 12, message, best = 21 }: Props) {
   const isRecord = days >= best;
-  const accentColor = isRecord ? T.lime : T.orange;
   const pct = Math.min((days / best) * 100, 100);
+  const daysToRecord = best - days;
 
   return (
-    <View style={[s.wrap, { borderColor: accentColor + "30" }]}>
-      {/* Left: icon in tinted box */}
-      <View style={[s.iconBox, { backgroundColor: accentColor + "1A" }]}>
-        <Text style={s.icon}>🔥</Text>
+    <View style={s.wrap}>
+      {/* Left: day count */}
+      <View style={s.countBlock}>
+        <Text style={s.countNumber}>{days}</Text>
+        <Text style={s.countUnit}>DAYS</Text>
       </View>
 
-      {/* Center: text + progress bar */}
+      <View style={s.divider} />
+
+      {/* Center: message + bar */}
       <View style={s.body}>
         <Text style={s.message}>
           {message ??
-            (isRecord
-              ? `${days}-day streak — new record! 🏆`
-              : `${days}-day streak — keep it going!`)}
+            (isRecord ? "New personal record 🏆" : "Keep the streak going")}
         </Text>
-
-        {/* Mini progress bar toward best */}
         <View style={s.progressTrack}>
-          <View
-            style={[
-              s.progressFill,
-              { width: `${pct}%`, backgroundColor: accentColor },
-            ]}
-          />
+          <View style={[s.progressFill, { width: `${pct}%` }]} />
         </View>
         <Text style={s.progressLabel}>
           {isRecord
             ? "Personal best!"
-            : `${best - days} days to beat your record`}
+            : `${daysToRecord} day${daysToRecord !== 1 ? "s" : ""} to beat your record`}
         </Text>
       </View>
 
-      {/* Right: day count badge */}
-      <View
-        style={[
-          s.badge,
-          {
-            backgroundColor: accentColor + "15",
-            borderColor: accentColor + "35",
-          },
-        ]}
-      >
-        <Text style={[s.badgeDays, { color: accentColor }]}>{days}</Text>
-        <Text style={[s.badgeUnit, { color: accentColor }]}>days</Text>
+      {/* Right: flame badge */}
+      <View style={s.flameBadge}>
+        <Text style={s.flame}>🔥</Text>
       </View>
     </View>
   );
@@ -82,22 +66,41 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 16,
     backgroundColor: T.bg1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderRadius: 16,
     borderWidth: 1,
-    gap: 12,
+    borderColor: T.goldBorder,
+    gap: 14,
   },
-  iconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    justifyContent: "center",
+
+  // Left count block
+  countBlock: {
     alignItems: "center",
+    minWidth: 40,
   },
-  icon: {
-    fontSize: 20,
+  countNumber: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 32,
+    color: T.gold,
+    lineHeight: 32,
   },
+  countUnit: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 9,
+    color: T.muted,
+    letterSpacing: 1.2,
+    marginTop: 2,
+  },
+
+  // Vertical divider
+  divider: {
+    width: 1,
+    height: 36,
+    backgroundColor: T.borderMid,
+  },
+
+  // Body
   body: {
     flex: 1,
     gap: 5,
@@ -110,35 +113,33 @@ const s = StyleSheet.create({
   },
   progressTrack: {
     height: 3,
-    backgroundColor: T.bg3,
+    backgroundColor: T.bg2,
     borderRadius: 2,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
     borderRadius: 2,
+    backgroundColor: T.gold,
   },
   progressLabel: {
     fontFamily: "DMSans_400Regular",
     fontSize: 10,
     color: T.muted,
   },
-  badge: {
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+
+  // Flame badge
+  flameBadge: {
+    width: 36,
+    height: 36,
     borderRadius: 10,
+    backgroundColor: T.goldDim,
     borderWidth: 1,
+    borderColor: T.goldBorder,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  badgeDays: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 22,
-    lineHeight: 22,
-  },
-  badgeUnit: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 9,
-    letterSpacing: 0.5,
-    marginTop: 1,
+  flame: {
+    fontSize: 18,
   },
 });

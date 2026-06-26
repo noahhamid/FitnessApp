@@ -47,9 +47,14 @@ slug: "exo-fitness",
     ],
     "expo-font",
   ],
-  experiments: {
+ experiments: {
     typedRoutes: false,
     reactCompiler: true,
+  },
+  extra: {
+    eas: {
+      projectId: "29eab73d-563f-4778-948f-acf4cf2e0245",
+    },
   },
 };
 
