@@ -11,21 +11,22 @@ import Svg, { Path } from "react-native-svg";
 import { useSignIn } from "../hooks/useAuth";
 
 const COLORS = {
-  canvas: "#0A0A0C",
-  surfaceRaised: "#1C1C21",
-  border: "#2A2A32",
-  accent: "#C8F135",
+  canvas: "#121212",
+  surface: "#1E1E1E",
+  border: "#2A2A2A",
+  borderFocused: "#FFC700",
+  accent: "#FFC700",
   textPrimary: "#FFFFFF",
-  textSecondary: "#8A8A9A",
-  textMuted: "#4A4A5A",
+  textMuted: "#A0A0A0",
+  textHint: "#555555",
   errorRed: "#FF4D6A",
   errorRedDim: "rgba(255,77,106,0.10)",
-  divider: "#232329",
+  divider: "#232323",
 };
 
 function GoogleIcon() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24">
+    <Svg width={18} height={18} viewBox="0 0 24 24">
       <Path
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
         fill="#4285F4"
@@ -48,7 +49,7 @@ function GoogleIcon() {
 
 function AppleIcon() {
   return (
-    <Svg width={18} height={22} viewBox="0 0 18 22">
+    <Svg width={16} height={20} viewBox="0 0 18 22">
       <Path
         d="M14.96 11.56c-.02-2.23 1.82-3.31 1.9-3.36-1.04-1.52-2.65-1.72-3.22-1.74-1.37-.14-2.67.81-3.37.81-.7 0-1.78-.79-2.93-.77-1.51.02-2.9.88-3.68 2.24C1.9 11.6 2.98 15.86 4.7 18.23c.86 1.23 1.88 2.62 3.22 2.57 1.29-.05 1.78-.83 3.34-.83 1.56 0 2 .83 3.37.8 1.39-.02 2.27-1.27 3.12-2.51.99-1.43 1.4-2.82 1.42-2.89-.03-.01-2.72-1.04-2.21-3.81zM12.68 4.37c.71-.87 1.19-2.07 1.06-3.27-1.02.04-2.26.68-2.99 1.53-.66.75-1.23 1.96-1.08 3.12 1.14.09 2.3-.58 3.01-1.38z"
         fill="#FFFFFF"
@@ -99,7 +100,7 @@ export function SignInForm({ onSuccess, onForgotPassword, onSignUp }: Props) {
               value={email}
               onChangeText={setEmail}
               placeholder="you@example.com"
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={COLORS.textHint}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -128,7 +129,7 @@ export function SignInForm({ onSuccess, onForgotPassword, onSignUp }: Props) {
               value={password}
               onChangeText={setPassword}
               placeholder="••••••••"
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={COLORS.textHint}
               secureTextEntry
               editable={!isLoading}
               onFocus={() => setPasswordFocused(true)}
@@ -174,7 +175,7 @@ export function SignInForm({ onSuccess, onForgotPassword, onSignUp }: Props) {
         </View>
 
         {/* ── SSO Buttons ──────────────────────────────── */}
-        <View style={s.ssoStack}>
+        <View style={s.ssoRow}>
           <Pressable
             disabled={isLoading}
             style={({ pressed }) => [
@@ -186,7 +187,7 @@ export function SignInForm({ onSuccess, onForgotPassword, onSignUp }: Props) {
             <View style={s.ssoIconBox}>
               <GoogleIcon />
             </View>
-            <Text style={s.ssoBtnLabel}>Continue with Google</Text>
+            <Text style={s.ssoBtnLabel}>Google</Text>
           </Pressable>
 
           <Pressable
@@ -200,7 +201,7 @@ export function SignInForm({ onSuccess, onForgotPassword, onSignUp }: Props) {
             <View style={s.ssoIconBox}>
               <AppleIcon />
             </View>
-            <Text style={s.ssoBtnLabel}>Continue with Apple</Text>
+            <Text style={s.ssoBtnLabel}>Apple</Text>
           </Pressable>
         </View>
       </View>
@@ -226,66 +227,77 @@ const s = StyleSheet.create({
     paddingTop: 48,
     paddingBottom: 32,
   },
-  header: { marginBottom: 36 },
+
+  // ── Header ──────────────────────────────────────────
+  header: {
+    marginBottom: 32,
+  },
   eyebrow: {
-    fontFamily: "DMSans-Medium",
-    fontSize: 11,
+    fontSize: 10,
     letterSpacing: 3,
     color: COLORS.accent,
+    fontWeight: "600",
     marginBottom: 10,
   },
   title: {
-    fontFamily: "BarlowCondensed-Bold",
     fontSize: 52,
     lineHeight: 52,
     color: COLORS.textPrimary,
+    fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: -1,
     marginBottom: 12,
   },
   subtitle: {
-    fontFamily: "DMSans-Regular",
-    fontSize: 14,
-    color: COLORS.textSecondary,
+    fontSize: 13,
+    color: COLORS.textMuted,
     lineHeight: 20,
   },
-  form: { gap: 16 },
-  fieldGroup: { gap: 6 },
+
+  // ── Form ────────────────────────────────────────────
+  form: {
+    gap: 14,
+  },
+  fieldGroup: {
+    gap: 6,
+  },
   labelRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   label: {
-    fontFamily: "DMSans-Medium",
     fontSize: 10,
     letterSpacing: 2,
-    color: COLORS.textSecondary,
+    color: COLORS.textMuted,
+    fontWeight: "600",
   },
   forgotLink: {
-    fontFamily: "DMSans-Medium",
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.accent,
+    fontWeight: "600",
   },
+
+  // ── Inputs ──────────────────────────────────────────
   inputSurface: {
-    backgroundColor: COLORS.surfaceRaised,
+    backgroundColor: COLORS.surface,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
   },
   inputSurfaceFocused: {
-    borderColor: COLORS.accent,
-    backgroundColor: "#1E1E24",
+    borderColor: COLORS.borderFocused,
   },
   input: {
-    fontFamily: "DMSans-Regular",
     fontSize: 15,
     color: COLORS.textPrimary,
     padding: 0,
     margin: 0,
   },
+
+  // ── Error ───────────────────────────────────────────
   errorBanner: {
     backgroundColor: COLORS.errorRedDim,
     borderRadius: 10,
@@ -295,76 +307,107 @@ const s = StyleSheet.create({
     paddingVertical: 10,
   },
   errorText: {
-    fontFamily: "DMSans-Regular",
     fontSize: 13,
     color: COLORS.errorRed,
     lineHeight: 18,
   },
+
+  // ── Primary button ──────────────────────────────────
   primaryBtn: {
     backgroundColor: COLORS.accent,
     borderRadius: 14,
-    paddingVertical: 16,
+    paddingVertical: 17,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 4,
   },
-  primaryBtnDisabled: { opacity: 0.35 },
-  primaryBtnPressed: { opacity: 0.88, transform: [{ scale: 0.988 }] },
+  primaryBtnDisabled: {
+    opacity: 0.35,
+  },
+  primaryBtnPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.988 }],
+  },
   primaryBtnLabel: {
-    fontFamily: "BarlowCondensed-Bold",
-    fontSize: 16,
+    fontSize: 15,
     letterSpacing: 2,
     color: COLORS.canvas,
+    fontWeight: "800",
     textTransform: "uppercase",
   },
-  loadingRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  // ── Divider ─────────────────────────────────────────
   dividerRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginVertical: 4,
+    marginVertical: 2,
   },
-  dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.divider },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.divider,
+  },
   dividerLabel: {
-    fontFamily: "DMSans-Medium",
     fontSize: 10,
-    letterSpacing: 1.5,
-    color: COLORS.textMuted,
+    letterSpacing: 2,
+    color: COLORS.textHint,
+    fontWeight: "600",
   },
-  ssoStack: { gap: 10 },
+
+  // ── SSO ─────────────────────────────────────────────
+  ssoRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
   ssoBtn: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
-    backgroundColor: COLORS.surfaceRaised,
+    gap: 10,
+    backgroundColor: COLORS.surface,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   ssoIconBox: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     alignItems: "center",
     justifyContent: "center",
   },
-  ssoBtnPressed: { backgroundColor: "#22222A", borderColor: COLORS.accent },
-  ssoBtnDisabled: { opacity: 0.35 },
-  ssoBtnLabel: {
-    fontFamily: "DMSans-Medium",
-    fontSize: 15,
-    color: COLORS.textPrimary,
-    letterSpacing: 0.1,
+  ssoBtnPressed: {
+    borderColor: COLORS.accent,
+    backgroundColor: "#242424",
   },
+  ssoBtnDisabled: {
+    opacity: 0.35,
+  },
+  ssoBtnLabel: {
+    fontSize: 14,
+    color: COLORS.textPrimary,
+    fontWeight: "500",
+    letterSpacing: 0.2,
+  },
+
+  // ── Footer ──────────────────────────────────────────
   footerText: {
-    fontFamily: "DMSans-Regular",
     fontSize: 12,
     color: COLORS.textMuted,
     textAlign: "center",
     lineHeight: 18,
-    marginTop: 24,
+    marginTop: 28,
   },
-  footerLink: { color: COLORS.accent, fontFamily: "DMSans-Medium" },
+  footerLink: {
+    color: COLORS.accent,
+    fontWeight: "600",
+  },
 });

@@ -17,29 +17,17 @@ import {
   MUSCLE_GROUPS,
 } from "@/src/features/workout/services/workout.service";
 
+// ── Design Tokens ─────────────────────────────────────────────────────────────
 const T = {
-  bg0: "#0A0A0C",
-  bg1: "#111114",
-  bg2: "#18181D",
-  bg3: "#222228",
-  lime: "#C8F135",
-  orange: "#FF8A00",
-  blue: "#3D8EFF",
-  purple: "#9B6DFF",
-  red: "#FF3D3D",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
-  border: "#FFFFFF0F",
-  borderMid: "#FFFFFF18",
-};
-
-const TAG_COLORS: Record<string, string> = {
-  Compound: T.lime,
-  Isolation: T.orange,
-  Bodyweight: T.blue,
-  Machine: T.purple,
-  Cardio: T.red,
+  bg0: "#121212", // Main background
+  bg1: "#1A1A1A", // Sheet background
+  bg2: "#1E1E1E", // Card / row surface
+  bg3: "#252525", // Input / chip surface
+  gold: "#FFC700", // Primary accent
+  text: "#FFFFFF", // Headers / exercise names
+  sub: "#A0A0A0", // Secondary details
+  muted: "#5A5A5A", // Placeholder / disabled
+  border: "#2A2A2A", // Subtle divider
 };
 
 type Exercise = { id: string; name: string; muscle: string; tag: string };
@@ -48,23 +36,6 @@ type Props = {
   onClose: () => void;
   onAdd: (exercise: Exercise) => void;
 };
-
-function getExerciseIcon(tag: string): keyof typeof Ionicons.glyphMap {
-  switch (tag) {
-    case "Compound":
-      return "barbell-outline";
-    case "Isolation":
-      return "git-pull-request-outline";
-    case "Bodyweight":
-      return "body-outline";
-    case "Machine":
-      return "settings-outline";
-    case "Cardio":
-      return "heart-outline";
-    default:
-      return "fitness-outline";
-  }
-}
 
 // ── Muscle chip ───────────────────────────────────────────────────────────────
 function Chip({
@@ -95,26 +66,24 @@ function ExerciseRow({
   item: Exercise;
   onPress: () => void;
 }) {
-  const tagColor = TAG_COLORS[item.tag] ?? T.lime;
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.75} style={ss.row}>
-      <View style={[ss.rowIcon, { backgroundColor: tagColor + "18" }]}>
-        <Ionicons name={getExerciseIcon(item.tag)} size={20} color={tagColor} />
+      {/* Icon bubble — gold tint, no color-per-tag */}
+      <View style={ss.rowIcon}>
+        <Ionicons name="barbell-outline" size={20} color={T.gold} />
       </View>
+
+      {/* Name + muscle */}
       <View style={ss.rowText}>
         <Text style={ss.rowName}>{item.name}</Text>
-        <Text style={ss.rowMuscle}>{item.muscle.toUpperCase()}</Text>
+        <Text style={ss.rowMuscle}>
+          {item.muscle.toUpperCase()} · {item.tag}
+        </Text>
       </View>
-      <View
-        style={[
-          ss.tagPill,
-          { backgroundColor: tagColor + "18", borderColor: tagColor + "35" },
-        ]}
-      >
-        <Text style={[ss.tagText, { color: tagColor }]}>{item.tag}</Text>
-      </View>
+
+      {/* Add CTA — gold circle */}
       <View style={ss.addBtn}>
-        <Ionicons name="add" size={16} color={T.lime} />
+        <Ionicons name="add" size={18} color={T.bg0} />
       </View>
     </TouchableOpacity>
   );
@@ -167,6 +136,7 @@ export default function LibraryModal({ visible, onClose, onAdd }: Props) {
           onPress={onClose}
           activeOpacity={1}
         />
+
         <View style={ss.sheet}>
           {/* Handle */}
           <View style={ss.handleRow}>
@@ -186,7 +156,7 @@ export default function LibraryModal({ visible, onClose, onAdd }: Props) {
               style={ss.closeBtn}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="close" size={16} color={T.muted} />
+              <Ionicons name="close" size={16} color={T.sub} />
             </TouchableOpacity>
           </View>
 
@@ -246,60 +216,64 @@ export default function LibraryModal({ visible, onClose, onAdd }: Props) {
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 const ss = StyleSheet.create({
   overlay: { flex: 1, justifyContent: "flex-end" },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0,0,0,0.72)",
   },
+
+  // Sheet
   sheet: {
     backgroundColor: T.bg1,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     maxHeight: "92%",
-    paddingTop: 0,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 24,
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 24,
+    elevation: 28,
   },
-  handleRow: { alignItems: "center", paddingTop: 12, paddingBottom: 8 },
+  handleRow: { alignItems: "center", paddingTop: 12, paddingBottom: 6 },
   handle: {
-    width: 36,
+    width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: T.borderMid,
+    backgroundColor: T.border,
   },
+
+  // Header
   header: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   title: {
     fontFamily: "BarlowCondensed_900Black",
-    fontSize: 22,
+    fontSize: 24,
     color: T.text,
-    letterSpacing: 1.8,
+    letterSpacing: 2,
   },
   subtitle: {
     fontFamily: "DMSans_400Regular",
     fontSize: 12,
-    color: T.muted,
+    color: T.sub,
     marginTop: 2,
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: T.bg3,
-    borderWidth: 1,
-    borderColor: T.borderMid,
     alignItems: "center",
     justifyContent: "center",
   },
+
+  // Search
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -309,9 +283,8 @@ const ss = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 12,
     paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: T.borderMid,
     height: 46,
+    // No border — keeps it clean
   },
   searchInput: {
     flex: 1,
@@ -320,31 +293,27 @@ const ss = StyleSheet.create({
     color: T.text,
     padding: 0,
   },
+
+  // Chips
   chipRow: { paddingHorizontal: 20, gap: 8 },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: T.bg3,
-    borderWidth: 1,
-    borderColor: T.borderMid,
   },
   chipActive: {
-    backgroundColor: T.lime,
-    borderColor: T.lime,
-    shadowColor: T.lime,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 4,
+    backgroundColor: T.gold,
   },
   chipText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
-    color: T.muted,
+    color: T.sub,
     letterSpacing: 0.5,
   },
-  chipTextActive: { color: T.bg0 },
+  chipTextActive: { color: T.bg0 }, // Dark text on gold for contrast
+
+  // Exercise rows
   listContent: {
     paddingHorizontal: 20,
     paddingBottom: Platform.OS === "ios" ? 48 : 28,
@@ -353,72 +322,60 @@ const ss = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
     backgroundColor: T.bg2,
-    borderWidth: 1,
-    borderColor: T.borderMid,
-    borderRadius: 15,
-    padding: 12,
+    borderRadius: 16,
+    padding: 14,
+    // No border, no color tags — clean card
   },
   rowIcon: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: 12,
+    backgroundColor: T.bg3,
     alignItems: "center",
     justifyContent: "center",
   },
-  rowText: { flex: 1, gap: 2 },
+  rowText: { flex: 1, gap: 3 },
   rowName: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 16,
+    fontSize: 17,
     color: T.text,
     letterSpacing: 0.3,
   },
   rowMuscle: {
     fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: T.muted,
+    color: T.sub,
     letterSpacing: 0.4,
   },
-  tagPill: {
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  tagText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 11,
-    letterSpacing: 0.5,
-  },
+
+  // Gold add button — filled circle
   addBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
-    backgroundColor: T.lime + "15",
-    borderWidth: 1,
-    borderColor: T.lime + "30",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: T.gold,
     alignItems: "center",
     justifyContent: "center",
   },
-  empty: { alignItems: "center", paddingTop: 48, paddingBottom: 24, gap: 8 },
+
+  // Empty state
+  empty: { alignItems: "center", paddingTop: 56, paddingBottom: 24, gap: 10 },
   emptyIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 16,
+    width: 62,
+    height: 62,
+    borderRadius: 18,
     backgroundColor: T.bg3,
-    borderWidth: 1,
-    borderColor: T.borderMid,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 4,
+    marginBottom: 6,
   },
   emptyTitle: {
     fontFamily: "BarlowCondensed_900Black",
     fontSize: 18,
-    color: T.text,
+    color: T.sub,
     letterSpacing: 1.5,
-    opacity: 0.6,
   },
   emptyBody: {
     fontFamily: "DMSans_400Regular",

@@ -2,16 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
 const T = {
-  bg0: "#0A0A0C",
-  bg1: "#111114",
-  bg2: "#18181D",
-  bg3: "#222228",
-  lime: "#C8F135",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
-  border: "#FFFFFF0F",
-  borderMid: "#FFFFFF18",
+  bg: "#121212",
+  card: "#1E1E1E",
+  gold: "#FFC700",
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  dim: "#3A3A3A",
+  border: "#FFFFFF0D",
 };
 
 type Props = {
@@ -24,13 +21,8 @@ type Props = {
 export function PRCard({ name, date, duration, sets }: Props) {
   return (
     <View style={s.card}>
-      {/* Left accent stripe */}
-      <View style={s.stripe} />
-
-      {/* Icon */}
-      <View style={s.iconWrap}>
-        <Ionicons name="barbell-outline" size={20} color={T.lime} />
-      </View>
+      {/* Icon — naked, no tinted container */}
+      <Ionicons name="barbell-outline" size={18} color={T.dim} />
 
       {/* Name + date */}
       <View style={s.middle}>
@@ -40,11 +32,11 @@ export function PRCard({ name, date, duration, sets }: Props) {
         {date ? <Text style={s.date}>{date}</Text> : null}
       </View>
 
-      {/* Duration + sets */}
+      {/* Duration + sets — all muted, no gold */}
       <View style={s.right}>
         {duration ? (
-          <View style={s.durationPill}>
-            <Ionicons name="timer-outline" size={11} color={T.lime} />
+          <View style={s.durationRow}>
+            <Ionicons name="timer-outline" size={11} color={T.dim} />
             <Text style={s.durationText}>{duration}</Text>
           </View>
         ) : null}
@@ -59,34 +51,14 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: T.bg2,
-    borderWidth: 1,
-    borderColor: T.border,
-    borderRadius: 12,
-    overflow: "hidden",
-    paddingRight: 14,
-  },
-  stripe: {
-    width: 3,
-    alignSelf: "stretch",
-    backgroundColor: T.lime,
-    opacity: 0.7,
-  },
-  iconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
-    backgroundColor: T.lime + "18",
-    borderWidth: 1,
-    borderColor: T.lime + "30",
-    alignItems: "center",
-    justifyContent: "center",
-    marginVertical: 14,
+    backgroundColor: T.card,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
   middle: {
     flex: 1,
     gap: 3,
-    paddingVertical: 14,
   },
   name: {
     fontFamily: "BarlowCondensed_700Bold",
@@ -103,26 +75,20 @@ const s = StyleSheet.create({
     alignItems: "flex-end",
     gap: 4,
   },
-  durationPill: {
+  durationRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: T.lime + "18",
-    borderWidth: 1,
-    borderColor: T.lime + "30",
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
   },
   durationText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
-    color: T.lime,
+    color: T.sub, // was T.gold — duration is metadata, not an achievement
     letterSpacing: 0.3,
   },
   sets: {
     fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: T.muted,
+    color: T.sub,
   },
 });

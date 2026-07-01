@@ -34,25 +34,23 @@ import LibrarySheet from "@/src/features/workout/components/LibrarySheet";
 import TimerModal from "@/src/features/workout/components/TimerModal";
 import WorkoutHeader from "@/src/features/workout/components/WorkoutHeader";
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
+// ─── Design Tokens ────────────────────────────────────────────────────────────
 const T = {
-  bg0: "#0A0A0C",
-  bg1: "#111114",
-  bg2: "#18181D",
-  bg3: "#222228",
-  lime: "#C8F135",
-  red: "#FF3D3D",
-  orange: "#F97316",
-  blue: "#3B82F6",
-  purple: "#A855F7",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
-  border: "#FFFFFF0F",
-  borderMid: "#FFFFFF18",
+  bg0: "#121212",
+  bg1: "#1E1E1E",
+  bg2: "#282828",
+  bg3: "#303030",
+  border: "#FFFFFF0A",
+  borderMid: "#FFFFFF14",
+  gold: "#FFC700",
+  goldDim: "#FFC70020",
+  goldBorder: "#FFC70030",
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#555555",
 };
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 type Exercise = {
   id: string;
   name: string;
@@ -62,23 +60,6 @@ type Exercise = {
   sessionExerciseId?: string;
 };
 
-function mapSetsForComplete(
-  sets: ExerciseSetData[],
-): Array<{ reps?: number; weight?: number; completed?: boolean }> {
-  const rows = sets.length > 0 ? sets : createInitialExerciseSets();
-  return rows.map((s) => ({
-    reps: Math.max(
-      0,
-      Number.parseInt(String(s.reps || "").replace(/\D/g, "") || "0", 10) || 0,
-    ),
-    weight: Math.max(
-      0,
-      Number(String(s.weight || "").replace(",", ".")) || 0,
-    ),
-    completed: s.done,
-  }));
-}
-
 type Template = {
   id: string;
   name: string;
@@ -86,19 +67,27 @@ type Template = {
   icon: string;
 };
 
-// ── Template → default exercises map ─────────────────────────────────────────
-// When a user taps a template, these exercises are pre-loaded so they can
-// start immediately without confusion.
+function mapSetsForComplete(
+  sets: ExerciseSetData[],
+): Array<{ reps?: number; weight?: number; completed?: boolean }> {
+  const rows = sets.length > 0 ? sets : createInitialExerciseSets();
+  return rows.map((s) => ({
+    reps: Math.max(
+      0,
+      parseInt(String(s.reps || "").replace(/\D/g, "") || "0", 10) || 0,
+    ),
+    weight: Math.max(0, Number(String(s.weight || "").replace(",", ".")) || 0),
+    completed: s.done,
+  }));
+}
+
 const TEMPLATE_EXERCISES: Record<string, string[]> = {
-  t1: ["e1", "e2", "e3", "e9", "e13"], // Push: Bench, Incline DB, Cable Fly, OHP, Tricep
-  t2: ["e5", "e7", "e8", "e6", "e12"], // Pull: Deadlift, BB Row, Lat PD, Pull-Up, Curl
-  t3: ["e15", "e16", "e17", "e18"], // Legs: Squat, RDL, Leg Press, Lunges
-  t4: ["e1", "e5", "e15", "e9", "e19"], // Full body
+  t1: ["e1", "e2", "e3", "e9", "e13"],
+  t2: ["e5", "e7", "e8", "e6", "e12"],
+  t3: ["e15", "e16", "e17", "e18"],
+  t4: ["e1", "e5", "e15", "e9", "e19"],
 };
 
-const TEMPLATE_ACCENTS = [T.lime, T.orange, T.blue, T.purple];
-
-// ── Per-template muscle groups + estimated duration ───────────────────────────
 const TEMPLATE_META: Record<string, { muscles: string; duration: number }> = {
   t1: { muscles: "Chest · Shoulders · Triceps", duration: 55 },
   t2: { muscles: "Back · Biceps", duration: 60 },
@@ -106,32 +95,29 @@ const TEMPLATE_META: Record<string, { muscles: string; duration: number }> = {
   t4: { muscles: "Compound lifts", duration: 65 },
 };
 
-// ── Shared layout primitives ──────────────────────────────────────────────────
+// ─── Primitives ───────────────────────────────────────────────────────────────
+
 function SectionGap() {
-  return <View style={{ height: 24 }} />;
+  return <View style={{ height: 28 }} />;
 }
 
 function SectionLabel({
   label,
-  icon,
   right,
 }: {
   label: string;
-  icon?: keyof typeof Ionicons.glyphMap;
   right?: React.ReactNode;
 }) {
   return (
     <View style={s.sectionHdr}>
-      <View style={s.sectionHdrLeft}>
-        {icon ? <Ionicons name={icon} size={13} color={T.lime} /> : null}
-        <Text style={s.sectionHdrTitle}>{label}</Text>
-      </View>
+      <Text style={s.sectionHdrTitle}>{label}</Text>
       {right ?? null}
     </View>
   );
 }
 
-// ── Streak card ───────────────────────────────────────────────────────────────
+// ─── Streak Card ──────────────────────────────────────────────────────────────
+
 function StreakCard({
   streakDays,
   thisWeek,
@@ -141,15 +127,17 @@ function StreakCard({
   thisWeek: number;
   weekGoal: number;
 }) {
+  const pct = Math.min((thisWeek / weekGoal) * 100, 100);
+
   return (
     <View style={s.streakCard}>
-      {/* Left: current streak */}
+      {/* Left */}
       <View style={s.streakLeft}>
         <View style={s.streakFlameWrap}>
-          <Ionicons name="flame" size={18} color={T.lime} />
+          <Ionicons name="flame" size={18} color={T.gold} />
         </View>
         <View style={s.streakLeftText}>
-          <Text style={s.streakLabel}>CURRENT STREAK</Text>
+          <Text style={s.streakLabel}>STREAK</Text>
           <View style={s.streakValueRow}>
             <Text style={s.streakValue}>{streakDays}</Text>
             <Text style={s.streakUnit}> days</Text>
@@ -157,22 +145,33 @@ function StreakCard({
         </View>
       </View>
 
-      {/* Divider */}
       <View style={s.streakDivider} />
 
-      {/* Right: this week */}
+      {/* Right: weekly progress */}
       <View style={s.streakRight}>
-        <Text style={s.streakLabel}>THIS WEEK</Text>
-        <View style={s.streakValueRow}>
-          <Text style={s.streakValue}>{thisWeek}</Text>
-          <Text style={s.streakUnit}>/{weekGoal}</Text>
+        <View style={s.streakWeekRow}>
+          <Text style={s.streakLabel}>THIS WEEK</Text>
+          <Text style={s.streakWeekCount}>
+            <Text style={s.streakWeekVal}>{thisWeek}</Text>
+            <Text style={s.streakWeekGoal}>/{weekGoal}</Text>
+          </Text>
+        </View>
+        {/* Mini dot-track */}
+        <View style={s.weekDots}>
+          {Array.from({ length: weekGoal }).map((_, i) => (
+            <View
+              key={i}
+              style={[s.weekDot, i < thisWeek && s.weekDotFilled]}
+            />
+          ))}
         </View>
       </View>
     </View>
   );
 }
 
-// ── Template card ─────────────────────────────────────────────────────────────
+// ─── Template Card ────────────────────────────────────────────────────────────
+
 function TemplateCard({
   tpl,
   index,
@@ -185,25 +184,17 @@ function TemplateCard({
   disabled?: boolean;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
-  const textShift = useRef(new Animated.Value(0)).current;
-  const accent = TEMPLATE_ACCENTS[index % TEMPLATE_ACCENTS.length];
   const presetIds = TEMPLATE_EXERCISES[tpl.id] ?? [];
   const meta = TEMPLATE_META[tpl.id];
 
-  const onPressIn = () => {
+  const onPressIn = () =>
     Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start();
-    // Tactile text-left shift on the START pill
-    Animated.spring(textShift, {
-      toValue: -5,
+  const onPressOut = () =>
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 4,
       useNativeDriver: true,
-      tension: 300,
-      friction: 14,
     }).start();
-  };
-  const onPressOut = () => {
-    Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }).start();
-    Animated.spring(textShift, { toValue: 0, friction: 4, useNativeDriver: true }).start();
-  };
 
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
@@ -215,73 +206,38 @@ function TemplateCard({
         activeOpacity={1}
         style={s.templateCard}
       >
-        {/* Left accent stripe */}
-        <View style={[s.templateStripe, { backgroundColor: accent }]} />
-
-        {/* Icon */}
-        <View style={[s.templateIconWrap, { backgroundColor: accent + "20" }]}>
-          <Ionicons name="barbell-outline" size={16} color={accent} />
-        </View>
+        {/* Left: index number */}
+        <Text style={s.templateIndex}>
+          {String(index + 1).padStart(2, "0")}
+        </Text>
 
         {/* Content */}
         <View style={s.templateContent}>
           <Text style={s.templateName}>{tpl.name}</Text>
-          {meta && <Text style={s.templateMuscles}>{meta.muscles}</Text>}
-          <Text style={[s.templateExCount, { color: accent }]}>
-            {presetIds.length} exercises · {meta?.duration ?? 45} min
-          </Text>
+          {meta && (
+            <Text style={s.templateMeta}>
+              {meta.muscles} · {meta.duration} min
+            </Text>
+          )}
+          <Text style={s.templateExCount}>{presetIds.length} exercises</Text>
         </View>
 
-        {/* Outline START pill — text shifts left on press for tactile feedback */}
-        <View style={[s.startPill, { borderColor: accent }]}>
-          <Animated.Text
-            style={[
-              s.startPillText,
-              { color: accent, transform: [{ translateX: textShift }] },
-            ]}
-          >
-            START ›
-          </Animated.Text>
+        {/* CTA */}
+        <View style={s.startPill}>
+          <Ionicons name="play" size={11} color={T.bg0} />
         </View>
       </TouchableOpacity>
     </Animated.View>
   );
 }
 
-// ── Active workout: step indicator ────────────────────────────────────────────
-function WorkoutSteps({
-  exerciseCount,
-  doneCount,
-}: {
-  exerciseCount: number;
-  doneCount: number;
-}) {
-  if (exerciseCount === 0) return null;
-  return (
-    <View style={s.stepsRow}>
-      {Array.from({ length: exerciseCount }).map((_, i) => (
-        <View
-          key={i}
-          style={[
-            s.stepDot,
-            i < doneCount
-              ? s.stepDotDone
-              : i === doneCount
-                ? s.stepDotActive
-                : s.stepDotIdle,
-          ]}
-        />
-      ))}
-    </View>
-  );
-}
+// ─── Empty Exercises ──────────────────────────────────────────────────────────
 
-// ── Empty exercise state ───────────────────────────────────────────────────────
 function EmptyExercises({ onAdd }: { onAdd: () => void }) {
   return (
     <TouchableOpacity onPress={onAdd} style={s.emptyCard} activeOpacity={0.8}>
       <View style={s.emptyIconWrap}>
-        <Ionicons name="add" size={26} color={T.lime} />
+        <Ionicons name="add" size={26} color={T.gold} />
       </View>
       <Text style={s.emptyTitle}>ADD YOUR FIRST EXERCISE</Text>
       <Text style={s.emptyHint}>Tap to browse the exercise library</Text>
@@ -289,7 +245,8 @@ function EmptyExercises({ onAdd }: { onAdd: () => void }) {
   );
 }
 
-// ── History row ───────────────────────────────────────────────────────────────
+// ─── History Row ──────────────────────────────────────────────────────────────
+
 function HistoryRow({
   session,
   isLast,
@@ -299,9 +256,12 @@ function HistoryRow({
 }) {
   return (
     <View style={[s.historyRow, isLast && { borderBottomWidth: 0 }]}>
+      {/* Icon */}
       <View style={s.historyIcon}>
-        <Ionicons name="barbell-outline" size={14} color={T.lime} />
+        <Ionicons name="barbell-outline" size={14} color={T.gold} />
       </View>
+
+      {/* Info */}
       <View style={s.historyLeft}>
         <Text style={s.historyName} numberOfLines={1}>
           {session.name}
@@ -310,17 +270,18 @@ function HistoryRow({
           {session.date} · {session.duration}
         </Text>
       </View>
+
+      {/* Volume */}
       <View style={s.historyRight}>
-        <View style={s.historyVolPill}>
-          <Text style={s.historyVol}>{session.volume}</Text>
-        </View>
+        <Text style={s.historyVol}>{session.volume}</Text>
         <Text style={s.historySets}>{session.sets} sets</Text>
       </View>
     </View>
   );
 }
 
-// ── Main Screen ───────────────────────────────────────────────────────────────
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+
 const WORKOUT_HISTORY_LIST_KEY = ["workouts", "history", "list"] as const;
 
 export default function WorkoutScreen() {
@@ -329,7 +290,6 @@ export default function WorkoutScreen() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sessionStarting, setSessionStarting] = useState(false);
   const [finishingWorkout, setFinishingWorkout] = useState(false);
-
   const [workoutName, setWorkoutName] = useState("My Workout");
   const [startTime, setStartTime] = useState<number | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -339,9 +299,7 @@ export default function WorkoutScreen() {
   const [showLibrary, setShowLibrary] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
 
-  /** Synchronous guard so Finish / start cannot double-fire before state updates. */
   const workoutSaveBusyRef = useRef(false);
-
   const workoutNameRef = useRef(workoutName);
   const exercisesRef = useRef(exercises);
   const exerciseSetsRef = useRef(exerciseSetsByUid);
@@ -357,7 +315,6 @@ export default function WorkoutScreen() {
     queryFn: () => fetchWorkoutHistory(20),
   });
 
-  // Approximate streak & weekly count from available history
   const streakDays = historyRows.length;
   const thisWeek = Math.min(
     historyRows.filter((h) =>
@@ -382,17 +339,30 @@ export default function WorkoutScreen() {
     [],
   );
 
+  const invalidateWorkoutQueries = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["workouts", "history", "list"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard", "workouts", "completed"],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard", "workouts", "open"],
+      }),
+      queryClient.invalidateQueries({ queryKey: ["progress", "workouts"] }),
+    ]);
+  }, [queryClient]);
+
   const finalizeWorkoutOnServer = useCallback(async () => {
     const sid = activeSessionIdRef.current;
     const exList = exercisesRef.current;
     const setsByUid = exerciseSetsRef.current;
-
     try {
       if (!sid) {
         resetActiveWorkoutState();
         return;
       }
-
       if (exList.length === 0) {
         try {
           await deleteWorkoutSession(sid);
@@ -403,33 +373,19 @@ export default function WorkoutScreen() {
           );
           return;
         }
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["workouts", "history", "list"] }),
-          queryClient.invalidateQueries({ queryKey: ["dashboard", "workouts", "completed"] }),
-          queryClient.invalidateQueries({ queryKey: ["dashboard", "workouts", "open"] }),
-          queryClient.invalidateQueries({ queryKey: ["progress", "workouts"] }),
-        ]);
+        await invalidateWorkoutQueries();
         resetActiveWorkoutState();
         return;
       }
-
-      const exercisePayload = exList.map((ex) => ({
-        exerciseName: ex.name,
-        sets: mapSetsForComplete(setsByUid[ex.uid] ?? []),
-      }));
-
       await completeWorkoutSession(
         sid,
         workoutNameRef.current.trim() || "My Workout",
-        exercisePayload,
+        exList.map((ex) => ({
+          exerciseName: ex.name,
+          sets: mapSetsForComplete(setsByUid[ex.uid] ?? []),
+        })),
       );
-
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["workouts", "history", "list"] }),
-        queryClient.invalidateQueries({ queryKey: ["dashboard", "workouts", "completed"] }),
-        queryClient.invalidateQueries({ queryKey: ["dashboard", "workouts", "open"] }),
-        queryClient.invalidateQueries({ queryKey: ["progress", "workouts"] }),
-      ]);
+      await invalidateWorkoutQueries();
       resetActiveWorkoutState();
     } catch (e) {
       Alert.alert(
@@ -437,22 +393,19 @@ export default function WorkoutScreen() {
         e instanceof Error ? e.message : "Unknown error",
       );
     }
-  }, [queryClient, resetActiveWorkoutState]);
+  }, [invalidateWorkoutQueries, resetActiveWorkoutState]);
 
   const exerciseCount = exercises.length;
 
-  // ── Live session metrics ────────────────────────────────────────────────────
   const completedSets = useMemo(
     () =>
       exercises.reduce(
         (sum, ex) =>
-          sum +
-          (exerciseSetsByUid[ex.uid] ?? []).filter((s) => s.done).length,
+          sum + (exerciseSetsByUid[ex.uid] ?? []).filter((s) => s.done).length,
         0,
       ),
     [exercises, exerciseSetsByUid],
   );
-
   const totalSets = useMemo(
     () =>
       exercises.reduce(
@@ -461,7 +414,6 @@ export default function WorkoutScreen() {
       ),
     [exercises, exerciseSetsByUid],
   );
-
   const totalVolumeKg = useMemo(
     () =>
       exercises.reduce((sum, ex) => {
@@ -472,9 +424,7 @@ export default function WorkoutScreen() {
             .filter((s) => s.done)
             .reduce(
               (a, s) =>
-                a +
-                parseFloat(s.weight || "0") *
-                  parseInt(s.reps || "0", 10),
+                a + parseFloat(s.weight || "0") * parseInt(s.reps || "0", 10),
               0,
             )
         );
@@ -487,9 +437,7 @@ export default function WorkoutScreen() {
       const row = await addExerciseToSession(sessionId, ex.name);
       setExercises((prev) =>
         prev.map((item) =>
-          item.uid === ex.uid
-            ? { ...item, sessionExerciseId: row.id }
-            : item,
+          item.uid === ex.uid ? { ...item, sessionExerciseId: row.id } : item,
         ),
       );
     },
@@ -497,7 +445,8 @@ export default function WorkoutScreen() {
   );
 
   const startFromTemplate = async (tpl: Template) => {
-    if (sessionStarting || workoutSaveBusyRef.current || finishingWorkout) return;
+    if (sessionStarting || workoutSaveBusyRef.current || finishingWorkout)
+      return;
     setSessionStarting(true);
     try {
       let sessionId: string;
@@ -513,7 +462,6 @@ export default function WorkoutScreen() {
         setActiveSessionId(null);
         return;
       }
-
       const ids = TEMPLATE_EXERCISES[tpl.id] ?? [];
       const preloaded: Exercise[] = ids
         .map((eid, i) => {
@@ -525,18 +473,14 @@ export default function WorkoutScreen() {
           };
         })
         .filter(Boolean) as Exercise[];
-
       const initialSets: Record<string, ExerciseSetData[]> = {};
-      for (const ex of preloaded) {
+      for (const ex of preloaded)
         initialSets[ex.uid] = createInitialExerciseSets();
-      }
-
       setWorkoutName(tpl.name);
       setExercises(preloaded);
       setExerciseSetsByUid(initialSets);
       setStartTime(Date.now());
       setActiveWorkout(true);
-
       for (const ex of preloaded) {
         try {
           await syncExerciseToSession(sessionId, ex);
@@ -553,7 +497,8 @@ export default function WorkoutScreen() {
   };
 
   const startBlank = async () => {
-    if (sessionStarting || workoutSaveBusyRef.current || finishingWorkout) return;
+    if (sessionStarting || workoutSaveBusyRef.current || finishingWorkout)
+      return;
     setSessionStarting(true);
     try {
       try {
@@ -567,7 +512,6 @@ export default function WorkoutScreen() {
         setActiveSessionId(null);
         return;
       }
-
       setWorkoutName("My Workout");
       setExercises([]);
       setExerciseSetsByUid({});
@@ -583,7 +527,7 @@ export default function WorkoutScreen() {
       "Finish Workout?",
       exerciseCount === 0
         ? "No exercises logged. Are you sure?"
-        : `${exerciseCount} exercise${exerciseCount !== 1 ? "s" : ""} will be saved to your history.`,
+        : `${exerciseCount} exercise${exerciseCount !== 1 ? "s" : ""} will be saved.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -617,10 +561,8 @@ export default function WorkoutScreen() {
         ...prev,
         [uid]: createInitialExerciseSets(),
       }));
-
       const sid = activeSessionIdRef.current;
       if (!sid) return;
-
       try {
         await syncExerciseToSession(sid, next);
       } catch (e) {
@@ -633,28 +575,25 @@ export default function WorkoutScreen() {
     [syncExerciseToSession],
   );
 
-  const removeExercise = useCallback(
-    async (uid: string) => {
-      const sid = activeSessionIdRef.current;
-      const target = exercisesRef.current.find((e) => e.uid === uid);
-      if (sid && target?.sessionExerciseId) {
-        try {
-          await api.delete(
-            `/api/workouts/${sid}/exercises/${target.sessionExerciseId}`,
-          );
-        } catch {
-          /* best-effort: still drop locally */
-        }
+  const removeExercise = useCallback(async (uid: string) => {
+    const sid = activeSessionIdRef.current;
+    const target = exercisesRef.current.find((e) => e.uid === uid);
+    if (sid && target?.sessionExerciseId) {
+      try {
+        await api.delete(
+          `/api/workouts/${sid}/exercises/${target.sessionExerciseId}`,
+        );
+      } catch {
+        /* best-effort */
       }
-      setExerciseSetsByUid((prev) => {
-        const next = { ...prev };
-        delete next[uid];
-        return next;
-      });
-      setExercises((prev) => prev.filter((e) => e.uid !== uid));
-    },
-    [],
-  );
+    }
+    setExerciseSetsByUid((prev) => {
+      const next = { ...prev };
+      delete next[uid];
+      return next;
+    });
+    setExercises((prev) => prev.filter((e) => e.uid !== uid));
+  }, []);
 
   return (
     <SafeAreaView edges={["top"]} style={s.screen}>
@@ -688,12 +627,8 @@ export default function WorkoutScreen() {
         {!activeWorkout && (
           <>
             <View style={s.header}>
-              <View style={s.headerLeft}>
-                <View style={s.datePill}>
-                  <Ionicons name="barbell-outline" size={10} color={T.muted} />
-                  <Text style={s.dateText}>TRAINING</Text>
-                </View>
-                <Text style={s.greeting}>Ready to build,</Text>
+              <View>
+                <Text style={s.headerEyebrow}>TRAINING</Text>
                 <Text style={s.heroName}>TRAIN.</Text>
               </View>
               <TouchableOpacity style={s.menuBtn} activeOpacity={0.7}>
@@ -701,7 +636,6 @@ export default function WorkoutScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* ── STREAK CARD ── */}
             <View style={s.px}>
               <StreakCard
                 streakDays={streakDays}
@@ -713,23 +647,23 @@ export default function WorkoutScreen() {
           </>
         )}
 
-        {/* ── ACTIVE: blue callout tip banner ── */}
+        {/* ── ACTIVE: hint ── */}
         {activeWorkout && exerciseCount > 0 && (
           <View style={s.px}>
             <View style={s.hintCard}>
               <Ionicons
-                name="information-circle"
-                size={15}
-                color={T.blue}
+                name="information-circle-outline"
+                size={14}
+                color={T.sub}
               />
               <Text style={s.hintText}>
-                Enter weight &amp; reps, then tap the checkmark to log each set.
+                Log weight &amp; reps, then tap ✓ to complete each set.
               </Text>
             </View>
           </View>
         )}
 
-        {/* ── ACTIVE: exercise cards ── */}
+        {/* ── ACTIVE: exercises ── */}
         {activeWorkout && (
           <View style={s.px}>
             {exercises.length === 0 ? (
@@ -739,7 +673,9 @@ export default function WorkoutScreen() {
                 <ExerciseCard
                   key={ex.uid}
                   exercise={ex}
-                  sets={exerciseSetsByUid[ex.uid] ?? createInitialExerciseSets()}
+                  sets={
+                    exerciseSetsByUid[ex.uid] ?? createInitialExerciseSets()
+                  }
                   onSetsChange={(sets) => handleSetsChange(ex.uid, sets)}
                   onRemove={() => void removeExercise(ex.uid)}
                   onTimerOpen={() => setShowTimer(true)}
@@ -749,45 +685,46 @@ export default function WorkoutScreen() {
           </View>
         )}
 
-        {/* ── ACTIVE: action bar — ADD EXERCISE + appended timer badge ── */}
+        {/* ── ACTIVE: add exercise + timer ── */}
         {activeWorkout && (
           <View style={s.actionBar}>
-            <View style={s.addExRow}>
-              <TouchableOpacity
-                disabled={sessionStarting || finishingWorkout}
-                onPress={() => setShowLibrary(true)}
-                style={s.addExBtn}
-                activeOpacity={0.82}
-              >
-                <Ionicons name="add" size={18} color={T.lime} />
-                <Text style={s.addExBtnText}>+ ADD EXERCISE</Text>
-              </TouchableOpacity>
-              {/* Timer badge appended to right edge */}
-              <TouchableOpacity
-                disabled={finishingWorkout}
-                onPress={() => setShowTimer(true)}
-                style={s.timerBadge}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="timer-outline" size={17} color={T.text} />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              disabled={sessionStarting || finishingWorkout}
+              onPress={() => setShowLibrary(true)}
+              style={s.addExBtn}
+              activeOpacity={0.82}
+            >
+              <Ionicons name="add" size={18} color={T.gold} />
+              <Text style={s.addExBtnText}>ADD EXERCISE</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              disabled={finishingWorkout}
+              onPress={() => setShowTimer(true)}
+              style={s.timerBadge}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="timer-outline" size={18} color={T.sub} />
+            </TouchableOpacity>
           </View>
         )}
 
-        {/* ── ACTIVE: finish & save — full-width lime banner ── */}
+        {/* ── ACTIVE: finish CTA ── */}
         {activeWorkout && exerciseCount > 0 && (
           <View style={s.px}>
             <TouchableOpacity
               disabled={finishingWorkout}
               onPress={finishWorkout}
-              style={s.finishBanner}
+              style={s.finishBtn}
               activeOpacity={0.85}
             >
-              <Ionicons name="checkmark-circle" size={20} color={T.bg0} />
-              <Text style={s.finishBannerText}>
-                Done? Finish &amp; save session
-              </Text>
+              {finishingWorkout ? (
+                <ActivityIndicator color={T.bg0} />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={20} color={T.bg0} />
+                  <Text style={s.finishBtnText}>FINISH &amp; SAVE</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         )}
@@ -795,7 +732,7 @@ export default function WorkoutScreen() {
         {/* ── IDLE: quick start ── */}
         {!activeWorkout && (
           <>
-            <SectionLabel label="QUICK START" icon="flash" />
+            <SectionLabel label="QUICK START" />
             <View style={s.px}>
               <View style={s.templatesContainer}>
                 {(WORKOUT_TEMPLATES as Template[]).map((tpl, i) => (
@@ -807,20 +744,28 @@ export default function WorkoutScreen() {
                     onPress={() => void startFromTemplate(tpl)}
                   />
                 ))}
-                <TouchableOpacity
-                  disabled={sessionStarting || finishingWorkout}
-                  onPress={() => void startBlank()}
-                  style={s.blankBtn}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons
-                    name="add-circle-outline"
-                    size={14}
-                    color={T.muted}
-                  />
-                  <Text style={s.blankBtnText}>Start blank workout</Text>
-                </TouchableOpacity>
               </View>
+
+              {/* Blank workout */}
+              <TouchableOpacity
+                disabled={sessionStarting || finishingWorkout}
+                onPress={() => void startBlank()}
+                style={s.blankBtn}
+                activeOpacity={0.85}
+              >
+                {sessionStarting ? (
+                  <ActivityIndicator color={T.gold} size="small" />
+                ) : (
+                  <>
+                    <Ionicons
+                      name="add-circle-outline"
+                      size={16}
+                      color={T.sub}
+                    />
+                    <Text style={s.blankBtnText}>Start blank workout</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
             <SectionGap />
           </>
@@ -831,22 +776,16 @@ export default function WorkoutScreen() {
           <>
             <SectionLabel
               label="RECENT SESSIONS"
-              icon="time-outline"
-              right={<Text style={s.sectionHdrLink}>View all ›</Text>}
+              right={<Text style={s.sectionLink}>See all ›</Text>}
             />
             <View style={s.px}>
               {historyLoading ? (
                 <View style={s.loadingWrap}>
-                  <ActivityIndicator color={T.lime} />
+                  <ActivityIndicator color={T.gold} />
                 </View>
               ) : historyRows.length === 0 ? (
                 <View style={s.emptyHistory}>
-                  <Ionicons
-                    name="barbell-outline"
-                    size={28}
-                    color={T.muted}
-                    style={{ opacity: 0.4 }}
-                  />
+                  <Ionicons name="barbell-outline" size={28} color={T.muted} />
                   <Text style={s.emptyHistoryTitle}>No sessions yet</Text>
                   <Text style={s.emptyHistoryText}>
                     Start a workout above to begin tracking
@@ -894,7 +833,7 @@ const s = StyleSheet.create({
   scrollContent: { paddingBottom: 110 },
   px: { paddingHorizontal: 16 },
 
-  // ── Idle header ───────────────────────────────────────────────────────────
+  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -903,53 +842,41 @@ const s = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 20,
   },
-  headerLeft: { gap: 2, flex: 1 },
-  datePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    marginBottom: 6,
-  },
-  dateText: {
+  headerEyebrow: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 12,
+    fontSize: 11,
     color: T.muted,
-    letterSpacing: 1.5,
-  },
-  greeting: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 13,
-    color: T.sub,
+    letterSpacing: 2,
+    marginBottom: 4,
   },
   heroName: {
     fontFamily: "BarlowCondensed_900Black",
-    fontSize: 38,
+    fontSize: 42,
     color: T.text,
-    lineHeight: 40,
+    lineHeight: 42,
     letterSpacing: 0.5,
   },
   menuBtn: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: T.bg2,
+    backgroundColor: T.bg1,
     borderWidth: 1,
     borderColor: T.borderMid,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 2,
+    marginTop: 4,
   },
 
-  // ── Streak card ───────────────────────────────────────────────────────────
+  // Streak card
   streakCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0D1A0D",
+    backgroundColor: T.bg1,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.lime + "18",
+    borderColor: T.goldBorder,
     padding: 16,
-    gap: 0,
   },
   streakLeft: {
     flex: 1,
@@ -961,26 +888,23 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: T.lime + "18",
+    backgroundColor: T.goldDim,
     alignItems: "center",
     justifyContent: "center",
   },
   streakLeftText: { gap: 2 },
   streakLabel: {
-    fontFamily: "DMSans_500Medium",
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 9,
     color: T.muted,
-    letterSpacing: 1.0,
+    letterSpacing: 1.4,
   },
-  streakValueRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-  },
+  streakValueRow: { flexDirection: "row", alignItems: "baseline" },
   streakValue: {
     fontFamily: "BarlowCondensed_900Black",
-    fontSize: 28,
-    color: T.text,
-    lineHeight: 30,
+    fontSize: 30,
+    color: T.gold,
+    lineHeight: 32,
   },
   streakUnit: {
     fontFamily: "DMSans_400Regular",
@@ -991,15 +915,35 @@ const s = StyleSheet.create({
   streakDivider: {
     width: 1,
     height: 40,
-    backgroundColor: T.border,
+    backgroundColor: T.borderMid,
     marginHorizontal: 16,
   },
   streakRight: {
+    gap: 8,
     alignItems: "flex-end",
-    gap: 2,
   },
+  streakWeekRow: { alignItems: "flex-end", gap: 1 },
+  streakWeekCount: { flexDirection: "row" },
+  streakWeekVal: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 18,
+    color: T.text,
+  },
+  streakWeekGoal: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 18,
+    color: T.muted,
+  },
+  weekDots: { flexDirection: "row", gap: 5 },
+  weekDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: T.bg3,
+  },
+  weekDotFilled: { backgroundColor: T.gold },
 
-  // ── Section header ────────────────────────────────────────────────────────
+  // Section header
   sectionHdr: {
     flexDirection: "row",
     alignItems: "center",
@@ -1007,61 +951,44 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 12,
   },
-  sectionHdrLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-  },
   sectionHdrTitle: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 15,
-    color: T.text,
-    letterSpacing: 1.0,
+    fontSize: 12,
+    color: T.muted,
+    letterSpacing: 1.8,
   },
-  sectionHdrLink: {
+  sectionLink: {
     fontFamily: "DMSans_500Medium",
     fontSize: 12,
-    color: T.lime,
+    color: T.gold,
   },
 
-  // ── Templates container ───────────────────────────────────────────────────
-  templatesContainer: {
-    gap: 10,
-  },
-
-  // ── Template card ─────────────────────────────────────────────────────────
+  // Templates
+  templatesContainer: { gap: 8, marginBottom: 10 },
   templateCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: T.bg1,
-    borderRadius: 16,
-    overflow: "hidden",
-    paddingRight: 14,
-    gap: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.borderMid,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    gap: 14,
   },
-  templateStripe: {
-    width: 4,
-    alignSelf: "stretch",
+  templateIndex: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 22,
+    color: T.muted,
+    lineHeight: 24,
+    width: 28,
   },
-  templateIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-    marginVertical: 16,
-  },
-  templateContent: { flex: 1, paddingVertical: 16, gap: 3 },
+  templateContent: { flex: 1, gap: 3 },
   templateName: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 16,
+    fontSize: 17,
     color: T.text,
-    letterSpacing: 0.3,
-  },
-  templateMuscles: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 11,
-    color: T.sub,
+    letterSpacing: 0.2,
   },
   templateMeta: {
     fontFamily: "DMSans_400Regular",
@@ -1071,33 +998,28 @@ const s = StyleSheet.create({
   templateExCount: {
     fontFamily: "DMSans_500Medium",
     fontSize: 11,
-    marginTop: 1,
+    color: T.muted,
   },
-
-  // Outline START pill — transparent fill, accent-colored border + text
   startPill: {
-    borderRadius: 999,
-    borderWidth: 1.5,
-    backgroundColor: "transparent",
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-  },
-  startPillText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
-    letterSpacing: 0.5,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: T.gold,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  // ── Blank workout button ──────────────────────────────────────────────────
+  // Blank button
   blankBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 7,
+    gap: 8,
     borderWidth: 1,
     borderColor: T.borderMid,
-    borderRadius: 16,
+    borderRadius: 14,
     paddingVertical: 13,
+    marginTop: 2,
   },
   blankBtnText: {
     fontFamily: "DMSans_500Medium",
@@ -1105,38 +1027,36 @@ const s = StyleSheet.create({
     color: T.sub,
   },
 
-  // ── Hint card (blue callout tip banner) ──────────────────────────────────
+  // Hint card
   hintCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: T.blue + "14",
+    backgroundColor: T.bg1,
     borderWidth: 1,
-    borderColor: T.blue + "30",
-    borderRadius: 12,
+    borderColor: T.borderMid,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 9,
     marginBottom: 12,
-    marginTop: 8,
+    marginTop: 4,
   },
   hintText: {
     flex: 1,
     fontFamily: "DMSans_400Regular",
     fontSize: 12,
-    color: T.blue + "CC",
+    color: T.sub,
     lineHeight: 17,
   },
 
-  // ── Active: action bar — ADD EXERCISE + appended timer badge ──────────────
+  // Action bar
   actionBar: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  addExRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 0,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 6,
+    gap: 8,
   },
   addExBtn: {
     flex: 1,
@@ -1144,69 +1064,55 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    borderWidth: 1.5,
-    borderColor: T.lime + "55",
-    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+    borderRadius: 12,
     paddingVertical: 13,
-    backgroundColor: "transparent",
+    backgroundColor: T.goldDim,
   },
   addExBtnText: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 15,
-    color: T.lime,
-    letterSpacing: 0.8,
+    fontSize: 14,
+    color: T.gold,
+    letterSpacing: 1.0,
   },
-  // Stopwatch badge: circular, anchored to right of add-ex button
   timerBadge: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: T.bg2,
+    borderRadius: 12,
+    backgroundColor: T.bg1,
     borderWidth: 1,
     borderColor: T.borderMid,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: -6, // slight overlap for attached look
   },
 
-  // ── Finish banner — massive full-width solid lime ─────────────────────────
-  finishBanner: {
+  // Finish CTA
+  finishBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: T.lime,
-    borderRadius: 16,
-    paddingVertical: 15,
-    marginTop: 4,
+    backgroundColor: T.gold,
+    borderRadius: 14,
+    paddingVertical: 16,
+    marginTop: 6,
     marginBottom: 8,
-    shadowColor: T.lime,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 6,
   },
-  finishBannerText: {
+  finishBtnText: {
     fontFamily: "BarlowCondensed_900Black",
-    fontSize: 18,
+    fontSize: 17,
     color: T.bg0,
-    letterSpacing: 0.3,
+    letterSpacing: 1.0,
   },
 
-  // ── Kept for step dots (used in WorkoutSteps helper) ──────────────────────
-  stepsRow: { flexDirection: "row", gap: 4, flexWrap: "wrap" },
-  stepDot: { width: 8, height: 8, borderRadius: 4 },
-  stepDotDone: { backgroundColor: T.lime },
-  stepDotActive: { backgroundColor: T.lime + "60" },
-  stepDotIdle: { backgroundColor: T.muted },
-
-  // ── Empty exercise state ──────────────────────────────────────────────────
+  // Empty exercise state
   emptyCard: {
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: T.borderMid,
     borderStyle: "dashed",
-    borderRadius: 18,
-    paddingVertical: 40,
+    borderRadius: 16,
+    paddingVertical: 44,
     alignItems: "center",
     gap: 8,
     marginBottom: 12,
@@ -1215,14 +1121,14 @@ const s = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 14,
-    backgroundColor: T.lime + "18",
+    backgroundColor: T.goldDim,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
   emptyTitle: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 15,
+    fontSize: 14,
     color: T.text,
     letterSpacing: 1.5,
     opacity: 0.7,
@@ -1230,19 +1136,16 @@ const s = StyleSheet.create({
   emptyHint: {
     fontFamily: "DMSans_400Regular",
     fontSize: 12,
-    color: T.sub,
+    color: T.muted,
   },
 
-  // ── History ───────────────────────────────────────────────────────────────
-  loadingWrap: {
-    paddingVertical: 28,
-    alignItems: "center",
-  },
+  // History
+  loadingWrap: { paddingVertical: 28, alignItems: "center" },
   historyCard: {
     backgroundColor: T.bg1,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: T.borderMid,
     overflow: "hidden",
   },
   historyRow: {
@@ -1250,17 +1153,17 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 13,
     borderBottomWidth: 1,
     borderBottomColor: T.border,
   },
   historyIcon: {
     width: 34,
     height: 34,
-    borderRadius: 17,
-    backgroundColor: T.lime + "14",
+    borderRadius: 10,
+    backgroundColor: T.goldDim,
     borderWidth: 1,
-    borderColor: T.lime + "28",
+    borderColor: T.goldBorder,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1269,27 +1172,17 @@ const s = StyleSheet.create({
     fontFamily: "DMSans_600SemiBold",
     fontSize: 13,
     color: T.text,
-    letterSpacing: -0.1,
   },
   historyMeta: {
     fontFamily: "DMSans_400Regular",
     fontSize: 11,
     color: T.sub,
   },
-  historyRight: { alignItems: "flex-end", gap: 4 },
-  historyVolPill: {
-    backgroundColor: T.lime + "14",
-    borderWidth: 1,
-    borderColor: T.lime + "28",
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
+  historyRight: { alignItems: "flex-end", gap: 3 },
   historyVol: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
-    color: T.lime,
-    letterSpacing: 0.2,
+    fontSize: 14,
+    color: T.gold,
   },
   historySets: {
     fontFamily: "DMSans_400Regular",
@@ -1297,20 +1190,18 @@ const s = StyleSheet.create({
     color: T.muted,
   },
   emptyHistory: {
-    paddingVertical: 36,
+    paddingVertical: 40,
     alignItems: "center",
     gap: 8,
     backgroundColor: T.bg1,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: T.borderMid,
   },
   emptyHistoryTitle: {
     fontFamily: "DMSans_600SemiBold",
-    fontSize: 15,
-    color: T.text,
-    letterSpacing: -0.1,
-    opacity: 0.6,
+    fontSize: 14,
+    color: T.sub,
   },
   emptyHistoryText: {
     fontFamily: "DMSans_400Regular",

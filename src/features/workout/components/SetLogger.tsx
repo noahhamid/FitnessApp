@@ -1,19 +1,19 @@
-import { COLORS } from "@/src/ui/tokens/colors";
-import { FONTS } from "@/src/ui/tokens/typography";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
-type Set = {
-  id: number;
-  weight: string;
-  reps: string;
-  completed: boolean;
+// ── Design Tokens ─────────────────────────────────────────────────────────────
+const T = {
+  bg0: "#121212",
+  bg2: "#1E1E1E", // Card surface
+  bg3: "#252525", // Input surface
+  gold: "#FFC700", // Primary accent
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#5A5A5A",
 };
 
-type Props = {
-  exerciseName?: string;
-  defaultSets?: number;
-};
+type Set = { id: number; weight: string; reps: string; completed: boolean };
+type Props = { exerciseName?: string; defaultSets?: number };
 
 export function SetLogger({
   exerciseName = "Exercise",
@@ -28,24 +28,21 @@ export function SetLogger({
     })),
   );
 
-  const updateSet = (id: number, field: "weight" | "reps", value: string) => {
+  const updateSet = (id: number, field: "weight" | "reps", value: string) =>
     setSets((prev) =>
       prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
     );
-  };
 
-  const toggleComplete = (id: number) => {
+  const toggleComplete = (id: number) =>
     setSets((prev) =>
       prev.map((s) => (s.id === id ? { ...s, completed: !s.completed } : s)),
     );
-  };
 
-  const addSet = () => {
+  const addSet = () =>
     setSets((prev) => [
       ...prev,
       { id: prev.length + 1, weight: "", reps: "", completed: false },
     ]);
-  };
 
   const removeSet = (id: number) => {
     if (sets.length <= 1) return;
@@ -64,6 +61,8 @@ export function SetLogger({
             {completedCount}/{sets.length} sets complete
           </Text>
         </View>
+
+        {/* Progress pills */}
         <View style={s.progressPills}>
           {sets.map((set) => (
             <View key={set.id} style={[s.pill, set.completed && s.pillDone]} />
@@ -85,7 +84,7 @@ export function SetLogger({
       {/* Set rows */}
       {sets.map((set, index) => (
         <View key={set.id} style={[s.setRow, set.completed && s.setRowDone]}>
-          {/* Set number */}
+          {/* Set number badge */}
           <View style={[s.setNumBadge, set.completed && s.setNumBadgeDone]}>
             <Text style={[s.setNum, set.completed && s.setNumDone]}>
               {index + 1}
@@ -99,7 +98,7 @@ export function SetLogger({
             onChangeText={(v) => updateSet(set.id, "weight", v)}
             keyboardType="decimal-pad"
             placeholder="—"
-            placeholderTextColor={COLORS.muted}
+            placeholderTextColor={T.muted}
             editable={!set.completed}
             maxLength={6}
           />
@@ -111,12 +110,12 @@ export function SetLogger({
             onChangeText={(v) => updateSet(set.id, "reps", v)}
             keyboardType="number-pad"
             placeholder="—"
-            placeholderTextColor={COLORS.muted}
+            placeholderTextColor={T.muted}
             editable={!set.completed}
             maxLength={3}
           />
 
-          {/* Complete toggle */}
+          {/* Complete toggle — gold checkmark */}
           <Pressable
             onPress={() => toggleComplete(set.id)}
             style={[s.checkBtn, set.completed && s.checkBtnDone]}
@@ -136,7 +135,7 @@ export function SetLogger({
         </View>
       ))}
 
-      {/* Add set button */}
+      {/* Add set — dashed gold outline */}
       <Pressable style={s.addBtn} onPress={addSet}>
         <Text style={s.addBtnText}>+ ADD SET</Text>
       </Pressable>
@@ -144,46 +143,45 @@ export function SetLogger({
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   container: {
     borderRadius: 20,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: T.bg2, // #1E1E1E — no border
     padding: 20,
     gap: 12,
   },
+
+  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
   },
   exerciseName: {
-    color: COLORS.text ?? "#FFFFFF",
-    fontFamily: FONTS.bold,
-    fontSize: 17,
-    letterSpacing: -0.3,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 20,
+    color: T.text,
+    letterSpacing: 0.5,
   },
   subtitle: {
-    color: COLORS.muted,
-    fontFamily: FONTS.medium,
+    fontFamily: "DMSans_400Regular",
     fontSize: 12,
+    color: T.sub,
     marginTop: 2,
   },
-  progressPills: {
-    flexDirection: "row",
-    gap: 4,
-    alignItems: "center",
-  },
+
+  // Progress pills
+  progressPills: { flexDirection: "row", gap: 5, alignItems: "center" },
   pill: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.border,
+    backgroundColor: T.bg3, // Empty = dark gray
   },
-  pillDone: {
-    backgroundColor: COLORS.accent,
-  },
+  pillDone: { backgroundColor: T.gold }, // Filled = gold
+
+  // Column labels
   colRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -192,15 +190,15 @@ const s = StyleSheet.create({
   },
   colLabel: {
     flex: 1,
-    color: COLORS.muted,
-    fontFamily: FONTS.bold,
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 10,
+    color: T.muted,
     letterSpacing: 1.5,
     textAlign: "center",
   },
-  colCenter: {
-    textAlign: "center",
-  },
+  colCenter: { textAlign: "center" },
+
+  // Set rows
   setRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -210,84 +208,77 @@ const s = StyleSheet.create({
     borderRadius: 12,
   },
   setRowDone: {
-    backgroundColor: `${COLORS.accent}10`,
+    backgroundColor: T.gold + "12", // Very subtle gold tint on completion
   },
+
+  // Set number badge
   setNumBadge: {
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: COLORS.border,
+    backgroundColor: T.bg3,
     alignItems: "center",
     justifyContent: "center",
   },
-  setNumBadgeDone: {
-    backgroundColor: `${COLORS.accent}30`,
-  },
+  setNumBadgeDone: { backgroundColor: T.gold + "25" },
   setNum: {
-    color: COLORS.muted,
-    fontFamily: FONTS.bold,
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
+    color: T.muted,
   },
-  setNumDone: {
-    color: COLORS.accent,
-  },
+  setNumDone: { color: T.gold },
+
+  // Inputs — borderless, dark surface
   input: {
     flex: 1,
-    height: 40,
+    height: 42,
     borderRadius: 10,
-    backgroundColor: COLORS.bg3 ?? "#1C1C1E",
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    color: COLORS.text ?? "#FFFFFF",
-    fontFamily: FONTS.bold,
-    fontSize: 16,
+    backgroundColor: T.bg3, // #252525, no border
+    color: T.text,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 18,
     textAlign: "center",
   },
-  inputDone: {
-    opacity: 0.5,
-  },
+  inputDone: { opacity: 0.4 },
+
+  // Check button → solid gold when done
   checkBtn: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
+    backgroundColor: T.bg3, // Unfilled = dark gray, no border ring
     alignItems: "center",
     justifyContent: "center",
   },
   checkBtnDone: {
-    backgroundColor: COLORS.accent,
-    borderColor: COLORS.accent,
+    backgroundColor: T.gold, // Filled = gold
   },
   checkMark: {
-    color: "#000",
-    fontFamily: FONTS.bold,
-    fontSize: 16,
+    color: T.bg0, // Dark tick on gold — high contrast
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 17,
   },
-  removeBtn: {
-    width: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  removeTxt: {
-    color: COLORS.muted,
-    fontSize: 20,
-    lineHeight: 22,
-  },
+
+  // Remove button
+  removeBtn: { width: 24, alignItems: "center", justifyContent: "center" },
+  removeTxt: { color: T.muted, fontSize: 20, lineHeight: 22 },
+
+  // Add set — dashed gold border
   addBtn: {
-    height: 40,
+    height: 42,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderWidth: 1.5,
+    borderColor: T.gold + "40", // ~25% opacity gold
     borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 4,
   },
   addBtnText: {
-    color: COLORS.muted,
-    fontFamily: FONTS.bold,
-    fontSize: 12,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 13,
+    color: T.gold,
     letterSpacing: 1.5,
+    opacity: 0.85,
   },
 });

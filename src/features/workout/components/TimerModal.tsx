@@ -11,10 +11,19 @@ import {
   Platform,
 } from "react-native";
 import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
-import { COLORS } from "@/src/ui/tokens/colors";
-import { FONTS } from "@/src/ui/tokens/typography";
 
-const C = COLORS;
+// ── Design Tokens ─────────────────────────────────────────────────────────────
+const T = {
+  bg0: "#121212",
+  bg2: "#1E1E1E", // Sheet surface
+  bg3: "#252525", // Preset / secondary button surface
+  gold: "#FFC700", // Primary accent
+  red: "#FF453A", // Low-time urgency
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#5A5A5A",
+  track: "#2A2A2A", // SVG ring track
+};
 
 const PRESETS = [60, 90, 120, 180] as const;
 
@@ -41,6 +50,7 @@ export default function TimerModal({
   const doneAnim = useRef(new Animated.Value(0)).current;
   const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
+  // Sheet open/close
   useEffect(() => {
     if (visible) {
       setRemain(total);
@@ -58,6 +68,7 @@ export default function TimerModal({
     }
   }, [visible]);
 
+  // Pulse while running
   useEffect(() => {
     if (running) {
       pulseLoopRef.current = Animated.loop(
@@ -83,6 +94,7 @@ export default function TimerModal({
     }
   }, [running]);
 
+  // Countdown
   useEffect(() => {
     if (running) {
       intervalRef.current = setInterval(() => {
@@ -90,6 +102,7 @@ export default function TimerModal({
           if (r <= 1) {
             clearInterval(intervalRef.current!);
             setRunning(false);
+            // Done flash sequence
             Animated.sequence([
               Animated.timing(doneAnim, {
                 toValue: 1,
@@ -132,19 +145,15 @@ export default function TimerModal({
   const isDone = remain === 0;
   const pct = remain / total;
 
+  // SVG ring
   const SIZE = 220;
   const R = 96;
   const STROKE = 9;
   const circ = 2 * Math.PI * R;
   const dashOffset = circ * (1 - pct);
 
-  const ringColor = isDone
-    ? C.accent
-    : pct > 0.5
-      ? C.accent
-      : pct > 0.25
-        ? C.orange
-        : "#FF453A";
+  // Gold → red as time runs low
+  const ringColor = isDone ? T.gold : pct > 0.3 ? T.gold : T.red;
 
   const mins = String(Math.floor(remain / 60)).padStart(2, "0");
   const secs = String(remain % 60).padStart(2, "0");
@@ -169,7 +178,7 @@ export default function TimerModal({
 
   const doneOpacity = doneAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 0.12],
+    outputRange: [0, 0.1], // Subtle gold flash — not blinding
   });
 
   return (
@@ -197,6 +206,7 @@ export default function TimerModal({
       <Animated.View
         style={[s.sheet, { transform: [{ translateY: sheetTranslate }] }]}
       >
+        {/* Gold done flash overlay */}
         <Animated.View
           pointerEvents="none"
           style={[
@@ -206,10 +216,12 @@ export default function TimerModal({
           ]}
         />
 
+        {/* Handle */}
         <View style={s.handleRow}>
           <View style={s.handle} />
         </View>
 
+        {/* Title */}
         <View style={s.titleRow}>
           <Text style={s.titleLabel}>REST TIMER</Text>
           <Pressable onPress={onClose} hitSlop={12} style={s.closeX}>
@@ -217,6 +229,7 @@ export default function TimerModal({
           </Pressable>
         </View>
 
+        {/* Ring */}
         <Animated.View
           style={[s.ringWrapper, { transform: [{ scale: pulseAnim }] }]}
         >
@@ -228,21 +241,20 @@ export default function TimerModal({
             <Defs>
               <LinearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
                 <Stop offset="0%" stopColor={ringColor} stopOpacity="1" />
-                <Stop
-                  offset="100%"
-                  stopColor={isDone ? C.accent : ringColor}
-                  stopOpacity="0.7"
-                />
+                <Stop offset="100%" stopColor={ringColor} stopOpacity="0.6" />
               </LinearGradient>
             </Defs>
+
+            {/* Track */}
             <Circle
               cx={SIZE / 2}
               cy={SIZE / 2}
               r={R}
               fill="none"
-              stroke={C.border}
+              stroke={T.track}
               strokeWidth={STROKE}
             />
+            {/* Progress arc */}
             <Circle
               cx={SIZE / 2}
               cy={SIZE / 2}
@@ -256,8 +268,9 @@ export default function TimerModal({
             />
           </Svg>
 
+          {/* Center content */}
           <View style={[s.ringCenter, { width: SIZE, height: SIZE }]}>
-            <Text style={[s.timeValue, isDone && { color: C.accent }]}>
+            <Text style={[s.timeValue, isDone && s.timeValueDone]}>
               {mins}:{secs}
             </Text>
             <Text style={s.timeSub}>
@@ -269,6 +282,7 @@ export default function TimerModal({
           </View>
         </Animated.View>
 
+        {/* Preset chips */}
         <View style={s.presetRow}>
           {PRESETS.map((sec) => (
             <TouchableOpacity
@@ -284,6 +298,7 @@ export default function TimerModal({
           ))}
         </View>
 
+        {/* Controls */}
         <View style={s.controls}>
           <TouchableOpacity
             onPress={handleReset}
@@ -308,48 +323,50 @@ export default function TimerModal({
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  overlay: { ...StyleSheet.absoluteFillObject },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0,0,0,0.72)",
   },
+
+  // Sheet
   sheet: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: C.bg2,
+    backgroundColor: T.bg2,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 24,
     paddingBottom: Platform.OS === "ios" ? 44 : 28,
-    paddingTop: 0,
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.4,
     shadowRadius: 24,
     elevation: 20,
-    overflow: "hidden",
   },
+
+  // Gold flash on complete
   doneFlash: {
-    backgroundColor: C.accent,
+    backgroundColor: T.gold,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
   },
-  handleRow: {
-    alignItems: "center",
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
+
+  // Handle
+  handleRow: { alignItems: "center", paddingTop: 12, paddingBottom: 8 },
   handle: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: C.border,
+    backgroundColor: T.bg3,
   },
+
+  // Title
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -360,24 +377,19 @@ const s = StyleSheet.create({
   titleLabel: {
     fontFamily: "BarlowCondensed_900Black",
     fontSize: 18,
-    color: C.text,
+    color: T.text,
     letterSpacing: 3,
     textAlign: "center",
   },
-  closeX: {
-    position: "absolute",
-    right: 0,
-    padding: 4,
-  },
+  closeX: { position: "absolute", right: 0, padding: 4 },
   closeXText: {
-    color: C.muted,
+    fontFamily: "DMSans_400Regular",
     fontSize: 14,
-    fontFamily: "DMSans_600SemiBold",
+    color: T.muted,
   },
-  ringWrapper: {
-    alignItems: "center",
-    marginVertical: 20,
-  },
+
+  // Ring
+  ringWrapper: { alignItems: "center", marginVertical: 20 },
   ringCenter: {
     position: "absolute",
     alignItems: "center",
@@ -387,87 +399,82 @@ const s = StyleSheet.create({
   timeValue: {
     fontFamily: "BarlowCondensed_900Black",
     fontSize: 58,
-    color: C.text,
+    color: T.text,
     letterSpacing: -1,
     lineHeight: 62,
   },
+  timeValueDone: { color: T.gold }, // Gold on completion
   timeSub: {
-    fontFamily: "DMSans_600SemiBold",
+    fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: C.muted,
+    color: T.muted,
     letterSpacing: 2,
   },
   pctLabel: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
-    color: C.border,
+    color: T.muted,
     marginTop: 4,
     letterSpacing: 1,
   },
-  presetRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 24,
-  },
+
+  // Preset chips
+  presetRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
   preset: {
     flex: 1,
     paddingVertical: 11,
     borderRadius: 12,
-    backgroundColor: C.bg3,
-    borderWidth: 1,
-    borderColor: C.border,
+    backgroundColor: T.bg3,
     alignItems: "center",
+    // No border on inactive
   },
   presetActive: {
-    backgroundColor: `${C.accent}20`,
-    borderColor: C.accent,
+    backgroundColor: T.gold, // Solid gold fill when active
   },
   presetText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 15,
-    color: C.muted,
+    color: T.muted,
     letterSpacing: 0.5,
   },
   presetTextActive: {
-    color: C.accent,
+    color: T.bg0, // Dark text on gold
   },
-  controls: {
-    flexDirection: "row",
-    gap: 10,
-  },
+
+  // Control buttons
+  controls: { flexDirection: "row", gap: 10 },
   btnSecondary: {
     flex: 1,
     paddingVertical: 15,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: C.border,
+    backgroundColor: T.bg3,
     alignItems: "center",
-    backgroundColor: C.bg3,
+    // No border
   },
   btnSecondaryText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 15,
-    color: C.muted,
+    color: T.sub,
     letterSpacing: 1,
   },
   btnPrimary: {
     flex: 2,
     paddingVertical: 15,
     borderRadius: 16,
-    backgroundColor: C.accent,
+    backgroundColor: T.gold, // Gold START
     alignItems: "center",
   },
   btnPause: {
-    backgroundColor: C.orange,
+    backgroundColor: T.bg3, // Neutral gray when paused — not orange
   },
   btnDone: {
-    backgroundColor: C.accent,
+    backgroundColor: T.gold,
     opacity: 0.85,
   },
   btnPrimaryText: {
     fontFamily: "BarlowCondensed_900Black",
     fontSize: 16,
-    color: C.bg,
+    color: T.bg0, // Dark on gold
     letterSpacing: 1.5,
   },
 });

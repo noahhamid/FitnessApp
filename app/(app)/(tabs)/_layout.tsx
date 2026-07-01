@@ -1,50 +1,43 @@
 import { Tabs } from "expo-router";
 import { Platform, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Line, Path, Polyline, Rect } from "react-native-svg";
 
 const T = {
-  bg0: "#0A0A0C",
-  bg1: "#111114",
-  bg2: "#18181D",
-  bg3: "#242429",
-  lime: "#C8F135",
-  limeDim: "#C8F13520",
-  sub: "#52525F",
-  text: "#F2F2F5",
-  border: "#FFFFFF0C",
-  borderUp: "#FFFFFF18",
+  bg: "#121212",
+  gold: "#FFC700",
+  inactive: "#505050",
+  border: "#FFFFFF08",
 };
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 function IconHome({ active }: { active: boolean }) {
-  const c = active ? T.lime : T.sub;
+  const c = active ? T.gold : T.inactive;
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
       <Path
         d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H15v-5h-6v5H4a1 1 0 01-1-1V10.5z"
         stroke={c}
-        strokeWidth={active ? 1.8 : 1.5}
+        strokeWidth={1.6}
         strokeLinejoin="round"
         strokeLinecap="round"
-        fill={active ? T.lime + "25" : "none"}
       />
     </Svg>
   );
 }
 
 function IconTrain({ active }: { active: boolean }) {
-  const c = active ? T.lime : T.sub;
-  const w = active ? 1.8 : 1.5;
+  const c = active ? T.gold : T.inactive;
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
       <Line
         x1="5.5"
         y1="12"
         x2="18.5"
         y2="12"
         stroke={c}
-        strokeWidth={w + 0.2}
+        strokeWidth={1.8}
         strokeLinecap="round"
       />
       <Rect
@@ -54,8 +47,7 @@ function IconTrain({ active }: { active: boolean }) {
         height="5"
         rx="1"
         stroke={c}
-        strokeWidth={w}
-        fill={active ? T.lime + "25" : "none"}
+        strokeWidth={1.6}
       />
       <Rect
         x="18.5"
@@ -64,8 +56,7 @@ function IconTrain({ active }: { active: boolean }) {
         height="5"
         rx="1"
         stroke={c}
-        strokeWidth={w}
-        fill={active ? T.lime + "25" : "none"}
+        strokeWidth={1.6}
       />
       <Rect
         x="5.5"
@@ -74,8 +65,7 @@ function IconTrain({ active }: { active: boolean }) {
         height="8"
         rx="1.5"
         stroke={c}
-        strokeWidth={w}
-        fill={active ? T.lime + "25" : "none"}
+        strokeWidth={1.6}
       />
       <Rect
         x="15.5"
@@ -84,18 +74,17 @@ function IconTrain({ active }: { active: boolean }) {
         height="8"
         rx="1.5"
         stroke={c}
-        strokeWidth={w}
-        fill={active ? T.lime + "25" : "none"}
+        strokeWidth={1.6}
       />
     </Svg>
   );
 }
 
 function IconNutrition({ active }: { active: boolean }) {
-  const c = active ? T.bg0 : T.sub;
-  const w = active ? 1.8 : 1.5;
+  const c = active ? T.bg : T.inactive;
+  const w = 1.6;
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
       <Path
         d="M17 12.5C17 16.5 14.5 20 12 21C9.5 20 7 16.5 7 12.5C7 9 9 7 12 7C15 7 17 9 17 12.5Z"
         stroke={c}
@@ -123,71 +112,44 @@ function IconNutrition({ active }: { active: boolean }) {
         strokeWidth={w}
         strokeLinecap="round"
       />
-      <Path
-        d="M12 5C12 5 13.5 3.5 15 4.5"
-        stroke={c}
-        strokeWidth={w - 0.2}
-        strokeLinecap="round"
-      />
     </Svg>
   );
 }
 
 function IconProgress({ active }: { active: boolean }) {
-  const c = active ? T.lime : T.sub;
-  const w = active ? 1.8 : 1.5;
+  const c = active ? T.gold : T.inactive;
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
       <Polyline
         points="3,18 8,12 13,15 21,5"
         stroke={c}
-        strokeWidth={w}
+        strokeWidth={1.6}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <Circle cx="8" cy="12" r={active ? 2 : 1.5} fill={c} />
-      <Circle cx="13" cy="15" r={active ? 2 : 1.5} fill={c} />
-      <Circle cx="21" cy="5" r={active ? 2 : 1.5} fill={c} />
-      <Line
-        x1="3"
-        y1="21"
-        x2="21"
-        y2="21"
-        stroke={c}
-        strokeWidth="1"
-        strokeLinecap="round"
-        opacity={0.25}
-      />
+      <Circle cx="21" cy="5" r={2} fill={c} />
     </Svg>
   );
 }
 
 function IconProfile({ active }: { active: boolean }) {
-  const c = active ? T.lime : T.sub;
-  const w = active ? 1.8 : 1.5;
+  const c = active ? T.gold : T.inactive;
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Circle
-        cx="12"
-        cy="8"
-        r="3.5"
-        stroke={c}
-        strokeWidth={w}
-        fill={active ? T.lime + "25" : "none"}
-      />
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="8" r="3.5" stroke={c} strokeWidth={1.6} />
       <Path
         d="M4 20c0-3.5 3.6-6.5 8-6.5s8 3 8 6.5"
         stroke={c}
-        strokeWidth={w}
+        strokeWidth={1.6}
         strokeLinecap="round"
       />
     </Svg>
   );
 }
 
-// ─── Tab components ───────────────────────────────────────────────────────────
+// ─── Tab ─────────────────────────────────────────────────────────────────────
 
-function RegularTab({
+function Tab({
   icon,
   label,
   focused,
@@ -197,45 +159,54 @@ function RegularTab({
   focused: boolean;
 }) {
   return (
-    <View style={s.tabWrap}>
-      <View style={[s.topLine, focused && s.topLineActive]} />
-      <View style={[s.iconWrap, focused && s.iconWrapActive]}>{icon}</View>
-      <Text style={[s.label, focused && s.labelActive]} numberOfLines={1}>
-        {label}
-      </Text>
+    <View style={s.tab}>
+      {icon}
+      <Text style={[s.label, focused && s.labelActive]}>{label}</Text>
     </View>
   );
 }
 
+// Center FAB — gold filled pill when active, dark surface when inactive
 function CenterTab({ focused }: { focused: boolean }) {
   return (
     <View style={s.centerOuter}>
       <View style={[s.centerFab, focused && s.centerFabActive]}>
         <IconNutrition active={focused} />
       </View>
-      <Text style={[s.label, focused && s.labelActive]} numberOfLines={1}>
-        Nutrition
-      </Text>
+      <Text style={[s.label, focused && s.labelActive]}>Nutrition</Text>
     </View>
   );
 }
 
-// ─── Root layout ──────────────────────────────────────────────────────────────
+// ─── Layout ──────────────────────────────────────────────────────────────────
+
+const IS_IOS = Platform.OS === "ios";
 
 export default function AppTabsLayout() {
+  const insets = useSafeAreaInsets();
+  // Respect the device's home indicator / gesture bar,
+  // with a sensible minimum so the bar never feels cramped.
+  const bottomPad = Math.max(insets.bottom, IS_IOS ? 16 : 8);
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarStyle: s.tabBar,
+        tabBarStyle: [
+          s.tabBar,
+          {
+            paddingBottom: bottomPad,
+            height: 52 + bottomPad, // icon area (52) + dynamic safe-area pad
+          },
+        ],
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <RegularTab
+            <Tab
               icon={<IconHome active={focused} />}
               label="Home"
               focused={focused}
@@ -247,7 +218,7 @@ export default function AppTabsLayout() {
         name="train"
         options={{
           tabBarIcon: ({ focused }) => (
-            <RegularTab
+            <Tab
               icon={<IconTrain active={focused} />}
               label="Train"
               focused={focused}
@@ -265,7 +236,7 @@ export default function AppTabsLayout() {
         name="progress"
         options={{
           tabBarIcon: ({ focused }) => (
-            <RegularTab
+            <Tab
               icon={<IconProgress active={focused} />}
               label="Progress"
               focused={focused}
@@ -277,7 +248,7 @@ export default function AppTabsLayout() {
         name="profile"
         options={{
           tabBarIcon: ({ focused }) => (
-            <RegularTab
+            <Tab
               icon={<IconProfile active={focused} />}
               label="Profile"
               focused={focused}
@@ -291,61 +262,34 @@ export default function AppTabsLayout() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const IS_IOS = Platform.OS === "ios";
-const TAB_H = IS_IOS ? 84 : 68;
-
 const s = StyleSheet.create({
   tabBar: {
-    backgroundColor: T.bg1,
-    borderTopWidth: 1,
-    borderTopColor: T.borderUp,
-    height: TAB_H,
-    paddingBottom: IS_IOS ? 24 : 8,
-    paddingTop: 0,
+    backgroundColor: T.bg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: T.border,
+    // height & paddingBottom are set dynamically above via useSafeAreaInsets.
+    // paddingTop nudges icons down slightly so they sit centered & airy.
+    paddingTop: 6,
     elevation: 0,
   },
 
-  // Regular tab
-  tabWrap: {
+  // Regular tab — icon + label stacked, bottom-aligned
+  tab: {
     alignItems: "center",
     justifyContent: "flex-end",
-    paddingBottom: 4,
     gap: 5,
     width: 60,
-    height: "100%",
-    position: "relative",
-  },
-  topLine: {
-    position: "absolute",
-    top: -1,
-    width: 24,
-    height: 2,
-    borderRadius: 0,
-    backgroundColor: "transparent",
-  },
-  topLineActive: {
-    backgroundColor: T.lime,
-  },
-  iconWrap: {
-    width: 44,
-    height: 30,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "transparent",
-  },
-  iconWrapActive: {
-    backgroundColor: T.limeDim,
+    height: 46, // fixed inner height; bar height grows via bottomPad only
+    paddingBottom: 4,
   },
   label: {
     fontFamily: "DMSans_500Medium",
     fontSize: 10,
-    color: T.sub,
+    color: T.inactive,
     letterSpacing: 0.1,
   },
   labelActive: {
-    color: T.lime,
-    fontFamily: "DMSans_600SemiBold",
+    color: T.gold,
   },
 
   // Center FAB
@@ -356,17 +300,14 @@ const s = StyleSheet.create({
     width: 60,
   },
   centerFab: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: T.bg3,
-    borderWidth: 1,
-    borderColor: T.borderUp,
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: "#1E1E1E",
     alignItems: "center",
     justifyContent: "center",
   },
   centerFabActive: {
-    backgroundColor: T.lime,
-    borderColor: T.lime,
+    backgroundColor: T.gold,
   },
 });

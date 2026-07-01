@@ -9,18 +9,15 @@ import {
   View,
 } from "react-native";
 
+// ── Design Tokens ─────────────────────────────────────────────────────────────
 const T = {
-  bg0: "#0A0A0C",
-  bg1: "#111114",
-  bg2: "#18181D",
-  bg3: "#222228",
-  lime: "#C8F135",
-  blue: "#3B82F6",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
-  border: "#FFFFFF0F",
-  borderMid: "#FFFFFF18",
+  bg0: "#121212",
+  bg2: "#1E1E1E",
+  bg3: "#252525",
+  gold: "#FFC700",
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#5A5A5A",
 };
 
 export interface WorkoutHeaderProps {
@@ -29,7 +26,6 @@ export interface WorkoutHeaderProps {
   onNameChange: (v: string) => void;
   onFinish: () => void;
   finishDisabled?: boolean;
-  /** Back = same as finish (shows confirm dialog). */
   onBack: () => void;
   totalVolume: number;
   completedSets: number;
@@ -67,26 +63,43 @@ export default function WorkoutHeader({
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(dotAnim, { toValue: 0.25, duration: 750, useNativeDriver: true }),
-        Animated.timing(dotAnim, { toValue: 1, duration: 750, useNativeDriver: true }),
+        Animated.timing(dotAnim, {
+          toValue: 0.2,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dotAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
       ]),
     );
     loop.start();
     return () => loop.stop();
   }, [dotAnim]);
 
+  // Finish button press animation
   const handleFinishPressIn = () =>
-    Animated.spring(pulseAnim, { toValue: 0.93, useNativeDriver: true }).start();
+    Animated.spring(pulseAnim, {
+      toValue: 0.93,
+      useNativeDriver: true,
+    }).start();
   const handleFinishPressOut = () =>
-    Animated.spring(pulseAnim, { toValue: 1, friction: 3, useNativeDriver: true }).start();
+    Animated.spring(pulseAnim, {
+      toValue: 1,
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
 
-  // Format elapsed time
+  // Format elapsed
   const h = Math.floor(elapsed / 3600);
   const m = Math.floor((elapsed % 3600) / 60);
   const sec = elapsed % 60;
-  const fmt = h > 0
-    ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
-    : `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  const fmt =
+    h > 0
+      ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+      : `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 
   // Volume display
   const volDisplay =
@@ -98,27 +111,31 @@ export default function WorkoutHeader({
 
   return (
     <View style={s.container}>
-      {/* ── ROW 1: back ← | timer | FINISH ── */}
+      {/* ── ROW 1: back | timer | FINISH ── */}
       <View style={s.topRow}>
-        {/* Left: back/cancel button */}
-        <TouchableOpacity onPress={onBack} style={s.backBtn} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={18} color={T.text} />
+        {/* Back button — borderless circle */}
+        <TouchableOpacity
+          onPress={onBack}
+          style={s.backBtn}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={18} color={T.sub} />
         </TouchableOpacity>
 
-        {/* Center: animated timer capsule */}
+        {/* Timer capsule — borderless dark pill */}
         <View style={s.timerCapsule}>
           <Animated.View style={[s.liveDot, { opacity: dotAnim }]} />
           <Text style={s.timerText}>{fmt}</Text>
         </View>
 
-        {/* Right: FINISH capsule */}
+        {/* FINISH — solid gold CTA */}
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
           <TouchableOpacity
             onPress={onFinish}
             onPressIn={handleFinishPressIn}
             onPressOut={handleFinishPressOut}
             disabled={finishDisabled}
-            style={[s.finishBtn, finishDisabled && { opacity: 0.55 }]}
+            style={[s.finishBtn, finishDisabled && { opacity: 0.45 }]}
             activeOpacity={1}
           >
             <Text style={s.finishText}>FINISH</Text>
@@ -126,7 +143,7 @@ export default function WorkoutHeader({
         </Animated.View>
       </View>
 
-      {/* ── ROW 2: workout name + EDIT badge ── */}
+      {/* ── ROW 2: workout name ── */}
       <View style={s.nameRow}>
         {editingName ? (
           <TextInput
@@ -155,18 +172,24 @@ export default function WorkoutHeader({
         )}
       </View>
 
-      {/* ── ROW 3: VOLUME | SETS | EXERCISES metrics ── */}
+      {/* ── ROW 3: metrics bar ── */}
       <View style={s.metricsRow}>
         <View style={s.metricCell}>
-          <Text style={[s.metricValue, { color: T.lime }]}>{volDisplay}</Text>
+          <Text style={[s.metricValue, s.metricGold]}>{volDisplay}</Text>
           <Text style={s.metricLabel}>VOLUME</Text>
         </View>
+
         <View style={s.metricDivider} />
+
         <View style={s.metricCell}>
-          <Text style={s.metricValue}>{completedSets}/{totalSets}</Text>
+          <Text style={s.metricValue}>
+            {completedSets}/{totalSets}
+          </Text>
           <Text style={s.metricLabel}>SETS</Text>
         </View>
+
         <View style={s.metricDivider} />
+
         <View style={s.metricCell}>
           <Text style={s.metricValue}>{exerciseCount}</Text>
           <Text style={s.metricLabel}>EXERCISES</Text>
@@ -176,23 +199,18 @@ export default function WorkoutHeader({
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   container: {
-    backgroundColor: T.bg1,
-    borderBottomWidth: 1,
-    borderBottomColor: T.borderMid,
+    backgroundColor: T.bg0, // #121212 — page-level bg, not a card
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 14,
     gap: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    // No border, no shadow — the metrics bar below acts as the visual anchor
   },
 
-  // ── Row 1 ────────────────────────────────────────────────────────────────────
+  // Row 1
   topRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -203,27 +221,25 @@ const s = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: T.bg3,
-    borderWidth: 1,
-    borderColor: T.borderMid,
     alignItems: "center",
     justifyContent: "center",
+    // No border
   },
   timerCapsule: {
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
-    backgroundColor: T.bg2,
+    backgroundColor: T.bg3,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: T.borderMid,
+    // No border
   },
   liveDot: {
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: T.lime,
+    backgroundColor: T.gold, // Gold live indicator
   },
   timerText: {
     fontFamily: "BarlowCondensed_700Bold",
@@ -231,30 +247,30 @@ const s = StyleSheet.create({
     color: T.text,
     letterSpacing: 1.8,
   },
+
+  // FINISH button — solid gold, dark text
   finishBtn: {
-    backgroundColor: T.lime,
+    backgroundColor: T.gold,
     borderRadius: 20,
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingVertical: 9,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: T.lime,
+    shadowColor: T.gold,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
     elevation: 5,
   },
   finishText: {
     fontFamily: "BarlowCondensed_900Black",
     fontSize: 15,
-    color: T.bg0,
+    color: T.bg0, // Dark on gold — max contrast
     letterSpacing: 1.5,
   },
 
-  // ── Row 2 (name) ─────────────────────────────────────────────────────────────
-  nameRow: {
-    flexShrink: 1,
-  },
+  // Row 2 — name
+  nameRow: { flexShrink: 1 },
   nameTouchable: {
     flexDirection: "row",
     alignItems: "center",
@@ -274,14 +290,13 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     backgroundColor: T.bg3,
-    borderWidth: 1,
-    borderColor: T.borderMid,
     borderRadius: 7,
     paddingHorizontal: 7,
     paddingVertical: 3,
+    // No border
   },
   editBadgeText: {
-    fontFamily: "DMSans_500Medium",
+    fontFamily: "DMSans_400Regular",
     fontSize: 9,
     color: T.muted,
     letterSpacing: 1.5,
@@ -291,19 +306,18 @@ const s = StyleSheet.create({
     fontSize: 30,
     color: T.text,
     borderBottomWidth: 2,
-    borderBottomColor: T.lime,
+    borderBottomColor: T.gold, // Gold underline on active edit
     paddingBottom: 4,
     paddingTop: 0,
   },
 
-  // ── Row 3 (metrics) ──────────────────────────────────────────────────────────
+  // Row 3 — metrics bar
   metricsRow: {
     flexDirection: "row",
     backgroundColor: T.bg2,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: T.border,
+    borderRadius: 14,
     overflow: "hidden",
+    // No border
   },
   metricCell: {
     flex: 1,
@@ -313,7 +327,7 @@ const s = StyleSheet.create({
   },
   metricDivider: {
     width: 1,
-    backgroundColor: T.border,
+    backgroundColor: T.bg3,
     marginVertical: 8,
   },
   metricValue: {
@@ -323,8 +337,9 @@ const s = StyleSheet.create({
     lineHeight: 22,
     letterSpacing: -0.3,
   },
+  metricGold: { color: T.gold }, // Volume gets the gold highlight
   metricLabel: {
-    fontFamily: "DMSans_500Medium",
+    fontFamily: "DMSans_400Regular",
     fontSize: 9,
     color: T.muted,
     letterSpacing: 0.8,

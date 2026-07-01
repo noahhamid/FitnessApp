@@ -1,45 +1,41 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Svg, { Path, Rect } from "react-native-svg";
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+// ── Design Tokens ─────────────────────────────────────────────────────────────
 const T = {
-  bg1: "#111114",
-  bg3: "#222228",
-  lime: "#C8F135",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
-  border: "#FFFFFF0F",
-  borderMid: "#FFFFFF18",
+  bg0: "#121212",
+  bg2: "#1E1E1E",
+  bg3: "#252525",
+  gold: "#FFC700",
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#5A5A5A",
 };
 
-// ─── Corner bracket SVG ───────────────────────────────────────────────────────
-// Draws a single L-shaped corner bracket
+// ── Corner bracket ────────────────────────────────────────────────────────────
 function Corner({
   flip = false,
   flipY = false,
-  color = T.lime,
   size = 18,
   stroke = 2.5,
 }: {
   flip?: boolean;
   flipY?: boolean;
-  color?: string;
   size?: number;
   stroke?: number;
 }) {
-  const scaleX = flip ? -1 : 1;
-  const scaleY = flipY ? -1 : 1;
   return (
     <Svg
       width={size}
       height={size}
-      style={{ transform: [{ scaleX }, { scaleY }] }}
+      style={{
+        transform: [{ scaleX: flip ? -1 : 1 }, { scaleY: flipY ? -1 : 1 }],
+      }}
     >
       <Path
         d={`M ${stroke / 2} ${size} L ${stroke / 2} ${stroke / 2} L ${size} ${stroke / 2}`}
         fill="none"
-        stroke={color}
+        stroke={T.gold} // Gold brackets
         strokeWidth={stroke}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -48,14 +44,8 @@ function Corner({
   );
 }
 
-// ─── Barcode icon ─────────────────────────────────────────────────────────────
-function BarcodeIcon({
-  color = T.muted,
-  size = 36,
-}: {
-  color?: string;
-  size?: number;
-}) {
+// ── Barcode icon ──────────────────────────────────────────────────────────────
+function BarcodeIcon({ size = 36 }: { size?: number }) {
   const barW = size;
   const barH = size * 0.65;
   const bars = [2, 5, 4, 2, 6, 3, 5, 2, 4, 3, 6, 2];
@@ -66,29 +56,31 @@ function BarcodeIcon({
   return (
     <Svg width={barW} height={barH + 10}>
       {bars.map((w, i) => {
-        const fill = i % 2 === 0 ? color : "transparent";
+        if (i % 2 !== 0) {
+          x += w + 1;
+          return null;
+        }
         const bx = x * scale;
         const bw = w * scale;
         x += w + 1;
-        return fill !== "transparent" ? (
+        return (
           <Rect
             key={i}
             x={bx}
             y={0}
             width={bw}
             height={barH}
-            fill={fill}
+            fill={T.muted}
             rx={1}
           />
-        ) : null;
+        );
       })}
-      {/* Number strip */}
       <Rect
         x={0}
         y={barH + 4}
         width={barW}
         height={4}
-        fill={color}
+        fill={T.muted}
         rx={2}
         opacity={0.35}
       />
@@ -96,26 +88,23 @@ function BarcodeIcon({
   );
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 type Props = {
-  /** Called when user taps "Tap to scan" */
   onScan?: () => void;
-  /** Called when user taps "Enter manually" */
   onManual?: () => void;
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
-/** Placeholder — wire expo-camera / vision-camera when ready */
+// ── Component ─────────────────────────────────────────────────────────────────
 export function BarcodeScanner({ onScan, onManual }: Props) {
   return (
     <View style={s.outer}>
-      {/* Scan viewport */}
+      {/* Viewport */}
       <TouchableOpacity style={s.viewport} activeOpacity={0.8} onPress={onScan}>
-        {/* Dim overlay stripes */}
+        {/* Side dim bars */}
         <View style={s.dimLeft} pointerEvents="none" />
         <View style={s.dimRight} pointerEvents="none" />
 
-        {/* Corner brackets */}
+        {/* Gold corner brackets */}
         <View style={s.corners}>
           <View style={s.cornersTop}>
             <Corner />
@@ -127,12 +116,12 @@ export function BarcodeScanner({ onScan, onManual }: Props) {
           </View>
         </View>
 
-        {/* Scan line */}
+        {/* Gold scan line */}
         <View style={s.scanLine} pointerEvents="none" />
 
-        {/* Center content */}
+        {/* Center */}
         <View style={s.center}>
-          <BarcodeIcon color={T.sub} size={44} />
+          <BarcodeIcon size={44} />
           <Text style={s.hint}>Tap to scan barcode</Text>
         </View>
       </TouchableOpacity>
@@ -151,35 +140,32 @@ export function BarcodeScanner({ onScan, onManual }: Props) {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ── Styles ────────────────────────────────────────────────────────────────────
 const VIEWPORT_H = 172;
 const BRACKET_PAD = 14;
 
 const s = StyleSheet.create({
+  // Outer card — no border
   outer: {
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: T.borderMid,
-    backgroundColor: T.bg1,
+    backgroundColor: T.bg2,
     overflow: "hidden",
   },
 
-  // ── Viewport ──────────────────────────────────────────────────────────────
+  // Viewport
   viewport: {
     height: VIEWPORT_H,
     backgroundColor: T.bg3,
     alignItems: "center",
     justifyContent: "center",
   },
-
-  // Side dim bars — suggest a scan window cut-out
   dimLeft: {
     position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
     width: "18%",
-    backgroundColor: "#00000040",
+    backgroundColor: "rgba(0,0,0,0.35)",
   },
   dimRight: {
     position: "absolute",
@@ -187,7 +173,7 @@ const s = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: "18%",
-    backgroundColor: "#00000040",
+    backgroundColor: "rgba(0,0,0,0.35)",
   },
 
   // Corner brackets
@@ -211,43 +197,40 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
   },
 
-  // Scan line
+  // Gold scan line — sharp, minimal glow
   scanLine: {
     position: "absolute",
     left: "18%",
     right: "18%",
     height: 1.5,
     top: "50%",
-    backgroundColor: T.lime,
-    opacity: 0.5,
-    shadowColor: T.lime,
-    shadowOpacity: 0.9,
-    shadowRadius: 6,
+    backgroundColor: T.gold,
+    opacity: 0.7,
+    shadowColor: T.gold,
+    shadowOpacity: 0.6,
+    shadowRadius: 5,
     shadowOffset: { width: 0, height: 0 },
     elevation: 4,
   },
 
   // Center icon + hint
-  center: {
-    alignItems: "center",
-    gap: 10,
-  },
+  center: { alignItems: "center", gap: 10 },
   hint: {
-    fontFamily: "DMSans_500Medium",
+    fontFamily: "DMSans_400Regular",
     fontSize: 12,
     color: T.muted,
     letterSpacing: 0.3,
   },
 
-  // ── Footer ────────────────────────────────────────────────────────────────
+  // Footer
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: T.border,
+    borderTopColor: T.bg3, // Subtle separator, same family
   },
   footerLeft: {
     flexDirection: "row",
@@ -258,17 +241,18 @@ const s = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: T.lime,
-    opacity: 0.7,
+    backgroundColor: T.gold, // Gold status dot
+    opacity: 0.8,
   },
   statusText: {
-    fontFamily: "DMSans_500Medium",
+    fontFamily: "DMSans_400Regular",
     fontSize: 11,
     color: T.muted,
   },
   manualText: {
-    fontFamily: "DMSans_600SemiBold",
-    fontSize: 11,
-    color: T.lime,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 13,
+    color: T.gold, // Gold CTA
+    letterSpacing: 0.5,
   },
 });

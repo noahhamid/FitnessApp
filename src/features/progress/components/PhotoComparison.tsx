@@ -15,25 +15,22 @@ import {
   View,
 } from "react-native";
 
+// ── Strict token system — zero color bleed ────────────────────────────────────
 const T = {
-  bg0: "#0A0A0C",
-  bg1: "#111114",
-  bg2: "#18181D",
-  bg3: "#222228",
-  lime: "#C8F135",
-  blue: "#3D8EFF",
-  red: "#FF3D3D",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
-  border: "#FFFFFF0F",
-  borderMid: "#FFFFFF18",
+  bg: "#121212",
+  card: "#1E1E1E",
+  surface: "#252525",
+  gold: "#FFC700", // active selections, highlights ONLY
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  dim: "#3A3A3A", // dividers, inactive circles, ghost elements
+  border: "#FFFFFF0D", // hairline — 5% white
 };
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const CARD_W = Math.min(SCREEN_W, 430) - 48;
 const PHOTO_H = 190;
-const PHOTO_W = (CARD_W - 10 - 10) / 2; // gap of 10 between slots
+const PHOTO_W = (CARD_W - 10) / 2;
 
 const BEFORE_PATH = "progress_before.jpg";
 const AFTER_PATH = "progress_after.jpg";
@@ -46,7 +43,6 @@ function progressPhotoFile(filename: string) {
 function PhotoSlot({
   label,
   tag,
-  isAfter,
   imageUri,
   showSaved,
   onPick,
@@ -60,18 +56,10 @@ function PhotoSlot({
   onPick: () => void;
   onDelete: () => void;
 }) {
-  const accentColor = isAfter ? T.lime : T.blue;
-
   return (
     <TouchableOpacity
-      style={[
-        s.photoSlot,
-        {
-          borderColor: accentColor + "30",
-          backgroundColor: accentColor + "08",
-        },
-      ]}
-      activeOpacity={0.75}
+      style={s.photoSlot}
+      activeOpacity={0.8}
       onPress={onPick}
       onLongPress={() => {
         if (!imageUri) return;
@@ -93,48 +81,49 @@ function PhotoSlot({
         />
       ) : (
         <View style={s.emptySlot}>
-          <View
-            style={[
-              s.cameraIconWrap,
-              {
-                backgroundColor: accentColor + "18",
-                borderColor: accentColor + "30",
-              },
-            ]}
-          >
-            <Ionicons name="camera-outline" size={22} color={accentColor} />
-          </View>
-          <Text style={[s.tapText, { color: accentColor }]}>TAP TO ADD</Text>
-          <Text style={s.tapHint}>{label} photo</Text>
+          {/* Camera icon — no tinted background, just the icon */}
+          <Ionicons name="camera-outline" size={20} color={T.dim} />
+          <Text style={s.tapText}>TAP TO ADD</Text>
+          <Text style={s.tapHint}>{label.toLowerCase()} photo</Text>
         </View>
       )}
 
-      {/* Tag pill — top left */}
-      <View
-        style={[
-          s.tagPill,
-          {
-            backgroundColor: accentColor + "22",
-            borderColor: accentColor + "40",
-          },
-        ]}
-      >
-        <Text style={[s.tagText, { color: accentColor }]}>{tag}</Text>
+      {/* Date tag — top left, plain muted text */}
+      <View style={s.tagWrap}>
+        <Text style={s.tagText}>{tag}</Text>
       </View>
 
-      {/* Saved badge — top right */}
+      {/* Saved badge — gold checkmark only, no background pill */}
       {showSaved && (
-        <View style={s.savedBadge}>
-          <Ionicons name="checkmark" size={9} color={T.lime} />
+        <View style={s.savedWrap}>
+          <Ionicons name="checkmark" size={10} color={T.gold} />
           <Text style={s.savedText}>SAVED</Text>
         </View>
       )}
 
-      {/* Label — bottom center */}
-      <View style={[s.labelPill, { backgroundColor: accentColor + "22" }]}>
-        <Text style={[s.labelText, { color: accentColor }]}>{label}</Text>
+      {/* Label — bottom center, hairline white */}
+      <View style={s.labelWrap}>
+        <Text style={s.labelText}>{label}</Text>
       </View>
     </TouchableOpacity>
+  );
+}
+
+// ── Stat item ─────────────────────────────────────────────────────────────────
+function StatItem({
+  value,
+  label,
+  highlight = false,
+}: {
+  value: string;
+  label: string;
+  highlight?: boolean;
+}) {
+  return (
+    <View style={s.statItem}>
+      <Text style={[s.statVal, highlight && { color: T.gold }]}>{value}</Text>
+      <Text style={s.statLabel}>{label}</Text>
+    </View>
   );
 }
 
@@ -173,9 +162,11 @@ export function PhotoComparison() {
     return Number((last.weight - first.weight).toFixed(1));
   }, [first, last]);
 
+  // Neutral delta label — no red/green signal, just the number
   const weightDeltaLabel = useMemo(() => {
     if (weightDelta === null) return "—";
-    return `${weightDelta >= 0 ? "+" : "−"} ${Math.abs(weightDelta).toFixed(1)} kg`;
+    const sign = weightDelta >= 0 ? "+" : "−";
+    return `${sign}${Math.abs(weightDelta).toFixed(1)} kg`;
   }, [weightDelta]);
 
   const durationWeeksLabel = useMemo(() => {
@@ -223,25 +214,22 @@ export function PhotoComparison() {
     }
   }
 
-  const deltaPositive = weightDelta !== null && weightDelta < 0; // losing = good
-  const deltaColor =
-    weightDelta === null ? T.muted : deltaPositive ? T.lime : T.red;
-
   return (
     <View style={s.card}>
-      {/* Header */}
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <View style={s.header}>
         <View style={s.headerLeft}>
-          <Text style={s.cardLabel}>PROGRESS PHOTOS</Text>
+          <Text style={s.sectionLabel}>PROGRESS PHOTOS</Text>
           <Text style={s.subtitle}>Tap to add · Long press to remove</Text>
         </View>
+        {/* Duration pill — calendar icon + weeks, no color */}
         <View style={s.durationPill}>
-          <Ionicons name="calendar-outline" size={11} color={T.blue} />
+          <Ionicons name="calendar-outline" size={11} color={T.sub} />
           <Text style={s.durationText}>{durationWeeksLabel}</Text>
         </View>
       </View>
 
-      {/* Photos row */}
+      {/* ── Photos row ─────────────────────────────────────────────────────── */}
       <View style={s.photosRow}>
         <PhotoSlot
           label="BEFORE"
@@ -252,12 +240,10 @@ export function PhotoComparison() {
           onDelete={() => void deletePhoto("before")}
         />
 
-        {/* VS divider */}
+        {/* VS divider — thin hairline + label, no colored circle */}
         <View style={s.vsDivider}>
           <View style={s.vsLine} />
-          <View style={s.vsCircle}>
-            <Text style={s.vsText}>VS</Text>
-          </View>
+          <Text style={s.vsText}>VS</Text>
           <View style={s.vsLine} />
         </View>
 
@@ -272,42 +258,37 @@ export function PhotoComparison() {
         />
       </View>
 
-      {/* Footer stats */}
+      {/* ── Footer stats ────────────────────────────────────────────────────── */}
+      {/*
+          Weight delta: pure white — no red/green signal.
+          Workouts:     gold — this is the active achievement highlight.
+          Duration:     white — neutral info.
+      */}
       <View style={s.footer}>
-        <View style={s.statItem}>
-          <Text style={[s.statVal, { color: deltaColor }]}>
-            {weightDeltaLabel}
-          </Text>
-          <Text style={s.statLabel}>WEIGHT</Text>
-        </View>
+        <StatItem value={weightDeltaLabel} label="WEIGHT" />
         <View style={s.statDivider} />
-        <View style={s.statItem}>
-          <Text style={[s.statVal, { color: T.lime }]}>
-            {completedWorkouts.length}
-          </Text>
-          <Text style={s.statLabel}>WORKOUTS</Text>
-        </View>
+        <StatItem
+          value={String(completedWorkouts.length)}
+          label="WORKOUTS"
+          highlight // gold: the one earned highlight
+        />
         <View style={s.statDivider} />
-        <View style={s.statItem}>
-          <Text style={s.statVal}>{durationWeeksLabel}</Text>
-          <Text style={s.statLabel}>DURATION</Text>
-        </View>
+        <StatItem value={durationWeeksLabel} label="DURATION" />
       </View>
     </View>
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   card: {
-    backgroundColor: T.bg1,
+    backgroundColor: T.card,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: T.border,
     padding: 16,
     marginBottom: 8,
   },
 
-  // ── Header ────────────────────────────────────────────────────────────────
+  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -315,48 +296,42 @@ const s = StyleSheet.create({
     marginBottom: 14,
   },
   headerLeft: { gap: 3 },
-  cardLabel: {
+  sectionLabel: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 11,
-    color: T.muted,
+    color: T.sub,
     letterSpacing: 1.4,
   },
   subtitle: {
     fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: T.muted,
-    opacity: 0.7,
+    color: T.sub,
+    opacity: 0.55,
   },
   durationPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: T.blue + "18",
-    borderWidth: 1,
-    borderColor: T.blue + "35",
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
   },
   durationText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 12,
-    color: T.blue,
+    color: T.sub,
     letterSpacing: 0.5,
   },
 
-  // ── Photos row ────────────────────────────────────────────────────────────
+  // Photos row
   photosRow: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 0,
     marginBottom: 16,
   },
   photoSlot: {
     width: PHOTO_W,
     height: PHOTO_H,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderStyle: "dashed",
+    borderRadius: 14,
+    backgroundColor: T.surface,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -368,81 +343,65 @@ const s = StyleSheet.create({
   },
   emptySlot: {
     alignItems: "center",
-    gap: 8,
-  },
-  cameraIconWrap: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 2,
+    gap: 7,
   },
   tapText: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 11,
-    letterSpacing: 1.5,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    color: T.dim,
+    marginTop: 4,
   },
   tapHint: {
     fontFamily: "DMSans_400Regular",
     fontSize: 10,
-    color: T.muted,
+    color: T.dim,
   },
 
-  // Tag pill
-  tagPill: {
+  // Date tag — top left, no background pill
+  tagWrap: {
     position: "absolute",
     top: 10,
     left: 10,
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
   },
   tagText: {
     fontFamily: "DMSans_500Medium",
     fontSize: 9,
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
+    color: T.text,
+    opacity: 0.7,
   },
 
-  // Saved badge
-  savedBadge: {
+  // Saved indicator — no pill, just icon + text
+  savedWrap: {
     position: "absolute",
     top: 10,
     right: 10,
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: T.lime + "22",
-    borderWidth: 1,
-    borderColor: T.lime + "50",
-    borderRadius: 20,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
   },
   savedText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 9,
-    color: T.lime,
+    color: T.gold,
     letterSpacing: 1.2,
   },
 
-  // Label pill at bottom
-  labelPill: {
+  // Label — bottom center
+  labelWrap: {
     position: "absolute",
     bottom: 10,
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
   },
   labelText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 10,
-    letterSpacing: 1.5,
+    letterSpacing: 1.8,
+    color: T.text,
+    opacity: 0.8,
   },
 
-  // VS divider
+  // VS divider — hairline lines + plain text, no circle chrome
   vsDivider: {
     width: 10,
     height: PHOTO_H,
@@ -452,43 +411,34 @@ const s = StyleSheet.create({
   vsLine: {
     width: 1,
     flex: 1,
-    backgroundColor: T.borderMid,
-  },
-  vsCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: T.bg3,
-    borderWidth: 1,
-    borderColor: T.borderMid,
-    alignItems: "center",
-    justifyContent: "center",
-    marginVertical: 4,
+    backgroundColor: T.border,
   },
   vsText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 7,
-    color: T.muted,
+    color: T.dim,
     letterSpacing: 0.5,
+    marginVertical: 4,
   },
 
-  // ── Footer stats ──────────────────────────────────────────────────────────
+  // Footer stats
   footer: {
     flexDirection: "row",
     alignItems: "center",
     paddingTop: 14,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: T.border,
   },
   statItem: {
     flex: 1,
     alignItems: "center",
-    gap: 3,
+    gap: 4,
   },
   statDivider: {
-    width: 1,
+    width: StyleSheet.hairlineWidth,
     height: 28,
-    backgroundColor: T.border,
+    backgroundColor: T.dim,
+    opacity: 0.4,
   },
   statVal: {
     fontFamily: "BarlowCondensed_900Black",
@@ -499,7 +449,7 @@ const s = StyleSheet.create({
   statLabel: {
     fontFamily: "DMSans_500Medium",
     fontSize: 9,
-    color: T.muted,
+    color: T.sub,
     letterSpacing: 1.5,
   },
 });

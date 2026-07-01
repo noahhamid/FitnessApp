@@ -15,17 +15,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const TABS = ["Nutrition", "Weight"] as const;
 type Tab = (typeof TABS)[number];
 
+// ── Design Tokens ─────────────────────────────────────────────────────────────
 const T = {
-  bg0: "#0A0A0C",
-  bg1: "#111114",
-  bg2: "#18181D",
-  bg3: "#222228",
-  lime: "#C8F135",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
-  border: "#FFFFFF0F",
-  borderMid: "#FFFFFF22",
+  bg0: "#121212",
+  bg2: "#1E1E1E",
+  bg3: "#252525",
+  gold: "#FFC700",
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#5A5A5A",
 };
 
 const TAB_ICONS: Record<Tab, keyof typeof Ionicons.glyphMap> = {
@@ -33,7 +31,7 @@ const TAB_ICONS: Record<Tab, keyof typeof Ionicons.glyphMap> = {
   Weight: "scale-outline",
 };
 
-// ─── Animated sliding tab bar ─────────────────────────────────────────────────
+// ── Animated sliding tab bar ──────────────────────────────────────────────────
 function SlideTabBar({
   active,
   onChange,
@@ -90,7 +88,7 @@ function SlideTabBar({
             <Ionicons
               name={TAB_ICONS[tab]}
               size={13}
-              color={isActive ? T.bg0 : T.text}
+              color={isActive ? T.bg0 : T.sub}
               style={{ marginRight: 5 }}
             />
             <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
@@ -103,7 +101,7 @@ function SlideTabBar({
   );
 }
 
-// ─── Content with fade transition ────────────────────────────────────────────
+// ── Fade content transition ───────────────────────────────────────────────────
 function FadeContent({ activeTab }: { activeTab: Tab }) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const [displayedTab, setDisplayedTab] = useState<Tab>(activeTab);
@@ -131,21 +129,28 @@ function FadeContent({ activeTab }: { activeTab: Tab }) {
   );
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
+// ── Screen ────────────────────────────────────────────────────────────────────
 export default function NutritionScreen() {
   const [activeTab, setActiveTab] = useState<Tab>("Nutrition");
 
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={T.bg0} translucent={false} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={T.bg0}
+        translucent={false}
+      />
 
       {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View style={styles.headerLabel}>
-            <Ionicons name="restaurant-outline" size={10} color={T.muted} />
-            <Text style={styles.headerLabelText}>NUTRITION &amp; DIET</Text>
+          {/* Eyebrow label */}
+          <View style={styles.eyebrow}>
+            <View style={styles.eyebrowDot} />
+            <Text style={styles.eyebrowText}>NUTRITION &amp; DIET</Text>
           </View>
+
+          {/* Sub + hero */}
           <Text style={styles.headerSub}>Fuel your progress,</Text>
           <Text style={styles.headerHero}>
             {activeTab === "Nutrition" ? "DIET." : "WEIGHT."}
@@ -153,6 +158,7 @@ export default function NutritionScreen() {
         </View>
       </View>
 
+      {/* Thin gold-tinted divider */}
       <View style={styles.divider} />
 
       {/* ── Tab bar ── */}
@@ -168,7 +174,7 @@ export default function NutritionScreen() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -180,23 +186,32 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 10,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
-  headerLeft: { gap: 1 },
-  headerLabel: {
+  headerLeft: { gap: 2 },
+
+  // Eyebrow — gold dot + label replaces the icon+text row
+  eyebrow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    marginBottom: 4,
+    gap: 6,
+    marginBottom: 6,
   },
-  headerLabelText: {
+  eyebrowDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: T.gold,
+  },
+  eyebrowText: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 12,
+    fontSize: 11,
     color: T.muted,
-    letterSpacing: 1.5,
+    letterSpacing: 2,
   },
+
   headerSub: {
     fontFamily: "DMSans_400Regular",
     fontSize: 13,
@@ -204,18 +219,19 @@ const styles = StyleSheet.create({
   },
   headerHero: {
     fontFamily: "BarlowCondensed_900Black",
-    fontSize: 38,
+    fontSize: 42,
     color: T.text,
-    lineHeight: 40,
+    lineHeight: 44,
     letterSpacing: 0.5,
   },
 
+  // Divider — barely visible, no lime tint
   divider: {
     height: 1,
-    backgroundColor: T.border,
+    backgroundColor: T.bg3,
   },
 
-  // Tab bar — full-width capsule with bright inactive text for legibility
+  // Tab bar
   tabBarWrapper: {
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -225,23 +241,19 @@ const styles = StyleSheet.create({
     backgroundColor: T.bg2,
     borderRadius: 12,
     padding: 3,
-    borderWidth: 1,
-    borderColor: T.borderMid,
     position: "relative",
-    height: 42,
+    height: 44,
     alignItems: "center",
+    // No border — bg2 on bg0 is enough contrast
   },
+
+  // Active pill — solid gold, no glow shadow
   tabPill: {
     position: "absolute",
     top: 3,
-    height: 34,
-    backgroundColor: T.lime,
+    height: 36,
+    backgroundColor: T.gold,
     borderRadius: 10,
-    shadowColor: T.lime,
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 4,
   },
   tabItem: {
     flex: 1,
@@ -250,19 +262,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 1,
   },
-  // Inactive tab: crisp white text — high contrast against dark bg2 track
   tabText: {
-    fontFamily: "DMSans_600SemiBold",
+    fontFamily: "DMSans_400Regular",
     fontSize: 13,
-    color: T.text,
+    color: T.sub, // Muted gray for inactive
   },
-  // Active tab: near-black text on lime pill
   tabTextActive: {
-    color: T.bg0,
+    color: T.bg0, // Dark on gold pill
+    fontFamily: "DMSans_400Regular",
   },
 
-  // Content area
-  content: {
-    flex: 1,
-  },
+  // Content
+  content: { flex: 1 },
 });

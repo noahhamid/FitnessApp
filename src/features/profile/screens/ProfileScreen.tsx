@@ -24,28 +24,22 @@ import {
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
-  bg0: "#0A0A0C",
-  bg1: "#111114",
-  bg2: "#18181D",
-  bg3: "#222228",
-  lime: "#C8F135",
-  red: "#FF3D3D",
-  orange: "#F97316",
-  blue: "#3B82F6",
-  purple: "#A855F7",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
-  border: "#FFFFFF0F",
-  borderMid: "#FFFFFF18",
+  bg: "#121212",
+  card: "#1E1E1E",
+  surface: "#262626", // inputs / chips resting state
+  gold: "#FFC700",
+  red: "#FF5C5C", // only ever shown on press for destructive actions
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  border: "#FFFFFF0D",
 };
 
 // ─── Fitness goals ────────────────────────────────────────────────────────────
 const GOALS = [
-  { id: "lose",   label: "Lose Weight",   icon: "trending-down-outline" as const, color: T.blue },
-  { id: "build",  label: "Build Muscle",  icon: "barbell-outline" as const,       color: T.lime },
-  { id: "endure", label: "Endurance",     icon: "heart-outline" as const,         color: T.orange },
-  { id: "health", label: "Stay Healthy",  icon: "leaf-outline" as const,          color: T.purple },
+  { id: "lose", label: "Lose Weight", icon: "trending-down-outline" as const },
+  { id: "build", label: "Build Muscle", icon: "barbell-outline" as const },
+  { id: "endure", label: "Endurance", icon: "heart-outline" as const },
+  { id: "health", label: "Stay Healthy", icon: "leaf-outline" as const },
 ] as const;
 
 type GoalId = (typeof GOALS)[number]["id"];
@@ -64,28 +58,24 @@ const SETTINGS = [
     label: "Body & Health",
     sub: "Weight · Height · Age",
     icon: "body-outline" as const,
-    color: T.lime,
   },
   {
     id: "goal",
     label: "Fitness Goal",
     sub: null,
     icon: "trending-up-outline" as const,
-    color: T.orange,
   },
   {
     id: "account",
     label: "Account Info",
     sub: null,
     icon: "person-outline" as const,
-    color: T.blue,
   },
   {
     id: "help",
     label: "Help & Support",
     sub: "FAQ · Contact us",
     icon: "help-circle-outline" as const,
-    color: T.purple,
   },
 ];
 
@@ -101,11 +91,42 @@ function MetricMini({
 }) {
   return (
     <View style={s.metricMini}>
-      <Text style={[s.metricMiniValue, accent && { color: T.lime }]}>
+      <Text style={[s.metricMiniValue, accent && { color: T.gold }]}>
         {value}
       </Text>
       <Text style={s.metricMiniUnit}>{unit}</Text>
     </View>
+  );
+}
+
+// ─── Sign out button with press-only red accent ──────────────────────────────
+function SignOutButton({
+  onConfirm,
+  pending,
+}: {
+  onConfirm: () => void;
+  pending: boolean;
+}) {
+  const [pressed, setPressed] = useState(false);
+  const tint = pressed ? T.red : T.sub;
+
+  return (
+    <TouchableOpacity
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
+      onPress={onConfirm}
+      activeOpacity={0.85}
+      style={[s.signOutBtn, pressed && s.signOutBtnPressed]}
+    >
+      {pending ? (
+        <ActivityIndicator size="small" color={tint} />
+      ) : (
+        <>
+          <Ionicons name="log-out-outline" size={16} color={tint} />
+          <Text style={[s.signOutText, { color: tint }]}>Sign Out</Text>
+        </>
+      )}
+    </TouchableOpacity>
   );
 }
 
@@ -139,13 +160,16 @@ export default function ProfileScreen() {
   const email = user?.email?.trim() || "—";
   const weightKg =
     typeof profile?.weightKg === "number" && Number.isFinite(profile.weightKg)
-      ? profile.weightKg : 0;
+      ? profile.weightKg
+      : 0;
   const heightCm =
     typeof profile?.heightCm === "number" && Number.isFinite(profile.heightCm)
-      ? profile.heightCm : 0;
+      ? profile.heightCm
+      : 0;
   const ageYears =
     typeof profile?.age === "number" && Number.isFinite(profile.age)
-      ? profile.age : 0;
+      ? profile.age
+      : 0;
   const activeGoal = GOALS.find((g) => g.id === profile?.goalId) ?? GOALS[3];
   const initials = (user?.name?.trim() ?? "A")
     .split(" ")
@@ -162,7 +186,8 @@ export default function ProfileScreen() {
   const thisWeek = Math.min(
     historyRows.filter((h) =>
       /^(Today|Yesterday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)/.test(h.date),
-    ).length, 7,
+    ).length,
+    7,
   );
 
   useEffect(() => {
@@ -192,9 +217,15 @@ export default function ProfileScreen() {
     const nextHeight = parsePositiveNumber(heightInput);
     const nextAge = parsePositiveNumber(ageInput);
 
-    if (!nextName) { Alert.alert("Invalid name", "Please enter a valid name."); return; }
+    if (!nextName) {
+      Alert.alert("Invalid name", "Please enter a valid name.");
+      return;
+    }
     if (!nextWeight || !nextHeight || !nextAge) {
-      Alert.alert("Incomplete profile", "Weight, height, and age must be valid numbers.");
+      Alert.alert(
+        "Incomplete profile",
+        "Weight, height, and age must be valid numbers.",
+      );
       return;
     }
 
@@ -205,8 +236,11 @@ export default function ProfileScreen() {
     setSaveState("saving");
     try {
       await saveUserProfile({
-        name: nextName, goalId: goalInput, weightKg: savedWeight,
-        heightCm: savedHeight, age: savedAge,
+        name: nextName,
+        goalId: goalInput,
+        weightKg: savedWeight,
+        heightCm: savedHeight,
+        age: savedAge,
       });
       await qc.invalidateQueries({ queryKey: ["auth", "session"] });
       await qc.invalidateQueries({ queryKey: ["user", "profile"] });
@@ -219,12 +253,16 @@ export default function ProfileScreen() {
       void (async () => {
         try {
           const result = calculateNutritionGoals({
-            weightKg: savedWeight, heightCm: savedHeight,
-            age: savedAge, goalId: goalInput,
+            weightKg: savedWeight,
+            heightCm: savedHeight,
+            age: savedAge,
+            goalId: goalInput,
           });
           await api.put("/api/nutrition/goals", {
-            calories: result.calories, protein: result.protein,
-            carbs: result.carbs, fat: result.fat,
+            calories: result.calories,
+            protein: result.protein,
+            carbs: result.carbs,
+            fat: result.fat,
           });
           await qc.invalidateQueries({ queryKey: ["nutrition", "goals"] });
         } catch (err) {
@@ -233,13 +271,20 @@ export default function ProfileScreen() {
       })();
     } catch (err) {
       setSaveState("idle");
-      Alert.alert("Save failed", err instanceof Error ? err.message : "Unable to save profile.");
+      Alert.alert(
+        "Save failed",
+        err instanceof Error ? err.message : "Unable to save profile.",
+      );
     }
   }
 
   return (
     <SafeAreaView edges={["top"]} style={s.safe}>
-      <StatusBar barStyle="light-content" backgroundColor={T.bg0} translucent={false} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={T.bg}
+        translucent={false}
+      />
       <View style={s.screen}>
         <ScrollView
           contentContainerStyle={s.scroll}
@@ -252,7 +297,11 @@ export default function ProfileScreen() {
           <View style={s.header}>
             <View style={s.headerLeft}>
               <View style={s.headerLabelRow}>
-                <Ionicons name="shield-checkmark-outline" size={11} color={T.muted} />
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  size={11}
+                  color={T.sub}
+                />
                 <Text style={s.headerLabelText}>ATHLETE PROFILE</Text>
               </View>
               <Text style={s.headerGreeting}>Manage your account,</Text>
@@ -262,25 +311,31 @@ export default function ProfileScreen() {
             {/* Edit / Save button */}
             <TouchableOpacity
               style={[s.editBtn, editMode && s.editBtnActive]}
-              onPress={() => editMode ? void handleSaveProfile() : setEditMode(true)}
+              onPress={() =>
+                editMode ? void handleSaveProfile() : setEditMode(true)
+              }
               disabled={saveState === "saving"}
               activeOpacity={0.8}
             >
               {saveState === "saving" ? (
-                <ActivityIndicator size="small" color={T.bg0} style={{ width: 40 }} />
+                <ActivityIndicator
+                  size="small"
+                  color={T.bg}
+                  style={{ width: 40 }}
+                />
               ) : saveState === "saved" ? (
                 <>
-                  <Ionicons name="checkmark" size={13} color={T.bg0} />
+                  <Ionicons name="checkmark" size={13} color={T.bg} />
                   <Text style={s.editBtnActiveText}>Saved</Text>
                 </>
               ) : editMode ? (
                 <>
-                  <Ionicons name="checkmark" size={13} color={T.bg0} />
+                  <Ionicons name="checkmark" size={13} color={T.bg} />
                   <Text style={s.editBtnActiveText}>Save</Text>
                 </>
               ) : (
                 <>
-                  <Ionicons name="pencil-outline" size={12} color={T.lime} />
+                  <Ionicons name="pencil-outline" size={12} color={T.gold} />
                   <Text style={s.editBtnText}>Edit</Text>
                 </>
               )}
@@ -289,7 +344,7 @@ export default function ProfileScreen() {
 
           {loading && (
             <View style={{ paddingBottom: 8, paddingLeft: 16 }}>
-              <ActivityIndicator color={T.lime} size="small" />
+              <ActivityIndicator color={T.gold} size="small" />
             </View>
           )}
 
@@ -297,22 +352,24 @@ export default function ProfileScreen() {
               2. AVATAR + BIOMETRICS CARD (horizontal)
           ══════════════════════════════════════════════════════════════ */}
           <View style={s.userCard}>
-            {/* Left: circular avatar with lime ring */}
+            {/* Left: sharp avatar container, gold ring */}
             <View style={s.avatarRing}>
               <View style={s.avatar}>
                 <Text style={s.initials}>{initials}</Text>
               </View>
-              <View style={[s.goalDot, { backgroundColor: activeGoal.color }]} />
             </View>
 
             {/* Center: name + tier + email */}
             <View style={s.userInfo}>
-              <Text style={s.userName} numberOfLines={1}>{name}</Text>
+              <Text style={s.userName} numberOfLines={1}>
+                {name}
+              </Text>
               <View style={s.memberBadge}>
-                <Ionicons name="checkmark-circle" size={11} color={T.lime} />
-                <Text style={s.memberText}>Premium Member</Text>
+                <Text style={s.memberText}>PREMIUM</Text>
               </View>
-              <Text style={s.userEmail} numberOfLines={1}>{email}</Text>
+              <Text style={s.userEmail} numberOfLines={1}>
+                {email}
+              </Text>
             </View>
 
             {/* Right: compact vertical metrics */}
@@ -322,16 +379,9 @@ export default function ProfileScreen() {
                 unit="KG"
               />
               <View style={s.metricDivLine} />
-              <MetricMini
-                value={heightCm > 0 ? heightCm : "—"}
-                unit="CM"
-              />
+              <MetricMini value={heightCm > 0 ? heightCm : "—"} unit="CM" />
               <View style={s.metricDivLine} />
-              <MetricMini
-                value={bmi ?? "—"}
-                unit="BMI"
-                accent={!!bmi}
-              />
+              <MetricMini value={bmi ?? "—"} unit="BMI" accent={!!bmi} />
             </View>
           </View>
 
@@ -343,7 +393,10 @@ export default function ProfileScreen() {
               <View style={s.editSectionHeader}>
                 <Text style={s.editSectionTitle}>Edit Profile</Text>
                 <TouchableOpacity
-                  onPress={() => { setEditMode(false); setSaveState("idle"); }}
+                  onPress={() => {
+                    setEditMode(false);
+                    setSaveState("idle");
+                  }}
                   activeOpacity={0.7}
                   style={s.cancelBtn}
                 >
@@ -358,7 +411,7 @@ export default function ProfileScreen() {
                   value={nameInput}
                   onChangeText={setNameInput}
                   placeholder="Your name"
-                  placeholderTextColor={T.muted}
+                  placeholderTextColor={T.sub}
                   style={s.editInput}
                 />
               </View>
@@ -372,7 +425,7 @@ export default function ProfileScreen() {
                     onChangeText={setWeightInput}
                     keyboardType="decimal-pad"
                     placeholder="75"
-                    placeholderTextColor={T.muted}
+                    placeholderTextColor={T.sub}
                     style={s.editInput}
                     selectTextOnFocus
                   />
@@ -384,7 +437,7 @@ export default function ProfileScreen() {
                     onChangeText={setHeightInput}
                     keyboardType="number-pad"
                     placeholder="175"
-                    placeholderTextColor={T.muted}
+                    placeholderTextColor={T.sub}
                     style={s.editInput}
                     selectTextOnFocus
                   />
@@ -396,7 +449,7 @@ export default function ProfileScreen() {
                     onChangeText={setAgeInput}
                     keyboardType="number-pad"
                     placeholder="25"
-                    placeholderTextColor={T.muted}
+                    placeholderTextColor={T.sub}
                     style={s.editInput}
                     selectTextOnFocus
                   />
@@ -413,16 +466,16 @@ export default function ProfileScreen() {
                       key={goal.id}
                       onPress={() => setGoalInput(goal.id)}
                       activeOpacity={0.75}
-                      style={[
-                        s.goalChip,
-                        active && {
-                          backgroundColor: goal.color + "20",
-                          borderColor: goal.color + "60",
-                        },
-                      ]}
+                      style={[s.goalChip, active && s.goalChipActive]}
                     >
-                      <Ionicons name={goal.icon} size={13} color={active ? goal.color : T.muted} />
-                      <Text style={[s.goalChipText, active && { color: goal.color }]}>
+                      <Ionicons
+                        name={goal.icon}
+                        size={13}
+                        color={active ? T.gold : T.sub}
+                      />
+                      <Text
+                        style={[s.goalChipText, active && { color: T.gold }]}
+                      >
                         {goal.label}
                       </Text>
                     </TouchableOpacity>
@@ -439,28 +492,24 @@ export default function ProfileScreen() {
           <View style={s.snapshotRow}>
             {/* Streak card */}
             <View style={s.snapshotCard}>
-              <View style={[s.snapshotIconBox, { backgroundColor: T.orange + "18" }]}>
-                <Ionicons name="flame" size={18} color={T.orange} />
-              </View>
+              <Ionicons name="flame-outline" size={18} color={T.sub} />
               <Text style={s.snapshotValue}>{streakDays}</Text>
               <Text style={s.snapshotLabel}>Total Sessions</Text>
             </View>
 
             {/* This week card */}
             <View style={s.snapshotCard}>
-              <View style={[s.snapshotIconBox, { backgroundColor: T.lime + "18" }]}>
-                <Ionicons name="calendar-outline" size={18} color={T.lime} />
-              </View>
-              <Text style={[s.snapshotValue, { color: T.lime }]}>{thisWeek}</Text>
+              <Ionicons name="calendar-outline" size={18} color={T.sub} />
+              <Text style={[s.snapshotValue, { color: T.gold }]}>
+                {thisWeek}
+              </Text>
               <Text style={s.snapshotLabel}>This Week</Text>
             </View>
 
             {/* Active goal card */}
             <View style={s.snapshotCard}>
-              <View style={[s.snapshotIconBox, { backgroundColor: activeGoal.color + "18" }]}>
-                <Ionicons name={activeGoal.icon} size={18} color={activeGoal.color} />
-              </View>
-              <Text style={[s.snapshotValue, { color: activeGoal.color, fontSize: 13, lineHeight: 15 }]}>
+              <Ionicons name={activeGoal.icon} size={18} color={T.sub} />
+              <Text style={[s.snapshotValue, { fontSize: 13, lineHeight: 15 }]}>
                 {activeGoal.label.split(" ")[0]}
               </Text>
               <Text style={s.snapshotLabel}>Goal</Text>
@@ -475,7 +524,6 @@ export default function ProfileScreen() {
             {SETTINGS.map((setting, i) => {
               const isLast = i === SETTINGS.length - 1;
 
-              // Build the right-side value for specific rows
               let rightValue: string | null = null;
               if (setting.id === "goal") rightValue = activeGoal.label;
               if (setting.id === "account") rightValue = email;
@@ -497,15 +545,8 @@ export default function ProfileScreen() {
                     }
                   }}
                 >
-                  {/* Icon badge */}
-                  <View
-                    style={[
-                      s.settingIconBadge,
-                      { backgroundColor: setting.color + "18" },
-                    ]}
-                  >
-                    <Ionicons name={setting.icon} size={16} color={setting.color} />
-                  </View>
+                  {/* Icon — plain, no colored badge */}
+                  <Ionicons name={setting.icon} size={18} color={T.sub} />
 
                   {/* Title + optional sub */}
                   <View style={s.settingContent}>
@@ -517,12 +558,7 @@ export default function ProfileScreen() {
                     )}
                   </View>
 
-                  {/* Right: value or chevron */}
-                  <Ionicons
-                    name="chevron-forward"
-                    size={14}
-                    color={T.muted}
-                  />
+                  <Ionicons name="chevron-forward" size={14} color={T.sub} />
                 </TouchableOpacity>
               );
             })}
@@ -531,8 +567,9 @@ export default function ProfileScreen() {
           {/* ══════════════════════════════════════════════════════════════
               6. SIGN OUT
           ══════════════════════════════════════════════════════════════ */}
-          <TouchableOpacity
-            onPress={() =>
+          <SignOutButton
+            pending={signOutMutation.isPending}
+            onConfirm={() =>
               Alert.alert(
                 "Sign out?",
                 "You'll need to sign back in to access your data.",
@@ -546,18 +583,7 @@ export default function ProfileScreen() {
                 ],
               )
             }
-            activeOpacity={0.8}
-            style={s.signOutBtn}
-          >
-            {signOutMutation.isPending ? (
-              <ActivityIndicator size="small" color={T.red} />
-            ) : (
-              <>
-                <Ionicons name="log-out-outline" size={16} color={T.red} />
-                <Text style={s.signOutText}>Sign Out</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          />
 
           <View style={{ height: 40 }} />
         </ScrollView>
@@ -568,10 +594,10 @@ export default function ProfileScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: T.bg0 },
+  safe: { flex: 1, backgroundColor: T.bg },
   screen: {
     flex: 1,
-    backgroundColor: T.bg0,
+    backgroundColor: T.bg,
     maxWidth: 430,
     alignSelf: "center",
     width: "100%",
@@ -600,7 +626,7 @@ const s = StyleSheet.create({
   headerLabelText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 12,
-    color: T.muted,
+    color: T.sub,
     letterSpacing: 1.5,
   },
   headerGreeting: {
@@ -619,78 +645,55 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: T.bg3,
-    borderWidth: 1,
-    borderColor: T.borderMid,
+    backgroundColor: T.card,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
   editBtnActive: {
-    backgroundColor: T.lime,
-    borderColor: T.lime,
-    shadowColor: T.lime,
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 4,
+    backgroundColor: T.gold,
   },
   editBtnText: {
     fontFamily: "DMSans_600SemiBold",
     fontSize: 13,
-    color: T.lime,
+    color: T.gold,
   },
   editBtnActiveText: {
     fontFamily: "DMSans_600SemiBold",
     fontSize: 13,
-    color: T.bg0,
+    color: T.bg,
   },
 
   // ── 2. Avatar + biometrics card ────────────────────────────────────────────
   userCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: T.bg1,
+    backgroundColor: T.card,
     borderRadius: 20,
     padding: 16,
     marginBottom: 12,
     gap: 14,
   },
 
-  // Avatar with lime ring
+  // Avatar — sharp container, gold ring
   avatarRing: {
     position: "relative",
   },
   avatar: {
     width: 64,
     height: 64,
-    borderRadius: 32,
-    backgroundColor: T.bg3,
+    borderRadius: 16,
+    backgroundColor: T.surface,
     borderWidth: 1.5,
-    borderColor: T.lime + "AA",
+    borderColor: T.gold + "AA",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: T.lime,
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 3,
   },
   initials: {
     fontFamily: "BarlowCondensed_900Black",
     fontSize: 24,
     color: T.text,
     letterSpacing: 1,
-  },
-  goalDot: {
-    position: "absolute",
-    bottom: 1,
-    right: 1,
-    width: 13,
-    height: 13,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: T.bg1,
   },
 
   // Center: user info
@@ -706,25 +709,22 @@ const s = StyleSheet.create({
     lineHeight: 22,
   },
   memberBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
     alignSelf: "flex-start",
-    backgroundColor: T.lime + "14",
+    backgroundColor: T.gold + "14",
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   memberText: {
-    fontFamily: "DMSans_500Medium",
+    fontFamily: "DMSans_600SemiBold",
     fontSize: 9,
-    color: T.lime,
-    letterSpacing: 0.4,
+    color: T.gold,
+    letterSpacing: 0.6,
   },
   userEmail: {
     fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: T.muted,
+    color: T.sub,
   },
 
   // Right: compact metrics column
@@ -746,7 +746,7 @@ const s = StyleSheet.create({
   metricMiniUnit: {
     fontFamily: "DMSans_500Medium",
     fontSize: 8,
-    color: T.muted,
+    color: T.sub,
     letterSpacing: 0.5,
     lineHeight: 10,
   },
@@ -760,13 +760,11 @@ const s = StyleSheet.create({
 
   // ── 3. Edit section ────────────────────────────────────────────────────────
   editSection: {
-    backgroundColor: T.bg1,
+    backgroundColor: T.card,
     borderRadius: 20,
     padding: 16,
     marginBottom: 12,
     gap: 12,
-    borderWidth: 1,
-    borderColor: T.lime + "22",
   },
   editSectionHeader: {
     flexDirection: "row",
@@ -784,9 +782,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 10,
-    backgroundColor: T.bg3,
-    borderWidth: 1,
-    borderColor: T.borderMid,
+    backgroundColor: T.surface,
   },
   cancelBtnText: {
     fontFamily: "DMSans_500Medium",
@@ -803,16 +799,14 @@ const s = StyleSheet.create({
   editFieldLabel: {
     fontFamily: "DMSans_500Medium",
     fontSize: 10,
-    color: T.muted,
+    color: T.sub,
     letterSpacing: 0.4,
   },
   editInput: {
     fontFamily: "DMSans_400Regular",
     fontSize: 14,
     color: T.text,
-    backgroundColor: T.bg2,
-    borderWidth: 1,
-    borderColor: T.border,
+    backgroundColor: T.surface,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -829,17 +823,18 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: T.bg2,
+    backgroundColor: T.surface,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: T.border,
     paddingHorizontal: 12,
     paddingVertical: 8,
+  },
+  goalChipActive: {
+    backgroundColor: T.gold + "16",
   },
   goalChipText: {
     fontFamily: "DMSans_500Medium",
     fontSize: 12,
-    color: T.muted,
+    color: T.sub,
   },
 
   // ── 4. Performance snapshot ────────────────────────────────────────────────
@@ -858,20 +853,12 @@ const s = StyleSheet.create({
   },
   snapshotCard: {
     flex: 1,
-    backgroundColor: T.bg1,
+    backgroundColor: T.card,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 12,
     alignItems: "center",
-    gap: 6,
-  },
-  snapshotIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 2,
+    gap: 8,
   },
   snapshotValue: {
     fontFamily: "BarlowCondensed_900Black",
@@ -883,14 +870,14 @@ const s = StyleSheet.create({
   snapshotLabel: {
     fontFamily: "DMSans_400Regular",
     fontSize: 9,
-    color: T.muted,
+    color: T.sub,
     letterSpacing: 0.4,
     textAlign: "center",
   },
 
   // ── 5. Settings card ──────────────────────────────────────────────────────
   settingsCard: {
-    backgroundColor: T.bg1,
+    backgroundColor: T.card,
     borderRadius: 20,
     overflow: "hidden",
     marginBottom: 16,
@@ -898,18 +885,11 @@ const s = StyleSheet.create({
   settingRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: T.border,
-  },
-  settingIconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
   },
   settingContent: {
     flex: 1,
@@ -923,7 +903,7 @@ const s = StyleSheet.create({
   settingValue: {
     fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: T.muted,
+    color: T.sub,
   },
 
   // ── 6. Sign out ───────────────────────────────────────────────────────────
@@ -932,16 +912,18 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    borderWidth: 1.5,
-    borderColor: T.red + "40",
+    borderWidth: 1,
+    borderColor: T.border,
     backgroundColor: "transparent",
     borderRadius: 16,
     paddingVertical: 14,
   },
+  signOutBtnPressed: {
+    borderColor: T.red + "55",
+  },
   signOutText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 16,
-    color: T.red,
     letterSpacing: 0.3,
   },
 });

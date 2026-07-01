@@ -10,42 +10,40 @@ import {
   View,
 } from "react-native";
 
+// ─── Theme constants ──────────────────────────────────────────────────────────
+const GOLD = "#FFC700";
+const GOLD_TINT = "rgba(255,199,0,0.10)";
+const GOLD_BORDER = "rgba(255,199,0,0.22)";
+const SURFACE = "#1E1E1E";
+const SURFACE_2 = "#2A2A2A";
+const BG = "#121212";
+
 // ─── StatsCard ────────────────────────────────────────────────────────────────
 
 type StatsCardProps = {
   label: string;
   value: string | number;
   unit?: string;
-  color?: string;
   icon?: string;
+  // color prop removed — values default to white, gold reserved for
+  // primary metric (caller sets via a dedicated variant if needed)
   trend?: "up" | "down" | "neutral";
 };
 
-export function StatsCard({
-  label,
-  value,
-  unit,
-  color = COLORS.text,
-  icon,
-  trend,
-}: StatsCardProps) {
+export function StatsCard({ label, value, unit, icon, trend }: StatsCardProps) {
+  // up → gold (positive), down → red (danger), neutral → muted
   const trendColor =
-    trend === "up"
-      ? COLORS.accent
-      : trend === "down"
-        ? COLORS.red
-        : COLORS.muted;
+    trend === "up" ? GOLD : trend === "down" ? COLORS.red : COLORS.muted;
 
-  // ✅ "neutral" trend shows a dash, not an arrow
   const trendIcon = trend === "up" ? "↑" : trend === "down" ? "↓" : "–";
 
   return (
     <View style={s.statsCard}>
-      {/* Top row — label + icon */}
+      {/* Top row — label + optional icon */}
       <View style={s.statsTop}>
         <Text style={s.statsLabel}>{label}</Text>
         {icon ? (
-          <View style={[s.statsIconBadge, { backgroundColor: color + "15" }]}>
+          <View style={s.statsIconBadge}>
             <Text style={s.statsIcon}>{icon}</Text>
           </View>
         ) : null}
@@ -53,17 +51,17 @@ export function StatsCard({
 
       {/* Value row */}
       <View style={s.statsValueRow}>
-        <Text style={[s.statsValue, { color }]}>{value}</Text>
+        <Text style={s.statsValue}>{value}</Text>
         {unit ? <Text style={s.statsUnit}>{unit}</Text> : null}
       </View>
 
-      {/* Trend indicator */}
+      {/* Trend badge */}
       {trend ? (
         <View
           style={[
             s.statsTrendBadge,
             {
-              backgroundColor: trendColor + "15",
+              backgroundColor: trendColor + "18",
               borderColor: trendColor + "30",
             },
           ]}
@@ -83,17 +81,16 @@ type PrimaryButtonProps = {
   label: string;
   onPress: () => void;
   outline?: boolean;
-  color?: string;
   small?: boolean;
   disabled?: boolean;
   icon?: string;
+  // color prop removed — gold is the single button accent
 };
 
 export function PrimaryButton({
   label,
   onPress,
   outline = false,
-  color = COLORS.accent,
   small = false,
   disabled = false,
   icon,
@@ -114,13 +111,12 @@ export function PrimaryButton({
       speed: 20,
     }).start();
 
-  const bgColor = outline ? "transparent" : disabled ? COLORS.muted2 : color;
-  const borderColor = outline
-    ? disabled
-      ? COLORS.muted2
-      : color
-    : "transparent";
-  const labelColor = outline ? (disabled ? COLORS.muted : color) : COLORS.bg;
+  // Solid: gold fill, charcoal label
+  // Outline: transparent fill, gold border + label
+  // Disabled: muted surface regardless of variant
+  const bgColor = disabled ? SURFACE_2 : outline ? "transparent" : GOLD;
+  const borderColor = disabled ? SURFACE_2 : GOLD;
+  const labelColor = disabled ? COLORS.muted : outline ? GOLD : BG;
 
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
@@ -136,8 +132,6 @@ export function PrimaryButton({
           {
             backgroundColor: bgColor,
             borderColor,
-            // ✅ Use opacity style prop, not a conditional value —
-            // avoids layout thrash and works correctly with Animated.View
             opacity: disabled ? 0.5 : 1,
           },
         ]}
@@ -165,6 +159,7 @@ export function SectionHeader({ title, action, onAction }: SectionHeaderProps) {
   return (
     <View style={s.sectionHeader}>
       <View style={s.sectionTitleWrap}>
+        {/* Gold accent bar — single brand touch, no color prop needed */}
         <View style={s.sectionAccentBar} />
         <Text style={s.sectionTitle}>{title}</Text>
       </View>
@@ -173,7 +168,6 @@ export function SectionHeader({ title, action, onAction }: SectionHeaderProps) {
           onPress={onAction}
           activeOpacity={0.7}
           style={s.sectionActionBtn}
-          // ✅ Prevent crash when action label is shown but no handler provided
           disabled={!onAction}
         >
           <Text style={s.sectionAction}>{action}</Text>
@@ -207,6 +201,7 @@ export function TabBar({ tabs, active, onChange }: TabBarProps) {
             <Text style={[s.tabLabel, isActive && s.tabLabelActive]}>
               {tab}
             </Text>
+            {/* Dot only on active — subtle indicator without extra color */}
             {isActive && <View style={s.tabDot} />}
           </TouchableOpacity>
         );
@@ -217,14 +212,14 @@ export function TabBar({ tabs, active, onChange }: TabBarProps) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  // StatsCard
+  // ── StatsCard ───────────────────────────────────────────────────────────────
   statsCard: {
     flex: 1,
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
+    backgroundColor: SURFACE,
+    borderRadius: 14,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: SURFACE_2, // was COLORS.border — darker, less chrome
     gap: spacing.xs,
   },
   statsTop: {
@@ -235,13 +230,14 @@ const s = StyleSheet.create({
   statsLabel: {
     fontFamily: FONTS.medium,
     fontSize: 11,
-    color: COLORS.muted,
+    color: COLORS.muted, // #A0A0A0
     letterSpacing: 0.4,
   },
   statsIconBadge: {
     width: 26,
     height: 26,
     borderRadius: 7,
+    backgroundColor: GOLD_TINT, // unified gold tint — was color + "15"
     alignItems: "center",
     justifyContent: "center",
   },
@@ -257,6 +253,7 @@ const s = StyleSheet.create({
     fontFamily: FONTS.black,
     fontSize: 26,
     lineHeight: 30,
+    color: COLORS.text, // #FFFFFF — was dynamic color prop
   },
   statsUnit: {
     fontFamily: FONTS.regular,
@@ -277,7 +274,7 @@ const s = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // PrimaryButton
+  // ── PrimaryButton ───────────────────────────────────────────────────────────
   btn: {
     flexDirection: "row",
     alignItems: "center",
@@ -306,7 +303,7 @@ const s = StyleSheet.create({
     fontSize: 13,
   },
 
-  // SectionHeader
+  // ── SectionHeader ───────────────────────────────────────────────────────────
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -323,7 +320,7 @@ const s = StyleSheet.create({
     width: 3,
     height: 16,
     borderRadius: 2,
-    backgroundColor: COLORS.accent,
+    backgroundColor: GOLD, // was COLORS.accent
   },
   sectionTitle: {
     fontFamily: FONTS.bold,
@@ -338,25 +335,25 @@ const s = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: spacing.sm,
     borderRadius: 8,
-    backgroundColor: COLORS.accent + "15",
+    backgroundColor: GOLD_TINT, // was COLORS.accent + "15"
     borderWidth: 1,
-    borderColor: COLORS.accent + "25",
+    borderColor: GOLD_BORDER, // was COLORS.accent + "25"
   },
   sectionAction: {
     fontFamily: FONTS.semiBold,
     fontSize: 12,
-    color: COLORS.accent,
+    color: GOLD, // was COLORS.accent
   },
 
-  // TabBar
+  // ── TabBar ──────────────────────────────────────────────────────────────────
   tabBar: {
     flexDirection: "row",
     gap: spacing.xs,
-    backgroundColor: COLORS.bg2,
+    backgroundColor: SURFACE, // was COLORS.bg2 — unified to surface
     padding: spacing.xs,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: SURFACE_2,
     marginBottom: spacing.lg,
   },
   tabItem: {
@@ -367,7 +364,7 @@ const s = StyleSheet.create({
     gap: 4,
   },
   tabItemActive: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: GOLD, // was COLORS.accent
   },
   tabLabel: {
     fontFamily: FONTS.semiBold,
@@ -377,12 +374,12 @@ const s = StyleSheet.create({
   },
   tabLabelActive: {
     fontFamily: FONTS.bold,
-    color: COLORS.bg,
+    color: BG, // charcoal on gold — was COLORS.bg
   },
   tabDot: {
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: COLORS.bg + "80",
+    backgroundColor: BG + "80", // was COLORS.bg + "80"
   },
 });

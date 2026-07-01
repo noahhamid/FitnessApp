@@ -2,28 +2,127 @@ import {
   signInWithApple,
   signInWithGoogle,
 } from "@/src/features/auth/services/auth.service";
-import { C } from "@/src/ui/tokens/colors";
 import { FONTS } from "@/src/ui/tokens/typography";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
+// --- Muscle Monster theme tokens ---
+// Move into src/ui/tokens/colors.ts and export as `C` for app-wide reuse;
+// kept local here so this file is drop-in ready and stays in sync with
+// the values used in GoalsForm / ProfileMetricsForm.
+const C = {
+  bg: "#121212",
+  card: "#1E1E1E",
+  border: "#2A2A2A",
+  accent: "#FFC700",
+  text: "#FFFFFF",
+  muted: "#A0A0A0",
+};
+
 type Props = { onSuccess?: () => void };
 
+// Strict monochrome glyphs — no brand colors. AppleIcon relies on the
+// system SF Symbols private-use glyph (iOS/macOS render it as the Apple
+// logo; Android will show a blank box, so swap in an SVG path if you
+// support Android — see note below).
 function AppleIcon() {
-  return <Text style={{ fontSize: 18, color: C.text, lineHeight: 22 }}></Text>;
+  return <Text style={s.appleGlyph}></Text>;
 }
 
+// Monochrome "G" mark — flat white ring, zero brand blue/red/green.
 function GoogleIcon() {
   return (
     <View style={s.gBadge}>
       <Text style={s.gText}>G</Text>
     </View>
+  );
+}
+
+// Shared button: handles press-scale + gold border glow animation.
+function OAuthButton({
+  icon,
+  label,
+  loading,
+  disabled,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  loading: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const glow = useRef(new Animated.Value(0)).current;
+
+  const pressIn = () => {
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 0.97,
+        speed: 40,
+        bounciness: 6,
+        useNativeDriver: true,
+      }),
+      Animated.timing(glow, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const pressOut = () => {
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 1,
+        speed: 40,
+        bounciness: 6,
+        useNativeDriver: true,
+      }),
+      Animated.timing(glow, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
+  const borderColor = glow.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["transparent", C.accent],
+  });
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={pressIn}
+      onPressOut={pressOut}
+      disabled={disabled}
+    >
+      <Animated.View
+        style={[
+          s.btn,
+          { borderColor, transform: [{ scale }] },
+          loading && s.btnLoading,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color={C.text} />
+        ) : (
+          <>
+            {icon}
+            <Text style={s.btnText}>Continue with {label}</Text>
+          </>
+        )}
+      </Animated.View>
+    </Pressable>
   );
 }
 
@@ -65,38 +164,21 @@ export function OAuthButtons({ onSuccess }: Props) {
         <View style={s.dividerLine} />
       </View>
 
-      <View style={s.row}>
-        <TouchableOpacity
-          style={[s.btn, loading === "apple" && s.btnLoading]}
+      <View style={s.col}>
+        <OAuthButton
+          icon={<AppleIcon />}
+          label="Apple"
+          loading={loading === "apple"}
+          disabled={!!loading}
           onPress={handleApple}
+        />
+        <OAuthButton
+          icon={<GoogleIcon />}
+          label="Google"
+          loading={loading === "google"}
           disabled={!!loading}
-          activeOpacity={0.8}
-        >
-          {loading === "apple" ? (
-            <ActivityIndicator size="small" color={C.text} />
-          ) : (
-            <>
-              <AppleIcon />
-              <Text style={s.btnText}>Apple</Text>
-            </>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[s.btn, loading === "google" && s.btnLoading]}
           onPress={handleGoogle}
-          disabled={!!loading}
-          activeOpacity={0.8}
-        >
-          {loading === "google" ? (
-            <ActivityIndicator size="small" color={C.text} />
-          ) : (
-            <>
-              <GoogleIcon />
-              <Text style={s.btnText}>Google</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        />
       </View>
 
       {error && <Text style={s.errorText}>{error}</Text>}
@@ -124,43 +206,51 @@ const s = StyleSheet.create({
     fontFamily: FONTS.bold,
   },
 
-  row: { flexDirection: "row", gap: 12 },
+  // Stacked full-width bars — matches the height/radius of the metric
+  // inputs (paddingVertical 16-18, borderRadius 16) so the auth screen
+  // feels continuous with the rest of onboarding.
+  col: { gap: 12 },
 
   btn: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 10,
     borderWidth: 1.5,
-    borderColor: C.border,
-    borderRadius: 14,
-    paddingVertical: 14,
-    backgroundColor: C.bg3,
+    borderRadius: 16,
+    paddingVertical: 16,
+    backgroundColor: C.card,
   },
   btnLoading: { opacity: 0.6 },
   btnText: {
     fontFamily: FONTS.semiBold,
     color: C.text,
-    fontSize: 14,
+    fontSize: 15,
+  },
+
+  appleGlyph: {
+    fontSize: 18,
+    color: C.text,
+    lineHeight: 22,
   },
 
   gBadge: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    backgroundColor: "#4285F4",
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: C.text,
     alignItems: "center",
     justifyContent: "center",
   },
   gText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#fff",
+    color: C.text,
   },
 
   errorText: {
-    color: "red",
+    color: "#FF5C5C",
     fontSize: 12,
     fontFamily: FONTS.regular,
     textAlign: "center",

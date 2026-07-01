@@ -1,20 +1,35 @@
-import { Input } from "@/src/ui/components/Input";
 import { ProgressDots } from "@/src/ui/components/ProgressDots";
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS } from "@/src/ui/tokens";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  TextInput,
   View,
 } from "react-native";
 import { useSaveProfile } from "../hooks/useProfile";
+
+// --- Muscle Monster theme tokens ---
+// Move into src/ui/tokens.ts and export as `C` for app-wide reuse;
+// kept local here so this file is drop-in ready.
+const C = {
+  bg: "#121212",
+  bg2: "#181818",
+  card: "#1E1E1E",
+  border: "#2A2A2A",
+  accent: "#FFC700",
+  accentDim: "rgba(255, 199, 0, 0.10)",
+  text: "#FFFFFF",
+  muted: "#A0A0A0",
+};
 
 type Props = {
   onNext: (metrics: {
@@ -33,6 +48,59 @@ const GOAL_COPY: Record<string, string> = {
   health: "We need your stats to build your balanced plan.",
 };
 
+// --- Premium metric input: borderless dark block, gold focus ring, inline unit ---
+function MetricInput({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  unit,
+  keyboardType = "numeric",
+}: {
+  label: string;
+  value: string;
+  onChangeText: (t: string) => void;
+  placeholder: string;
+  unit?: string;
+  keyboardType?: "numeric" | "default";
+}) {
+  const [focused, setFocused] = useState(false);
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: focused ? 1 : 0,
+      duration: 180,
+      useNativeDriver: false,
+    }).start();
+  }, [focused]);
+
+  const borderColor = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["transparent", C.accent],
+  });
+
+  return (
+    <View style={s.metricWrap}>
+      <Text style={s.metricLabel}>{label}</Text>
+      <Animated.View style={[s.metricBox, { borderColor }]}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={C.muted}
+          keyboardType={keyboardType}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={s.metricInput}
+          selectionColor={C.accent}
+        />
+        {unit && <Text style={s.metricUnit}>{unit}</Text>}
+      </Animated.View>
+    </View>
+  );
+}
+
 export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
@@ -47,6 +115,8 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
   const subCopy = goalId
     ? GOAL_COPY[goalId]
     : "We need your stats to personalise your plan.";
+
+  const finishScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     return () => {
@@ -88,6 +158,21 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
     }
   }
 
+  const pressIn = (v: Animated.Value) =>
+    Animated.spring(v, {
+      toValue: 0.97,
+      speed: 40,
+      bounciness: 6,
+      useNativeDriver: true,
+    }).start();
+  const pressOut = (v: Animated.Value) =>
+    Animated.spring(v, {
+      toValue: 1,
+      speed: 40,
+      bounciness: 6,
+      useNativeDriver: true,
+    }).start();
+
   return (
     <SafeAreaView style={s.safe}>
       <KeyboardAvoidingView
@@ -108,44 +193,43 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
 
           <View style={s.unitRow}>
             <Text style={s.unitLabel}>UNIT</Text>
-            <View style={s.unitToggle}>
+            <View style={s.segment}>
               {(["kg", "lbs"] as const).map((u) => (
-                <TouchableOpacity
+                <Pressable
                   key={u}
                   onPress={() => setUnit(u)}
-                  style={[s.unitTab, unit === u && s.unitTabActive]}
-                  activeOpacity={0.8}
+                  style={[s.segmentTab, unit === u && s.segmentTabActive]}
                 >
                   <Text
-                    style={[s.unitTabText, unit === u && s.unitTabTextActive]}
+                    style={[s.segmentText, unit === u && s.segmentTextActive]}
                   >
                     {u.toUpperCase()}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </View>
           </View>
 
-          <Input
-            label={`Weight (${unit})`}
+          <MetricInput
+            label={`WEIGHT`}
             value={weight}
             onChangeText={setWeight}
             placeholder={unit === "kg" ? "75" : "165"}
-            keyboardType="numeric"
+            unit={unit}
           />
-          <Input
-            label="Height (cm)"
+          <MetricInput
+            label="HEIGHT"
             value={height}
             onChangeText={setHeight}
             placeholder="175"
-            keyboardType="numeric"
+            unit="cm"
           />
-          <Input
-            label="Age"
+          <MetricInput
+            label="AGE"
             value={age}
             onChangeText={setAge}
             placeholder="25"
-            keyboardType="numeric"
+            unit="yrs"
           />
 
           <Text style={s.privacy}>
@@ -159,32 +243,34 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
           )}
 
           <View style={s.nav}>
-            <TouchableOpacity
-              style={s.backBtn}
-              onPress={onBack}
-              disabled={loading}
-            >
+            <Pressable style={s.backBtn} onPress={onBack} disabled={loading}>
               <Text style={s.backText}>← BACK</Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity
+            <Pressable
               disabled={!canFinish || loading}
               onPress={handleFinish}
-              activeOpacity={0.8}
-              style={[
-                s.finishBtn,
-                (!canFinish || loading) && s.finishBtnDisabled,
-              ]}
+              onPressIn={() => pressIn(finishScale)}
+              onPressOut={() => pressOut(finishScale)}
+              style={{ flex: 2 }}
             >
-              {loading ? (
-                <View style={s.loadingRow}>
-                  <ActivityIndicator color={C.bg} size="small" />
-                  <Text style={s.finishBtnText}>Saving...</Text>
-                </View>
-              ) : (
-                <Text style={s.finishBtnText}>FINISH SETUP →</Text>
-              )}
-            </TouchableOpacity>
+              <Animated.View
+                style={[
+                  s.finishBtn,
+                  (!canFinish || loading) && s.finishBtnDisabled,
+                  { transform: [{ scale: finishScale }] },
+                ]}
+              >
+                {loading ? (
+                  <View style={s.loadingRow}>
+                    <ActivityIndicator color={C.bg} size="small" />
+                    <Text style={s.finishBtnText}>Saving...</Text>
+                  </View>
+                ) : (
+                  <Text style={s.finishBtnText}>CALCULATE MY PLAN →</Text>
+                )}
+              </Animated.View>
+            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -195,7 +281,7 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   scroll: {
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     paddingTop: 52,
     paddingBottom: 48,
     flexGrow: 1,
@@ -223,6 +309,8 @@ const s = StyleSheet.create({
     color: C.muted,
     lineHeight: 21,
   },
+
+  // Unit row (top toggle)
   unitRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -235,27 +323,64 @@ const s = StyleSheet.create({
     letterSpacing: 2,
     fontFamily: FONTS.bold,
   },
-  unitToggle: {
+
+  // Shared segmented control (used for unit toggle; reuse for gender picker)
+  segment: {
+    flex: 1,
     flexDirection: "row",
-    backgroundColor: C.bg3,
-    borderRadius: 10,
-    padding: 3,
-    borderWidth: 1,
-    borderColor: C.border,
+    backgroundColor: C.card,
+    borderRadius: 12,
+    padding: 4,
   },
-  unitTab: {
-    paddingVertical: 7,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+  segmentTab: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  unitTabActive: { backgroundColor: C.accent },
-  unitTabText: {
+  segmentTabActive: { backgroundColor: C.accent },
+  segmentText: {
     fontFamily: FONTS.bold,
     fontSize: 12,
     letterSpacing: 1,
     color: C.muted,
   },
-  unitTabTextActive: { color: C.bg },
+  segmentTextActive: { color: C.bg },
+
+  // Premium metric input blocks
+  metricWrap: { marginBottom: 16 },
+  metricLabel: {
+    fontFamily: FONTS.bold,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    color: C.muted,
+    marginBottom: 8,
+  },
+  metricBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: C.card,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  metricInput: {
+    flex: 1,
+    fontFamily: FONTS.bold,
+    fontSize: 20,
+    color: C.text,
+    padding: 0,
+  },
+  metricUnit: {
+    fontFamily: FONTS.bold,
+    fontSize: 13,
+    color: C.muted,
+    letterSpacing: 0.5,
+    marginLeft: 12,
+  },
+
   privacy: {
     fontFamily: FONTS.regular,
     fontSize: 12,
@@ -266,21 +391,22 @@ const s = StyleSheet.create({
     opacity: 0.6,
   },
   errorText: {
-    color: "red",
+    color: "#FF5C5C",
     fontSize: 13,
     textAlign: "center",
     marginTop: 8,
     fontFamily: FONTS.regular,
   },
+
   nav: { flexDirection: "row", marginTop: 24, gap: 12 },
   backBtn: {
     flex: 1,
     borderWidth: 1.5,
     borderColor: C.border,
-    borderRadius: 14,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 16,
+    paddingVertical: 18,
   },
   backText: {
     fontFamily: FONTS.bold,
@@ -289,14 +415,18 @@ const s = StyleSheet.create({
     letterSpacing: 0.8,
   },
   finishBtn: {
-    flex: 2,
     backgroundColor: C.accent,
-    borderRadius: 14,
-    paddingVertical: 16,
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: C.accent,
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
   },
-  finishBtnDisabled: { opacity: 0.45 },
+  finishBtnDisabled: { opacity: 0.35, shadowOpacity: 0 },
   loadingRow: {
     flexDirection: "row",
     alignItems: "center",

@@ -4,25 +4,28 @@ import { useEffect, useRef } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, G } from "react-native-svg";
 
-// ✅ Created once at module level — not inside the component.
-// Calling createAnimatedComponent() inside a component body recreates it
-// on every render, which breaks animation state and causes flickering.
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+// ─── Theme constants ──────────────────────────────────────────────────────────
+const GOLD = "#FFC700";
+const GOLD_TINT = "rgba(255,199,0,0.10)";
+const GOLD_BORDER = "rgba(255,199,0,0.22)";
+const TRACK = "#2A2A2A";
 
 type Props = {
   pct: number;
   size?: number;
   stroke?: number;
-  color?: string;
   label: string;
   sub?: string;
 };
 
+// color prop removed — gold is the single source of truth for all arcs.
+// Pass isOver-sensitive color decisions down through internal logic, not props.
 export function ProgressCircle({
   pct,
   size = 130,
   stroke = 12,
-  color = COLORS.accent,
   label,
   sub,
 }: Props) {
@@ -47,26 +50,30 @@ export function ProgressCircle({
     outputRange: [circ, 0],
   });
 
+  const arcColor = isOver ? COLORS.red : GOLD;
+  const labelColor = isOver ? COLORS.red : COLORS.text; // white when healthy
+  const pctColor = isOver ? COLORS.red : GOLD;
+
   return (
     <View style={[s.wrap, { width: size, height: size }]}>
       <Svg width={size} height={size} style={s.svg}>
-        {/* Track */}
+        {/* Dark matte track — replaces the old COLORS.border ring */}
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={COLORS.border}
+          stroke={TRACK}
           strokeWidth={stroke}
           fill="none"
         />
 
-        {/* Progress arc — rotated so it starts at 12 o'clock */}
+        {/* Progress arc — starts at 12 o'clock */}
         <G rotation="-90" origin={`${size / 2}, ${size / 2}`}>
           <AnimatedCircle
             cx={size / 2}
             cy={size / 2}
             r={r}
-            stroke={isOver ? COLORS.red : color}
+            stroke={arcColor}
             strokeWidth={stroke}
             fill="none"
             strokeDasharray={circ}
@@ -84,22 +91,14 @@ export function ProgressCircle({
           </View>
         )}
         <Text
-          style={[
-            s.label,
-            {
-              fontSize: size * 0.175,
-              color: isOver ? COLORS.red : COLORS.text,
-            },
-          ]}
+          style={[s.label, { fontSize: size * 0.175, color: labelColor }]}
           numberOfLines={1}
           adjustsFontSizeToFit
         >
           {label}
         </Text>
         {sub ? <Text style={s.sub}>{sub}</Text> : null}
-        <Text style={[s.pct, { color: isOver ? COLORS.red : color }]}>
-          {Math.round(pct)}%
-        </Text>
+        <Text style={[s.pct, { color: pctColor }]}>{Math.round(pct)}%</Text>
       </View>
     </View>
   );
@@ -117,6 +116,9 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 1,
   },
+
+  // ── Over-budget badge ─────────────────────────────────────────────────────
+  // Red is kept as the sole semantic exception — danger state only
   overBadge: {
     backgroundColor: COLORS.red + "18",
     borderWidth: 1,
@@ -132,6 +134,8 @@ const s = StyleSheet.create({
     color: COLORS.red,
     letterSpacing: 0.5,
   },
+
+  // ── Center labels ─────────────────────────────────────────────────────────
   label: {
     fontFamily: FONTS.black,
     lineHeight: undefined,
@@ -139,7 +143,7 @@ const s = StyleSheet.create({
   sub: {
     fontFamily: FONTS.medium,
     fontSize: 9,
-    color: COLORS.muted,
+    color: COLORS.muted, // #A0A0A0
     letterSpacing: 0.8,
     marginTop: 1,
   },

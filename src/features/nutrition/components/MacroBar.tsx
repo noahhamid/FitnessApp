@@ -1,23 +1,23 @@
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 
+// ── Design Tokens ─────────────────────────────────────────────────────────────
 const T = {
-  bg3: "#222228",
-  lime: "#C8F135",
-  red: "#FF3D3D",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
+  bg3: "#252525", // Track background
+  gold: "#FFC700", // Active fill
+  red: "#FF453A", // Over-goal state
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#5A5A5A",
 };
 
 type Props = {
   label: string;
   current: number;
   goal: number;
-  color: string;
 };
 
-export function MacroBar({ label, current, goal, color }: Props) {
+export function MacroBar({ label, current, goal }: Props) {
   const pct = goal > 0 ? Math.min((current / goal) * 100, 100) : 0;
   const isOver = current > goal && goal > 0;
   const animW = useRef(new Animated.Value(0)).current;
@@ -35,14 +35,13 @@ export function MacroBar({ label, current, goal, color }: Props) {
     outputRange: ["0%", "100%"],
   });
 
-  const activeColor = isOver ? T.red : color;
+  const activeColor = isOver ? T.red : T.gold;
 
   return (
     <View style={s.wrap}>
-      {/* Label + values row */}
+      {/* Label + values */}
       <View style={s.labelRow}>
         <View style={s.labelLeft}>
-          <View style={[s.dot, { backgroundColor: activeColor }]} />
           <Text style={s.label}>{label}</Text>
           {isOver && (
             <View style={s.overBadge}>
@@ -50,6 +49,7 @@ export function MacroBar({ label, current, goal, color }: Props) {
             </View>
           )}
         </View>
+
         <View style={s.valueRow}>
           <Text style={[s.current, { color: activeColor }]}>
             {Math.round(current)}
@@ -62,7 +62,7 @@ export function MacroBar({ label, current, goal, color }: Props) {
         </View>
       </View>
 
-      {/* Slim track */}
+      {/* Progress track */}
       <View style={s.track}>
         <Animated.View
           style={[
@@ -87,10 +87,9 @@ export function MacroBar({ label, current, goal, color }: Props) {
 }
 
 const s = StyleSheet.create({
-  wrap: {
-    gap: 5,
-  },
+  wrap: { gap: 6 },
 
+  // Label row
   labelRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -99,42 +98,39 @@ const s = StyleSheet.create({
   labelLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-  },
-  dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
+    gap: 8,
   },
   label: {
-    fontFamily: "DMSans_500Medium",
+    fontFamily: "DMSans_400Regular",
     fontSize: 12,
-    color: T.text,
+    color: T.sub, // Muted label — number is the hero
+    letterSpacing: 0.3,
   },
+
+  // OVER badge — red tint, no border
   overBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: T.red + "18",
-    borderWidth: 1,
-    borderColor: T.red + "35",
+    backgroundColor: T.red + "20",
   },
   overText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 9,
     color: T.red,
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
 
+  // Values
   valueRow: {
     flexDirection: "row",
     alignItems: "baseline",
     gap: 3,
   },
   current: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 14,
-    lineHeight: 16,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 15,
+    lineHeight: 17,
   },
   separator: {
     fontFamily: "DMSans_400Regular",
@@ -152,7 +148,7 @@ const s = StyleSheet.create({
     marginLeft: 2,
   },
 
-  // Slim 5px track (down from 7px)
+  // Track — 5px, no glow on track itself
   track: {
     height: 5,
     backgroundColor: T.bg3,
@@ -162,11 +158,12 @@ const s = StyleSheet.create({
   fill: {
     height: "100%",
     borderRadius: 3,
-    shadowOpacity: 0.55,
-    shadowRadius: 5,
+    shadowOpacity: 0.45,
+    shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },
   },
 
+  // Remaining
   remaining: {
     fontFamily: "DMSans_400Regular",
     fontSize: 10,

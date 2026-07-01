@@ -14,13 +14,27 @@ import Svg, {
   Stop,
 } from "react-native-svg";
 
-// Fixed: import directly from tokens, NOT from @/src/theme
 import { COLORS } from "@/src/ui/tokens/colors";
 import { FONTS } from "@/src/ui/tokens/typography";
-// Fixed: VOLUME_SPARKLINE belongs in workout service, not theme
 import { VOLUME_SPARKLINE } from "@/src/features/workout/services/workout.service";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+const T = {
+  bg0: "#121212",
+  bg1: "#1E1E1E",
+  bg2: "#282828",
+  bg3: "#303030",
+  border: "#FFFFFF0A",
+  borderMid: "#FFFFFF14",
+  gold: "#FFC700",
+  goldDim: "#FFC70018",
+  goldBorder: "#FFC70030",
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#555555",
+};
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type Session = {
   id: string;
@@ -37,28 +51,27 @@ type Props = {
   onPress?: () => void;
 };
 
-// ── Sparkline ─────────────────────────────────────────────────────────────────
+// ─── Sparkline ────────────────────────────────────────────────────────────────
 
-type SparkLineProps = {
+function SparkLine({
+  data,
+  W = 64,
+  H = 28,
+}: {
   data: number[];
-  color: string;
   W?: number;
   H?: number;
-};
-
-function SparkLine({ data, color, W = 72, H = 32 }: SparkLineProps) {
+}) {
   if (!data || data.length < 2) return null;
 
   const min = Math.min(...data);
   const max = Math.max(...data);
   const rng = max - min || 1;
 
-  const toY = (v: number) => H - 6 - ((v - min) / rng) * (H - 12);
+  const toY = (v: number) => H - 4 - ((v - min) / rng) * (H - 8);
   const toX = (i: number) => (i / (data.length - 1)) * W;
 
   const linePts = data.map((v, i) => `${toX(i)},${toY(v)}`).join(" ");
-
-  // Fixed: was Svg.Polygon — Polygon must be imported directly from react-native-svg
   const polyPts = [
     `0,${H}`,
     ...data.map((v, i) => `${toX(i)},${toY(v)}`),
@@ -72,89 +85,77 @@ function SparkLine({ data, color, W = 72, H = 32 }: SparkLineProps) {
     <Svg width={W} height={H}>
       <Defs>
         <LinearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={color} stopOpacity="0.28" />
-          <Stop offset="1" stopColor={color} stopOpacity="0" />
+          <Stop offset="0" stopColor={T.gold} stopOpacity="0.22" />
+          <Stop offset="1" stopColor={T.gold} stopOpacity="0" />
         </LinearGradient>
       </Defs>
-
-      {/* Gradient fill */}
       <Polygon points={polyPts} fill="url(#sparkGrad)" />
-
-      {/* Line */}
       <Polyline
         points={linePts}
         fill="none"
-        stroke={color}
-        strokeWidth="2"
+        stroke={T.gold}
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-
-      {/* Fixed: was Svg.Circle — Circle must be imported directly */}
-      <Circle cx={lastX} cy={lastY} r="3" fill={color} opacity="0.9" />
+      <Circle cx={lastX} cy={lastY} r="2.5" fill={T.gold} />
     </Svg>
   );
 }
 
-// ── Stat cell ─────────────────────────────────────────────────────────────────
+// ─── Stat Cell ────────────────────────────────────────────────────────────────
 
-type StatCellProps = {
+function StatCell({
+  value,
+  label,
+  highlight = false,
+}: {
   value: string;
   label: string;
-};
-
-function StatCell({ value, label }: StatCellProps) {
+  highlight?: boolean;
+}) {
   return (
-    <View style={s.historyStat}>
-      <Text style={s.historyStatVal}>{value}</Text>
-      <Text style={s.historyStatLabel}>{label}</Text>
+    <View style={s.statCell}>
+      <Text style={[s.statVal, highlight && { color: T.gold }]}>{value}</Text>
+      <Text style={s.statLabel}>{label}</Text>
     </View>
   );
 }
 
-// ── History Card ──────────────────────────────────────────────────────────────
+// ─── History Card ─────────────────────────────────────────────────────────────
 
 export default function HistoryCard({ session, onPress }: Props) {
   return (
-    <TouchableOpacity
-      style={s.historyCard}
-      onPress={onPress}
-      activeOpacity={0.82}
-    >
-      {/* Accent top edge */}
-      <View style={s.accentBar} />
-
-      {/* Header */}
-      <View style={s.historyTop}>
-        <View style={s.historyTitleCol}>
-          <Text style={s.historyName} numberOfLines={1}>
+    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.82}>
+      {/* ── Header ── */}
+      <View style={s.header}>
+        <View style={s.titleCol}>
+          <Text style={s.name} numberOfLines={1}>
             {session.name}
           </Text>
-          <Text style={s.historyDate}>{session.date}</Text>
+          <Text style={s.date}>{session.date}</Text>
         </View>
-        <SparkLine data={VOLUME_SPARKLINE as number[]} color={COLORS.accent} />
+        <SparkLine data={VOLUME_SPARKLINE as number[]} />
       </View>
 
-      <View style={s.divider} />
-
-      {/* Stats */}
-      <View style={s.historySummary}>
-        <StatCell value={session.duration} label="Duration" />
+      {/* ── Stats ── */}
+      <View style={s.statsRow}>
+        <StatCell value={session.duration} label="DURATION" />
         <View style={s.statDivider} />
-        <StatCell value={session.volume} label="Volume" />
+        <StatCell value={session.volume} label="VOLUME" highlight />
         <View style={s.statDivider} />
-        <StatCell value={String(session.sets)} label="Sets" />
+        <StatCell value={String(session.sets)} label="SETS" />
       </View>
 
-      {/* Exercise tags */}
+      {/* ── Exercise tags ── */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={s.tagScroll}
       >
         {session.exercises.map((ex) => (
-          <View key={ex} style={s.historyExTag}>
-            <Text style={s.historyExTagText}>{ex}</Text>
+          <View key={ex} style={s.tag}>
+            <Text style={s.tagText}>{ex}</Text>
           </View>
         ))}
       </ScrollView>
@@ -162,102 +163,91 @@ export default function HistoryCard({ session, onPress }: Props) {
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  historyCard: {
-    backgroundColor: COLORS.card,
+  card: {
+    backgroundColor: T.bg1,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 20,
+    borderColor: T.borderMid,
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 10,
+    gap: 14,
     overflow: "hidden",
   },
-  accentBar: {
-    position: "absolute",
-    top: 0,
-    left: 20,
-    right: 20,
-    height: 2,
-    backgroundColor: COLORS.accent,
-    borderBottomLeftRadius: 2,
-    borderBottomRightRadius: 2,
-    opacity: 0.55,
-  },
-  historyTop: {
+
+  // Header
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginTop: 10,
-    marginBottom: 14,
   },
-  historyTitleCol: {
+  titleCol: {
     flex: 1,
     paddingRight: 12,
     gap: 4,
   },
-  historyName: {
-    // Fixed: hardcoded font string → FONTS token
-    fontFamily: FONTS.extraBold,
+  name: {
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 20,
-    color: COLORS.text,
+    color: T.text,
     letterSpacing: 0.3,
+    lineHeight: 22,
   },
-  historyDate: {
-    fontFamily: FONTS.regular,
-    fontSize: 12,
-    color: COLORS.muted,
-    letterSpacing: 0.2,
+  date: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 11,
+    color: T.muted,
   },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.border,
-    marginBottom: 14,
-  },
-  historySummary: {
+
+  // Stats
+  statsRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 14,
+    backgroundColor: T.bg2,
+    borderRadius: 12,
+    paddingVertical: 12,
   },
-  historyStat: {
+  statCell: {
     flex: 1,
     alignItems: "center",
     gap: 3,
   },
+  statVal: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 20,
+    color: T.text,
+    lineHeight: 22,
+  },
+  statLabel: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 9,
+    color: T.muted,
+    letterSpacing: 1.0,
+  },
   statDivider: {
     width: 1,
     height: 28,
-    backgroundColor: COLORS.border,
+    backgroundColor: T.border,
   },
-  historyStatVal: {
-    fontFamily: FONTS.extraBold,
-    fontSize: 20,
-    color: COLORS.text,
-  },
-  historyStatLabel: {
-    fontFamily: FONTS.regular,
-    fontSize: 11,
-    color: COLORS.muted,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-  },
+
+  // Tags
   tagScroll: {
-    gap: 7,
+    gap: 6,
     paddingBottom: 2,
   },
-  historyExTag: {
-    backgroundColor: COLORS.bg3,
+  tag: {
+    backgroundColor: T.bg2,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 9,
-    paddingHorizontal: 11,
+    borderColor: T.border,
+    borderRadius: 8,
+    paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  historyExTagText: {
-    fontFamily: FONTS.semiBold,
-    fontSize: 12,
-    color: COLORS.muted,
-    letterSpacing: 0.2,
+  tagText: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 11,
+    color: T.sub,
   },
 });

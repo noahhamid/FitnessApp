@@ -1,10 +1,6 @@
 import { todayLocalYmd } from "@/src/features/workout/services/workout.service";
 import type { WeightChartPoint } from "../types/weight.types";
-import {
-  useLogWeight,
-  useWeightGoal,
-  useWeightLog,
-} from "../hooks/useWeight";
+import { useLogWeight, useWeightGoal, useWeightLog } from "../hooks/useWeight";
 import { toWeightChartPoints } from "../services/weight.service";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -36,21 +32,33 @@ import Svg, {
 
 const { width: SW } = Dimensions.get("window");
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+// ─── Design tokens — unified to Muscle Monster gold theme ────────────────────
+// All color decisions now route through these four constants.
+// T.lime / T.orange / T.blue have been removed — they were the source
+// of theme fragmentation across stat cards and chart elements.
 const T = {
-  bg0: "#0A0A0C",
-  bg1: "#111114",
-  bg2: "#18181D",
-  bg3: "#222228",
-  lime: "#C8F135",
-  red: "#FF3D3D",
-  orange: "#F97316",
-  blue: "#3B82F6",
-  text: "#F2F2F5",
-  sub: "#7A7A8C",
-  muted: "#4A4A58",
-  border: "#FFFFFF0F",
-  borderMid: "#FFFFFF18",
+  // Surfaces
+  bg0: "#121212", // page canvas
+  bg1: "#1E1E1E", // card / sheet surface
+  bg2: "#252525", // input / toggle background
+  bg3: "#2A2A2A", // raised surface, modal close btn
+
+  // Accent — single source of truth
+  gold: "#FFC700",
+  goldTint: "rgba(255,199,0,0.12)",
+  goldBorder: "rgba(255,199,0,0.40)",
+
+  // Semantic exception — weight gain only
+  red: "#E05252",
+
+  // Typography
+  text: "#F2F2F5", // primary labels, weights
+  sub: "#7A7A8C", // secondary labels
+  muted: "#4A4A58", // hints, chart axes, progress labels
+
+  // Structural
+  border: "rgba(255,255,255,0.06)",
+  borderMid: "rgba(255,255,255,0.10)",
 };
 
 // ─── Animated goal progress bar ──────────────────────────────────────────────
@@ -78,47 +86,40 @@ function AnimatedProgressBar({ progress }: { progress: number }) {
   );
 }
 
-// ── Bezier path builder (Catmull-Rom → cubic bezier) ─────────────────────────
+// ─── Bezier path builder (Catmull-Rom → cubic bezier) ───────────────────────
 function bezierLine(pts: { x: number; y: number }[]): string {
   if (pts.length === 0) return "";
   if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
 
   let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
-
   for (let i = 1; i < pts.length; i++) {
     const p0 = pts[Math.max(i - 2, 0)];
     const p1 = pts[i - 1];
     const p2 = pts[i];
     const p3 = pts[Math.min(i + 1, pts.length - 1)];
-
     const cp1x = p1.x + (p2.x - p0.x) / 6;
     const cp1y = p1.y + (p2.y - p0.y) / 6;
     const cp2x = p2.x - (p3.x - p1.x) / 6;
     const cp2y = p2.y - (p3.y - p1.y) / 6;
-
     d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)} ${cp2x.toFixed(1)} ${cp2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
   }
-
   return d;
 }
 
-// Sub-sample to at most maxCount items, always keeping first & last
 function subSample<T>(arr: T[], maxCount: number): T[] {
   if (arr.length <= maxCount) return arr;
   const result: T[] = [];
   const step = (arr.length - 1) / (maxCount - 1);
-  for (let i = 0; i < maxCount; i++) {
-    result.push(arr[Math.round(i * step)]);
-  }
+  for (let i = 0; i < maxCount; i++) result.push(arr[Math.round(i * step)]);
   return result;
 }
 
-// ─── SVG Line chart ───────────────────────────────────────────────────────────
+// ─── SVG Line chart — gold theme ─────────────────────────────────────────────
 function WeightChart({ series }: { series: WeightChartPoint[] }) {
   const chartW = SW - 64;
   const chartH = 120;
   const padX = 10;
-  const padY = 18;   // extra top padding for the floating badge
+  const padY = 18;
 
   if (series.length < 2) {
     return (
@@ -140,15 +141,12 @@ function WeightChart({ series }: { series: WeightChartPoint[] }) {
     padY + (1 - (w - minW) / (maxW - minW)) * (chartH - padY * 2);
 
   const coordPts = series.map((d, i) => ({ x: toX(i), y: toY(d.w) }));
-
-  // Bezier paths
   const linePath = bezierLine(coordPts);
   const areaPath =
     coordPts.length >= 2
       ? `${linePath} L ${toX(div)} ${chartH} L ${toX(0)} ${chartH} Z`
       : "";
 
-  // Floating badge for last point
   const lastPt = coordPts[coordPts.length - 1];
   const lastW = series[series.length - 1].w;
   const badgeLabel = `${lastW.toFixed(1)} kg`;
@@ -160,7 +158,6 @@ function WeightChart({ series }: { series: WeightChartPoint[] }) {
   );
   const badgeY = Math.max(lastPt.y - badgeH - 7, 2);
 
-  // X-axis labels — at most 4, clean format "Jun 22"
   const allLabels = series.map((d) => d.date.replace(/,.*$/, ""));
   const xLabels = subSample(allLabels, 4);
 
@@ -168,14 +165,14 @@ function WeightChart({ series }: { series: WeightChartPoint[] }) {
     <View>
       <Svg width={chartW} height={chartH}>
         <Defs>
+          {/* Gold gradient area fill — replaces T.lime */}
           <LinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor={T.lime} stopOpacity="0.26" />
-            <Stop offset="80%" stopColor={T.lime} stopOpacity="0.04" />
-            <Stop offset="100%" stopColor={T.lime} stopOpacity="0" />
+            <Stop offset="0%" stopColor={T.gold} stopOpacity="0.22" />
+            <Stop offset="80%" stopColor={T.gold} stopOpacity="0.04" />
+            <Stop offset="100%" stopColor={T.gold} stopOpacity="0" />
           </LinearGradient>
         </Defs>
 
-        {/* Grid lines */}
         {[0, 0.5, 1].map((f, i) => (
           <Line
             key={i}
@@ -188,51 +185,48 @@ function WeightChart({ series }: { series: WeightChartPoint[] }) {
           />
         ))}
 
-        {/* Gradient area fill */}
         <Path d={areaPath} fill="url(#areaGrad)" />
 
-        {/* Smooth bezier line */}
         <Path
           d={linePath}
           fill="none"
-          stroke={T.lime}
+          stroke={T.gold} // was T.lime
           strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
 
-        {/* Intermediate dots */}
         {coordPts.slice(0, -1).map((pt, i) => (
           <Circle
             key={`dot-${i}`}
             cx={pt.x}
             cy={pt.y}
             r={2.5}
-            fill={T.bg2}
-            stroke={T.lime}
+            fill={T.bg1} // was T.bg2
+            stroke={T.gold} // was T.lime
             strokeWidth="1.5"
           />
         ))}
 
-        {/* Last dot — larger filled */}
+        {/* Last dot — gold fill */}
         <Circle
           cx={lastPt.x}
           cy={lastPt.y}
           r={5.5}
-          fill={T.lime}
+          fill={T.gold} // was T.lime
           stroke={T.bg0}
           strokeWidth="1.5"
         />
 
-        {/* Floating current-weight badge */}
+        {/* Floating badge */}
         <Rect
           x={badgeX}
           y={badgeY}
           width={badgeW}
           height={badgeH}
           rx={8.5}
-          fill={T.lime + "22"}
-          stroke={T.lime + "77"}
+          fill={T.goldTint} // was T.lime + "22"
+          stroke={T.goldBorder} // was T.lime + "77"
           strokeWidth="1"
         />
         <SvgText
@@ -240,19 +234,21 @@ function WeightChart({ series }: { series: WeightChartPoint[] }) {
           y={badgeY + 11.5}
           textAnchor="middle"
           fontSize="9.5"
-          fill={T.lime}
+          fill={T.gold} // was T.lime
           fontFamily="DMSans_500Medium"
         >
           {badgeLabel}
         </SvgText>
       </Svg>
 
-      {/* X-axis — subsampled, no duplicates */}
       <View style={s.chartXAxis}>
         {xLabels.map((lbl, i) => (
           <Text
             key={`xl-${i}`}
-            style={[s.chartLabel, i === xLabels.length - 1 && { color: T.lime }]}
+            style={[
+              s.chartLabel,
+              i === xLabels.length - 1 && { color: T.gold }, // was T.lime
+            ]}
           >
             {lbl}
           </Text>
@@ -262,7 +258,7 @@ function WeightChart({ series }: { series: WeightChartPoint[] }) {
   );
 }
 
-// ─── History row ──────────────────────────────────────────────────────────────
+// ─── History row ─────────────────────────────────────────────────────────────
 function HistoryRow({
   entry,
   prev,
@@ -275,20 +271,18 @@ function HistoryRow({
   isLast: boolean;
 }) {
   const diff = prev !== null ? +(entry.w - prev.w).toFixed(1) : null;
-  const isDown = diff !== null && diff < 0;
-  const isUp = diff !== null && diff > 0;
+  const isDown = diff !== null && diff < 0; // weight lost → gold (good)
+  const isUp = diff !== null && diff > 0; // weight gained → red (bad)
 
   return (
     <View style={[s.historyRow, isLast && { borderBottomWidth: 0 }]}>
-      {/* Left: dot timeline marker */}
       <View style={s.historyTimeline}>
         <View style={[s.historyDot, isFirst && s.historyDotActive]} />
         {!isLast && <View style={s.historyLine} />}
       </View>
 
-      {/* Center: date */}
       <View style={s.historyInfo}>
-        <Text style={[s.historyDate, isFirst && { color: T.lime }]}>
+        <Text style={[s.historyDate, isFirst && { color: T.gold }]}>
           {entry.date}
         </Text>
         {isFirst && (
@@ -298,9 +292,8 @@ function HistoryRow({
         )}
       </View>
 
-      {/* Right: weight + diff badge */}
       <View style={s.historyRight}>
-        <Text style={[s.historyWeight, isFirst && { color: T.lime }]}>
+        <Text style={[s.historyWeight, isFirst && { color: T.gold }]}>
           {entry.w} kg
         </Text>
         {diff !== null && (
@@ -313,7 +306,8 @@ function HistoryRow({
             <Text
               style={[
                 s.diffText,
-                { color: isDown ? T.lime : isUp ? T.red : T.muted },
+                // gold = loss (progress), red = gain (setback), muted = no change
+                { color: isDown ? T.gold : isUp ? T.red : T.muted },
               ]}
             >
               {isDown ? "↓" : isUp ? "↑" : "—"} {Math.abs(diff)}
@@ -346,12 +340,11 @@ export function WeightSection() {
   const goalW =
     typeof goalRecord?.goal_weight === "number"
       ? goalRecord.goal_weight
-      : sorted.at(-1)?.weight ?? 0;
+      : (sorted.at(-1)?.weight ?? 0);
   const startW =
     typeof goalRecord?.start_weight === "number"
       ? goalRecord.start_weight
-      : sorted[0]?.weight ?? sorted.at(-1)?.weight ?? 0;
-
+      : (sorted[0]?.weight ?? sorted.at(-1)?.weight ?? 0);
   const current = sorted.at(-1)?.weight ?? 0;
 
   const lostDelta = startW - current;
@@ -363,30 +356,48 @@ export function WeightSection() {
     100,
     Number.isFinite(journey) ? Math.round((progressed / journey) * 100) : 0,
   );
+  const toGoMag = +Math.abs(current - goalW).toFixed(1);
 
-  const toGoMag = +(Math.abs(current - goalW)).toFixed(1);
+  // Stat cards — all values white; gold is used only on the two
+  // progress-oriented metrics (Lost, Progress) to signal positive movement
+  const statCards = [
+    {
+      label: "Current",
+      value: current > 0 ? current.toFixed(1) : "—",
+      unit: "kg",
+      gold: false,
+    },
+    { label: "Lost", value: lostTile, unit: "kg", gold: true },
+    {
+      label: "To Goal",
+      value: sorted.length === 0 ? "—" : `${toGoMag.toFixed(1)}`,
+      unit: "kg",
+      gold: false,
+    },
+    {
+      label: "Progress",
+      value: `${sorted.length < 2 ? 0 : progress}`,
+      unit: "%",
+      gold: true,
+    },
+  ];
 
   const reversedHist = useMemo(
     () =>
       [...sorted].reverse().map((e) => {
         const d = new Date(`${e.log_date}T00:00:00.000Z`);
-        const label = d.toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
-        return { date: label, w: e.weight, id: e.id };
+        return {
+          date: d.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+          w: e.weight,
+          id: e.id,
+        };
       }),
     [sorted],
   );
-
-  // 4 independent stat cards
-  const statCards = [
-    { label: "Current", value: current > 0 ? current.toFixed(1) : "—", unit: "kg", color: T.text },
-    { label: "Lost", value: lostTile, unit: "kg", color: T.lime },
-    { label: "To Goal", value: sorted.length === 0 ? "—" : `${toGoMag.toFixed(1)}`, unit: "kg", color: T.orange },
-    { label: "Progress", value: `${sorted.length < 2 ? 0 : progress}`, unit: "%", color: T.blue },
-  ];
 
   return (
     <ScrollView
@@ -395,17 +406,15 @@ export function WeightSection() {
     >
       {logsPending && (
         <View style={s.loadingRow}>
-          <ActivityIndicator size="small" color={T.lime} />
+          <ActivityIndicator size="small" color={T.gold} />
         </View>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════
-          4 INDEPENDENT FLOATING STAT CARDS
-      ══════════════════════════════════════════════════════════════════ */}
+      {/* ── 4 stat cards ───────────────────────────────────────────────────── */}
       <View style={s.statsRow}>
         {statCards.map((stat) => (
           <View key={stat.label} style={s.statCard}>
-            <Text style={[s.statValue, { color: stat.color }]}>
+            <Text style={[s.statValue, { color: stat.gold ? T.gold : T.text }]}>
               {stat.value}
             </Text>
             <Text style={s.statUnit}>{stat.unit}</Text>
@@ -414,13 +423,11 @@ export function WeightSection() {
         ))}
       </View>
 
-      {/* ══════════════════════════════════════════════════════════════════
-          GOAL PROGRESS CARD
-      ══════════════════════════════════════════════════════════════════ */}
+      {/* ── Goal progress ───────────────────────────────────────────────────── */}
       <View style={s.card}>
         <View style={s.cardHeader}>
           <Text style={s.cardTitle}>Goal Progress</Text>
-          <Text style={[s.cardBadge, { color: T.lime }]}>
+          <Text style={[s.cardBadge, { color: T.gold }]}>
             {sorted.length < 2 ? 0 : progress}%
           </Text>
         </View>
@@ -431,9 +438,7 @@ export function WeightSection() {
         </View>
       </View>
 
-      {/* ══════════════════════════════════════════════════════════════════
-          WEIGHT TREND CHART
-      ══════════════════════════════════════════════════════════════════ */}
+      {/* ── Weight trend chart ──────────────────────────────────────────────── */}
       <View style={s.card}>
         <View style={s.cardHeader}>
           <Text style={s.cardTitle}>Weight Trend</Text>
@@ -441,9 +446,7 @@ export function WeightSection() {
         <WeightChart series={chartPoints} />
       </View>
 
-      {/* ══════════════════════════════════════════════════════════════════
-          LOG WEIGHT — full-width solid lime pill button
-      ══════════════════════════════════════════════════════════════════ */}
+      {/* ── Log Weight CTA — gold fill, charcoal label ─────────────────────── */}
       <TouchableOpacity
         style={s.logBtn}
         activeOpacity={0.82}
@@ -453,9 +456,7 @@ export function WeightSection() {
         <Text style={s.logBtnText}>Log Weight</Text>
       </TouchableOpacity>
 
-      {/* ══════════════════════════════════════════════════════════════════
-          HISTORY — single unified dark surface card
-      ══════════════════════════════════════════════════════════════════ */}
+      {/* ── History ────────────────────────────────────────────────────────── */}
       {reversedHist.length > 0 && (
         <View style={s.historyCard}>
           <View style={s.cardHeader}>
@@ -485,7 +486,7 @@ export function WeightSection() {
         </View>
       )}
 
-      {/* ── Log modal ── */}
+      {/* ── Log modal ─────────────────────────────────────────────────────── */}
       <Modal visible={showLogModal} animationType="slide" transparent>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -511,7 +512,7 @@ export function WeightSection() {
                   </TouchableOpacity>
                 </View>
 
-                {/* Unit toggle */}
+                {/* Unit toggle — active tab gold fill */}
                 <View style={s.unitToggle}>
                   {(["kg", "lbs"] as const).map((u) => (
                     <TouchableOpacity
@@ -520,14 +521,19 @@ export function WeightSection() {
                       style={[s.unitBtn, unit === u && s.unitBtnActive]}
                       activeOpacity={0.8}
                     >
-                      <Text style={[s.unitBtnText, unit === u && s.unitBtnTextActive]}>
+                      <Text
+                        style={[
+                          s.unitBtnText,
+                          unit === u && s.unitBtnTextActive,
+                        ]}
+                      >
                         {u.toUpperCase()}
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
 
-                {/* Input */}
+                {/* Weight input */}
                 <View style={s.inputWrapper}>
                   <TextInput
                     value={newWeight}
@@ -541,12 +547,14 @@ export function WeightSection() {
                   <Text style={s.inputUnit}>{unit}</Text>
                 </View>
 
-                {/* Buttons */}
                 <View style={s.modalButtons}>
                   <TouchableOpacity
                     style={s.cancelBtn}
                     activeOpacity={0.8}
-                    onPress={() => { setShowLogModal(false); setNewWeight(""); }}
+                    onPress={() => {
+                      setShowLogModal(false);
+                      setNewWeight("");
+                    }}
                   >
                     <Text style={s.cancelBtnText}>Cancel</Text>
                   </TouchableOpacity>
@@ -556,18 +564,29 @@ export function WeightSection() {
                     activeOpacity={0.85}
                     disabled={logMut.isPending}
                     onPress={() => {
-                      const parsed = Number.parseFloat(newWeight.replace(",", "."));
+                      const parsed = Number.parseFloat(
+                        newWeight.replace(",", "."),
+                      );
                       if (!Number.isFinite(parsed) || parsed <= 0) {
-                        Alert.alert("Invalid weight", "Enter a positive number.");
+                        Alert.alert(
+                          "Invalid weight",
+                          "Enter a positive number.",
+                        );
                         return;
                       }
                       const kg = unit === "lbs" ? parsed * 0.45359237 : parsed;
                       logMut.mutate(
                         { weight: +kg.toFixed(2), log_date: todayLocalYmd() },
                         {
-                          onSuccess: () => { setShowLogModal(false); setNewWeight(""); },
+                          onSuccess: () => {
+                            setShowLogModal(false);
+                            setNewWeight("");
+                          },
                           onError: () =>
-                            Alert.alert("Could not save", "Try again when online."),
+                            Alert.alert(
+                              "Could not save",
+                              "Try again when online.",
+                            ),
                         },
                       );
                     }}
@@ -598,7 +617,7 @@ const s = StyleSheet.create({
     alignItems: "flex-start",
   },
 
-  // ══ 4 independent floating stat cards ════════════════════════════════════════
+  // ── Stat cards ───────────────────────────────────────────────────────────────
   statsRow: {
     flexDirection: "row",
     gap: 8,
@@ -618,6 +637,7 @@ const s = StyleSheet.create({
     fontSize: 22,
     lineHeight: 24,
     letterSpacing: -0.5,
+    // color set inline — gold for progress metrics, white otherwise
   },
   statUnit: {
     fontFamily: "DMSans_400Regular",
@@ -633,7 +653,7 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
 
-  // ══ Shared card ═══════════════════════════════════════════════════════════════
+  // ── Shared card ──────────────────────────────────────────────────────────────
   card: {
     backgroundColor: T.bg1,
     borderRadius: 16,
@@ -655,9 +675,10 @@ const s = StyleSheet.create({
     fontFamily: "BarlowCondensed_900Black",
     fontSize: 20,
     lineHeight: 22,
+    // color: T.gold — set inline
   },
 
-  // ══ Goal progress bar ═════════════════════════════════════════════════════════
+  // ── Goal progress bar ─────────────────────────────────────────────────────────
   progressTrack: {
     height: 5,
     backgroundColor: T.bg3,
@@ -669,12 +690,9 @@ const s = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: T.lime,
+    backgroundColor: T.gold, // was T.lime
     borderRadius: 3,
-    shadowColor: T.lime,
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 0 },
+    // shadow removed — gold glow is noise on a dark surface
   },
   progressLabels: {
     flexDirection: "row",
@@ -687,7 +705,7 @@ const s = StyleSheet.create({
     color: T.muted,
   },
 
-  // ══ Chart ════════════════════════════════════════════════════════════════════
+  // ── Chart ─────────────────────────────────────────────────────────────────────
   emptyChart: {
     fontFamily: "DMSans_400Regular",
     fontSize: 12,
@@ -706,30 +724,26 @@ const s = StyleSheet.create({
     color: T.muted,
   },
 
-  // ══ Log Weight button (full-width solid lime) ══════════════════════════════════
+  // ── Log Weight CTA ────────────────────────────────────────────────────────────
   logBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: T.lime,
+    backgroundColor: T.gold, // was T.lime
     borderRadius: 14,
     paddingVertical: 14,
     marginBottom: 12,
-    shadowColor: T.lime,
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 4,
+    // shadow removed — consistent with no-glow rule
   },
   logBtnText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 16,
-    color: T.bg0,
+    color: T.bg0, // charcoal on gold
     letterSpacing: 0.3,
   },
 
-  // ══ History card (single unified dark surface) ════════════════════════════════
+  // ── History card ─────────────────────────────────────────────────────────────
   historyCard: {
     backgroundColor: T.bg1,
     borderRadius: 16,
@@ -744,7 +758,6 @@ const s = StyleSheet.create({
     borderBottomColor: T.border,
     gap: 10,
   },
-  // Timeline node (dot + vertical line)
   historyTimeline: {
     alignItems: "center",
     width: 16,
@@ -759,8 +772,8 @@ const s = StyleSheet.create({
     borderColor: T.muted,
   },
   historyDotActive: {
-    backgroundColor: T.lime,
-    borderColor: T.lime,
+    backgroundColor: T.gold, // was T.lime
+    borderColor: T.gold,
     width: 10,
     height: 10,
     borderRadius: 5,
@@ -784,7 +797,7 @@ const s = StyleSheet.create({
     color: T.text,
   },
   latestPill: {
-    backgroundColor: T.lime + "1A",
+    backgroundColor: T.goldTint, // was T.lime + "1A"
     borderRadius: 4,
     paddingHorizontal: 5,
     paddingVertical: 1,
@@ -792,7 +805,7 @@ const s = StyleSheet.create({
   latestPillText: {
     fontFamily: "DMSans_500Medium",
     fontSize: 8,
-    color: T.lime,
+    color: T.gold, // was T.lime
     letterSpacing: 0.6,
   },
   historyRight: {
@@ -812,15 +825,16 @@ const s = StyleSheet.create({
     minWidth: 50,
     alignItems: "center",
   },
-  diffDown: { backgroundColor: T.lime + "18" },
+  diffDown: { backgroundColor: T.goldTint }, // was T.lime + "18"
   diffUp: { backgroundColor: T.red + "18" },
   diffNeutral: { backgroundColor: T.bg3 },
   diffText: {
     fontFamily: "DMSans_500Medium",
     fontSize: 10,
+    // color set inline
   },
 
-  // Empty state
+  // ── Empty state ───────────────────────────────────────────────────────────────
   emptyState: {
     alignItems: "center",
     paddingVertical: 40,
@@ -837,7 +851,7 @@ const s = StyleSheet.create({
     color: T.muted,
   },
 
-  // ── Log Weight Modal ──────────────────────────────────────────────────────────
+  // ── Modal ─────────────────────────────────────────────────────────────────────
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.78)",
@@ -894,14 +908,14 @@ const s = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
   },
-  unitBtnActive: { backgroundColor: T.lime },
+  unitBtnActive: { backgroundColor: T.gold }, // was T.lime
   unitBtnText: {
     fontFamily: "DMSans_600SemiBold",
     fontSize: 12,
     color: T.muted,
     letterSpacing: 0.4,
   },
-  unitBtnTextActive: { color: T.bg0 },
+  unitBtnTextActive: { color: T.bg0 }, // charcoal on gold
   inputWrapper: {
     position: "relative",
     marginBottom: 20,
@@ -948,7 +962,7 @@ const s = StyleSheet.create({
     flex: 1,
     paddingVertical: 13,
     borderRadius: 12,
-    backgroundColor: T.lime,
+    backgroundColor: T.gold, // was T.lime
     alignItems: "center",
   },
   saveBtnText: {

@@ -1,7 +1,16 @@
-import { COLORS } from "@/src/ui/tokens/colors";
-import { FONTS } from "@/src/ui/tokens/typography";
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
+
+// ── Design Tokens ─────────────────────────────────────────────────────────────
+const T = {
+  bg0: "#121212",
+  bg2: "#1E1E1E", // Card surface
+  bg3: "#252525", // Stat pill surface
+  gold: "#FFC700", // Primary accent
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#5A5A5A",
+};
 
 type Props = {
   durationMin?: number;
@@ -17,6 +26,7 @@ type StatPillProps = {
   delay?: number;
 };
 
+// ── Stat pill ─────────────────────────────────────────────────────────────────
 function StatPill({ label, value, unit, delay = 0 }: StatPillProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(12)).current;
@@ -42,10 +52,7 @@ function StatPill({ label, value, unit, delay = 0 }: StatPillProps) {
     <Animated.View
       style={[
         s.statPill,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        },
+        { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
       ]}
     >
       <Text style={s.statValue}>
@@ -57,6 +64,7 @@ function StatPill({ label, value, unit, delay = 0 }: StatPillProps) {
   );
 }
 
+// ── Main ──────────────────────────────────────────────────────────────────────
 export function WorkoutSummary({
   durationMin = 45,
   volumeKg = 8200,
@@ -75,12 +83,14 @@ export function WorkoutSummary({
 
   return (
     <Animated.View style={[s.card, { opacity: fadeAnim }]}>
-      {/* Header row */}
+      {/* Header */}
       <View style={s.header}>
         <View style={s.titleRow}>
           <View style={s.titleAccent} />
           <Text style={s.title}>SESSION SUMMARY</Text>
         </View>
+
+        {/* Done badge — solid gold */}
         <View style={s.badge}>
           <Text style={s.badgeText}>✓ DONE</Text>
         </View>
@@ -110,20 +120,16 @@ export function WorkoutSummary({
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
+  // Outer card — no border, no colored shadow
   card: {
     borderRadius: 20,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: T.bg2,
     overflow: "hidden",
-    // Depth
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 6,
   },
+
+  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -141,32 +147,33 @@ const s = StyleSheet.create({
     width: 4,
     height: 20,
     borderRadius: 2,
-    backgroundColor: COLORS.accent,
+    backgroundColor: T.gold, // Gold accent bar
   },
   title: {
-    fontFamily: FONTS.black ?? "BarlowCondensed_900Black",
-    color: COLORS.text,
-    fontSize: 17,
-    letterSpacing: 1.2,
-  },
-  badge: {
-    backgroundColor: COLORS.accent + "22", // 13% opacity tint
-    borderWidth: 1,
-    borderColor: COLORS.accent + "55",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  badgeText: {
-    fontFamily: FONTS.medium ?? "DMSans_500Medium",
-    fontSize: 10,
-    color: COLORS.accent,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 18,
+    color: T.text,
     letterSpacing: 1.5,
   },
+
+  // Done badge — solid gold fill, dark text
+  badge: {
+    backgroundColor: T.gold,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  badgeText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 11,
+    color: T.bg0, // Dark text on gold — max contrast
+    letterSpacing: 1.5,
+  },
+
+  // Thin divider
   divider: {
     height: 1,
-    backgroundColor: COLORS.border,
-    marginHorizontal: 0,
+    backgroundColor: T.bg3, // Subtle — same family as card
   },
 
   // Stats
@@ -179,31 +186,29 @@ const s = StyleSheet.create({
   statPill: {
     flex: 1,
     minWidth: "40%",
-    backgroundColor: COLORS.bg2 ?? COLORS.bg,
+    backgroundColor: T.bg3, // #252525 — one step darker than card
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
     paddingVertical: 14,
     paddingHorizontal: 14,
     alignItems: "flex-start",
+    // No border
   },
   statValue: {
-    fontFamily: FONTS.black ?? "BarlowCondensed_900Black",
-    fontSize: 26,
-    color: COLORS.text,
-    lineHeight: 28,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 30, // Bigger hero number
+    color: T.text,
+    lineHeight: 32,
   },
   statUnit: {
-    fontFamily: FONTS.medium ?? "DMSans_500Medium",
+    fontFamily: "DMSans_400Regular",
     fontSize: 14,
-    color: COLORS.muted ?? COLORS.accent,
+    color: T.sub,
   },
   statLabel: {
-    fontFamily: FONTS.medium ?? "DMSans_500Medium",
+    fontFamily: "DMSans_400Regular",
     fontSize: 10,
-    color: COLORS.muted ?? COLORS.accent,
+    color: T.muted,
     letterSpacing: 1.8,
-    marginTop: 3,
-    opacity: 0.7,
+    marginTop: 4,
   },
 });

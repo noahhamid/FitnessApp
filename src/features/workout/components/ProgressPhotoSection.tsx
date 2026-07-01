@@ -10,38 +10,30 @@ import {
   View,
 } from "react-native";
 
-// Fixed: import directly from tokens, NOT from @/src/theme
-import { COLORS } from "@/src/ui/tokens/colors";
-import { FONTS } from "@/src/ui/tokens/typography";
-// Fixed: PHOTO_PLACEHOLDERS belongs in workout service, not theme
 import { PHOTO_PLACEHOLDERS } from "@/src/features/workout/services/workout.service";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-type Photo = {
-  id: string;
-  date: string;
-  uri: string | null;
-  label: string;
+// ── Design Tokens ─────────────────────────────────────────────────────────────
+const T = {
+  bg0: "#121212",
+  bg2: "#1E1E1E",
+  bg3: "#252525",
+  gold: "#FFC700",
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#5A5A5A",
 };
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+type Photo = { id: string; date: string; uri: string | null; label: string };
 type SectionTitleProps = {
   title: string;
   action?: string;
   onAction?: () => void;
 };
-
-type PhotoThumbProps = {
-  photo: Photo;
-  onAdd: () => void;
-};
-
-type AddSlotBtnProps = {
-  onPress: () => void;
-};
+type PhotoThumbProps = { photo: Photo; onAdd: () => void };
+type AddSlotBtnProps = { onPress: () => void };
 
 // ── Section header ────────────────────────────────────────────────────────────
-
 function SectionTitle({ title, action, onAction }: SectionTitleProps) {
   return (
     <View style={s.sectionTitleRow}>
@@ -49,23 +41,22 @@ function SectionTitle({ title, action, onAction }: SectionTitleProps) {
         <View style={s.titleAccent} />
         <Text style={s.sectionTitle}>{title}</Text>
       </View>
-      {action ? (
+
+      {action && (
         <TouchableOpacity
           onPress={onAction}
           activeOpacity={0.7}
           style={s.actionBtn}
         >
-          {/* Fixed: was "+ ADD" string — now Ionicons + text */}
-          <Ionicons name="add" size={12} color={COLORS.accent} />
+          <Ionicons name="add" size={13} color={T.gold} />
           <Text style={s.actionBtnText}>ADD</Text>
         </TouchableOpacity>
-      ) : null}
+      )}
     </View>
   );
 }
 
 // ── Photo thumbnail ───────────────────────────────────────────────────────────
-
 function PhotoThumb({ photo, onAdd }: PhotoThumbProps) {
   return (
     <TouchableOpacity onPress={onAdd} style={s.photoThumb} activeOpacity={0.82}>
@@ -77,8 +68,7 @@ function PhotoThumb({ photo, onAdd }: PhotoThumbProps) {
         />
       ) : (
         <View style={s.photoPlaceholder}>
-          {/* Fixed: was 📸 emoji — now Ionicons */}
-          <Ionicons name="camera-outline" size={24} color={COLORS.muted} />
+          <Ionicons name="camera-outline" size={22} color={T.muted} />
           <Text style={s.photoPlaceholderText}>TAP TO ADD</Text>
         </View>
       )}
@@ -92,7 +82,6 @@ function PhotoThumb({ photo, onAdd }: PhotoThumbProps) {
 }
 
 // ── Add new slot button ───────────────────────────────────────────────────────
-
 function AddSlotBtn({ onPress }: AddSlotBtnProps) {
   return (
     <TouchableOpacity
@@ -100,15 +89,13 @@ function AddSlotBtn({ onPress }: AddSlotBtnProps) {
       style={s.addSlotBtn}
       activeOpacity={0.75}
     >
-      {/* Fixed: was ＋ emoji text — now Ionicons */}
-      <Ionicons name="add-circle-outline" size={28} color={COLORS.accent} />
+      <Ionicons name="add" size={24} color={T.gold} />
       <Text style={s.addSlotText}>NEW{"\n"}ENTRY</Text>
     </TouchableOpacity>
   );
 }
 
-// ── Main section ──────────────────────────────────────────────────────────────
-
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function ProgressPhotoSection() {
   const [photos, setPhotos] = useState<Photo[]>(PHOTO_PLACEHOLDERS as Photo[]);
 
@@ -145,7 +132,6 @@ export default function ProgressPhotoSection() {
         contentContainerStyle={s.photoScroll}
       >
         <AddSlotBtn onPress={handleNewEntry} />
-
         {photos.map((p) => (
           <PhotoThumb key={p.id} photo={p} onAdd={() => handleAdd(p.id)} />
         ))}
@@ -155,13 +141,13 @@ export default function ProgressPhotoSection() {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-
 const THUMB_W = 108;
 const THUMB_H = 148;
 
 const s = StyleSheet.create({
   section: { paddingTop: 22 },
 
+  // Section header
   sectionTitleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -178,68 +164,70 @@ const s = StyleSheet.create({
     width: 3,
     height: 20,
     borderRadius: 2,
-    backgroundColor: COLORS.accent,
+    backgroundColor: T.gold, // Gold accent bar
   },
   sectionTitle: {
-    // Fixed: hardcoded font string → FONTS token
-    fontFamily: FONTS.extraBold,
+    fontFamily: "BarlowCondensed_900Black",
     fontSize: 20,
-    color: COLORS.text,
-    letterSpacing: 1,
+    color: T.text,
+    letterSpacing: 1.5,
   },
+
+  // ADD button — minimal ghost style
   actionBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: `${COLORS.accent}18`,
-    borderWidth: 1,
-    borderColor: `${COLORS.accent}35`,
-    borderRadius: 9,
-    paddingHorizontal: 11,
-    paddingVertical: 5,
+    backgroundColor: T.bg3,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    // No border — cleaner
   },
   actionBtnText: {
-    fontFamily: FONTS.semiBold,
-    fontSize: 12,
-    color: COLORS.accent,
-    letterSpacing: 0.3,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 13,
+    color: T.gold,
+    letterSpacing: 0.8,
   },
 
+  // Photo scroll row
   photoScroll: {
     paddingHorizontal: 20,
     gap: 10,
     paddingBottom: 4,
   },
 
+  // "NEW ENTRY" slot — dashed gold outline
   addSlotBtn: {
     width: THUMB_W,
     height: THUMB_H,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: `${COLORS.accent}40`,
+    borderColor: T.gold + "50", // ~30% opacity gold border
     borderStyle: "dashed",
-    backgroundColor: `${COLORS.accent}08`,
+    backgroundColor: T.bg2,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   },
   addSlotText: {
-    fontFamily: FONTS.bold,
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 11,
-    color: COLORS.accent,
+    color: T.gold,
     letterSpacing: 1.2,
     textAlign: "center",
-    opacity: 0.8,
+    opacity: 0.85,
   },
 
+  // Photo card
   photoThumb: {
     width: THUMB_W,
     height: THUMB_H,
     borderRadius: 16,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: T.bg2, // #1E1E1E card surface
     overflow: "hidden",
+    // No border — card color provides enough contrast
   },
   photoImg: {
     width: "100%",
@@ -248,36 +236,38 @@ const s = StyleSheet.create({
   },
   photoPlaceholder: {
     flex: 1,
-    backgroundColor: COLORS.bg3,
+    backgroundColor: T.bg3,
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
   },
   photoPlaceholderText: {
-    fontFamily: FONTS.semiBold,
+    fontFamily: "BarlowCondensed_700Bold",
     fontSize: 9,
-    color: COLORS.muted,
-    letterSpacing: 1,
+    color: T.muted,
+    letterSpacing: 1.2,
   },
+
+  // Overlay label at bottom of each card
   photoMetaOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(0,0,0,0.52)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     paddingHorizontal: 9,
     paddingVertical: 7,
     gap: 1,
   },
   photoLabel: {
-    fontFamily: FONTS.semiBold,
-    fontSize: 11,
-    color: "#fff",
-    letterSpacing: 0.2,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 12,
+    color: T.text,
+    letterSpacing: 0.3,
   },
   photoDate: {
-    fontFamily: FONTS.regular,
+    fontFamily: "DMSans_400Regular",
     fontSize: 10,
-    color: "rgba(255,255,255,0.65)",
+    color: "rgba(255,255,255,0.55)",
   },
 });

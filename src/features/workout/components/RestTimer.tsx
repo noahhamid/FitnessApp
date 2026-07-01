@@ -1,5 +1,3 @@
-import { COLORS } from "@/src/ui/tokens/colors";
-import { FONTS } from "@/src/ui/tokens/typography";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -9,6 +7,17 @@ import {
   Text,
   View,
 } from "react-native";
+
+// ── Design Tokens ─────────────────────────────────────────────────────────────
+const T = {
+  bg2: "#1E1E1E", // Card surface
+  bg3: "#252525", // Track background
+  gold: "#FFC700", // Primary accent
+  green: "#30D158", // Done state
+  text: "#FFFFFF",
+  sub: "#A0A0A0",
+  muted: "#5A5A5A",
+};
 
 type Props = {
   seconds?: number;
@@ -24,20 +33,20 @@ export function RestTimer({ seconds = 90, onComplete }: Props) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Pulse animation when running
+  // Subtle pulse while running
   useEffect(() => {
     if (isRunning && !isDone) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.04,
-            duration: 800,
+            toValue: 1.025,
+            duration: 900,
             easing: Easing.inOut(Easing.sin),
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: 800,
+            duration: 900,
             easing: Easing.inOut(Easing.sin),
             useNativeDriver: true,
           }),
@@ -49,7 +58,7 @@ export function RestTimer({ seconds = 90, onComplete }: Props) {
     }
   }, [isRunning, isDone]);
 
-  // Countdown logic
+  // Countdown
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       intervalRef.current = setInterval(() => {
@@ -70,7 +79,7 @@ export function RestTimer({ seconds = 90, onComplete }: Props) {
     };
   }, [isRunning]);
 
-  // Progress bar animation
+  // Progress bar
   useEffect(() => {
     Animated.timing(progressAnim, {
       toValue: timeLeft / seconds,
@@ -82,7 +91,6 @@ export function RestTimer({ seconds = 90, onComplete }: Props) {
 
   const handlePress = () => {
     if (isDone) {
-      // Reset
       setTimeLeft(seconds);
       setIsDone(false);
       setIsRunning(false);
@@ -98,9 +106,10 @@ export function RestTimer({ seconds = 90, onComplete }: Props) {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
+  // Gold → dims toward red as time runs out; green when done
   const progressColor = progressAnim.interpolate({
-    inputRange: [0, 0.3, 0.7, 1],
-    outputRange: ["#FF4444", "#FF9500", "#30D158", "#30D158"],
+    inputRange: [0, 0.35, 1],
+    outputRange: ["#FF4444", T.gold, T.gold],
   });
 
   const progressWidth = progressAnim.interpolate({
@@ -108,16 +117,20 @@ export function RestTimer({ seconds = 90, onComplete }: Props) {
     outputRange: ["0%", "100%"],
   });
 
+  const trackColor = isDone ? T.green : progressColor;
+
   return (
     <Pressable onPress={handlePress}>
       <Animated.View
         style={[s.container, { transform: [{ scale: pulseAnim }] }]}
       >
-        {/* Header row */}
+        {/* Header */}
         <View style={s.header}>
           <View style={s.labelRow}>
             <View style={[s.dot, isDone && s.dotDone]} />
-            <Text style={s.label}>REST</Text>
+            <Text style={[s.label, isDone && s.labelDone]}>
+              {isDone ? "COMPLETE" : "REST"}
+            </Text>
           </View>
           <Text style={s.hint}>
             {isDone
@@ -128,7 +141,7 @@ export function RestTimer({ seconds = 90, onComplete }: Props) {
           </Text>
         </View>
 
-        {/* Time display */}
+        {/* Time */}
         <View style={s.timeRow}>
           <Text style={[s.time, isDone && s.timeDone]}>
             {formatTime(timeLeft)}
@@ -136,23 +149,20 @@ export function RestTimer({ seconds = 90, onComplete }: Props) {
           <Text style={s.totalTime}>/ {formatTime(seconds)}</Text>
         </View>
 
-        {/* Progress bar */}
+        {/* Progress track */}
         <View style={s.trackOuter}>
           <Animated.View
             style={[
               s.trackFill,
-              {
-                width: progressWidth,
-                backgroundColor: isDone ? "#30D158" : progressColor,
-              },
+              { width: progressWidth, backgroundColor: trackColor },
             ]}
           />
         </View>
 
-        {/* Skip row */}
+        {/* Footer */}
         <View style={s.footer}>
-          <Text style={s.footerText}>
-            {isDone ? "✓ Rest complete" : `${timeLeft}s remaining`}
+          <Text style={[s.footerText, isDone && s.footerDone]}>
+            {isDone ? "✓  Rest complete" : `${timeLeft}s remaining`}
           </Text>
         </View>
       </Animated.View>
@@ -160,20 +170,17 @@ export function RestTimer({ seconds = 90, onComplete }: Props) {
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   container: {
     borderRadius: 20,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: T.bg2, // #1E1E1E card
     padding: 20,
     gap: 14,
-    shadowColor: COLORS.accent,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 6,
+    // Removed: border, colorful shadow — clean flat card
   },
+
+  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -188,61 +195,62 @@ const s = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: COLORS.accent,
+    backgroundColor: T.gold, // Gold pulse dot
   },
-  dotDone: {
-    backgroundColor: "#30D158",
-  },
+  dotDone: { backgroundColor: T.green },
   label: {
-    color: COLORS.accent,
-    fontFamily: FONTS.bold,
-    fontSize: 11,
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 12,
+    color: T.gold,
     letterSpacing: 2,
   },
+  labelDone: { color: T.green },
   hint: {
-    color: COLORS.muted,
-    fontFamily: FONTS.medium,
+    fontFamily: "DMSans_400Regular",
     fontSize: 10,
+    color: T.muted,
     letterSpacing: 1,
   },
+
+  // Time display
   timeRow: {
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 6,
   },
   time: {
-    color: COLORS.text ?? "#FFFFFF",
-    fontFamily: FONTS.bold,
-    fontSize: 42,
-    lineHeight: 46,
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 52, // Bigger — hero number
+    lineHeight: 56,
     letterSpacing: -1,
+    color: T.text,
   },
-  timeDone: {
-    color: "#30D158",
-  },
+  timeDone: { color: T.green },
   totalTime: {
-    color: COLORS.muted,
-    fontFamily: FONTS.medium,
+    fontFamily: "DMSans_400Regular",
     fontSize: 16,
-    marginBottom: 4,
+    color: T.muted,
+    marginBottom: 6,
   },
+
+  // Progress bar — thicker for better visibility
   trackOuter: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.border,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: T.bg3,
     overflow: "hidden",
   },
   trackFill: {
     height: "100%",
-    borderRadius: 2,
+    borderRadius: 3,
   },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
+
+  // Footer
+  footer: { flexDirection: "row", justifyContent: "space-between" },
   footerText: {
-    color: COLORS.muted,
-    fontFamily: FONTS.medium,
+    fontFamily: "DMSans_400Regular",
     fontSize: 12,
+    color: T.muted,
   },
+  footerDone: { color: T.green },
 });

@@ -5,7 +5,7 @@ import {
   WeightCard,
 } from "@/src/features/dashboard/components/DashboardComponents";
 import { StreakBanner } from "@/src/features/dashboard/components/StreakBanner";
-import { TodaySession } from "@/src/features/dashboard/components/TodaySession";
+
 import {
   useWeightGoal,
   useWeightLog,
@@ -242,59 +242,6 @@ export default function DashboardScreen() {
             ))}
           </View>
         </View>
-
-        <SectionGap />
-
-        {/* ── TODAY'S PLAN ───────────────────────── */}
-        <SectionLabel label="TODAY'S PLAN" />
-        <View style={s.px}>
-          <TodaySession
-            sessions={plannedToday}
-            onSeeAll={() => router.push("/(app)/(tabs)/train")}
-          />
-        </View>
-
-        <SectionGap />
-
-        {/* ── WEEKLY ACTIVITY ────────────────────── */}
-        <SectionLabel label="WEEKLY ACTIVITY" />
-        <View style={s.px}>
-          {totalsLoading ? (
-            <View style={s.loadingBox}>
-              <ActivityIndicator color={T.gold} />
-            </View>
-          ) : (
-            <WeeklyCard
-              weeklyBars={weeklyBars}
-              onReport={() => router.push("/(app)/(tabs)/progress")}
-            />
-          )}
-        </View>
-
-        <SectionGap />
-
-        {/* ── WEIGHT TREND ───────────────────────── */}
-        <SectionLabel label="WEIGHT TREND" />
-        <View style={s.px}>
-          <WeightCard
-            chartData={weightChartSorted}
-            goalW={
-              typeof weightGoalRecord?.goal_weight === "number"
-                ? weightGoalRecord.goal_weight
-                : undefined
-            }
-            startW={
-              typeof weightGoalRecord?.start_weight === "number"
-                ? weightGoalRecord.start_weight
-                : undefined
-            }
-            currentW={weightChartSorted.at(-1)?.w}
-            subtitle={`Last ${Math.min(weightChartSorted.length || 8, 24)} logged`}
-            isLoading={weightsPending}
-          />
-        </View>
-
-        <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
   );
