@@ -47,6 +47,7 @@ type Exercise = {
   muscle: string;
   tag: string;
   uid: string;
+  isCustom?: boolean;
 };
 
 type Props = {
@@ -140,6 +141,23 @@ function SetRow({ setNum, set, onChange, onDelete, onTimerOpen }: SetRowProps) {
   );
 }
 
+// ─── Muscle / Tag Pill ─────────────────────────────────────────────────────────
+// Renders as a neutral pill for preset muscle groups, or a gold-tinted
+// "Custom" pill with a sparkle glyph for user-created exercises.
+
+function TagPill({ label, isCustom }: { label: string; isCustom: boolean }) {
+  return (
+    <View style={[ss.pill, isCustom && ss.pillCustom]}>
+      {isCustom && (
+        <Ionicons name="sparkles" size={9} color={T.gold} style={ss.pillIcon} />
+      )}
+      <Text style={[ss.pillText, isCustom && ss.pillTextCustom]}>
+        {label.toUpperCase()}
+      </Text>
+    </View>
+  );
+}
+
 // ─── Exercise Card ────────────────────────────────────────────────────────────
 
 export default function ExerciseCard({
@@ -171,6 +189,13 @@ export default function ExerciseCard({
   const allDone = doneCount === sets.length && sets.length > 0;
   const progressPct = sets.length > 0 ? doneCount / sets.length : 0;
 
+  // An exercise is treated as "custom" if explicitly flagged, or if either
+  // the muscle group or tag was set to "Custom" by the quick-add flow.
+  const isCustom =
+    exercise.isCustom ||
+    exercise.tag?.toLowerCase() === "custom" ||
+    exercise.muscle?.toLowerCase() === "custom";
+
   const totalVol = sets
     .filter((s) => s.done && s.weight && s.reps)
     .reduce(
@@ -201,9 +226,16 @@ export default function ExerciseCard({
           <Text style={ss.exerciseName} numberOfLines={1}>
             {exercise.name}
           </Text>
-          <Text style={ss.muscleTag}>
-            {exercise.muscle.toUpperCase()} · {exercise.tag.toUpperCase()}
-          </Text>
+          <View style={ss.pillRow}>
+            {isCustom ? (
+              <TagPill label="Custom" isCustom />
+            ) : (
+              <>
+                <TagPill label={exercise.muscle} isCustom={false} />
+                <TagPill label={exercise.tag} isCustom={false} />
+              </>
+            )}
+          </View>
         </View>
 
         <View style={ss.headerRight}>
@@ -299,17 +331,11 @@ const ss = StyleSheet.create({
     marginTop: 14,
     marginBottom: 12,
   },
-  titleCol: { flex: 1, gap: 3 },
+  titleCol: { flex: 1, gap: 6 },
   exerciseName: {
     fontFamily: "DMSans_600SemiBold",
     fontSize: 14,
     color: T.text,
-  },
-  muscleTag: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 9,
-    color: T.muted,
-    letterSpacing: 0.8,
   },
   headerRight: {
     alignItems: "flex-end",
@@ -327,6 +353,39 @@ const ss = StyleSheet.create({
     letterSpacing: 0.3,
   },
   setCountActive: { color: T.gold },
+
+  // Pills (muscle / tag badges)
+  pillRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: T.bg2,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  pillCustom: {
+    backgroundColor: T.goldDim,
+    borderColor: T.goldBorder,
+  },
+  pillIcon: {
+    marginRight: 3,
+  },
+  pillText: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 9,
+    color: T.sub,
+    letterSpacing: 0.6,
+  },
+  pillTextCustom: {
+    color: T.gold,
+  },
 
   // Column headers
   colHeaders: {

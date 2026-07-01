@@ -6,56 +6,56 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  Easing,
   Pressable,
   Platform,
 } from "react-native";
-import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 
-// ── Design Tokens ─────────────────────────────────────────────────────────────
+// ── Design Tokens — "Muscle Monster" Theme ─────────────────────────────────
 const T = {
   bg0: "#121212",
   bg2: "#1E1E1E", // Sheet surface
-  bg3: "#252525", // Preset / secondary button surface
+  bg3: "#282828", // Preset / secondary pill surface
   gold: "#FFC700", // Primary accent
-  red: "#FF453A", // Low-time urgency
   text: "#FFFFFF",
   sub: "#A0A0A0",
   muted: "#5A5A5A",
-  track: "#2A2A2A", // SVG ring track
 };
 
-const PRESETS = [60, 90, 120, 180] as const;
+// Preset grid — value in seconds, label as shown to the user
+const PRESETS = [
+  { seconds: 30, label: "30s" },
+  { seconds: 60, label: "60s" },
+  { seconds: 90, label: "90s" },
+  { seconds: 120, label: "2m" },
+  { seconds: 180, label: "3m" },
+] as const;
+
+const SEC_STEP = 5;
+const MAX_MINUTES = 15;
 
 type Props = {
   visible: boolean;
   onClose: () => void;
-  defaultSeconds?: number;
-  onComplete?: () => void;
+  initialSeconds?: number;
+  onSave?: (seconds: number) => void;
 };
 
 export default function TimerModal({
   visible,
   onClose,
-  defaultSeconds = 90,
-  onComplete,
+  initialSeconds = 90,
+  onSave,
 }: Props) {
-  const [total, setTotal] = useState(defaultSeconds);
-  const [remain, setRemain] = useState(defaultSeconds);
-  const [running, setRunning] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [minutes, setMinutes] = useState(Math.floor(initialSeconds / 60));
+  const [seconds, setSeconds] = useState(initialSeconds % 60);
 
   const sheetAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const doneAnim = useRef(new Animated.Value(0)).current;
-  const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   // Sheet open/close
   useEffect(() => {
     if (visible) {
-      setRemain(total);
-      setRunning(false);
-      doneAnim.setValue(0);
+      setMinutes(Math.floor(initialSeconds / 60));
+      setSeconds(initialSeconds % 60);
       Animated.spring(sheetAnim, {
         toValue: 1,
         damping: 22,
@@ -64,121 +64,48 @@ export default function TimerModal({
       }).start();
     } else {
       sheetAnim.setValue(0);
-      clearInterval(intervalRef.current!);
     }
   }, [visible]);
 
-  // Pulse while running
-  useEffect(() => {
-    if (running) {
-      pulseLoopRef.current = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.03,
-            duration: 900,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 900,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-        ]),
-      );
-      pulseLoopRef.current.start();
-    } else {
-      pulseLoopRef.current?.stop();
-      Animated.spring(pulseAnim, { toValue: 1, useNativeDriver: true }).start();
-    }
-  }, [running]);
+  const total = minutes * 60 + seconds;
 
-  // Countdown
-  useEffect(() => {
-    if (running) {
-      intervalRef.current = setInterval(() => {
-        setRemain((r) => {
-          if (r <= 1) {
-            clearInterval(intervalRef.current!);
-            setRunning(false);
-            // Done flash sequence
-            Animated.sequence([
-              Animated.timing(doneAnim, {
-                toValue: 1,
-                duration: 200,
-                useNativeDriver: true,
-              }),
-              Animated.timing(doneAnim, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: true,
-              }),
-              Animated.timing(doneAnim, {
-                toValue: 1,
-                duration: 200,
-                useNativeDriver: true,
-              }),
-              Animated.timing(doneAnim, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: true,
-              }),
-              Animated.timing(doneAnim, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: true,
-              }),
-            ]).start();
-            onComplete?.();
-            return 0;
-          }
-          return r - 1;
-        });
-      }, 1000);
-    } else {
-      clearInterval(intervalRef.current!);
-    }
-    return () => clearInterval(intervalRef.current!);
-  }, [running]);
+  const clampMinutes = (m: number) => Math.max(0, Math.min(MAX_MINUTES, m));
+  const clampSeconds = (s: number) => ((s % 60) + 60) % 60;
 
-  const isDone = remain === 0;
-  const pct = remain / total;
+  const adjustMinutes = (delta: number) =>
+    setMinutes((m) => clampMinutes(m + delta));
 
-  // SVG ring
-  const SIZE = 220;
-  const R = 96;
-  const STROKE = 9;
-  const circ = 2 * Math.PI * R;
-  const dashOffset = circ * (1 - pct);
-
-  // Gold → red as time runs low
-  const ringColor = isDone ? T.gold : pct > 0.3 ? T.gold : T.red;
-
-  const mins = String(Math.floor(remain / 60)).padStart(2, "0");
-  const secs = String(remain % 60).padStart(2, "0");
-
-  const handlePreset = (sec: number) => {
-    setTotal(sec);
-    setRemain(sec);
-    setRunning(false);
-    doneAnim.setValue(0);
+  const adjustSeconds = (delta: number) => {
+    setSeconds((s) => {
+      const next = s + delta;
+      if (next >= 60) {
+        setMinutes((m) => clampMinutes(m + 1));
+        return next - 60;
+      }
+      if (next < 0) {
+        if (minutes > 0) {
+          setMinutes((m) => clampMinutes(m - 1));
+          return 60 + next;
+        }
+        return 0;
+      }
+      return next;
+    });
   };
 
-  const handleReset = () => {
-    setRemain(total);
-    setRunning(false);
-    doneAnim.setValue(0);
+  const applyPreset = (sec: number) => {
+    setMinutes(Math.floor(sec / 60));
+    setSeconds(sec % 60);
+  };
+
+  const handleSave = () => {
+    onSave?.(total);
+    onClose();
   };
 
   const sheetTranslate = sheetAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [400, 0],
-  });
-
-  const doneOpacity = doneAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 0.1], // Subtle gold flash — not blinding
   });
 
   return (
@@ -206,16 +133,6 @@ export default function TimerModal({
       <Animated.View
         style={[s.sheet, { transform: [{ translateY: sheetTranslate }] }]}
       >
-        {/* Gold done flash overlay */}
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            StyleSheet.absoluteFillObject,
-            s.doneFlash,
-            { opacity: doneOpacity },
-          ]}
-        />
-
         {/* Handle */}
         <View style={s.handleRow}>
           <View style={s.handle} />
@@ -223,107 +140,93 @@ export default function TimerModal({
 
         {/* Title */}
         <View style={s.titleRow}>
-          <Text style={s.titleLabel}>REST TIMER</Text>
+          <Text style={s.titleLabel}>SET REST TIME</Text>
           <Pressable onPress={onClose} hitSlop={12} style={s.closeX}>
             <Text style={s.closeXText}>✕</Text>
           </Pressable>
         </View>
 
-        {/* Ring */}
-        <Animated.View
-          style={[s.ringWrapper, { transform: [{ scale: pulseAnim }] }]}
-        >
-          <Svg
-            width={SIZE}
-            height={SIZE}
-            style={{ transform: [{ rotate: "-90deg" }] }}
-          >
-            <Defs>
-              <LinearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-                <Stop offset="0%" stopColor={ringColor} stopOpacity="1" />
-                <Stop offset="100%" stopColor={ringColor} stopOpacity="0.6" />
-              </LinearGradient>
-            </Defs>
-
-            {/* Track */}
-            <Circle
-              cx={SIZE / 2}
-              cy={SIZE / 2}
-              r={R}
-              fill="none"
-              stroke={T.track}
-              strokeWidth={STROKE}
-            />
-            {/* Progress arc */}
-            <Circle
-              cx={SIZE / 2}
-              cy={SIZE / 2}
-              r={R}
-              fill="none"
-              stroke="url(#ringGrad)"
-              strokeWidth={STROKE}
-              strokeLinecap="round"
-              strokeDasharray={`${circ}`}
-              strokeDashoffset={`${dashOffset}`}
-            />
-          </Svg>
-
-          {/* Center content */}
-          <View style={[s.ringCenter, { width: SIZE, height: SIZE }]}>
-            <Text style={[s.timeValue, isDone && s.timeValueDone]}>
-              {mins}:{secs}
-            </Text>
-            <Text style={s.timeSub}>
-              {isDone ? "✓  DONE" : running ? "REMAINING" : "PAUSED"}
-            </Text>
-            {!isDone && (
-              <Text style={s.pctLabel}>{Math.round(pct * 100)}%</Text>
-            )}
+        {/* Premium time dial */}
+        <View style={s.dialRow}>
+          {/* Minutes dial */}
+          <View style={s.dialCol}>
+            <Pressable
+              onPress={() => adjustMinutes(1)}
+              hitSlop={10}
+              style={s.stepBtn}
+            >
+              <Text style={s.stepArrow}>▲</Text>
+            </Pressable>
+            <Text style={s.dialValue}>{String(minutes).padStart(2, "0")}</Text>
+            <Pressable
+              onPress={() => adjustMinutes(-1)}
+              hitSlop={10}
+              style={s.stepBtn}
+            >
+              <Text style={s.stepArrow}>▼</Text>
+            </Pressable>
+            <Text style={s.unitLabel}>MINUTES</Text>
           </View>
-        </Animated.View>
 
-        {/* Preset chips */}
+          <Text style={s.dialColon}>:</Text>
+
+          {/* Seconds dial */}
+          <View style={s.dialCol}>
+            <Pressable
+              onPress={() => adjustSeconds(SEC_STEP)}
+              hitSlop={10}
+              style={s.stepBtn}
+            >
+              <Text style={s.stepArrow}>▲</Text>
+            </Pressable>
+            <Text style={s.dialValue}>{String(seconds).padStart(2, "0")}</Text>
+            <Pressable
+              onPress={() => adjustSeconds(-SEC_STEP)}
+              hitSlop={10}
+              style={s.stepBtn}
+            >
+              <Text style={s.stepArrow}>▼</Text>
+            </Pressable>
+            <Text style={s.unitLabel}>SECONDS</Text>
+          </View>
+        </View>
+
+        {/* Quick-tap preset grid */}
         <View style={s.presetRow}>
-          {PRESETS.map((sec) => (
+          {PRESETS.map((p) => (
             <TouchableOpacity
-              key={sec}
-              onPress={() => handlePreset(sec)}
-              style={[s.preset, total === sec && s.presetActive]}
+              key={p.seconds}
+              onPress={() => applyPreset(p.seconds)}
+              style={[s.preset, total === p.seconds && s.presetActive]}
               activeOpacity={0.75}
             >
-              <Text style={[s.presetText, total === sec && s.presetTextActive]}>
-                {sec < 60 ? `${sec}s` : `${sec / 60}m`}
+              <Text
+                style={[
+                  s.presetText,
+                  total === p.seconds && s.presetTextActive,
+                ]}
+              >
+                {p.label}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Controls */}
-        <View style={s.controls}>
-          <TouchableOpacity
-            onPress={handleReset}
-            style={s.btnSecondary}
-            activeOpacity={0.75}
-          >
-            <Text style={s.btnSecondaryText}>↺ RESET</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => !isDone && setRunning((r) => !r)}
-            style={[s.btnPrimary, running && s.btnPause, isDone && s.btnDone]}
-            activeOpacity={0.8}
-          >
-            <Text style={s.btnPrimaryText}>
-              {isDone ? "✓  COMPLETE" : running ? "⏸  PAUSE" : "▶  START"}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* Confirm action — full width, solid gold, commanding */}
+        <TouchableOpacity
+          onPress={handleSave}
+          style={[s.saveBtn, total === 0 && s.saveBtnDisabled]}
+          activeOpacity={0.85}
+          disabled={total === 0}
+        >
+          <Text style={s.saveBtnText}>SET TIMER</Text>
+        </TouchableOpacity>
       </Animated.View>
     </Modal>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ── Styles ───────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   overlay: { ...StyleSheet.absoluteFillObject },
   backdrop: {
@@ -350,13 +253,6 @@ const s = StyleSheet.create({
     elevation: 20,
   },
 
-  // Gold flash on complete
-  doneFlash: {
-    backgroundColor: T.gold,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
-
   // Handle
   handleRow: { alignItems: "center", paddingTop: 12, paddingBottom: 8 },
   handle: {
@@ -371,7 +267,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 4,
+    marginBottom: 8,
     position: "relative",
   },
   titleLabel: {
@@ -388,93 +284,88 @@ const s = StyleSheet.create({
     color: T.muted,
   },
 
-  // Ring
-  ringWrapper: { alignItems: "center", marginVertical: 20 },
-  ringCenter: {
-    position: "absolute",
+  // Time dial — mechanical, stopwatch-inspired
+  dialRow: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
+    gap: 18,
+    marginVertical: 24,
   },
-  timeValue: {
+  dialCol: {
+    alignItems: "center",
+    gap: 4,
+  },
+  stepBtn: {
+    width: 44,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepArrow: {
+    color: T.muted,
+    fontSize: 13,
+  },
+  dialValue: {
     fontFamily: "BarlowCondensed_900Black",
-    fontSize: 58,
+    fontSize: 64,
+    lineHeight: 68,
     color: T.text,
     letterSpacing: -1,
-    lineHeight: 62,
+    minWidth: 88,
+    textAlign: "center",
   },
-  timeValueDone: { color: T.gold }, // Gold on completion
-  timeSub: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 11,
+  dialColon: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 48,
     color: T.muted,
-    letterSpacing: 2,
+    marginTop: -20,
   },
-  pctLabel: {
+  unitLabel: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
-    color: T.muted,
-    marginTop: 4,
-    letterSpacing: 1,
+    fontSize: 10,
+    color: T.sub,
+    letterSpacing: 2,
+    marginTop: 2,
   },
 
-  // Preset chips
+  // Preset chips — borderless, gold when active
   presetRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
   preset: {
     flex: 1,
-    paddingVertical: 11,
+    paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: T.bg3,
+    backgroundColor: T.bg3, // #282828
     alignItems: "center",
-    // No border on inactive
   },
   presetActive: {
-    backgroundColor: T.gold, // Solid gold fill when active
+    backgroundColor: T.gold,
   },
   presetText: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 15,
-    color: T.muted,
+    fontSize: 14,
+    color: T.sub,
     letterSpacing: 0.5,
   },
   presetTextActive: {
     color: T.bg0, // Dark text on gold
   },
 
-  // Control buttons
-  controls: { flexDirection: "row", gap: 10 },
-  btnSecondary: {
-    flex: 1,
-    paddingVertical: 15,
+  // Confirm — full-width solid gold block
+  saveBtn: {
+    paddingVertical: 18,
     borderRadius: 16,
-    backgroundColor: T.bg3,
-    alignItems: "center",
-    // No border
-  },
-  btnSecondaryText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 15,
-    color: T.sub,
-    letterSpacing: 1,
-  },
-  btnPrimary: {
-    flex: 2,
-    paddingVertical: 15,
-    borderRadius: 16,
-    backgroundColor: T.gold, // Gold START
-    alignItems: "center",
-  },
-  btnPause: {
-    backgroundColor: T.bg3, // Neutral gray when paused — not orange
-  },
-  btnDone: {
     backgroundColor: T.gold,
-    opacity: 0.85,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  btnPrimaryText: {
+  saveBtnDisabled: {
+    opacity: 0.4,
+  },
+  saveBtnText: {
     fontFamily: "BarlowCondensed_900Black",
-    fontSize: 16,
-    color: T.bg0, // Dark on gold
-    letterSpacing: 1.5,
+    fontSize: 17,
+    color: T.bg0, // Dark, thick typography on gold
+    letterSpacing: 2,
   },
 });

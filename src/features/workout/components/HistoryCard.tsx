@@ -40,9 +40,11 @@ type Session = {
   id: string;
   name: string;
   date: string;
+  time?: string; // e.g. "7:14 AM"
   duration: string;
   volume: string;
   sets: number;
+  prs?: number; // count of PRs hit this session
   exercises: string[];
 };
 
@@ -125,6 +127,8 @@ function StatCell({
 // ─── History Card ─────────────────────────────────────────────────────────────
 
 export default function HistoryCard({ session, onPress }: Props) {
+  const hasPRs = !!session.prs && session.prs > 0;
+
   return (
     <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.82}>
       {/* ── Header ── */}
@@ -133,7 +137,10 @@ export default function HistoryCard({ session, onPress }: Props) {
           <Text style={s.name} numberOfLines={1}>
             {session.name}
           </Text>
-          <Text style={s.date}>{session.date}</Text>
+          <Text style={s.dateTime}>
+            {session.date}
+            {session.time ? `  ·  ${session.time}` : ""}
+          </Text>
         </View>
         <SparkLine data={VOLUME_SPARKLINE as number[]} />
       </View>
@@ -145,6 +152,12 @@ export default function HistoryCard({ session, onPress }: Props) {
         <StatCell value={session.volume} label="VOLUME" highlight />
         <View style={s.statDivider} />
         <StatCell value={String(session.sets)} label="SETS" />
+        {hasPRs && (
+          <>
+            <View style={s.statDivider} />
+            <StatCell value={`🔥 ${session.prs}`} label="PRS" highlight />
+          </>
+        )}
       </View>
 
       {/* ── Exercise tags ── */}
@@ -168,13 +181,18 @@ export default function HistoryCard({ session, onPress }: Props) {
 const s = StyleSheet.create({
   card: {
     backgroundColor: T.bg1,
-    borderWidth: 1,
-    borderColor: T.borderMid,
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
     marginBottom: 10,
     gap: 14,
     overflow: "hidden",
+    // subtle depth instead of a border — keeps the "borderless" surface
+    // while still separating the card from the #121212 background
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 3,
   },
 
   // Header
@@ -195,10 +213,10 @@ const s = StyleSheet.create({
     letterSpacing: 0.3,
     lineHeight: 22,
   },
-  date: {
+  dateTime: {
     fontFamily: "DMSans_400Regular",
     fontSize: 11,
-    color: T.muted,
+    color: T.sub,
   },
 
   // Stats
@@ -206,13 +224,14 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: T.bg2,
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
   },
   statCell: {
     flex: 1,
     alignItems: "center",
-    gap: 3,
+    gap: 4,
   },
   statVal: {
     fontFamily: "BarlowCondensed_700Bold",
@@ -228,8 +247,10 @@ const s = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    height: 28,
-    backgroundColor: T.border,
+    height: 26,
+    // no border — a faint fill on the bg2 surface reads as a seam,
+    // not a "harsh" line
+    backgroundColor: T.bg3,
   },
 
   // Tags
@@ -239,8 +260,6 @@ const s = StyleSheet.create({
   },
   tag: {
     backgroundColor: T.bg2,
-    borderWidth: 1,
-    borderColor: T.border,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 5,

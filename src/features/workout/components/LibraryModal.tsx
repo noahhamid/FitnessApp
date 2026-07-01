@@ -24,6 +24,7 @@ const T = {
   bg2: "#1E1E1E", // Card / row surface
   bg3: "#252525", // Input / chip surface
   gold: "#FFC700", // Primary accent
+  goldDim: "#FFC70018", // Gold tint for pressed/selected surfaces
   text: "#FFFFFF", // Headers / exercise names
   sub: "#A0A0A0", // Secondary details
   muted: "#5A5A5A", // Placeholder / disabled
@@ -61,16 +62,26 @@ function Chip({
 // ── Exercise row ──────────────────────────────────────────────────────────────
 function ExerciseRow({
   item,
+  justAdded,
   onPress,
 }: {
   item: Exercise;
+  justAdded: boolean;
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.75} style={ss.row}>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.75}
+      style={[ss.row, justAdded && ss.rowActive]}
+    >
       {/* Icon bubble — gold tint, no color-per-tag */}
-      <View style={ss.rowIcon}>
-        <Ionicons name="barbell-outline" size={20} color={T.gold} />
+      <View style={[ss.rowIcon, justAdded && ss.rowIconActive]}>
+        <Ionicons
+          name="barbell-outline"
+          size={20}
+          color={justAdded ? T.bg0 : T.gold}
+        />
       </View>
 
       {/* Name + muscle */}
@@ -81,9 +92,13 @@ function ExerciseRow({
         </Text>
       </View>
 
-      {/* Add CTA — gold circle */}
+      {/* Add CTA — gold circle, flips to a tick on tap */}
       <View style={ss.addBtn}>
-        <Ionicons name="add" size={18} color={T.bg0} />
+        <Ionicons
+          name={justAdded ? "checkmark" : "add"}
+          size={18}
+          color={T.bg0}
+        />
       </View>
     </TouchableOpacity>
   );
@@ -108,6 +123,8 @@ function EmptyState({ query }: { query: string }) {
 export default function LibraryModal({ visible, onClose, onAdd }: Props) {
   const [muscle, setMuscle] = useState("All");
   const [search, setSearch] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [addedId, setAddedId] = useState<string | null>(null);
 
   const filtered = (EXERCISES as Exercise[]).filter(
     (e) =>
@@ -117,8 +134,13 @@ export default function LibraryModal({ visible, onClose, onAdd }: Props) {
 
   const handleAdd = useCallback(
     (item: Exercise) => {
+      setAddedId(item.id);
       onAdd(item);
-      onClose();
+      // brief gold "confirmed" flash before the sheet dismisses
+      setTimeout(() => {
+        onClose();
+        setAddedId(null);
+      }, 140);
     },
     [onAdd, onClose],
   );
@@ -161,11 +183,17 @@ export default function LibraryModal({ visible, onClose, onAdd }: Props) {
           </View>
 
           {/* Search */}
-          <View style={ss.searchRow}>
-            <Ionicons name="search-outline" size={15} color={T.muted} />
+          <View style={[ss.searchRow, searchFocused && ss.searchRowFocused]}>
+            <Ionicons
+              name="search-outline"
+              size={15}
+              color={searchFocused ? T.gold : T.muted}
+            />
             <TextInput
               value={search}
               onChangeText={setSearch}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               placeholder="Search exercises..."
               placeholderTextColor={T.muted}
               style={ss.searchInput}
@@ -206,7 +234,11 @@ export default function LibraryModal({ visible, onClose, onAdd }: Props) {
             contentContainerStyle={ss.listContent}
             ListEmptyComponent={<EmptyState query={search} />}
             renderItem={({ item }) => (
-              <ExerciseRow item={item} onPress={() => handleAdd(item)} />
+              <ExerciseRow
+                item={item}
+                justAdded={addedId === item.id}
+                onPress={() => handleAdd(item)}
+              />
             )}
             keyboardShouldPersistTaps="handled"
           />
@@ -273,7 +305,7 @@ const ss = StyleSheet.create({
     justifyContent: "center",
   },
 
-  // Search
+  // Search — borderless by default, gold outline on focus
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -284,7 +316,12 @@ const ss = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 14,
     height: 46,
-    // No border — keeps it clean
+    borderWidth: 1.5,
+    borderColor: "transparent", // reserves space so focus doesn't shift layout
+  },
+  searchRowFocused: {
+    borderColor: T.gold,
+    backgroundColor: T.bg2,
   },
   searchInput: {
     flex: 1,
@@ -328,6 +365,9 @@ const ss = StyleSheet.create({
     padding: 14,
     // No border, no color tags — clean card
   },
+  rowActive: {
+    backgroundColor: T.goldDim,
+  },
   rowIcon: {
     width: 42,
     height: 42,
@@ -335,6 +375,9 @@ const ss = StyleSheet.create({
     backgroundColor: T.bg3,
     alignItems: "center",
     justifyContent: "center",
+  },
+  rowIconActive: {
+    backgroundColor: T.gold,
   },
   rowText: { flex: 1, gap: 3 },
   rowName: {

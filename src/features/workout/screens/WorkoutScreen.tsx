@@ -5,11 +5,15 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  LayoutAnimation,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
+  UIManager,
   View,
 } from "react-native";
 
@@ -33,6 +37,13 @@ import ExerciseCard, {
 import LibrarySheet from "@/src/features/workout/components/LibrarySheet";
 import TimerModal from "@/src/features/workout/components/TimerModal";
 import WorkoutHeader from "@/src/features/workout/components/WorkoutHeader";
+
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -58,6 +69,7 @@ type Exercise = {
   tag: string;
   uid: string;
   sessionExerciseId?: string;
+  isCustom?: boolean;
 };
 
 type Template = {
@@ -79,6 +91,16 @@ function mapSetsForComplete(
     weight: Math.max(0, Number(String(s.weight || "").replace(",", ".")) || 0),
     completed: s.done,
   }));
+}
+
+function slugify(name: string) {
+  return (
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") || "exercise"
+  );
 }
 
 const TEMPLATE_EXERCISES: Record<string, string[]> = {
@@ -127,8 +149,6 @@ function StreakCard({
   thisWeek: number;
   weekGoal: number;
 }) {
-  const pct = Math.min((thisWeek / weekGoal) * 100, 100);
-
   return (
     <View style={s.streakCard}>
       {/* Left */}
@@ -245,6 +265,83 @@ function EmptyExercises({ onAdd }: { onAdd: () => void }) {
   );
 }
 
+// ─── Add Custom Exercise (dynamic append affordance) ──────────────────────────
+
+function AddCustomExerciseRow({
+  open,
+  value,
+  onToggle,
+  onChangeValue,
+  onSubmit,
+  onBrowseLibrary,
+  disabled,
+}: {
+  open: boolean;
+  value: string;
+  onToggle: () => void;
+  onChangeValue: (v: string) => void;
+  onSubmit: () => void;
+  onBrowseLibrary: () => void;
+  disabled?: boolean;
+}) {
+  const [focused, setFocused] = useState(false);
+
+  return (
+    <View style={s.customWrap}>
+      <TouchableOpacity
+        disabled={disabled}
+        onPress={onToggle}
+        style={[s.addCustomBtn, open && s.addCustomBtnOpen]}
+        activeOpacity={0.8}
+      >
+        <Ionicons
+          name={open ? "remove-circle-outline" : "add-circle-outline"}
+          size={16}
+          color={T.gold}
+        />
+        <Text style={s.addCustomBtnText}>
+          {open ? "CANCEL" : "ADD CUSTOM EXERCISE"}
+        </Text>
+      </TouchableOpacity>
+
+      {open && (
+        <View style={s.customPanel}>
+          <TextInput
+            value={value}
+            onChangeText={onChangeValue}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder="e.g. Cable Pull-Through"
+            placeholderTextColor={T.muted}
+            style={[s.customInput, focused && s.customInputFocused]}
+            returnKeyType="done"
+            onSubmitEditing={onSubmit}
+            autoFocus
+          />
+          <View style={s.customPanelActions}>
+            <TouchableOpacity
+              onPress={onSubmit}
+              disabled={!value.trim()}
+              style={[s.customAddBtn, !value.trim() && s.customAddBtnDisabled]}
+              activeOpacity={0.85}
+            >
+              <Text style={s.customAddBtnText}>ADD TO SESSION</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onBrowseLibrary}
+              style={s.customLibraryLink}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="search" size={13} color={T.sub} />
+              <Text style={s.customLibraryLinkText}>Browse library</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
 // ─── History Row ──────────────────────────────────────────────────────────────
 
 function HistoryRow({
@@ -299,6 +396,10 @@ export default function WorkoutScreen() {
   const [showLibrary, setShowLibrary] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
 
+  // Hybrid append flow: inline custom-exercise creation
+  const [showCustomPanel, setShowCustomPanel] = useState(false);
+  const [customExerciseName, setCustomExerciseName] = useState("");
+
   const workoutSaveBusyRef = useRef(false);
   const workoutNameRef = useRef(workoutName);
   const exercisesRef = useRef(exercises);
@@ -330,6 +431,8 @@ export default function WorkoutScreen() {
     setExerciseSetsByUid({});
     setStartTime(null);
     setActiveSessionId(null);
+    setShowCustomPanel(false);
+    setCustomExerciseName("");
   }, []);
 
   const handleSetsChange = useCallback(
@@ -462,6 +565,8 @@ export default function WorkoutScreen() {
         setActiveSessionId(null);
         return;
       }
+      // 1. Load Template Framework — map the template's predefined exercises
+      // straight into interactive tracking cards.
       const ids = TEMPLATE_EXERCISES[tpl.id] ?? [];
       const preloaded: Exercise[] = ids
         .map((eid, i) => {
@@ -552,6 +657,8 @@ export default function WorkoutScreen() {
     );
   }, [exerciseCount, finalizeWorkoutOnServer]);
 
+  // 3. Inline Custom Creation — append a brand new, empty interactive
+  // tracking block straight into the active screen array.
   const addExercise = useCallback(
     async (ex: Omit<Exercise, "uid" | "sessionExerciseId">) => {
       const uid = `${ex.id}_${Date.now()}_${Math.random()}`;
@@ -593,6 +700,31 @@ export default function WorkoutScreen() {
       return next;
     });
     setExercises((prev) => prev.filter((e) => e.uid !== uid));
+  }, []);
+
+  const toggleCustomPanel = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setShowCustomPanel((v) => !v);
+  }, []);
+
+  const submitCustomExercise = useCallback(async () => {
+    const name = customExerciseName.trim();
+    if (!name) return;
+    await addExercise({
+      id: `custom-${slugify(name)}-${Date.now()}`,
+      name,
+      muscle: "Custom",
+      tag: "Custom",
+      isCustom: true,
+    });
+    setCustomExerciseName("");
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setShowCustomPanel(false);
+  }, [customExerciseName, addExercise]);
+
+  const openLibraryFromCustomPanel = useCallback(() => {
+    setShowCustomPanel(false);
+    setShowLibrary(true);
   }, []);
 
   return (
@@ -647,64 +779,79 @@ export default function WorkoutScreen() {
           </>
         )}
 
-        {/* ── ACTIVE: hint ── */}
+        {/* ── ACTIVE: hint + timer ── */}
         {activeWorkout && exerciseCount > 0 && (
           <View style={s.px}>
-            <View style={s.hintCard}>
-              <Ionicons
-                name="information-circle-outline"
-                size={14}
-                color={T.sub}
-              />
-              <Text style={s.hintText}>
-                Log weight &amp; reps, then tap ✓ to complete each set.
-              </Text>
+            <View style={s.hintRow}>
+              <View style={s.hintCard}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={14}
+                  color={T.sub}
+                />
+                <Text style={s.hintText}>
+                  Log weight &amp; reps, then tap ✓ to complete each set.
+                </Text>
+              </View>
+              <TouchableOpacity
+                disabled={finishingWorkout}
+                onPress={() => setShowTimer(true)}
+                style={s.timerBadge}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="timer-outline" size={18} color={T.sub} />
+              </TouchableOpacity>
             </View>
           </View>
         )}
 
-        {/* ── ACTIVE: exercises ── */}
+        {/* ── ACTIVE: template framework + hybrid dynamic append ── */}
         {activeWorkout && (
           <View style={s.px}>
             {exercises.length === 0 ? (
-              <EmptyExercises onAdd={() => setShowLibrary(true)} />
-            ) : (
-              exercises.map((ex) => (
-                <ExerciseCard
-                  key={ex.uid}
-                  exercise={ex}
-                  sets={
-                    exerciseSetsByUid[ex.uid] ?? createInitialExerciseSets()
-                  }
-                  onSetsChange={(sets) => handleSetsChange(ex.uid, sets)}
-                  onRemove={() => void removeExercise(ex.uid)}
-                  onTimerOpen={() => setShowTimer(true)}
+              <>
+                <EmptyExercises onAdd={() => setShowLibrary(true)} />
+                <AddCustomExerciseRow
+                  open={showCustomPanel}
+                  value={customExerciseName}
+                  onToggle={toggleCustomPanel}
+                  onChangeValue={setCustomExerciseName}
+                  onSubmit={() => void submitCustomExercise()}
+                  onBrowseLibrary={openLibraryFromCustomPanel}
+                  disabled={sessionStarting || finishingWorkout}
                 />
-              ))
-            )}
-          </View>
-        )}
+              </>
+            ) : (
+              <>
+                {/* Predefined template exercises + any appended custom ones
+                    render through the same tracking card — same #1E1E1E
+                    surface, same weight/reps/checkmark interaction. */}
+                {exercises.map((ex) => (
+                  <ExerciseCard
+                    key={ex.uid}
+                    exercise={ex}
+                    sets={
+                      exerciseSetsByUid[ex.uid] ?? createInitialExerciseSets()
+                    }
+                    onSetsChange={(sets) => handleSetsChange(ex.uid, sets)}
+                    onRemove={() => void removeExercise(ex.uid)}
+                    onTimerOpen={() => setShowTimer(true)}
+                  />
+                ))}
 
-        {/* ── ACTIVE: add exercise + timer ── */}
-        {activeWorkout && (
-          <View style={s.actionBar}>
-            <TouchableOpacity
-              disabled={sessionStarting || finishingWorkout}
-              onPress={() => setShowLibrary(true)}
-              style={s.addExBtn}
-              activeOpacity={0.82}
-            >
-              <Ionicons name="add" size={18} color={T.gold} />
-              <Text style={s.addExBtnText}>ADD EXERCISE</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              disabled={finishingWorkout}
-              onPress={() => setShowTimer(true)}
-              style={s.timerBadge}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="timer-outline" size={18} color={T.sub} />
-            </TouchableOpacity>
+                {/* 2. Dynamic Append State — sits right below the final
+                    exercise so it always reads as "add the next one". */}
+                <AddCustomExerciseRow
+                  open={showCustomPanel}
+                  value={customExerciseName}
+                  onToggle={toggleCustomPanel}
+                  onChangeValue={setCustomExerciseName}
+                  onSubmit={() => void submitCustomExercise()}
+                  onBrowseLibrary={openLibraryFromCustomPanel}
+                  disabled={sessionStarting || finishingWorkout}
+                />
+              </>
+            )}
           </View>
         )}
 
@@ -1027,8 +1174,16 @@ const s = StyleSheet.create({
     color: T.sub,
   },
 
-  // Hint card
+  // Hint row (hint card + timer)
+  hintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+    marginTop: 4,
+  },
   hintCard: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -1038,8 +1193,6 @@ const s = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 9,
-    marginBottom: 12,
-    marginTop: 4,
   },
   hintText: {
     flex: 1,
@@ -1048,43 +1201,97 @@ const s = StyleSheet.create({
     color: T.sub,
     lineHeight: 17,
   },
-
-  // Action bar
-  actionBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 6,
-    gap: 8,
-  },
-  addExBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderColor: T.goldBorder,
-    borderRadius: 12,
-    paddingVertical: 13,
-    backgroundColor: T.goldDim,
-  },
-  addExBtnText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 14,
-    color: T.gold,
-    letterSpacing: 1.0,
-  },
   timerBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: T.bg1,
     borderWidth: 1,
     borderColor: T.borderMid,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  // Dynamic append: "Add Custom Exercise"
+  customWrap: { marginTop: 4, marginBottom: 6 },
+  addCustomBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: T.borderMid,
+    borderRadius: 14,
+    paddingVertical: 15,
+    backgroundColor: "transparent",
+  },
+  addCustomBtnOpen: {
+    borderStyle: "solid",
+    borderColor: T.goldBorder,
+    backgroundColor: T.goldDim,
+  },
+  addCustomBtnText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 13,
+    color: T.gold,
+    letterSpacing: 1.2,
+  },
+  customPanel: {
+    backgroundColor: T.bg1,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.borderMid,
+    padding: 12,
+    marginTop: 8,
+    gap: 10,
+  },
+  customInput: {
+    backgroundColor: T.bg2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: T.borderMid,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    fontFamily: "DMSans_500Medium",
+    fontSize: 14,
+    color: T.text,
+  },
+  customInputFocused: {
+    borderColor: T.gold,
+  },
+  customPanelActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  customAddBtn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: T.gold,
+    borderRadius: 10,
+    paddingVertical: 11,
+  },
+  customAddBtnDisabled: {
+    backgroundColor: T.bg3,
+  },
+  customAddBtnText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 12,
+    color: T.bg0,
+    letterSpacing: 1.0,
+  },
+  customLibraryLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  customLibraryLinkText: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 12,
+    color: T.sub,
   },
 
   // Finish CTA

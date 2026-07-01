@@ -1,47 +1,64 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import {
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-// ── Design Tokens ─────────────────────────────────────────────────────────────
+// ── Design Tokens — "Muscle Monster" ────────────────────────────────────────
 const T = {
-  bg0: "#121212",
-  bg2: "#1E1E1E", // Card surface
-  bg3: "#252525", // Stat pill surface
-  gold: "#FFC700", // Primary accent
+  bg0: "#121212", // Deep matte charcoal — screen background
+  bg2: "#1E1E1E", // Card / block surface
+  bg3: "#282828", // Elevated stat block
+  gold: "#FFC700", // Primary accent — badge, key stats, CTA
+  goldDim: "#3A320A", // Gold-tinted wash for PR card border/bg
   text: "#FFFFFF",
   sub: "#A0A0A0",
   muted: "#5A5A5A",
 };
 
-type Props = {
-  durationMin?: number;
-  volumeKg?: number;
-  exerciseCount?: number;
-  setCount?: number;
+export type PersonalRecord = {
+  exercise: string;
+  detail: string; // e.g. "100kg × 5 — up from 92.5kg"
 };
 
-type StatPillProps = {
-  label: string;
+type Props = {
+  workoutName?: string;
+  timestamp?: string; // e.g. "Today at 7:30 PM"
+  durationMin?: number;
+  volumeKg?: number;
+  setCount?: number;
+  personalRecords?: PersonalRecord[];
+  onDone?: () => void;
+};
+
+type BigStatProps = {
   value: string;
-  unit?: string;
+  unit: string;
+  label: string;
   delay?: number;
 };
 
-// ── Stat pill ─────────────────────────────────────────────────────────────────
-function StatPill({ label, value, unit, delay = 0 }: StatPillProps) {
+// ── Big stat block ───────────────────────────────────────────────────────────
+function BigStat({ value, unit, label, delay = 0 }: BigStatProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(12)).current;
+  const slideAnim = useRef(new Animated.Value(14)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 380,
+        duration: 400,
         delay,
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 380,
+        duration: 400,
         delay,
         useNativeDriver: true,
       }),
@@ -51,164 +68,318 @@ function StatPill({ label, value, unit, delay = 0 }: StatPillProps) {
   return (
     <Animated.View
       style={[
-        s.statPill,
+        s.bigStat,
         { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
       ]}
     >
-      <Text style={s.statValue}>
+      <Text style={s.bigStatValue} numberOfLines={1} adjustsFontSizeToFit>
         {value}
-        {unit ? <Text style={s.statUnit}> {unit}</Text> : null}
+        <Text style={s.bigStatUnit}> {unit}</Text>
       </Text>
-      <Text style={s.statLabel}>{label}</Text>
+      <Text style={s.bigStatLabel}>{label}</Text>
     </Animated.View>
   );
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export function WorkoutSummary({
+  workoutName = "Push Day",
+  timestamp = "Today at 7:30 PM",
   durationMin = 45,
   volumeKg = 8200,
-  exerciseCount = 6,
   setCount = 24,
+  personalRecords = [],
+  onDone,
 }: Props) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const badgeScale = useRef(new Animated.Value(0.4)).current;
+  const badgeOpacity = useRef(new Animated.Value(0)).current;
+  const headerFade = useRef(new Animated.Value(0)).current;
+  const prFade = useRef(new Animated.Value(0)).current;
+  const ctaScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
+    Animated.sequence([
+      Animated.parallel([
+        Animated.spring(badgeScale, {
+          toValue: 1,
+          friction: 5,
+          tension: 60,
+          useNativeDriver: true,
+        }),
+        Animated.timing(badgeOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.timing(headerFade, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    Animated.timing(prFade, {
       toValue: 1,
-      duration: 300,
+      duration: 400,
+      delay: 500,
       useNativeDriver: true,
     }).start();
   }, []);
 
+  const handleDonePressIn = () =>
+    Animated.spring(ctaScale, {
+      toValue: 0.96,
+      useNativeDriver: true,
+    }).start();
+  const handleDonePressOut = () =>
+    Animated.spring(ctaScale, {
+      toValue: 1,
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
+
+  const volFormatted = volumeKg.toLocaleString();
+
   return (
-    <Animated.View style={[s.card, { opacity: fadeAnim }]}>
-      {/* Header */}
-      <View style={s.header}>
-        <View style={s.titleRow}>
-          <View style={s.titleAccent} />
-          <Text style={s.title}>SESSION SUMMARY</Text>
+    <View style={s.screen}>
+      <ScrollView
+        contentContainerStyle={s.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Victory header ── */}
+        <View style={s.victoryHeader}>
+          <Animated.View
+            style={[
+              s.badgeCircle,
+              {
+                opacity: badgeOpacity,
+                transform: [{ scale: badgeScale }],
+              },
+            ]}
+          >
+            <Ionicons name="trophy" size={30} color={T.bg0} />
+          </Animated.View>
+
+          <Animated.View style={{ opacity: headerFade, alignItems: "center" }}>
+            <Text style={s.victoryTitle}>WORKOUT COMPLETE</Text>
+            <Text style={s.workoutName}>{workoutName}</Text>
+            <Text style={s.timestamp}>{timestamp}</Text>
+          </Animated.View>
         </View>
 
-        {/* Done badge — solid gold */}
-        <View style={s.badge}>
-          <Text style={s.badgeText}>✓ DONE</Text>
+        {/* ── Big stats grid ── */}
+        <View style={s.statsGrid}>
+          <BigStat
+            value={String(durationMin)}
+            unit="min"
+            label="DURATION"
+            delay={80}
+          />
+          <BigStat
+            value={volFormatted}
+            unit="kg"
+            label="TOTAL VOLUME"
+            delay={160}
+          />
+          <BigStat
+            value={String(setCount)}
+            unit="sets"
+            label="COMPLETED"
+            delay={240}
+          />
         </View>
-      </View>
 
-      {/* Divider */}
-      <View style={s.divider} />
+        {/* ── PR / Achievements showcase ── */}
+        {personalRecords.length > 0 && (
+          <Animated.View style={[s.prCard, { opacity: prFade }]}>
+            <View style={s.prHeader}>
+              <Ionicons name="flame" size={16} color={T.gold} />
+              <Text style={s.prHeaderText}>NEW PERSONAL RECORDS</Text>
+            </View>
 
-      {/* Stats grid */}
-      <View style={s.statsGrid}>
-        <StatPill
-          label="DURATION"
-          value={String(durationMin)}
-          unit="min"
-          delay={60}
-        />
-        <StatPill
-          label="VOLUME"
-          value={volumeKg.toLocaleString()}
-          unit="kg"
-          delay={120}
-        />
-        <StatPill label="EXERCISES" value={String(exerciseCount)} delay={180} />
-        <StatPill label="SETS" value={String(setCount)} delay={240} />
+            {personalRecords.map((pr, i) => (
+              <View
+                key={`${pr.exercise}-${i}`}
+                style={[
+                  s.prRow,
+                  i === personalRecords.length - 1 && { borderBottomWidth: 0 },
+                ]}
+              >
+                <Text style={s.prExercise}>{pr.exercise}</Text>
+                <Text style={s.prDetail}>{pr.detail}</Text>
+              </View>
+            ))}
+          </Animated.View>
+        )}
+      </ScrollView>
+
+      {/* ── Commanding CTA ── */}
+      <View style={s.ctaWrap}>
+        <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
+          <TouchableOpacity
+            onPress={onDone}
+            onPressIn={handleDonePressIn}
+            onPressOut={handleDonePressOut}
+            style={s.ctaBtn}
+            activeOpacity={1}
+          >
+            <Text style={s.ctaText}>BACK TO DASHBOARD</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  // Outer card — no border, no colored shadow
-  card: {
-    borderRadius: 20,
-    backgroundColor: T.bg2,
-    overflow: "hidden",
+  screen: {
+    flex: 1,
+    backgroundColor: T.bg0,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 28,
+    paddingBottom: 24,
+    gap: 22,
   },
 
-  // Header
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  // Victory header
+  victoryHeader: {
     alignItems: "center",
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 14,
+    gap: 14,
   },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  titleAccent: {
-    width: 4,
-    height: 20,
-    borderRadius: 2,
-    backgroundColor: T.gold, // Gold accent bar
-  },
-  title: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 18,
-    color: T.text,
-    letterSpacing: 1.5,
-  },
-
-  // Done badge — solid gold fill, dark text
-  badge: {
+  badgeCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: T.gold,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: T.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  badgeText: {
+  victoryTitle: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 24,
+    color: T.text,
+    letterSpacing: 2,
+    textAlign: "center",
+  },
+  workoutName: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 11,
-    color: T.bg0, // Dark text on gold — max contrast
-    letterSpacing: 1.5,
+    fontSize: 16,
+    color: T.gold,
+    letterSpacing: 0.5,
+    marginTop: 4,
+    textAlign: "center",
+  },
+  timestamp: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 12,
+    color: T.sub,
+    marginTop: 2,
+    textAlign: "center",
   },
 
-  // Thin divider
-  divider: {
-    height: 1,
-    backgroundColor: T.bg3, // Subtle — same family as card
-  },
-
-  // Stats
+  // Big stats grid
   statsGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    padding: 12,
-    gap: 8,
+    backgroundColor: T.bg2,
+    borderRadius: 20,
+    paddingVertical: 22,
+    paddingHorizontal: 10,
   },
-  statPill: {
+  bigStat: {
     flex: 1,
-    minWidth: "40%",
-    backgroundColor: T.bg3, // #252525 — one step darker than card
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    alignItems: "flex-start",
-    // No border
+    alignItems: "center",
+    gap: 4,
   },
-  statValue: {
+  bigStatValue: {
     fontFamily: "BarlowCondensed_900Black",
-    fontSize: 30, // Bigger hero number
+    fontSize: 32,
     color: T.text,
-    lineHeight: 32,
+    letterSpacing: -0.5,
   },
-  statUnit: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 14,
+  bigStatUnit: {
+    fontFamily: "DMSans_500Medium",
+    fontSize: 13,
     color: T.sub,
   },
-  statLabel: {
+  bigStatLabel: {
     fontFamily: "DMSans_400Regular",
     fontSize: 10,
     color: T.muted,
+    letterSpacing: 1.5,
+    marginTop: 2,
+  },
+
+  // PR showcase
+  prCard: {
+    backgroundColor: T.bg2,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: T.goldDim, // Subtle gold tint, not a loud outline
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 4,
+  },
+  prHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    marginBottom: 10,
+  },
+  prHeaderText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 13,
+    color: T.gold,
     letterSpacing: 1.8,
-    marginTop: 4,
+  },
+  prRow: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: T.bg3,
+  },
+  prExercise: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 16,
+    color: T.text,
+  },
+  prDetail: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 12,
+    color: T.sub,
+    marginTop: 2,
+  },
+
+  // Commanding CTA
+  ctaWrap: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
+    backgroundColor: T.bg0,
+  },
+  ctaBtn: {
+    backgroundColor: T.gold,
+    borderRadius: 16,
+    paddingVertical: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: T.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  ctaText: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 17,
+    color: T.bg0, // Thick dark type on gold — max contrast, feels definitive
+    letterSpacing: 2,
   },
 });
