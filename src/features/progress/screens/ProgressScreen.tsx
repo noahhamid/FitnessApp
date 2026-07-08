@@ -22,26 +22,31 @@ import Svg, {
   Path,
   Stop,
   Circle,
+  Rect,
+  Polyline,
 } from "react-native-svg";
 import { PhotoComparison } from "../components/PhotoComparison";
 import { WeightChart } from "../components/WeightChart";
 
 // ─── Token system ─────────────────────────────────────────────────────────────
-// One canvas. One card. One accent. Nothing else.
 const T = {
   canvas: "#121212",
   card: "#1E1E1E",
+  cardBorder: "rgba(255,255,255,0.06)",
   white: "#FFFFFF",
   dim: "#A0A0A0",
-  ghost: "#2A2A2A", // bar tracks, hairlines
-  gold: "#FFC700", // THE only accent — active tab + chart line + bars
+  dim2: "#6E6E6E",
+  ghost: "#2A2A2A",
+  gold: "#FFC700",
+  goldDim: "rgba(255,199,0,0.12)",
+  danger: "#FF6B5E", // used sparingly, only for negative volume badge text if ever needed — kept monochrome by default
 };
 
 type Period = "7D" | "1M" | "3M" | "ALL";
 const PERIODS: Period[] = ["7D", "1M", "3M", "ALL"];
 
-const SPARK_W = 96;
-const SPARK_H = 48;
+const SPARK_W = 100;
+const SPARK_H = 52;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function localYmdFromIso(iso: string): string {
@@ -123,7 +128,7 @@ function bezierLine(pts: { x: number; y: number }[]): string {
   return d;
 }
 
-// ─── Sparkline — gold line, no fill, minimal ──────────────────────────────────
+// ─── Sparkline — gold line with soft fill under the curve ─────────────────────
 function MiniSparkline({ data }: { data: { weight: number }[] }) {
   if (data.length < 2)
     return <View style={{ width: SPARK_W, height: SPARK_H }} />;
@@ -138,29 +143,135 @@ function MiniSparkline({ data }: { data: { weight: number }[] }) {
   const toY = (v: number) => PAD + ((max - v) / rng) * (SPARK_H - PAD * 2);
   const pts = data.map((d, i) => ({ x: toX(i), y: toY(d.weight) }));
   const linePath = bezierLine(pts);
+  const areaPath = `${linePath} L ${pts[pts.length - 1].x.toFixed(1)} ${SPARK_H} L ${pts[0].x.toFixed(1)} ${SPARK_H} Z`;
   const last = pts[pts.length - 1];
 
   return (
     <Svg width={SPARK_W} height={SPARK_H}>
+      <Defs>
+        <LinearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={T.gold} stopOpacity="0.25" />
+          <Stop offset="1" stopColor={T.gold} stopOpacity="0" />
+        </LinearGradient>
+      </Defs>
+      <Path d={areaPath} fill="url(#sparkFill)" stroke="none" />
       <Path
         d={linePath}
         fill="none"
         stroke={T.gold}
-        strokeWidth="2"
+        strokeWidth="2.25"
         strokeLinecap="round"
         strokeLinejoin="round"
-        opacity="0.9"
       />
-      <Circle cx={last.x} cy={last.y} r={3.5} fill={T.gold} />
+      <Circle
+        cx={last.x}
+        cy={last.y}
+        r={3}
+        fill={T.canvas}
+        stroke={T.gold}
+        strokeWidth="2.5"
+      />
     </Svg>
   );
 }
 
-// ─── Divider ──────────────────────────────────────────────────────────────────
-function Divider() {
+// ─── Tiny icon set (kept as SVG so no new deps) ───────────────────────────────
+function FlameIcon({
+  size = 18,
+  color = T.gold,
+}: {
+  size?: number;
+  color?: string;
+}) {
   return (
-    <View style={{ height: 1, backgroundColor: T.ghost, marginVertical: 0 }} />
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 2c1 3-2 4-2 7a3 3 0 006 0c1.5 1.5 2 3.5 2 5a6 6 0 11-12 0c0-3 1.5-5 3-7 1-1.3 1.5-2.7 1-5z"
+        fill={color}
+      />
+    </Svg>
   );
+}
+function DumbbellIcon({
+  size = 18,
+  color = T.gold,
+}: {
+  size?: number;
+  color?: string;
+}) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect x="2" y="9" width="3" height="6" rx="1" fill={color} />
+      <Rect x="19" y="9" width="3" height="6" rx="1" fill={color} />
+      <Rect x="6" y="7" width="2.5" height="10" rx="1" fill={color} />
+      <Rect x="15.5" y="7" width="2.5" height="10" rx="1" fill={color} />
+      <Rect x="8.5" y="11" width="7" height="2" rx="1" fill={color} />
+    </Svg>
+  );
+}
+function ClockIcon({
+  size = 18,
+  color = T.gold,
+}: {
+  size?: number;
+  color?: string;
+}) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth="2" />
+      <Path
+        d="M12 7v5l3.5 2"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+function ArrowIcon({
+  up,
+  size = 12,
+  color,
+}: {
+  up: boolean;
+  size?: number;
+  color: string;
+}) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Polyline
+        points={up ? "5,15 12,8 19,15" : "5,9 12,16 19,9"}
+        stroke={color}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
+// ─── Section header with gold accent bar ──────────────────────────────────────
+function SectionHeader({
+  title,
+  right,
+}: {
+  title: string;
+  right?: React.ReactNode;
+}) {
+  return (
+    <View style={s.sectionHdr}>
+      <View style={s.sectionTitleRow}>
+        <View style={s.sectionAccent} />
+        <Text style={s.sectionTitle}>{title}</Text>
+      </View>
+      {right}
+    </View>
+  );
+}
+
+function Divider() {
+  return <View style={{ height: 1, backgroundColor: T.ghost }} />;
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -286,11 +397,11 @@ export default function ProgressScreen() {
     };
   }, [completedWorkouts]);
 
-  // Weight delta sign — only shown as text, no color coding
   const deltaSign =
     weightDelta !== null ? (weightDelta <= 0 ? "−" : "+") : null;
   const deltaAbs =
     weightDelta !== null ? Math.abs(weightDelta).toFixed(1) : null;
+  const deltaUp = weightDelta !== null && weightDelta > 0;
 
   return (
     <SafeAreaView edges={["top"]} style={s.safe}>
@@ -302,21 +413,23 @@ export default function ProgressScreen() {
         <Text style={s.hdrTitle}>Progress</Text>
       </View>
 
-      {/* ── Period tabs ─────────────────────────────────────────────────────── */}
-      <View style={s.tabBar}>
-        {PERIODS.map((p) => {
-          const active = period === p;
-          return (
-            <TouchableOpacity
-              key={p}
-              style={[s.tab, active && s.tabActive]}
-              onPress={() => setPeriod(p)}
-              activeOpacity={0.7}
-            >
-              <Text style={[s.tabText, active && s.tabTextActive]}>{p}</Text>
-            </TouchableOpacity>
-          );
-        })}
+      {/* ── Period tabs — segmented control on a track ──────────────────────── */}
+      <View style={s.tabBarOuter}>
+        <View style={s.tabBar}>
+          {PERIODS.map((p) => {
+            const active = period === p;
+            return (
+              <TouchableOpacity
+                key={p}
+                style={[s.tab, active && s.tabActive]}
+                onPress={() => setPeriod(p)}
+                activeOpacity={0.8}
+              >
+                <Text style={[s.tabText, active && s.tabTextActive]}>{p}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       <ScrollView
@@ -335,28 +448,40 @@ export default function ProgressScreen() {
               <Text style={s.wUnit}>kg</Text>
             </View>
             {weightDelta !== null && deltaSign !== null && (
-              <Text style={s.wDelta}>
-                {deltaSign}
-                {deltaAbs} kg over period
-              </Text>
+              <View style={s.wDeltaRow}>
+                <ArrowIcon up={deltaUp} color={T.dim} />
+                <Text style={s.wDelta}>
+                  {deltaSign}
+                  {deltaAbs} kg · {period.toLowerCase()}
+                </Text>
+              </View>
             )}
           </View>
           <MiniSparkline data={periodWeights} />
         </View>
 
-        {/* ── Stat tiles — flat, unbordered ───────────────────────────────── */}
+        {/* ── Stat tiles — icon + number, real card ───────────────────────── */}
         <View style={s.statsGrid}>
           <View style={s.statTile}>
+            <View style={s.statIconWrap}>
+              <FlameIcon />
+            </View>
             <Text style={s.statNum}>{streakDays}</Text>
             <Text style={s.statLabel}>DAY STREAK</Text>
           </View>
           <View style={s.statDivider} />
           <View style={s.statTile}>
+            <View style={s.statIconWrap}>
+              <DumbbellIcon />
+            </View>
             <Text style={s.statNum}>{volumeStats.thisSessions}</Text>
             <Text style={s.statLabel}>THIS WEEK</Text>
           </View>
           <View style={s.statDivider} />
           <View style={s.statTile}>
+            <View style={s.statIconWrap}>
+              <ClockIcon />
+            </View>
             <Text style={s.statNum}>{avgDurationMin ?? "—"}</Text>
             <Text style={s.statLabel}>AVG MIN</Text>
           </View>
@@ -364,10 +489,10 @@ export default function ProgressScreen() {
 
         {/* ── Weight trend ─────────────────────────────────────────────────── */}
         <View style={s.section}>
-          <View style={s.sectionHdr}>
-            <Text style={s.sectionTitle}>Weight trend</Text>
-            <Text style={s.sectionSub}>{period}</Text>
-          </View>
+          <SectionHeader
+            title="Weight trend"
+            right={<Text style={s.sectionSub}>{period}</Text>}
+          />
           <View style={s.card}>
             <WeightChart periodMonths={periodMonths} />
           </View>
@@ -375,15 +500,21 @@ export default function ProgressScreen() {
 
         {/* ── Training volume ──────────────────────────────────────────────── */}
         <View style={s.section}>
-          <View style={s.sectionHdr}>
-            <Text style={s.sectionTitle}>Training volume</Text>
-            {volumeStats.pct !== 0 && (
-              <Text style={s.volPct}>
-                {volumeStats.pct > 0 ? "+" : ""}
-                {volumeStats.pct}%
-              </Text>
-            )}
-          </View>
+          <SectionHeader
+            title="Training volume"
+            right={
+              volumeStats.pct !== 0 ? (
+                <View style={s.volBadge}>
+                  <ArrowIcon
+                    up={volumeStats.pct > 0}
+                    size={10}
+                    color={T.gold}
+                  />
+                  <Text style={s.volPct}>{Math.abs(volumeStats.pct)}%</Text>
+                </View>
+              ) : undefined
+            }
+          />
           <View style={s.card}>
             {volumeStats.hasData ? (
               <View style={s.cardPad}>
@@ -432,23 +563,27 @@ export default function ProgressScreen() {
 
         {/* ── Progress photos ──────────────────────────────────────────────── */}
         <View style={s.section}>
-          <View style={s.sectionHdr}>
-            <Text style={s.sectionTitle}>Progress photos</Text>
-            <TouchableOpacity activeOpacity={0.7}>
-              <Text style={s.sectionLink}>Compare</Text>
-            </TouchableOpacity>
-          </View>
+          <SectionHeader
+            title="Progress photos"
+            right={
+              <TouchableOpacity activeOpacity={0.7}>
+                <Text style={s.sectionLink}>Compare</Text>
+              </TouchableOpacity>
+            }
+          />
           <PhotoComparison />
         </View>
 
         {/* ── Recent workouts ──────────────────────────────────────────────── */}
         <View style={s.section}>
-          <View style={s.sectionHdr}>
-            <Text style={s.sectionTitle}>Recent workouts</Text>
-            <TouchableOpacity activeOpacity={0.7}>
-              <Text style={s.sectionLink}>View all</Text>
-            </TouchableOpacity>
-          </View>
+          <SectionHeader
+            title="Recent workouts"
+            right={
+              <TouchableOpacity activeOpacity={0.7}>
+                <Text style={s.sectionLink}>View all</Text>
+              </TouchableOpacity>
+            }
+          />
 
           {workoutsLoading ? (
             <View style={s.emptyState}>
@@ -464,6 +599,7 @@ export default function ProgressScreen() {
                 <View key={session.id}>
                   {i !== 0 && <Divider />}
                   <View style={s.wkRow}>
+                    <View style={s.wkDot} />
                     <View style={s.wkMid}>
                       <Text style={s.wkName} numberOfLines={1}>
                         {session.name}
@@ -503,17 +639,16 @@ const s = StyleSheet.create({
     width: "100%",
   },
 
-  // ── Header ───────────────────────────────────────────────────────────────────
   hdr: {
     paddingHorizontal: 20,
     paddingTop: 18,
-    paddingBottom: 16,
+    paddingBottom: 14,
   },
   hdrEyebrow: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 11,
-    color: T.dim,
-    letterSpacing: 2,
+    color: T.gold,
+    letterSpacing: 2.5,
     marginBottom: 4,
   },
   hdrTitle: {
@@ -524,21 +659,32 @@ const s = StyleSheet.create({
     lineHeight: 44,
   },
 
-  // ── Period tabs — text-only, gold underline for active ────────────────────────
+  // ── Segmented tab control ──────────────────────────────────────────────────
+  tabBarOuter: {
+    paddingHorizontal: 20,
+    paddingBottom: 18,
+  },
   tabBar: {
     flexDirection: "row",
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    gap: 0,
+    backgroundColor: T.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: T.cardBorder,
+    padding: 4,
+    gap: 4,
   },
   tab: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 4,
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: "center",
   },
   tabActive: {
     backgroundColor: T.gold,
-    borderRadius: 4,
+    shadowColor: T.gold,
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
   },
   tabText: {
     fontFamily: "BarlowCondensed_700Bold",
@@ -550,24 +696,30 @@ const s = StyleSheet.create({
     color: T.canvas,
   },
 
-  // ── Scroll ────────────────────────────────────────────────────────────────────
   scroll: {
     paddingHorizontal: 20,
     paddingBottom: 110,
   },
 
-  // ── Weight hero ───────────────────────────────────────────────────────────────
+  // ── Weight hero ───────────────────────────────────────────────────────────
   weightHero: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: T.card,
-    borderRadius: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: T.cardBorder,
     paddingHorizontal: 20,
-    paddingVertical: 20,
-    marginBottom: 2,
+    paddingVertical: 22,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
-  weightLeft: { gap: 4 },
+  weightLeft: { gap: 5 },
   wEyebrow: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 10,
@@ -592,26 +744,41 @@ const s = StyleSheet.create({
     color: T.dim,
     marginBottom: 8,
   },
+  wDeltaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 2,
+  },
   wDelta: {
     fontFamily: "DMSans_400Regular",
     fontSize: 12,
     color: T.dim,
-    marginTop: 2,
   },
 
-  // ── Stat tiles — flat, no card, just numbers ──────────────────────────────────
+  // ── Stat tiles ────────────────────────────────────────────────────────────
   statsGrid: {
     flexDirection: "row",
     backgroundColor: T.card,
-    borderRadius: 16,
-    marginTop: 10,
-    marginBottom: 2,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: T.cardBorder,
+    marginBottom: 12,
     paddingVertical: 20,
   },
   statTile: {
     flex: 1,
     alignItems: "center",
-    gap: 4,
+    gap: 6,
+  },
+  statIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: T.goldDim,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
   },
   statDivider: {
     width: 1,
@@ -620,21 +787,21 @@ const s = StyleSheet.create({
   },
   statNum: {
     fontFamily: "BarlowCondensed_900Black",
-    fontSize: 32,
+    fontSize: 30,
     color: T.white,
     letterSpacing: -0.5,
-    lineHeight: 34,
+    lineHeight: 32,
   },
   statLabel: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 9,
-    color: T.dim,
+    color: T.dim2,
     letterSpacing: 1.4,
   },
 
-  // ── Sections ──────────────────────────────────────────────────────────────────
+  // ── Sections ──────────────────────────────────────────────────────────────
   section: {
-    marginTop: 28,
+    marginTop: 24,
   },
   sectionHdr: {
     flexDirection: "row",
@@ -642,9 +809,20 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sectionAccent: {
+    width: 3,
+    height: 14,
+    borderRadius: 2,
+    backgroundColor: T.gold,
+  },
   sectionTitle: {
     fontFamily: "DMSans_600SemiBold",
-    fontSize: 14,
+    fontSize: 15,
     color: T.white,
   },
   sectionSub: {
@@ -655,27 +833,36 @@ const s = StyleSheet.create({
   sectionLink: {
     fontFamily: "DMSans_500Medium",
     fontSize: 12,
-    color: T.dim,
-    textDecorationLine: "underline",
-    textDecorationColor: T.dim,
+    color: T.gold,
   },
 
-  // ── Generic card ──────────────────────────────────────────────────────────────
+  // ── Generic card ──────────────────────────────────────────────────────────
   card: {
     backgroundColor: T.card,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: T.cardBorder,
     overflow: "hidden",
   },
   cardPad: {
     padding: 18,
   },
 
-  // ── Volume ────────────────────────────────────────────────────────────────────
+  // ── Volume ────────────────────────────────────────────────────────────────
+  volBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: T.goldDim,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
   volPct: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
-    color: T.dim,
-    letterSpacing: 0.5,
+    fontSize: 12,
+    color: T.gold,
+    letterSpacing: 0.3,
   },
   volBlock: {},
   volRowHdr: {
@@ -709,14 +896,16 @@ const s = StyleSheet.create({
     height: 6,
     backgroundColor: T.dim,
     borderRadius: 3,
-    opacity: 0.4,
+    opacity: 0.35,
   },
 
-  // ── Empty state ───────────────────────────────────────────────────────────────
+  // ── Empty state ───────────────────────────────────────────────────────────
   emptyState: {
     backgroundColor: T.card,
     borderRadius: 16,
-    paddingVertical: 22,
+    borderWidth: 1,
+    borderColor: T.cardBorder,
+    paddingVertical: 24,
     paddingHorizontal: 18,
     alignItems: "center",
   },
@@ -726,13 +915,19 @@ const s = StyleSheet.create({
     color: T.dim,
   },
 
-  // ── Recent workout rows ───────────────────────────────────────────────────────
+  // ── Recent workout rows ───────────────────────────────────────────────────
   wkRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 18,
     gap: 12,
+  },
+  wkDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: T.gold,
   },
   wkMid: {
     flex: 1,

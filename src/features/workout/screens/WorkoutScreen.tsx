@@ -1,6 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Modal } from "react-native"; // add Modal to your existing react-native import list
+import {
+  WorkoutSummary,
+  type PersonalRecord,
+} from "@/src/features/workout/components/WorkoutSummary";
+import RestTimerOverlay from "@/src/features/workout/components/RestTimerOverlay";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
+import ConfirmSheet from "@/src/features/workout/components/ConfirmSheet";
 import {
   ActivityIndicator,
   Alert,
@@ -25,6 +32,7 @@ import {
   EXERCISES,
   WORKOUT_TEMPLATES,
   fetchWorkoutHistory,
+  fetchLastPerformanceByExercise,
   type WorkoutHistoryRow,
 } from "@/src/features/workout/services/workout.service";
 import { api } from "@/src/lib/api";
@@ -78,6 +86,42 @@ type Template = {
   tag: string;
   icon: string;
 };
+
+function computePRs(
+  exList: Exercise[],
+  setsByUid: Record<string, ExerciseSetData[]>,
+  lastPerformance: Record<string, { weight: string; reps: string }[]>,
+): PersonalRecord[] {
+  const prs: PersonalRecord[] = [];
+  for (const ex of exList) {
+    const doneSets = (setsByUid[ex.uid] ?? []).filter(
+      (s) => s.done && s.weight,
+    );
+    if (doneSets.length === 0) continue;
+
+    const bestThisSession = Math.max(
+      ...doneSets.map((s) => parseFloat(s.weight) || 0),
+    );
+    if (bestThisSession <= 0) continue;
+
+    const prevSets = lastPerformance[ex.name] ?? [];
+    const bestPrevious = prevSets.length
+      ? Math.max(...prevSets.map((s) => parseFloat(s.weight) || 0))
+      : 0;
+
+    // Only counts as a PR if there's real history to beat
+    if (bestPrevious > 0 && bestThisSession > bestPrevious) {
+      const bestSet = doneSets.find(
+        (s) => parseFloat(s.weight) === bestThisSession,
+      );
+      prs.push({
+        exercise: ex.name,
+        detail: `${bestThisSession}kg × ${bestSet?.reps ?? "-"} — up from ${bestPrevious}kg`,
+      });
+    }
+  }
+  return prs;
+}
 
 function mapSetsForComplete(
   sets: ExerciseSetData[],
@@ -197,11 +241,13 @@ function TemplateCard({
   index,
   onPress,
   disabled,
+  loading,
 }: {
   tpl: Template;
   index: number;
   onPress: () => void;
   disabled?: boolean;
+  loading?: boolean;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
   const presetIds = TEMPLATE_EXERCISES[tpl.id] ?? [];
@@ -244,7 +290,11 @@ function TemplateCard({
 
         {/* CTA */}
         <View style={s.startPill}>
-          <Ionicons name="play" size={11} color={T.bg0} />
+          {loading ? (
+            <ActivityIndicator size="small" color={T.bg0} />
+          ) : (
+            <Ionicons name="play" size={11} color={T.bg0} />
+          )}
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -385,7 +435,8 @@ export default function WorkoutScreen() {
   const queryClient = useQueryClient();
   const [activeWorkout, setActiveWorkout] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [sessionStarting, setSessionStarting] = useState(false);
+  const [startingAction, setStartingAction] = useState<string | null>(null); // 'blank' | template id | null
+  const sessionStarting = startingAction !== null;
   const [finishingWorkout, setFinishingWorkout] = useState(false);
   const [workoutName, setWorkoutName] = useState("My Workout");
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -396,9 +447,13 @@ export default function WorkoutScreen() {
   const [showLibrary, setShowLibrary] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
 
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+
   // Hybrid append flow: inline custom-exercise creation
   const [showCustomPanel, setShowCustomPanel] = useState(false);
   const [customExerciseName, setCustomExerciseName] = useState("");
+
+  const startTimeRef = useRef<number | null>(null);
 
   const workoutSaveBusyRef = useRef(false);
   const workoutNameRef = useRef(workoutName);
@@ -406,14 +461,33 @@ export default function WorkoutScreen() {
   const exerciseSetsRef = useRef(exerciseSetsByUid);
   const activeSessionIdRef = useRef(activeSessionId);
 
+  const [restDuration, setRestDuration] = useState(90);
+  const [showRestTimer, setShowRestTimer] = useState(false);
+  const [restKey, setRestKey] = useState(0); // bump to force remount = restart countdown
+
+  const [showSummary, setShowSummary] = useState(false);
+  const [summaryData, setSummaryData] = useState<{
+    workoutName: string;
+    durationMin: number;
+    volumeKg: number;
+    setCount: number;
+    personalRecords: PersonalRecord[];
+  } | null>(null);
+
   workoutNameRef.current = workoutName;
   exercisesRef.current = exercises;
   exerciseSetsRef.current = exerciseSetsByUid;
   activeSessionIdRef.current = activeSessionId;
+  startTimeRef.current = startTime;
 
   const { data: historyRows = [], isPending: historyLoading } = useQuery({
     queryKey: WORKOUT_HISTORY_LIST_KEY,
     queryFn: () => fetchWorkoutHistory(20),
+  });
+
+  const { data: lastPerformance = {} } = useQuery({
+    queryKey: ["workouts", "lastPerformance"] as const,
+    queryFn: () => fetchLastPerformanceByExercise(30),
   });
 
   const streakDays = historyRows.length;
@@ -488,6 +562,40 @@ export default function WorkoutScreen() {
           sets: mapSetsForComplete(setsByUid[ex.uid] ?? []),
         })),
       );
+
+      // Build the celebration summary before we wipe the active-workout state
+      const durationMin = startTimeRef.current
+        ? Math.max(1, Math.round((Date.now() - startTimeRef.current) / 60000))
+        : 0;
+      const volumeKg = exList.reduce((sum, ex) => {
+        const sets = setsByUid[ex.uid] ?? [];
+        return (
+          sum +
+          sets
+            .filter((s) => s.done)
+            .reduce(
+              (a, s) =>
+                a + parseFloat(s.weight || "0") * parseInt(s.reps || "0", 10),
+              0,
+            )
+        );
+      }, 0);
+      const setCount = exList.reduce(
+        (sum, ex) =>
+          sum + (setsByUid[ex.uid] ?? []).filter((s) => s.done).length,
+        0,
+      );
+      const personalRecords = computePRs(exList, setsByUid, lastPerformance);
+
+      setSummaryData({
+        workoutName: workoutNameRef.current.trim() || "My Workout",
+        durationMin,
+        volumeKg,
+        setCount,
+        personalRecords,
+      });
+      setShowSummary(true);
+
       await invalidateWorkoutQueries();
       resetActiveWorkoutState();
     } catch (e) {
@@ -496,7 +604,7 @@ export default function WorkoutScreen() {
         e instanceof Error ? e.message : "Unknown error",
       );
     }
-  }, [invalidateWorkoutQueries, resetActiveWorkoutState]);
+  }, [invalidateWorkoutQueries, resetActiveWorkoutState, lastPerformance]);
 
   const exerciseCount = exercises.length;
 
@@ -535,6 +643,15 @@ export default function WorkoutScreen() {
     [exercises, exerciseSetsByUid],
   );
 
+  const nextUpLabel = useMemo(() => {
+    for (const ex of exercises) {
+      const sets = exerciseSetsByUid[ex.uid] ?? [];
+      const nextIdx = sets.findIndex((s) => !s.done);
+      if (nextIdx !== -1) return `Next: Set ${nextIdx + 1} · ${ex.name}`;
+    }
+    return undefined;
+  }, [exercises, exerciseSetsByUid]);
+
   const syncExerciseToSession = useCallback(
     async (sessionId: string, ex: Exercise) => {
       const row = await addExerciseToSession(sessionId, ex.name);
@@ -548,9 +665,9 @@ export default function WorkoutScreen() {
   );
 
   const startFromTemplate = async (tpl: Template) => {
-    if (sessionStarting || workoutSaveBusyRef.current || finishingWorkout)
+    if (startingAction || workoutSaveBusyRef.current || finishingWorkout)
       return;
-    setSessionStarting(true);
+    setStartingAction(tpl.id);
     try {
       let sessionId: string;
       try {
@@ -579,8 +696,13 @@ export default function WorkoutScreen() {
         })
         .filter(Boolean) as Exercise[];
       const initialSets: Record<string, ExerciseSetData[]> = {};
-      for (const ex of preloaded)
-        initialSets[ex.uid] = createInitialExerciseSets();
+      for (const ex of preloaded) {
+        const prev = lastPerformance[ex.name];
+        initialSets[ex.uid] = createInitialExerciseSets(
+          prev?.length || 3,
+          prev,
+        );
+      }
       setWorkoutName(tpl.name);
       setExercises(preloaded);
       setExerciseSetsByUid(initialSets);
@@ -597,14 +719,14 @@ export default function WorkoutScreen() {
         }
       }
     } finally {
-      setSessionStarting(false);
+      setStartingAction(null);
     }
   };
 
   const startBlank = async () => {
-    if (sessionStarting || workoutSaveBusyRef.current || finishingWorkout)
+    if (startingAction || workoutSaveBusyRef.current || finishingWorkout)
       return;
-    setSessionStarting(true);
+    setStartingAction("blank");
     try {
       try {
         const session = await createWorkoutSession("My Workout");
@@ -623,39 +745,29 @@ export default function WorkoutScreen() {
       setStartTime(Date.now());
       setActiveWorkout(true);
     } finally {
-      setSessionStarting(false);
+      setStartingAction(null);
     }
   };
 
   const finishWorkout = useCallback(() => {
-    Alert.alert(
-      "Finish Workout?",
-      exerciseCount === 0
-        ? "No exercises logged. Are you sure?"
-        : `${exerciseCount} exercise${exerciseCount !== 1 ? "s" : ""} will be saved.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "FINISH",
-          style: "destructive",
-          onPress: () => {
-            void (async () => {
-              if (workoutSaveBusyRef.current) return;
-              workoutSaveBusyRef.current = true;
-              setFinishingWorkout(true);
-              try {
-                await finalizeWorkoutOnServer();
-              } finally {
-                workoutSaveBusyRef.current = false;
-                setFinishingWorkout(false);
-              }
-            })();
-          },
-        },
-      ],
-      { cancelable: true },
-    );
-  }, [exerciseCount, finalizeWorkoutOnServer]);
+    if (finishingWorkout) return;
+    setShowFinishConfirm(true);
+  }, [finishingWorkout]);
+
+  const handleConfirmFinish = useCallback(() => {
+    setShowFinishConfirm(false);
+    void (async () => {
+      if (workoutSaveBusyRef.current) return;
+      workoutSaveBusyRef.current = true;
+      setFinishingWorkout(true);
+      try {
+        await finalizeWorkoutOnServer();
+      } finally {
+        workoutSaveBusyRef.current = false;
+        setFinishingWorkout(false);
+      }
+    })();
+  }, [finalizeWorkoutOnServer]);
 
   // 3. Inline Custom Creation — append a brand new, empty interactive
   // tracking block straight into the active screen array.
@@ -664,10 +776,13 @@ export default function WorkoutScreen() {
       const uid = `${ex.id}_${Date.now()}_${Math.random()}`;
       const next: Exercise = { ...ex, uid };
       setExercises((prev) => [...prev, next]);
-      setExerciseSetsByUid((prev) => ({
-        ...prev,
-        [uid]: createInitialExerciseSets(),
-      }));
+      setExerciseSetsByUid((prev) => {
+        const prevPerf = lastPerformance[ex.name];
+        return {
+          ...prev,
+          [uid]: createInitialExerciseSets(prevPerf?.length || 3, prevPerf),
+        };
+      });
       const sid = activeSessionIdRef.current;
       if (!sid) return;
       try {
@@ -679,7 +794,7 @@ export default function WorkoutScreen() {
         );
       }
     },
-    [syncExerciseToSession],
+    [syncExerciseToSession, lastPerformance],
   );
 
   const removeExercise = useCallback(async (uid: string) => {
@@ -763,9 +878,6 @@ export default function WorkoutScreen() {
                 <Text style={s.headerEyebrow}>TRAINING</Text>
                 <Text style={s.heroName}>TRAIN.</Text>
               </View>
-              <TouchableOpacity style={s.menuBtn} activeOpacity={0.7}>
-                <Ionicons name="ellipsis-horizontal" size={20} color={T.sub} />
-              </TouchableOpacity>
             </View>
 
             <View style={s.px}>
@@ -835,7 +947,10 @@ export default function WorkoutScreen() {
                     }
                     onSetsChange={(sets) => handleSetsChange(ex.uid, sets)}
                     onRemove={() => void removeExercise(ex.uid)}
-                    onTimerOpen={() => setShowTimer(true)}
+                    onTimerOpen={() => {
+                      setRestKey((k) => k + 1);
+                      setShowRestTimer(true);
+                    }} // auto-starts countdown, no modal
                   />
                 ))}
 
@@ -888,6 +1003,7 @@ export default function WorkoutScreen() {
                     tpl={tpl}
                     index={i}
                     disabled={sessionStarting || finishingWorkout}
+                    loading={startingAction === tpl.id}
                     onPress={() => void startFromTemplate(tpl)}
                   />
                 ))}
@@ -900,7 +1016,7 @@ export default function WorkoutScreen() {
                 style={s.blankBtn}
                 activeOpacity={0.85}
               >
-                {sessionStarting ? (
+                {startingAction === "blank" ? (
                   <ActivityIndicator color={T.gold} size="small" />
                 ) : (
                   <>
@@ -962,7 +1078,61 @@ export default function WorkoutScreen() {
         onClose={() => setShowLibrary(false)}
         onAdd={addExercise}
       />
-      <TimerModal visible={showTimer} onClose={() => setShowTimer(false)} />
+      <TimerModal
+        visible={showTimer}
+        onClose={() => setShowTimer(false)}
+        initialSeconds={restDuration}
+        onSave={(seconds) => setRestDuration(seconds)}
+      />
+      <ConfirmSheet
+        visible={showFinishConfirm}
+        title="FINISH WORKOUT?"
+        message={
+          exerciseCount === 0
+            ? "No exercises logged. Are you sure?"
+            : `${exerciseCount} exercise${exerciseCount !== 1 ? "s" : ""} will be saved.`
+        }
+        confirmLabel="FINISH"
+        cancelLabel="CANCEL"
+        onConfirm={handleConfirmFinish}
+        onCancel={() => setShowFinishConfirm(false)}
+      />
+      <Modal visible={finishingWorkout} transparent animationType="fade">
+        <View style={s.savingOverlay}>
+          <View style={s.savingCard}>
+            <ActivityIndicator color={T.gold} size="large" />
+            <Text style={s.savingText}>SAVING WORKOUT</Text>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={showSummary}
+        animationType="slide"
+        onRequestClose={() => setShowSummary(false)}
+      >
+        {summaryData && (
+          <WorkoutSummary
+            workoutName={summaryData.workoutName}
+            timestamp={new Date().toLocaleString("en-US", {
+              weekday: undefined,
+              hour: "numeric",
+              minute: "2-digit",
+            })}
+            durationMin={summaryData.durationMin}
+            volumeKg={summaryData.volumeKg}
+            setCount={summaryData.setCount}
+            personalRecords={summaryData.personalRecords}
+            onDone={() => setShowSummary(false)}
+          />
+        )}
+      </Modal>
+      <RestTimerOverlay
+        key={restKey}
+        visible={showRestTimer}
+        seconds={restDuration}
+        nextUpLabel={nextUpLabel}
+        onDone={() => setShowRestTimer(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -979,6 +1149,29 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 110 },
   px: { paddingHorizontal: 16 },
+
+  savingOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  savingCard: {
+    backgroundColor: T.bg1,
+    borderRadius: 20,
+    paddingVertical: 32,
+    paddingHorizontal: 40,
+    alignItems: "center",
+    gap: 14,
+    borderWidth: 1,
+    borderColor: T.goldBorder,
+  },
+  savingText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 14,
+    color: T.sub,
+    letterSpacing: 2,
+  },
 
   // Header
   header: {

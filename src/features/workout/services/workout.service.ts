@@ -40,6 +40,39 @@ export const EXERCISES = [
 
 export const VOLUME_SPARKLINE = [6200, 8400, 7100, 12600, 6800, 8200];
 
+export type ExerciseLastPerformance = { weight: string; reps: string }[];
+
+export async function fetchLastPerformanceByExercise(
+  limit = 30,
+): Promise<Record<string, ExerciseLastPerformance>> {
+  const sessions = await fetchWorkoutSessions(`?limit=${limit}&completed=true`);
+
+  const sorted = [...sessions].sort(
+    (a, b) =>
+      new Date(b.completedAt ?? b.startedAt).getTime() -
+      new Date(a.completedAt ?? a.startedAt).getTime(),
+  );
+
+  const map: Record<string, ExerciseLastPerformance> = {};
+  for (const session of sorted) {
+    for (const ex of session.exercises ?? []) {
+      if (map[ex.exerciseName]) continue; // already found a newer instance
+      const rawSets = Array.isArray(ex.sets) ? ex.sets : [];
+      const parsed = rawSets
+        .filter(
+          (row): row is { weight?: number; reps?: number } =>
+            !!row && typeof row === "object" && "weight" in row && "reps" in row,
+        )
+        .map((row) => ({
+          weight: row.weight != null ? String(row.weight) : "",
+          reps: row.reps != null ? String(row.reps) : "",
+        }));
+      if (parsed.length > 0) map[ex.exerciseName] = parsed;
+    }
+  }
+  return map;
+}
+
 export const WORKOUT_TEMPLATES = [
   { id: "t1", name: "PUSH DAY", tag: "Chest · Shoulders · Triceps", icon: "💪" },
   { id: "t2", name: "PULL DAY", tag: "Back · Biceps", icon: "🏋️" },

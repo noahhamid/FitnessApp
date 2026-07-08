@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -33,12 +33,22 @@ export type ExerciseSetData = {
   previous?: string;
 };
 
-export function createInitialExerciseSets(): ExerciseSetData[] {
-  return [
-    { id: 1, weight: "", reps: "", done: false },
-    { id: 2, weight: "", reps: "", done: false },
-    { id: 3, weight: "", reps: "", done: false },
-  ];
+export function createInitialExerciseSets(
+  count: number = 3,
+  previousSets?: { weight: string; reps: string }[],
+  target?: { weight: string; reps: string },
+): ExerciseSetData[] {
+  return Array.from({ length: count }, (_, i) => {
+    const prev = previousSets?.[i];
+    const seed = prev ?? target;
+    return {
+      id: Date.now() + i,
+      weight: seed?.weight ?? "",
+      reps: seed?.reps ?? "",
+      done: false,
+      previous: prev ? `${prev.weight}kg × ${prev.reps}` : undefined,
+    };
+  });
 }
 
 type Exercise = {
@@ -58,6 +68,94 @@ type Props = {
   onTimerOpen: () => void;
 };
 
+// ─── Stepper ───────────────────────────────────────────────────────────────────
+function Stepper({
+  value,
+  onChange,
+  step,
+  decimals = 0,
+  done,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  step: number;
+  decimals?: number;
+  done: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const repeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const numeric = parseFloat(value || "0") || 0;
+
+  const nudge = useCallback(
+    (dir: 1 | -1) => {
+      const next = Math.max(0, numeric + step * dir);
+      onChange(
+        decimals > 0 ? next.toFixed(decimals) : String(Math.round(next)),
+      );
+    },
+    [numeric, step, decimals, onChange],
+  );
+
+  const startRepeat = (dir: 1 | -1) => {
+    nudge(dir);
+    repeatRef.current = setInterval(() => nudge(dir), 140);
+  };
+  const stopRepeat = () => {
+    if (repeatRef.current) clearInterval(repeatRef.current);
+    repeatRef.current = null;
+  };
+
+  return (
+    <View style={[ss.stepper, done && ss.stepperDone]}>
+      <TouchableOpacity
+        style={ss.stepBtn}
+        onPressIn={() => startRepeat(-1)}
+        onPressOut={stopRepeat}
+        hitSlop={{ top: 10, bottom: 10, left: 6, right: 2 }}
+      >
+        <Ionicons name="remove" size={13} color={T.sub} />
+      </TouchableOpacity>
+
+      {editing ? (
+        <TextInput
+          value={value}
+          onChangeText={onChange}
+          onBlur={() => setEditing(false)}
+          keyboardType="decimal-pad"
+          style={ss.stepValueInput}
+          autoFocus
+          selectTextOnFocus
+        />
+      ) : (
+        <TouchableOpacity
+          onPress={() => setEditing(true)}
+          style={ss.stepValueWrap}
+          hitSlop={{ top: 6, bottom: 6, left: 0, right: 0 }}
+        >
+          <Text
+            style={ss.stepValue}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >
+            {value || "—"}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      <TouchableOpacity
+        style={ss.stepBtn}
+        onPressIn={() => startRepeat(1)}
+        onPressOut={stopRepeat}
+        hitSlop={{ top: 10, bottom: 10, left: 2, right: 6 }}
+      >
+        <Ionicons name="add" size={13} color={T.sub} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 type SetRowProps = {
   setNum: number;
   set: ExerciseSetData;
@@ -65,8 +163,6 @@ type SetRowProps = {
   onDelete: () => void;
   onTimerOpen: () => void;
 };
-
-// ─── Set Row ──────────────────────────────────────────────────────────────────
 
 function SetRow({ setNum, set, onChange, onDelete, onTimerOpen }: SetRowProps) {
   const handleToggleDone = useCallback(() => {
@@ -77,74 +173,61 @@ function SetRow({ setNum, set, onChange, onDelete, onTimerOpen }: SetRowProps) {
 
   return (
     <View style={[ss.setRow, set.done && ss.setRowDone]}>
-      {/* Set number */}
       <View style={[ss.setBadge, set.done && ss.setBadgeDone]}>
         <Text style={[ss.setBadgeText, set.done && ss.setBadgeTextDone]}>
           {setNum}
         </Text>
       </View>
 
-      {/* Previous */}
-      <Text style={ss.prevText} numberOfLines={1}>
+      <Text
+        style={ss.prevText}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
+      >
         {set.previous ?? "—"}
       </Text>
 
-      {/* KG input */}
-      <View style={[ss.inputWrap, set.done && ss.inputWrapDone]}>
-        <TextInput
-          value={set.weight}
-          onChangeText={(v) => onChange({ ...set, weight: v })}
-          keyboardType="decimal-pad"
-          placeholder="—"
-          placeholderTextColor={T.muted}
-          style={ss.input}
-          selectTextOnFocus
-        />
-      </View>
+      <Stepper
+        value={set.weight}
+        onChange={(v) => onChange({ ...set, weight: v })}
+        step={1.25}
+        decimals={2}
+        done={set.done}
+      />
 
-      {/* Reps input */}
-      <View style={[ss.inputWrap, set.done && ss.inputWrapDone]}>
-        <TextInput
-          value={set.reps}
-          onChangeText={(v) => onChange({ ...set, reps: v })}
-          keyboardType="number-pad"
-          placeholder="—"
-          placeholderTextColor={T.muted}
-          style={ss.input}
-          selectTextOnFocus
-        />
-      </View>
+      <Stepper
+        value={set.reps}
+        onChange={(v) => onChange({ ...set, reps: v })}
+        step={1}
+        done={set.done}
+      />
 
-      {/* Checkmark */}
       <TouchableOpacity
         onPress={handleToggleDone}
         style={[ss.doneBtn, set.done && ss.doneBtnActive]}
         activeOpacity={0.7}
-        hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+        hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
       >
         <Ionicons
           name="checkmark"
-          size={16}
+          size={15}
           color={set.done ? T.bg0 : T.muted}
         />
       </TouchableOpacity>
 
-      {/* Delete */}
       <TouchableOpacity
         onPress={onDelete}
         style={ss.deleteBtn}
-        hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+        hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
       >
-        <Ionicons name="close" size={12} color={T.muted + "80"} />
+        <Ionicons name="close" size={11} color={T.muted + "80"} />
       </TouchableOpacity>
     </View>
   );
 }
 
 // ─── Muscle / Tag Pill ─────────────────────────────────────────────────────────
-// Renders as a neutral pill for preset muscle groups, or a gold-tinted
-// "Custom" pill with a sparkle glyph for user-created exercises.
-
 function TagPill({ label, isCustom }: { label: string; isCustom: boolean }) {
   return (
     <View style={[ss.pill, isCustom && ss.pillCustom]}>
@@ -167,14 +250,19 @@ export default function ExerciseCard({
   onRemove,
   onTimerOpen,
 }: Props) {
-  const addSet = useCallback(
-    () =>
-      onSetsChange([
-        ...sets,
-        { id: Date.now(), weight: "", reps: "", done: false },
-      ]),
-    [sets, onSetsChange],
-  );
+  const addSet = useCallback(() => {
+    const last = sets[sets.length - 1];
+    onSetsChange([
+      ...sets,
+      {
+        id: Date.now(),
+        weight: last?.weight ?? "",
+        reps: last?.reps ?? "",
+        done: false,
+      },
+    ]);
+  }, [sets, onSetsChange]);
+
   const updateSet = useCallback(
     (id: number, updated: ExerciseSetData) =>
       onSetsChange(sets.map((s) => (s.id === id ? updated : s))),
@@ -189,8 +277,6 @@ export default function ExerciseCard({
   const allDone = doneCount === sets.length && sets.length > 0;
   const progressPct = sets.length > 0 ? doneCount / sets.length : 0;
 
-  // An exercise is treated as "custom" if explicitly flagged, or if either
-  // the muscle group or tag was set to "Custom" by the quick-add flow.
   const isCustom =
     exercise.isCustom ||
     exercise.tag?.toLowerCase() === "custom" ||
@@ -213,14 +299,12 @@ export default function ExerciseCard({
 
   return (
     <View style={[ss.card, allDone && ss.cardDone]}>
-      {/* Top progress stripe */}
       <View style={ss.progressTrack}>
         <View
           style={[ss.progressFill, { width: `${progressPct * 100}%` as any }]}
         />
       </View>
 
-      {/* ── Header ── */}
       <View style={ss.cardHeader}>
         <View style={ss.titleCol}>
           <Text style={ss.exerciseName} numberOfLines={1}>
@@ -252,7 +336,6 @@ export default function ExerciseCard({
         </View>
       </View>
 
-      {/* ── Column headers ── */}
       <View style={ss.colHeaders}>
         <Text style={[ss.colHeader, ss.colSet]}>SET</Text>
         <Text style={[ss.colHeader, ss.colPrev]}>PREV</Text>
@@ -261,7 +344,6 @@ export default function ExerciseCard({
         <View style={ss.colCheck} />
       </View>
 
-      {/* ── Set rows ── */}
       {sets.map((set, i) => (
         <SetRow
           key={set.id}
@@ -273,7 +355,6 @@ export default function ExerciseCard({
         />
       ))}
 
-      {/* ── Add set ── */}
       <TouchableOpacity
         onPress={addSet}
         style={ss.addSetBtn}
@@ -287,29 +368,26 @@ export default function ExerciseCard({
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const COL_SET = 28;
-const COL_PREV = 52;
-const COL_CHECK = 36;
-const COL_DEL = 22;
+// Shrunk fixed columns so the steppers get real horizontal room for the number
+const COL_SET = 24;
+const COL_PREV = 40;
+const COL_CHECK = 30;
+const COL_DEL = 16;
 
 const ss = StyleSheet.create({
-  // Card
   card: {
     backgroundColor: T.bg1,
     borderWidth: 1,
     borderColor: T.borderMid,
     borderRadius: 16,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingTop: 6,
     paddingBottom: 6,
     marginBottom: 10,
     overflow: "hidden",
   },
-  cardDone: {
-    borderColor: T.goldBorder,
-  },
+  cardDone: { borderColor: T.goldBorder },
 
-  // Progress stripe
   progressTrack: {
     position: "absolute",
     top: 0,
@@ -318,12 +396,8 @@ const ss = StyleSheet.create({
     height: 2,
     backgroundColor: T.bg3,
   },
-  progressFill: {
-    height: "100%",
-    backgroundColor: T.gold,
-  },
+  progressFill: { height: "100%", backgroundColor: T.gold },
 
-  // Header
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -337,10 +411,7 @@ const ss = StyleSheet.create({
     fontSize: 14,
     color: T.text,
   },
-  headerRight: {
-    alignItems: "flex-end",
-    gap: 4,
-  },
+  headerRight: { alignItems: "flex-end", gap: 4 },
   volText: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
@@ -354,12 +425,7 @@ const ss = StyleSheet.create({
   },
   setCountActive: { color: T.gold },
 
-  // Pills (muscle / tag badges)
-  pillRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
+  pillRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   pill: {
     flexDirection: "row",
     alignItems: "center",
@@ -370,28 +436,20 @@ const ss = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  pillCustom: {
-    backgroundColor: T.goldDim,
-    borderColor: T.goldBorder,
-  },
-  pillIcon: {
-    marginRight: 3,
-  },
+  pillCustom: { backgroundColor: T.goldDim, borderColor: T.goldBorder },
+  pillIcon: { marginRight: 3 },
   pillText: {
     fontFamily: "DMSans_500Medium",
     fontSize: 9,
     color: T.sub,
     letterSpacing: 0.6,
   },
-  pillTextCustom: {
-    color: T.gold,
-  },
+  pillTextCustom: { color: T.gold },
 
-  // Column headers
   colHeaders: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
     marginBottom: 5,
     paddingRight: COL_DEL,
   },
@@ -404,19 +462,17 @@ const ss = StyleSheet.create({
   },
   colSet: { width: COL_SET },
   colPrev: { width: COL_PREV, textAlign: "center" },
-  colInput: { flex: 1 },
+  colInput: { flex: 1, textAlign: "center" },
   colCheck: { width: COL_CHECK },
 
-  // Set rows
   setRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
     marginBottom: 6,
   },
   setRowDone: { opacity: 0.55 },
 
-  // Set badge
   setBadge: {
     width: COL_SET,
     height: COL_SET,
@@ -428,42 +484,63 @@ const ss = StyleSheet.create({
   setBadgeDone: { backgroundColor: T.goldDim },
   setBadgeText: {
     fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
+    fontSize: 12,
     color: T.sub,
   },
   setBadgeTextDone: { color: T.gold },
 
-  // Previous
   prevText: {
     width: COL_PREV,
     fontFamily: "DMSans_400Regular",
-    fontSize: 11,
+    fontSize: 10,
     color: T.muted,
     textAlign: "center",
   },
 
-  // Inputs
-  inputWrap: {
+  // Stepper — buttons shrunk so the number gets real room
+  stepper: {
     flex: 1,
+    minWidth: 78,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: T.bg2,
     borderWidth: 1,
     borderColor: "transparent",
     borderRadius: 10,
-    height: 40,
+    height: 42,
+    paddingHorizontal: 2,
+  },
+  stepperDone: { borderColor: T.goldBorder },
+  stepBtn: {
+    width: 22,
+    height: 34,
     alignItems: "center",
     justifyContent: "center",
   },
-  inputWrapDone: { borderColor: T.goldBorder },
-  input: {
+  stepValueWrap: {
+    flex: 1,
+    minWidth: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 2,
+  },
+  stepValue: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 18,
+    color: T.text,
+    textAlign: "center",
+  },
+  stepValueInput: {
+    flex: 1,
+    minWidth: 30,
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 18,
     color: T.text,
     padding: 0,
     textAlign: "center",
-    width: "100%",
   },
 
-  // Checkmark
   doneBtn: {
     width: COL_CHECK,
     height: COL_CHECK,
@@ -474,19 +551,10 @@ const ss = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  doneBtnActive: {
-    backgroundColor: T.gold,
-    borderColor: T.gold,
-  },
+  doneBtnActive: { backgroundColor: T.gold, borderColor: T.gold },
 
-  // Delete
-  deleteBtn: {
-    width: COL_DEL,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  deleteBtn: { width: COL_DEL, alignItems: "center", justifyContent: "center" },
 
-  // Add set
   addSetBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -495,9 +563,5 @@ const ss = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 2,
   },
-  addSetText: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 12,
-    color: T.muted,
-  },
+  addSetText: { fontFamily: "DMSans_500Medium", fontSize: 12, color: T.muted },
 });
