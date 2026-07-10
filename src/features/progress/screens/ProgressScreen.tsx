@@ -25,7 +25,6 @@ import Svg, {
   Rect,
   Polyline,
 } from "react-native-svg";
-import { PhotoComparison } from "../components/PhotoComparison";
 import { WeightChart } from "../components/WeightChart";
 
 // ─── Token system ─────────────────────────────────────────────────────────────
@@ -39,7 +38,6 @@ const T = {
   ghost: "#2A2A2A",
   gold: "#FFC700",
   goldDim: "rgba(255,199,0,0.12)",
-  danger: "#FF6B5E", // used sparingly, only for negative volume badge text if ever needed — kept monochrome by default
 };
 
 type Period = "7D" | "1M" | "3M" | "ALL";
@@ -47,6 +45,8 @@ const PERIODS: Period[] = ["7D", "1M", "3M", "ALL"];
 
 const SPARK_W = 100;
 const SPARK_H = 52;
+const STRENGTH_CHART_W = 300;
+const STRENGTH_CHART_H = 90;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function localYmdFromIso(iso: string): string {
@@ -102,11 +102,8 @@ function sessionVolumeKg(session: ApiWorkoutSession): number {
   );
 }
 
-function startOfWeekSunday(d: Date): Date {
-  const copy = new Date(d);
-  copy.setDate(copy.getDate() - copy.getDay());
-  copy.setHours(0, 0, 0, 0);
-  return copy;
+function fmtKg(n: number): string {
+  return n % 1 === 0 ? String(n) : n.toFixed(1);
 }
 
 // ─── Bezier path ──────────────────────────────────────────────────────────────
@@ -128,7 +125,7 @@ function bezierLine(pts: { x: number; y: number }[]): string {
   return d;
 }
 
-// ─── Sparkline — gold line with soft fill under the curve ─────────────────────
+// ─── Weight sparkline — small, sits in the body-weight card ───────────────────
 function MiniSparkline({ data }: { data: { weight: number }[] }) {
   if (data.length < 2)
     return <View style={{ width: SPARK_W, height: SPARK_H }} />;
@@ -175,7 +172,86 @@ function MiniSparkline({ data }: { data: { weight: number }[] }) {
   );
 }
 
-// ─── Tiny icon set (kept as SVG so no new deps) ───────────────────────────────
+// ─── Strength chart — bigger version, drives the new hero section ─────────────
+type ExerciseHistoryPoint = {
+  date: Date;
+  topWeight: number;
+  topReps: number;
+  sessionId: string;
+};
+
+function StrengthChart({ data }: { data: ExerciseHistoryPoint[] }) {
+  if (data.length < 2) return null;
+  const values = data.map((d) => d.topWeight);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const rng = max - min || 1;
+  const PAD = 8;
+  const toX = (i: number) =>
+    PAD + (i / (data.length - 1)) * (STRENGTH_CHART_W - PAD * 2);
+  const toY = (v: number) =>
+    PAD + ((max - v) / rng) * (STRENGTH_CHART_H - PAD * 2);
+  const pts = data.map((d, i) => ({ x: toX(i), y: toY(d.topWeight) }));
+  const linePath = bezierLine(pts);
+  const areaPath = `${linePath} L ${pts[pts.length - 1].x.toFixed(1)} ${STRENGTH_CHART_H} L ${pts[0].x.toFixed(1)} ${STRENGTH_CHART_H} Z`;
+  const last = pts[pts.length - 1];
+
+  return (
+    <Svg width={STRENGTH_CHART_W} height={STRENGTH_CHART_H}>
+      <Defs>
+        <LinearGradient id="strengthFill" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={T.gold} stopOpacity="0.28" />
+          <Stop offset="1" stopColor={T.gold} stopOpacity="0" />
+        </LinearGradient>
+      </Defs>
+      <Path d={areaPath} fill="url(#strengthFill)" stroke="none" />
+      <Path
+        d={linePath}
+        fill="none"
+        stroke={T.gold}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle
+        cx={last.x}
+        cy={last.y}
+        r={4}
+        fill={T.canvas}
+        stroke={T.gold}
+        strokeWidth="3"
+      />
+    </Svg>
+  );
+}
+
+// ─── Volume bars — period-aware weekly trend ───────────────────────────────────
+function VolumeBarsChart({
+  buckets,
+}: {
+  buckets: { label: string; kg: number }[];
+}) {
+  const max = Math.max(...buckets.map((b) => b.kg), 1);
+  return (
+    <View style={s.volBarsRow}>
+      {buckets.map((b, i) => (
+        <View key={i} style={s.volBarCol}>
+          <View style={s.volBarTrack}>
+            <View
+              style={[
+                s.volBarFill,
+                { height: `${Math.max(4, (b.kg / max) * 100)}%` },
+              ]}
+            />
+          </View>
+          <Text style={s.volBarLabel}>{b.label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ─── Tiny icon set ──────────────────────────────────────────────────────────────
 function FlameIcon({
   size = 18,
   color = T.gold,
@@ -274,9 +350,49 @@ function Divider() {
   return <View style={{ height: 1, backgroundColor: T.ghost }} />;
 }
 
+// ─── Exercise picker chips ──────────────────────────────────────────────────────
+function ExercisePickerRow({
+  names,
+  active,
+  onSelect,
+}: {
+  names: string[];
+  active: string | null;
+  onSelect: (n: string) => void;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={s.exercisePickerRow}
+    >
+      {names.map((name) => {
+        const isActive = name === active;
+        return (
+          <TouchableOpacity
+            key={name}
+            onPress={() => onSelect(name)}
+            style={[s.exerciseChip, isActive && s.exerciseChipActive]}
+            activeOpacity={0.8}
+          >
+            <Text
+              style={[s.exerciseChipText, isActive && s.exerciseChipTextActive]}
+              numberOfLines={1}
+            >
+              {name}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function ProgressScreen() {
   const [period, setPeriod] = useState<Period>("1M");
+  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
+  const [showAllRecent, setShowAllRecent] = useState(false);
 
   const { data: weightLogs = [] } = useWeightLog();
   const { data: completedWorkouts = [], isPending: workoutsLoading } = useQuery(
@@ -296,25 +412,122 @@ export default function ProgressScreen() {
           ? 3
           : undefined;
 
+  // ── Strength progress: derive per-exercise top-set history from sessions ──
+  const exerciseHistoryByName = useMemo(() => {
+    const map: Record<string, ExerciseHistoryPoint[]> = {};
+    for (const session of completedWorkouts) {
+      if (!session.completedAt) continue;
+      const date = new Date(session.completedAt);
+      for (const ex of session.exercises ?? []) {
+        const sets = Array.isArray(ex.sets) ? ex.sets : [];
+        let topWeight = 0;
+        let topReps = 0;
+        for (const row of sets) {
+          if (
+            row &&
+            typeof row === "object" &&
+            "weight" in row &&
+            "reps" in row
+          ) {
+            const w = Number((row as any).weight ?? 0);
+            const r = Number((row as any).reps ?? 0);
+            if (w > topWeight) {
+              topWeight = w;
+              topReps = r;
+            }
+          }
+        }
+        if (topWeight <= 0) continue;
+        if (!map[ex.exerciseName]) map[ex.exerciseName] = [];
+        map[ex.exerciseName].push({
+          date,
+          topWeight,
+          topReps,
+          sessionId: session.id,
+        });
+      }
+    }
+    for (const name in map) {
+      map[name].sort((a, b) => a.date.getTime() - b.date.getTime());
+    }
+    return map;
+  }, [completedWorkouts]);
+
+  const exerciseNames = useMemo(
+    () =>
+      Object.entries(exerciseHistoryByName)
+        .sort((a, b) => {
+          const aLast = a[1][a[1].length - 1]?.date.getTime() ?? 0;
+          const bLast = b[1][b[1].length - 1]?.date.getTime() ?? 0;
+          return bLast - aLast;
+        })
+        .map(([name]) => name),
+    [exerciseHistoryByName],
+  );
+
+  const activeExercise =
+    selectedExercise && exerciseHistoryByName[selectedExercise]
+      ? selectedExercise
+      : (exerciseNames[0] ?? null);
+
+  const exercisePeriodHistory = useMemo(() => {
+    if (!activeExercise) return [];
+    const full = exerciseHistoryByName[activeExercise] ?? [];
+    if (!periodCutoff) return full;
+    return full.filter((p) => p.date >= periodCutoff);
+  }, [activeExercise, exerciseHistoryByName, periodCutoff]);
+
+  const strengthCurrent =
+    exercisePeriodHistory.length > 0
+      ? exercisePeriodHistory[exercisePeriodHistory.length - 1].topWeight
+      : null;
+  const strengthFirst =
+    exercisePeriodHistory.length > 1
+      ? exercisePeriodHistory[0].topWeight
+      : null;
+  const strengthDelta =
+    strengthCurrent !== null && strengthFirst !== null
+      ? strengthCurrent - strengthFirst
+      : null;
+  const strengthDeltaSign =
+    strengthDelta !== null ? (strengthDelta <= 0 ? "−" : "+") : null;
+  const strengthDeltaUp = strengthDelta !== null && strengthDelta > 0;
+
+  const isPR = useMemo(() => {
+    if (!activeExercise || exercisePeriodHistory.length === 0) return false;
+    const allTime = exerciseHistoryByName[activeExercise] ?? [];
+    const allTimeBest = Math.max(0, ...allTime.map((p) => p.topWeight));
+    return (
+      allTimeBest > 0 &&
+      exercisePeriodHistory[exercisePeriodHistory.length - 1].topWeight >=
+        allTimeBest
+    );
+  }, [activeExercise, exercisePeriodHistory, exerciseHistoryByName]);
+
+  // ── Weight ──
   const sortedWeights = useMemo(
     () => [...weightLogs].sort((a, b) => a.log_date.localeCompare(b.log_date)),
     [weightLogs],
   );
-
   const periodWeights = useMemo(() => {
     if (!periodCutoff) return sortedWeights;
     return sortedWeights.filter(
       (w) => new Date(`${w.log_date}T00:00:00`) >= periodCutoff,
     );
   }, [sortedWeights, periodCutoff]);
-
   const currentWeight = periodWeights.at(-1)?.weight ?? null;
   const startWeight = periodWeights.length > 1 ? periodWeights[0].weight : null;
   const weightDelta =
     currentWeight !== null && startWeight !== null
       ? currentWeight - startWeight
       : null;
+  const deltaSign =
+    weightDelta !== null ? (weightDelta <= 0 ? "−" : "+") : null;
+  const deltaAbs =
+    weightDelta !== null ? Math.abs(weightDelta).toFixed(1) : null;
+  const deltaUp = weightDelta !== null && weightDelta > 0;
 
+  // ── Streak (global — a streak is inherently "current", not date-range scoped) ──
   const completedDaySet = useMemo(() => {
     const set = new Set<string>();
     for (const sess of completedWorkouts) {
@@ -322,86 +535,110 @@ export default function ProgressScreen() {
     }
     return set;
   }, [completedWorkouts]);
-
   const streakDays = useMemo(
     () => streakFromDays(completedDaySet),
     [completedDaySet],
   );
 
-  const avgDurationMin = useMemo(() => {
-    const sessWithDuration = completedWorkouts.filter(
+  // ── Sessions + avg duration — now genuinely period-scoped ──
+  const periodSessions = useMemo(
+    () =>
+      completedWorkouts.filter((w) => {
+        if (!w.completedAt) return false;
+        return periodCutoff ? new Date(w.completedAt) >= periodCutoff : true;
+      }),
+    [completedWorkouts, periodCutoff],
+  );
+  const periodAvgDurationMin = useMemo(() => {
+    const withDuration = periodSessions.filter(
       (w) => w.completedAt && w.startedAt,
     );
-    if (!sessWithDuration.length) return null;
-    const totalMin = sessWithDuration.reduce(
-      (acc, s) =>
+    if (!withDuration.length) return null;
+    const totalMin = withDuration.reduce(
+      (acc, sess) =>
         acc +
-        (new Date(s.completedAt!).getTime() - new Date(s.startedAt).getTime()) /
+        (new Date(sess.completedAt!).getTime() -
+          new Date(sess.startedAt).getTime()) /
           60_000,
       0,
     );
-    return Math.round(totalMin / sessWithDuration.length);
-  }, [completedWorkouts]);
+    return Math.round(totalMin / withDuration.length);
+  }, [periodSessions]);
 
+  // ── Recent workouts (period-scoped, expandable) ──
+  const filteredCompletedSessions = useMemo(
+    () =>
+      [...periodSessions].sort(
+        (a, b) =>
+          new Date(b.completedAt!).getTime() -
+          new Date(a.completedAt!).getTime(),
+      ),
+    [periodSessions],
+  );
   const recentSessions = useMemo(
     () =>
-      completedWorkouts
-        .filter((w) => {
-          if (!w.completedAt) return false;
-          return periodCutoff ? new Date(w.completedAt) >= periodCutoff : true;
-        })
-        .sort(
-          (a, b) =>
-            new Date(b.completedAt!).getTime() -
-            new Date(a.completedAt!).getTime(),
-        )
-        .slice(0, 4)
+      filteredCompletedSessions
+        .slice(0, showAllRecent ? undefined : 4)
         .map(mapApiSessionToHistoryRow),
-    [completedWorkouts, periodCutoff],
+    [filteredCompletedSessions, showAllRecent],
   );
 
-  const volumeStats = useMemo(() => {
-    const thisWeekStart = startOfWeekSunday(new Date());
-    const lastWeekStart = new Date(thisWeekStart);
-    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-
-    let thisKg = 0,
-      lastKg = 0,
-      thisSessions = 0;
+  // ── Training volume — period-aware weekly bars + trend badge ──
+  const volumeBuckets = useMemo(() => {
+    const bucketCount = period === "7D" ? 1 : period === "1M" ? 4 : 8;
+    const now = new Date();
+    const buckets: { label: string; kg: number }[] = [];
+    const ranges: { start: Date; end: Date }[] = [];
+    for (let i = bucketCount - 1; i >= 0; i--) {
+      const end = new Date(now);
+      end.setDate(end.getDate() - i * 7);
+      end.setHours(23, 59, 59, 999);
+      const start = new Date(end);
+      start.setDate(start.getDate() - 6);
+      start.setHours(0, 0, 0, 0);
+      ranges.push({ start, end });
+      buckets.push({ label: i === 0 ? "Now" : `-${i}w`, kg: 0 });
+    }
     for (const session of completedWorkouts) {
       if (!session.completedAt) continue;
-      const completed = new Date(session.completedAt);
+      const d = new Date(session.completedAt);
       const vol = sessionVolumeKg(session);
-      if (completed >= thisWeekStart) {
-        thisKg += vol;
-        thisSessions++;
-      } else if (completed >= lastWeekStart) {
-        lastKg += vol;
+      for (let idx = 0; idx < ranges.length; idx++) {
+        if (d >= ranges[idx].start && d <= ranges[idx].end) {
+          buckets[idx].kg += vol;
+          break;
+        }
+      }
+    }
+    return buckets;
+  }, [completedWorkouts, period]);
+
+  const volumeTrend = useMemo(() => {
+    const cutoff = periodCutoff ?? new Date(0);
+    const spanMs = periodCutoff ? Date.now() - periodCutoff.getTime() : null;
+    let currentKg = 0;
+    for (const session of completedWorkouts) {
+      if (!session.completedAt) continue;
+      if (new Date(session.completedAt) >= cutoff)
+        currentKg += sessionVolumeKg(session);
+    }
+    let prevKg = 0;
+    if (spanMs) {
+      const prevStart = new Date(cutoff.getTime() - spanMs);
+      for (const session of completedWorkouts) {
+        if (!session.completedAt) continue;
+        const d = new Date(session.completedAt);
+        if (d >= prevStart && d < cutoff) prevKg += sessionVolumeKg(session);
       }
     }
     const pct =
-      lastKg > 0
-        ? Math.round(((thisKg - lastKg) / lastKg) * 100)
-        : thisKg > 0
+      prevKg > 0
+        ? Math.round(((currentKg - prevKg) / prevKg) * 100)
+        : currentKg > 0
           ? 100
           : 0;
-    const maxVol = Math.max(thisKg, lastKg, 1);
-    return {
-      thisKg,
-      lastKg,
-      thisSessions,
-      pct,
-      thisBarPct: Math.round((thisKg / maxVol) * 100),
-      lastBarPct: Math.round((lastKg / maxVol) * 100),
-      hasData: thisKg > 0 || lastKg > 0,
-    };
-  }, [completedWorkouts]);
-
-  const deltaSign =
-    weightDelta !== null ? (weightDelta <= 0 ? "−" : "+") : null;
-  const deltaAbs =
-    weightDelta !== null ? Math.abs(weightDelta).toFixed(1) : null;
-  const deltaUp = weightDelta !== null && weightDelta > 0;
+    return { currentKg, pct };
+  }, [completedWorkouts, periodCutoff]);
 
   return (
     <SafeAreaView edges={["top"]} style={s.safe}>
@@ -413,7 +650,7 @@ export default function ProgressScreen() {
         <Text style={s.hdrTitle}>Progress</Text>
       </View>
 
-      {/* ── Period tabs — segmented control on a track ──────────────────────── */}
+      {/* ── Period tabs — now genuinely governs every section below ─────────── */}
       <View style={s.tabBarOuter}>
         <View style={s.tabBar}>
           {PERIODS.map((p) => {
@@ -437,30 +674,77 @@ export default function ProgressScreen() {
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Weight hero ──────────────────────────────────────────────────── */}
-        <View style={s.weightHero}>
-          <View style={s.weightLeft}>
-            <Text style={s.wEyebrow}>CURRENT WEIGHT</Text>
-            <View style={s.wNumberRow}>
-              <Text style={s.wNumber}>
-                {currentWeight !== null ? currentWeight.toFixed(1) : "—"}
+        {/* ── Strength progress — the new lead section ─────────────────────── */}
+        <View style={s.section}>
+          <SectionHeader
+            title="Strength progress"
+            right={<Text style={s.sectionSub}>{period}</Text>}
+          />
+
+          {exerciseNames.length === 0 ? (
+            <View style={s.emptyState}>
+              <DumbbellIcon size={22} color={T.dim} />
+              <Text style={[s.emptyText, { marginTop: 8 }]}>
+                Log a workout to start tracking strength progress
               </Text>
-              <Text style={s.wUnit}>kg</Text>
             </View>
-            {weightDelta !== null && deltaSign !== null && (
-              <View style={s.wDeltaRow}>
-                <ArrowIcon up={deltaUp} color={T.dim} />
-                <Text style={s.wDelta}>
-                  {deltaSign}
-                  {deltaAbs} kg · {period.toLowerCase()}
+          ) : (
+            <View style={s.strengthCard}>
+              <ExercisePickerRow
+                names={exerciseNames}
+                active={activeExercise}
+                onSelect={setSelectedExercise}
+              />
+
+              {exercisePeriodHistory.length === 0 ? (
+                <Text
+                  style={[
+                    s.emptyText,
+                    { textAlign: "center", paddingVertical: 20 },
+                  ]}
+                >
+                  No {activeExercise} logged in this period
                 </Text>
-              </View>
-            )}
-          </View>
-          <MiniSparkline data={periodWeights} />
+              ) : (
+                <>
+                  <View style={s.strengthTopRow}>
+                    <View style={s.wNumberRow}>
+                      <Text style={s.wNumber}>
+                        {fmtKg(strengthCurrent ?? 0)}
+                      </Text>
+                      <Text style={s.wUnit}>kg</Text>
+                      {isPR && (
+                        <View style={s.prBadge}>
+                          <Text style={s.prBadgeText}>PR</Text>
+                        </View>
+                      )}
+                    </View>
+                    {strengthDelta !== null && (
+                      <View style={s.wDeltaRow}>
+                        <ArrowIcon up={strengthDeltaUp} color={T.dim} />
+                        <Text style={s.wDelta}>
+                          {strengthDeltaSign}
+                          {fmtKg(Math.abs(strengthDelta))} kg ·{" "}
+                          {period.toLowerCase()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {exercisePeriodHistory.length >= 2 ? (
+                    <StrengthChart data={exercisePeriodHistory} />
+                  ) : (
+                    <Text style={[s.emptyText, { marginTop: 10 }]}>
+                      Log {activeExercise} again to see a trend
+                    </Text>
+                  )}
+                </>
+              )}
+            </View>
+          )}
         </View>
 
-        {/* ── Stat tiles — icon + number, real card ───────────────────────── */}
+        {/* ── Stat tiles — streak global, sessions + avg min now period-scoped ── */}
         <View style={s.statsGrid}>
           <View style={s.statTile}>
             <View style={s.statIconWrap}>
@@ -474,16 +758,45 @@ export default function ProgressScreen() {
             <View style={s.statIconWrap}>
               <DumbbellIcon />
             </View>
-            <Text style={s.statNum}>{volumeStats.thisSessions}</Text>
-            <Text style={s.statLabel}>THIS WEEK</Text>
+            <Text style={s.statNum}>{periodSessions.length}</Text>
+            <Text style={s.statLabel}>SESSIONS</Text>
           </View>
           <View style={s.statDivider} />
           <View style={s.statTile}>
             <View style={s.statIconWrap}>
               <ClockIcon />
             </View>
-            <Text style={s.statNum}>{avgDurationMin ?? "—"}</Text>
+            <Text style={s.statNum}>{periodAvgDurationMin ?? "—"}</Text>
             <Text style={s.statLabel}>AVG MIN</Text>
+          </View>
+        </View>
+
+        {/* ── Body weight — demoted from hero, still fully functional ────────── */}
+        <View style={s.section}>
+          <SectionHeader
+            title="Body weight"
+            right={<Text style={s.sectionSub}>{period}</Text>}
+          />
+          <View style={s.weightHero}>
+            <View style={s.weightLeft}>
+              <Text style={s.wEyebrow}>CURRENT WEIGHT</Text>
+              <View style={s.wNumberRow}>
+                <Text style={s.wNumber}>
+                  {currentWeight !== null ? currentWeight.toFixed(1) : "—"}
+                </Text>
+                <Text style={s.wUnit}>kg</Text>
+              </View>
+              {weightDelta !== null && deltaSign !== null && (
+                <View style={s.wDeltaRow}>
+                  <ArrowIcon up={deltaUp} color={T.dim} />
+                  <Text style={s.wDelta}>
+                    {deltaSign}
+                    {deltaAbs} kg · {period.toLowerCase()}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <MiniSparkline data={periodWeights} />
           </View>
         </View>
 
@@ -498,80 +811,46 @@ export default function ProgressScreen() {
           </View>
         </View>
 
-        {/* ── Training volume ──────────────────────────────────────────────── */}
+        {/* ── Training volume — real period-aware trend, not a fixed compare ── */}
         <View style={s.section}>
           <SectionHeader
             title="Training volume"
             right={
-              volumeStats.pct !== 0 ? (
+              period !== "ALL" && volumeTrend.pct !== 0 ? (
                 <View style={s.volBadge}>
                   <ArrowIcon
-                    up={volumeStats.pct > 0}
+                    up={volumeTrend.pct > 0}
                     size={10}
                     color={T.gold}
                   />
-                  <Text style={s.volPct}>{Math.abs(volumeStats.pct)}%</Text>
+                  <Text style={s.volPct}>{Math.abs(volumeTrend.pct)}%</Text>
                 </View>
               ) : undefined
             }
           />
           <View style={s.card}>
-            {volumeStats.hasData ? (
-              <View style={s.cardPad}>
-                <View style={s.volBlock}>
-                  <View style={s.volRowHdr}>
-                    <Text style={s.volRowLabel}>This week</Text>
-                    <Text style={s.volRowNum}>
-                      {Math.round(volumeStats.thisKg).toLocaleString()} kg
-                    </Text>
-                  </View>
-                  <View style={s.barTrack}>
-                    <View
-                      style={[
-                        s.barFill,
-                        { width: `${volumeStats.thisBarPct}%` },
-                      ]}
-                    />
-                  </View>
-                </View>
-                <View style={[s.volBlock, { marginTop: 20 }]}>
-                  <View style={s.volRowHdr}>
-                    <Text style={s.volRowLabel}>Last week</Text>
-                    <Text style={s.volRowNum}>
-                      {Math.round(volumeStats.lastKg).toLocaleString()} kg
-                    </Text>
-                  </View>
-                  <View style={s.barTrack}>
-                    <View
-                      style={[
-                        s.barFillDim,
-                        { width: `${volumeStats.lastBarPct}%` },
-                      ]}
-                    />
-                  </View>
-                </View>
-              </View>
-            ) : (
+            {volumeBuckets.every((b) => b.kg === 0) ? (
               <View style={s.emptyState}>
                 <Text style={s.emptyText}>
                   Complete a workout to see volume
                 </Text>
               </View>
+            ) : volumeBuckets.length === 1 ? (
+              <View style={s.cardPad}>
+                <Text style={s.volRowLabel}>Total this period</Text>
+                <View style={s.wNumberRow}>
+                  <Text style={[s.wNumber, { fontSize: 40, lineHeight: 42 }]}>
+                    {Math.round(volumeBuckets[0].kg).toLocaleString()}
+                  </Text>
+                  <Text style={s.wUnit}>kg</Text>
+                </View>
+              </View>
+            ) : (
+              <View style={s.cardPad}>
+                <VolumeBarsChart buckets={volumeBuckets} />
+              </View>
             )}
           </View>
-        </View>
-
-        {/* ── Progress photos ──────────────────────────────────────────────── */}
-        <View style={s.section}>
-          <SectionHeader
-            title="Progress photos"
-            right={
-              <TouchableOpacity activeOpacity={0.7}>
-                <Text style={s.sectionLink}>Compare</Text>
-              </TouchableOpacity>
-            }
-          />
-          <PhotoComparison />
         </View>
 
         {/* ── Recent workouts ──────────────────────────────────────────────── */}
@@ -579,9 +858,16 @@ export default function ProgressScreen() {
           <SectionHeader
             title="Recent workouts"
             right={
-              <TouchableOpacity activeOpacity={0.7}>
-                <Text style={s.sectionLink}>View all</Text>
-              </TouchableOpacity>
+              filteredCompletedSessions.length > 4 ? (
+                <TouchableOpacity
+                  onPress={() => setShowAllRecent((v) => !v)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.sectionLink}>
+                    {showAllRecent ? "Show less" : "View all"}
+                  </Text>
+                </TouchableOpacity>
+              ) : undefined
             }
           />
 
@@ -659,11 +945,7 @@ const s = StyleSheet.create({
     lineHeight: 44,
   },
 
-  // ── Segmented tab control ──────────────────────────────────────────────────
-  tabBarOuter: {
-    paddingHorizontal: 20,
-    paddingBottom: 18,
-  },
+  tabBarOuter: { paddingHorizontal: 20, paddingBottom: 18 },
   tabBar: {
     flexDirection: "row",
     backgroundColor: T.card,
@@ -673,12 +955,7 @@ const s = StyleSheet.create({
     padding: 4,
     gap: 4,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: "center",
-  },
+  tab: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center" },
   tabActive: {
     backgroundColor: T.gold,
     shadowColor: T.gold,
@@ -692,16 +969,56 @@ const s = StyleSheet.create({
     color: T.dim,
     letterSpacing: 1,
   },
-  tabTextActive: {
+  tabTextActive: { color: T.canvas },
+
+  scroll: { paddingHorizontal: 20, paddingBottom: 110 },
+
+  // ── Strength progress (new hero) ────────────────────────────────────────────
+  strengthCard: {
+    backgroundColor: T.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: T.cardBorder,
+    padding: 18,
+    gap: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  exercisePickerRow: { gap: 8, paddingRight: 4 },
+  exerciseChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: T.ghost,
+  },
+  exerciseChipActive: { backgroundColor: T.gold },
+  exerciseChipText: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 13,
+    color: T.dim,
+    letterSpacing: 0.4,
+  },
+  exerciseChipTextActive: { color: T.canvas },
+  strengthTopRow: { gap: 4 },
+  prBadge: {
+    backgroundColor: T.gold,
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    marginLeft: 8,
+    marginBottom: 10,
+  },
+  prBadgeText: {
+    fontFamily: "BarlowCondensed_900Black",
+    fontSize: 11,
     color: T.canvas,
+    letterSpacing: 1,
   },
 
-  scroll: {
-    paddingHorizontal: 20,
-    paddingBottom: 110,
-  },
-
-  // ── Weight hero ───────────────────────────────────────────────────────────
+  // ── Weight hero (now used for the demoted body-weight section) ─────────────
   weightHero: {
     flexDirection: "row",
     alignItems: "center",
@@ -712,7 +1029,6 @@ const s = StyleSheet.create({
     borderColor: T.cardBorder,
     paddingHorizontal: 20,
     paddingVertical: 22,
-    marginBottom: 12,
     shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowRadius: 12,
@@ -726,11 +1042,7 @@ const s = StyleSheet.create({
     color: T.dim,
     letterSpacing: 1.8,
   },
-  wNumberRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 4,
-  },
+  wNumberRow: { flexDirection: "row", alignItems: "flex-end", gap: 4 },
   wNumber: {
     fontFamily: "BarlowCondensed_900Black",
     fontSize: 56,
@@ -750,11 +1062,7 @@ const s = StyleSheet.create({
     gap: 5,
     marginTop: 2,
   },
-  wDelta: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 12,
-    color: T.dim,
-  },
+  wDelta: { fontFamily: "DMSans_400Regular", fontSize: 12, color: T.dim },
 
   // ── Stat tiles ────────────────────────────────────────────────────────────
   statsGrid: {
@@ -763,14 +1071,11 @@ const s = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: T.cardBorder,
+    marginTop: 24,
     marginBottom: 12,
     paddingVertical: 20,
   },
-  statTile: {
-    flex: 1,
-    alignItems: "center",
-    gap: 6,
-  },
+  statTile: { flex: 1, alignItems: "center", gap: 6 },
   statIconWrap: {
     width: 32,
     height: 32,
@@ -780,11 +1085,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 2,
   },
-  statDivider: {
-    width: 1,
-    backgroundColor: T.ghost,
-    marginVertical: 4,
-  },
+  statDivider: { width: 1, backgroundColor: T.ghost, marginVertical: 4 },
   statNum: {
     fontFamily: "BarlowCondensed_900Black",
     fontSize: 30,
@@ -800,20 +1101,14 @@ const s = StyleSheet.create({
   },
 
   // ── Sections ──────────────────────────────────────────────────────────────
-  section: {
-    marginTop: 24,
-  },
+  section: { marginTop: 24 },
   sectionHdr: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 10,
   },
-  sectionTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+  sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   sectionAccent: {
     width: 3,
     height: 14,
@@ -825,16 +1120,8 @@ const s = StyleSheet.create({
     fontSize: 15,
     color: T.white,
   },
-  sectionSub: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 12,
-    color: T.dim,
-  },
-  sectionLink: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 12,
-    color: T.gold,
-  },
+  sectionSub: { fontFamily: "DMSans_400Regular", fontSize: 12, color: T.dim },
+  sectionLink: { fontFamily: "DMSans_500Medium", fontSize: 12, color: T.gold },
 
   // ── Generic card ──────────────────────────────────────────────────────────
   card: {
@@ -844,9 +1131,7 @@ const s = StyleSheet.create({
     borderColor: T.cardBorder,
     overflow: "hidden",
   },
-  cardPad: {
-    padding: 18,
-  },
+  cardPad: { padding: 18 },
 
   // ── Volume ────────────────────────────────────────────────────────────────
   volBadge: {
@@ -864,39 +1149,28 @@ const s = StyleSheet.create({
     color: T.gold,
     letterSpacing: 0.3,
   },
-  volBlock: {},
-  volRowHdr: {
+  volRowLabel: { fontFamily: "DMSans_400Regular", fontSize: 13, color: T.dim },
+  volBarsRow: {
     flexDirection: "row",
+    alignItems: "flex-end",
     justifyContent: "space-between",
-    marginBottom: 8,
+    height: 90,
+    gap: 6,
   },
-  volRowLabel: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 13,
-    color: T.dim,
-  },
-  volRowNum: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 14,
-    color: T.white,
-    letterSpacing: -0.1,
-  },
-  barTrack: {
-    height: 6,
+  volBarCol: { flex: 1, alignItems: "center", gap: 6, height: "100%" },
+  volBarTrack: {
+    flex: 1,
+    width: "100%",
     backgroundColor: T.ghost,
-    borderRadius: 3,
+    borderRadius: 5,
     overflow: "hidden",
+    justifyContent: "flex-end",
   },
-  barFill: {
-    height: 6,
-    backgroundColor: T.gold,
-    borderRadius: 3,
-  },
-  barFillDim: {
-    height: 6,
-    backgroundColor: T.dim,
-    borderRadius: 3,
-    opacity: 0.35,
+  volBarFill: { width: "100%", backgroundColor: T.gold, borderRadius: 5 },
+  volBarLabel: {
+    fontFamily: "DMSans_400Regular",
+    fontSize: 9,
+    color: T.dim2,
   },
 
   // ── Empty state ───────────────────────────────────────────────────────────
@@ -909,11 +1183,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 18,
     alignItems: "center",
   },
-  emptyText: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 13,
-    color: T.dim,
-  },
+  emptyText: { fontFamily: "DMSans_400Regular", fontSize: 13, color: T.dim },
 
   // ── Recent workout rows ───────────────────────────────────────────────────
   wkRow: {
@@ -923,39 +1193,16 @@ const s = StyleSheet.create({
     paddingHorizontal: 18,
     gap: 12,
   },
-  wkDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: T.gold,
-  },
-  wkMid: {
-    flex: 1,
-    gap: 3,
-  },
-  wkName: {
-    fontFamily: "DMSans_600SemiBold",
-    fontSize: 14,
-    color: T.white,
-  },
-  wkDate: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 11,
-    color: T.dim,
-  },
-  wkRight: {
-    alignItems: "flex-end",
-    gap: 3,
-  },
+  wkDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: T.gold },
+  wkMid: { flex: 1, gap: 3 },
+  wkName: { fontFamily: "DMSans_600SemiBold", fontSize: 14, color: T.white },
+  wkDate: { fontFamily: "DMSans_400Regular", fontSize: 11, color: T.dim },
+  wkRight: { alignItems: "flex-end", gap: 3 },
   wkDuration: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 13,
     color: T.white,
     letterSpacing: 0.2,
   },
-  wkSets: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 11,
-    color: T.dim,
-  },
+  wkSets: { fontFamily: "DMSans_400Regular", fontSize: 11, color: T.dim },
 });

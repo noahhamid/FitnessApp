@@ -34,7 +34,7 @@ export const auth = betterAuth({
     "myapp://",
     "http://localhost:8081",
     "exp://localhost:8081",
-    "exp://192.168.1.9:8081",
+    "exp://192.168.100.243:8081",
     "exp://",
     ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
   ],

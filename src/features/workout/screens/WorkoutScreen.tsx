@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { Modal } from "react-native"; // add Modal to your existing react-native import list
 import {
   WorkoutSummary,
@@ -1039,7 +1040,14 @@ export default function WorkoutScreen() {
           <>
             <SectionLabel
               label="RECENT SESSIONS"
-              right={<Text style={s.sectionLink}>See all ›</Text>}
+              right={
+                <TouchableOpacity
+                  onPress={() => router.push("/(tabs)/progress")}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.sectionLink}>See all ›</Text>
+                </TouchableOpacity>
+              }
             />
             <View style={s.px}>
               {historyLoading ? (

@@ -1,11 +1,12 @@
-import { expoClient } from "@better-auth/expo/client";
+// lib/auth-client.ts
 import { createAuthClient } from "better-auth/react";
+import { expoClient } from "@better-auth/expo/client";
 import * as SecureStore from "expo-secure-store";
 
-const baseURL = process.env.EXPO_PUBLIC_API_URL;
+const baseURL = process.env.EXPO_PUBLIC_BETTER_AUTH_URL;
 
 if (!baseURL) {
-  throw new Error("EXPO_PUBLIC_API_URL is not configured");
+  throw new Error("EXPO_PUBLIC_BETTER_AUTH_URL is not configured");
 }
 
 export const AUTH_STORAGE_PREFIX = "myapp";

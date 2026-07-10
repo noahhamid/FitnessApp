@@ -1,8 +1,8 @@
 import type { ExpoConfig } from "expo/config";
 
 const config: ExpoConfig = {
-name: "Exo",
-slug: "exo-fitness",
+  name: "Exo",
+  slug: "exo-fitness",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
@@ -13,7 +13,7 @@ slug: "exo-fitness",
     supportsTablet: true,
   },
   android: {
-     package: "com.exo.fitness",
+    package: "com.exo.fitness",
     adaptiveIcon: {
       backgroundColor: "#E6F4FE",
       foregroundImage: "./assets/images/android-icon-foreground.png",
@@ -24,15 +24,13 @@ slug: "exo-fitness",
     predictiveBackGestureEnabled: false,
   },
   web: {
-    // Fixed: "static" → "server" to enable Expo API Routes
-    // API routes (app/api/**+api.ts) require server output to run
-    // Prisma runs inside those routes — never on the device
     output: "server",
     favicon: "./assets/images/favicon.png",
   },
   plugins: [
     "expo-router",
     "expo-secure-store",
+    "expo-web-browser",
     [
       "expo-splash-screen",
       {
@@ -47,7 +45,7 @@ slug: "exo-fitness",
     ],
     "expo-font",
   ],
- experiments: {
+  experiments: {
     typedRoutes: false,
     reactCompiler: true,
   },
