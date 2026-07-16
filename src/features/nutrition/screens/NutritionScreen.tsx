@@ -1,277 +1,208 @@
-import { CaloriesSection } from "@/src/features/nutrition/components/CaloriesSection";
-import { WeightSection } from "@/src/features/nutrition/components/WeightSection";
-import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { useState } from "react";
+import { ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const TABS = ["Nutrition", "Weight"] as const;
-type Tab = (typeof TABS)[number];
+import { T } from "../theme";
+import { MealHeader } from "../components/MealHeader";
+import { DaySelector } from "../components/DaySelector";
+import { DailySummaryCard } from "../components/DailySummaryCard";
+import { WaterTracker } from "../components/WaterTracker";
+import { LogActionsRow, LOG_ACTION_ICONS } from "../components/LogActionsRow";
+import { MealPhotoCard, MealMacros } from "../components/MealPhotoCard";
+import { EmptyMealSlot } from "../components/EmptyMealSlot";
+import { FadeInUp } from "../components/FadeInUp";
+import { AiSuggestionCard } from "../components/AiSuggestionCard";
+import { WeeklyTrendCard } from "../components/WeeklyTrendCard";
 
-// ── Design Tokens ─────────────────────────────────────────────────────────────
-const T = {
-  bg0: "#121212",
-  bg2: "#1E1E1E",
-  bg3: "#252525",
-  gold: "#FFC700",
-  text: "#FFFFFF",
-  sub: "#A0A0A0",
-  muted: "#5A5A5A",
+// ── Mock data — replace with real state / API results ────────────────────────
+const DAYS = [
+  { label: "MON", num: 3, hasLog: true },
+  { label: "TUE", num: 4, hasLog: true },
+  { label: "WED", num: 5, hasLog: true },
+  { label: "THU", num: 6, hasLog: false },
+  { label: "FRI", num: 7, hasLog: false },
+  { label: "SAT", num: 8, hasLog: false },
+];
+
+type Meal = {
+  slot: string;
+  name: string;
+  time: string;
+  calories: number;
+  macros: MealMacros;
+  imageUrl: string;
+} | null;
+
+const MEALS: Record<string, Meal> = {
+  Breakfast: {
+    slot: "Breakfast",
+    name: "Greek yogurt bowl",
+    time: "7:40 AM",
+    calories: 310,
+    macros: { carbs: 28, protein: 22, fat: 9 },
+    imageUrl:
+      "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=500&h=400&fit=crop",
+  },
+  Lunch: {
+    slot: "Lunch",
+    name: "Grilled chicken salad",
+    time: "1:05 PM",
+    calories: 546,
+    macros: { carbs: 30, protein: 48, fat: 21 },
+    imageUrl:
+      "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=400&fit=crop",
+  },
+  Dinner: null,
+  Snack: null,
 };
 
-const TAB_ICONS: Record<Tab, keyof typeof Ionicons.glyphMap> = {
-  Nutrition: "nutrition-outline",
-  Weight: "scale-outline",
-};
-
-// ── Animated sliding tab bar ──────────────────────────────────────────────────
-function SlideTabBar({
-  active,
-  onChange,
-}: {
-  active: Tab;
-  onChange: (t: Tab) => void;
-}) {
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const [barWidth, setBarWidth] = useState(0);
-
-  useEffect(() => {
-    Animated.spring(slideAnim, {
-      toValue: TABS.indexOf(active),
-      useNativeDriver: true,
-      tension: 72,
-      friction: 12,
-    }).start();
-  }, [active]);
-
-  const pillW = barWidth > 0 ? barWidth / TABS.length - 6 : 0;
-
-  return (
-    <View
-      style={styles.tabBar}
-      onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
-    >
-      {barWidth > 0 && (
-        <Animated.View
-          style={[
-            styles.tabPill,
-            {
-              width: pillW,
-              transform: [
-                {
-                  translateX: slideAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [3, pillW + 9],
-                  }),
-                },
-              ],
-            },
-          ]}
-        />
-      )}
-
-      {TABS.map((tab) => {
-        const isActive = tab === active;
-        return (
-          <Pressable
-            key={tab}
-            onPress={() => onChange(tab)}
-            style={styles.tabItem}
-          >
-            <Ionicons
-              name={TAB_ICONS[tab]}
-              size={13}
-              color={isActive ? T.bg0 : T.sub}
-              style={{ marginRight: 5 }}
-            />
-            <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
-              {tab}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
-// ── Fade content transition ───────────────────────────────────────────────────
-function FadeContent({ activeTab }: { activeTab: Tab }) {
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const [displayedTab, setDisplayedTab] = useState<Tab>(activeTab);
-
-  useEffect(() => {
-    if (activeTab === displayedTab) return;
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 100,
-      useNativeDriver: true,
-    }).start(() => {
-      setDisplayedTab(activeTab);
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 180,
-        useNativeDriver: true,
-      }).start();
-    });
-  }, [activeTab]);
-
-  return (
-    <Animated.View style={[{ flex: 1 }, { opacity: fadeAnim }]}>
-      {displayedTab === "Nutrition" ? <CaloriesSection /> : <WeightSection />}
-    </Animated.View>
-  );
-}
-
-// ── Screen ────────────────────────────────────────────────────────────────────
-export default function NutritionScreen() {
-  const [activeTab, setActiveTab] = useState<Tab>("Nutrition");
+export default function MealScreen() {
+  const [activeDay, setActiveDay] = useState(3); // THU
 
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor={T.bg0}
+        backgroundColor={T.bg}
         translucent={false}
       />
 
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          {/* Eyebrow label */}
-          <View style={styles.eyebrow}>
-            <View style={styles.eyebrowDot} />
-            <Text style={styles.eyebrowText}>NUTRITION &amp; DIET</Text>
-          </View>
+      <MealHeader
+        eyebrow="Thursday · Diet"
+        title="Today's plate"
+        caloriesLeft={1644}
+        streakDays={5}
+      />
+      <View style={styles.daySelectorWrap}>
+        <DaySelector
+          days={DAYS}
+          activeIndex={activeDay}
+          onSelect={setActiveDay}
+        />
+      </View>
 
-          {/* Sub + hero */}
-          <Text style={styles.headerSub}>Fuel your progress,</Text>
-          <Text style={styles.headerHero}>
-            {activeTab === "Nutrition" ? "DIET." : "WEIGHT."}
-          </Text>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <DailySummaryCard
+          consumed={856}
+          calorieGoal={2500}
+          carbs={{ value: 173, goal: 280 }}
+          protein={{ value: 128, goal: 165 }}
+          fat={{ value: 52, goal: 80 }}
+          goalLabel="Lean muscle gain"
+          onEditGoal={() => {}}
+        />
+
+        <WaterTracker glasses={3} total={6} onAdd={() => {}} />
+
+        <LogActionsRow
+          actions={[
+            {
+              key: "scan",
+              label: "Scan food",
+              icon: LOG_ACTION_ICONS.camera,
+              primary: true,
+              onPress: () => {},
+            },
+            {
+              key: "search",
+              label: "Search",
+              icon: LOG_ACTION_ICONS.search,
+              onPress: () => {},
+            },
+            {
+              key: "manual",
+              label: "Manual",
+              icon: LOG_ACTION_ICONS.manual,
+              onPress: () => {},
+            },
+          ]}
+        />
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Today's meals</Text>
+          <Text style={styles.sectionLink}>See all →</Text>
         </View>
-      </View>
 
-      {/* Thin gold-tinted divider */}
-      <View style={styles.divider} />
+        {Object.entries(MEALS).map(([slot, meal], i) => (
+          <FadeInUp key={slot} delay={i * 70}>
+            {meal ? (
+              <MealPhotoCard
+                slot={meal.slot}
+                name={meal.name}
+                time={meal.time}
+                calories={meal.calories}
+                macros={meal.macros}
+                imageUrl={meal.imageUrl}
+                onPress={() => {}}
+                entranceDelay={0} // FadeInUp already staggers the wrapper
+              />
+            ) : (
+              <EmptyMealSlot
+                slot={slot}
+                recommendedRange={
+                  slot === "Dinner"
+                    ? "Recommended 550–700 Cal"
+                    : "Recommended 150–250 Cal"
+                }
+                onAdd={() => {}}
+              />
+            )}
+          </FadeInUp>
+        ))}
 
-      {/* ── Tab bar ── */}
-      <View style={styles.tabBarWrapper}>
-        <SlideTabBar active={activeTab} onChange={setActiveTab} />
-      </View>
+        <AiSuggestionCard
+          headline="You've got 37g of protein left today."
+          body="A salmon dinner or a shake after your lift closes the gap without going over on carbs."
+          imageUrl="https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&h=500&fit=crop"
+          suggestions={[
+            { label: "Salmon bowl", calories: 420 },
+            { label: "Protein shake", calories: 160 },
+          ]}
+          onSelect={() => {}}
+        />
 
-      {/* ── Content ── */}
-      <View style={styles.content}>
-        <FadeContent activeTab={activeTab} />
-      </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>This week</Text>
+          <Text style={styles.sectionLink}>Full report →</Text>
+        </View>
+
+        <WeeklyTrendCard
+          days={[
+            { label: "M", pct: 74 },
+            { label: "T", pct: 88 },
+            { label: "W", pct: 65 },
+            { label: "T", pct: 92 },
+            { label: "F", pct: 34, isToday: true },
+            { label: "S", pct: 0 },
+            { label: "S", pct: 0 },
+          ]}
+          streak={5}
+        />
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: T.bg0,
-  },
-
-  // Header
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
+  root: { flex: 1, backgroundColor: T.bg },
+  daySelectorWrap: { paddingHorizontal: 20, paddingBottom: 4 },
+  scroll: { flex: 1 },
+  content: {
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingTop: 14,
+    paddingBottom: 60,
+    gap: 14,
   },
-  headerLeft: { gap: 2 },
-
-  // Eyebrow — gold dot + label replaces the icon+text row
-  eyebrow: {
+  sectionHeader: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 6,
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    marginTop: 4,
   },
-  eyebrowDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: T.gold,
-  },
-  eyebrowText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 11,
-    color: T.muted,
-    letterSpacing: 2,
-  },
-
-  headerSub: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 13,
-    color: T.sub,
-  },
-  headerHero: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 42,
-    color: T.text,
-    lineHeight: 44,
-    letterSpacing: 0.5,
-  },
-
-  // Divider — barely visible, no lime tint
-  divider: {
-    height: 1,
-    backgroundColor: T.bg3,
-  },
-
-  // Tab bar
-  tabBarWrapper: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  tabBar: {
-    flexDirection: "row",
-    backgroundColor: T.bg2,
-    borderRadius: 12,
-    padding: 3,
-    position: "relative",
-    height: 44,
-    alignItems: "center",
-    // No border — bg2 on bg0 is enough contrast
-  },
-
-  // Active pill — solid gold, no glow shadow
-  tabPill: {
-    position: "absolute",
-    top: 3,
-    height: 36,
-    backgroundColor: T.gold,
-    borderRadius: 10,
-  },
-  tabItem: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
-  },
-  tabText: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 13,
-    color: T.sub, // Muted gray for inactive
-  },
-  tabTextActive: {
-    color: T.bg0, // Dark on gold pill
-    fontFamily: "DMSans_400Regular",
-  },
-
-  // Content
-  content: { flex: 1 },
+  sectionTitle: { fontFamily: T.display, fontSize: 18, color: T.white },
+  sectionLink: { fontFamily: T.bodySemi, fontSize: 11, color: T.accent },
 });

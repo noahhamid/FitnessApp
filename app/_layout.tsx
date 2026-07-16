@@ -2,7 +2,6 @@ import {
   BarlowCondensed_700Bold,
   BarlowCondensed_800ExtraBold,
   BarlowCondensed_900Black,
-  useFonts,
 } from "@expo-google-fonts/barlow-condensed";
 import {
   DMSans_400Regular,
@@ -21,6 +20,11 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import {
+  useFonts,
+  SpaceGrotesk_700Bold,
+} from "@expo-google-fonts/space-grotesk";
+import { Inter_500Medium, Inter_600SemiBold } from "@expo-google-fonts/inter";
 
 import * as WebBrowser from "expo-web-browser";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -40,6 +44,11 @@ export default function RootLayout() {
     DMSans_600SemiBold,
   });
 
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_700Bold,
+    Inter_500Medium,
+    Inter_600SemiBold,
+  });
   useEffect(() => {
     WebBrowser.warmUpAsync();
     return () => {

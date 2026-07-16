@@ -283,7 +283,7 @@ const s = StyleSheet.create({
     paddingBottom: 4,
   },
   label: {
-    fontFamily: "DMSans_500Medium",
+    fontFamily: "Inter_600SemiBold", // was "DMSans_500Medium" — never loaded anywhere, silently fell back to system font
     fontSize: 10,
     color: T.inactive,
     letterSpacing: 0.1,

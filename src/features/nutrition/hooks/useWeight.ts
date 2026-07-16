@@ -16,6 +16,7 @@ import type {
   WeightLogEntry,
 } from "../types/weight.types";
 
+
 const KEYS = {
   log: ["weight", "log"] as const,
   goal: ["weight", "goal"] as const,

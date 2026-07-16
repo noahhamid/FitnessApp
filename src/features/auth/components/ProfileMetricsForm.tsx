@@ -1,4 +1,7 @@
 import { ProgressDots } from "@/src/ui/components/ProgressDots";
+import { RulerSlider } from "@/src/ui/components/RulerSlider";
+import { HeightSilhouette } from "@/src/ui/components/HeightSilhouette";
+import { WeightScale } from "@/src/ui/components/WeightScale";
 import { FONTS } from "@/src/ui/tokens";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -31,6 +34,11 @@ const C = {
   muted: "#A0A0A0",
 };
 
+const MIN_KG = 35;
+const MAX_KG = 180;
+const MIN_CM = 120;
+const MAX_CM = 220;
+
 type Props = {
   onNext: (metrics: {
     weightKg: number;
@@ -48,7 +56,11 @@ const GOAL_COPY: Record<string, string> = {
   health: "We need your stats to build your balanced plan.",
 };
 
-// --- Premium metric input: borderless dark block, gold focus ring, inline unit ---
+function kgToLb(kg: number) {
+  return Math.round(kg * 2.20462);
+}
+
+// --- Compact input used for age only ---
 function MetricInput({
   label,
   value,
@@ -102,8 +114,10 @@ function MetricInput({
 }
 
 export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
-  const [weight, setWeight] = useState("");
-  const [height, setHeight] = useState("");
+  // weightKg is the source of truth; lbs is a display-only conversion.
+  // The ruler itself always scrolls in kg increments.
+  const [weightKg, setWeightKg] = useState(70);
+  const [heightCm, setHeightCm] = useState(170);
   const [age, setAge] = useState("");
   const [unit, setUnit] = useState<"kg" | "lbs">("kg");
   const [loading, setLoading] = useState(false);
@@ -111,7 +125,7 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
 
   const { mutateAsync: saveProfile, error } = useSaveProfile();
 
-  const canFinish = !!(weight && height && age);
+  const canFinish = !!age;
   const subCopy = goalId
     ? GOAL_COPY[goalId]
     : "We need your stats to personalise your plan.";
@@ -134,25 +148,17 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
     if (!canFinish) return;
     setLoading(true);
 
-    const rawWeight = parseFloat(weight);
-    const weight_kg =
-      unit === "lbs" ? +(rawWeight / 2.205).toFixed(2) : rawWeight;
-
     try {
       await Promise.all([
         saveProfile({
-          weight_kg,
-          height_cm: parseFloat(height),
+          weight_kg: weightKg,
+          height_cm: heightCm,
           age: parseInt(age, 10),
           weight_unit: unit,
         }),
         new Promise((r) => setTimeout(r, 1500)),
       ]);
-      onNext({
-        weightKg: weight_kg,
-        heightCm: parseFloat(height),
-        age: parseInt(age, 10),
-      });
+      onNext({ weightKg, heightCm, age: parseInt(age, 10) });
     } catch {
       if (mountedRef.current) setLoading(false);
     }
@@ -173,6 +179,8 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
       useNativeDriver: true,
     }).start();
 
+  const weightDisplay = unit === "kg" ? weightKg : kgToLb(weightKg);
+
   return (
     <SafeAreaView style={s.safe}>
       <KeyboardAvoidingView
@@ -191,8 +199,9 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
             <Text style={s.sub}>{subCopy}</Text>
           </View>
 
-          <View style={s.unitRow}>
-            <Text style={s.unitLabel}>UNIT</Text>
+          {/* --- WEIGHT --- */}
+          <View style={s.sectionHeaderRow}>
+            <Text style={s.sectionLabel}>WEIGHT</Text>
             <View style={s.segment}>
               {(["kg", "lbs"] as const).map((u) => (
                 <Pressable
@@ -210,27 +219,67 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
             </View>
           </View>
 
-          <MetricInput
-            label={`WEIGHT`}
-            value={weight}
-            onChangeText={setWeight}
-            placeholder={unit === "kg" ? "75" : "165"}
-            unit={unit}
+          <View style={s.visualRow}>
+            <View style={s.readoutBlock}>
+              <View style={s.readoutRow}>
+                <Text style={s.readoutNumber}>{weightDisplay}</Text>
+                <Text style={s.readoutUnit}>{unit}</Text>
+              </View>
+            </View>
+            <WeightScale
+              weightKg={weightKg}
+              min={MIN_KG}
+              max={MAX_KG}
+              size={140}
+            />
+          </View>
+
+          <RulerSlider
+            min={MIN_KG}
+            max={MAX_KG}
+            step={1}
+            value={weightKg}
+            onChange={setWeightKg}
+            unitLabel="weight in kilograms"
           />
-          <MetricInput
-            label="HEIGHT"
-            value={height}
-            onChangeText={setHeight}
-            placeholder="175"
-            unit="cm"
+
+          {/* --- HEIGHT --- */}
+          <Text style={[s.sectionLabel, { marginTop: 32 }]}>HEIGHT</Text>
+
+          <View style={s.visualRow}>
+            <View style={s.readoutBlock}>
+              <View style={s.readoutRow}>
+                <Text style={s.readoutNumber}>{heightCm}</Text>
+                <Text style={s.readoutUnit}>cm</Text>
+              </View>
+            </View>
+            <HeightSilhouette
+              heightCm={heightCm}
+              min={MIN_CM}
+              max={MAX_CM}
+              containerHeight={140}
+            />
+          </View>
+
+          <RulerSlider
+            min={MIN_CM}
+            max={MAX_CM}
+            step={1}
+            value={heightCm}
+            onChange={setHeightCm}
+            unitLabel="height in centimeters"
           />
-          <MetricInput
-            label="AGE"
-            value={age}
-            onChangeText={setAge}
-            placeholder="25"
-            unit="yrs"
-          />
+
+          {/* --- AGE --- */}
+          <View style={{ marginTop: 32 }}>
+            <MetricInput
+              label="AGE"
+              value={age}
+              onChangeText={setAge}
+              placeholder="25"
+              unit="yrs"
+            />
+          </View>
 
           <Text style={s.privacy}>
             Your data is stored securely and never shared.
@@ -310,31 +359,28 @@ const s = StyleSheet.create({
     lineHeight: 21,
   },
 
-  // Unit row (top toggle)
-  unitRow: {
+  sectionHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    marginBottom: 24,
+    justifyContent: "space-between",
+    marginBottom: 4,
   },
-  unitLabel: {
+  sectionLabel: {
     color: C.muted,
     fontSize: 11,
     letterSpacing: 2,
     fontFamily: FONTS.bold,
   },
 
-  // Shared segmented control (used for unit toggle; reuse for gender picker)
   segment: {
-    flex: 1,
     flexDirection: "row",
     backgroundColor: C.card,
     borderRadius: 12,
     padding: 4,
   },
   segmentTab: {
-    flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
     borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
@@ -348,7 +394,29 @@ const s = StyleSheet.create({
   },
   segmentTextActive: { color: C.bg },
 
-  // Premium metric input blocks
+  visualRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 12,
+  },
+  readoutBlock: { flex: 1 },
+  readoutRow: { flexDirection: "row", alignItems: "flex-end" },
+  readoutNumber: {
+    fontFamily: FONTS.black,
+    fontSize: 56,
+    color: C.accent,
+    lineHeight: 56,
+  },
+  readoutUnit: {
+    fontFamily: FONTS.regular,
+    fontSize: 16,
+    color: C.muted,
+    marginLeft: 6,
+    marginBottom: 8,
+  },
+
+  // Compact metric input (age only)
   metricWrap: { marginBottom: 16 },
   metricLabel: {
     fontFamily: FONTS.bold,
@@ -427,11 +495,7 @@ const s = StyleSheet.create({
     elevation: 8,
   },
   finishBtnDisabled: { opacity: 0.35, shadowOpacity: 0 },
-  loadingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
+  loadingRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   finishBtnText: {
     fontFamily: FONTS.bold,
     fontSize: 15,

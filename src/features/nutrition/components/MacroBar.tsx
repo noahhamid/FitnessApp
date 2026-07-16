@@ -1,172 +1,79 @@
-import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
-
-// ── Design Tokens ─────────────────────────────────────────────────────────────
-const T = {
-  bg3: "#252525", // Track background
-  gold: "#FFC700", // Active fill
-  red: "#FF453A", // Over-goal state
-  text: "#FFFFFF",
-  sub: "#A0A0A0",
-  muted: "#5A5A5A",
-};
+import { ComponentType } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { LucideProps } from "lucide-react-native";
+import { T } from "../theme";
 
 type Props = {
+  icon: ComponentType<LucideProps>;
   label: string;
-  current: number;
+  value: number;
   goal: number;
+  unit?: string;
 };
 
-export function MacroBar({ label, current, goal }: Props) {
-  const pct = goal > 0 ? Math.min((current / goal) * 100, 100) : 0;
-  const isOver = current > goal && goal > 0;
-  const animW = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(animW, {
-      toValue: pct,
-      duration: 800,
-      useNativeDriver: false,
-    }).start();
-  }, [pct]);
-
-  const barWidth = animW.interpolate({
-    inputRange: [0, 100],
-    outputRange: ["0%", "100%"],
-  });
-
-  const activeColor = isOver ? T.red : T.gold;
+// Distinguished by icon + label, not color — matches the workout card's
+// monochrome-gold visual language rather than reintroducing multi-hue coding.
+export function MacroBar({
+  icon: Icon,
+  label,
+  value,
+  goal,
+  unit = "g",
+}: Props) {
+  const pct = Math.max(0, Math.min((value / goal) * 100, 100));
 
   return (
-    <View style={s.wrap}>
-      {/* Label + values */}
-      <View style={s.labelRow}>
-        <View style={s.labelLeft}>
-          <Text style={s.label}>{label}</Text>
-          {isOver && (
-            <View style={s.overBadge}>
-              <Text style={s.overText}>OVER</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={s.valueRow}>
-          <Text style={[s.current, { color: activeColor }]}>
-            {Math.round(current)}
-          </Text>
-          <Text style={s.separator}>/</Text>
-          <Text style={s.goal}>{goal}g</Text>
-          <Text style={[s.pct, { color: activeColor }]}>
-            {Math.round(pct)}%
+    <View style={styles.row}>
+      <View style={styles.iconWrap}>
+        <Icon size={13} color={T.accent} strokeWidth={2} />
+      </View>
+      <View style={styles.info}>
+        <View style={styles.top}>
+          <Text style={styles.label}>{label}</Text>
+          <Text style={styles.value}>
+            {value}
+            {unit} / {goal}
+            {unit}
           </Text>
         </View>
+        <View style={styles.track}>
+          <View style={[styles.fill, { width: `${pct}%` }]} />
+        </View>
       </View>
-
-      {/* Progress track */}
-      <View style={s.track}>
-        <Animated.View
-          style={[
-            s.fill,
-            {
-              width: barWidth,
-              backgroundColor: activeColor,
-              shadowColor: activeColor,
-            },
-          ]}
-        />
-      </View>
-
-      {/* Remaining hint */}
-      <Text style={s.remaining}>
-        {isOver
-          ? `${Math.round(current - goal)}g over goal`
-          : `${Math.round(goal - current)}g remaining`}
-      </Text>
     </View>
   );
 }
 
-const s = StyleSheet.create({
-  wrap: { gap: 6 },
-
-  // Label row
-  labelRow: {
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 10,
+  },
+  iconWrap: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    backgroundColor: T.glass,
+    borderWidth: 1,
+    borderColor: T.glassBorder,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  info: { flex: 1 },
+  top: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    marginBottom: 5,
   },
-  labelLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  label: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 12,
-    color: T.sub, // Muted label — number is the hero
-    letterSpacing: 0.3,
-  },
-
-  // OVER badge — red tint, no border
-  overBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    backgroundColor: T.red + "20",
-  },
-  overText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 9,
-    color: T.red,
-    letterSpacing: 1,
-  },
-
-  // Values
-  valueRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 3,
-  },
-  current: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 15,
-    lineHeight: 17,
-  },
-  separator: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 11,
-    color: T.muted,
-  },
-  goal: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 11,
-    color: T.muted,
-  },
-  pct: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 11,
-    marginLeft: 2,
-  },
-
-  // Track — 5px, no glow on track itself
+  label: { fontFamily: T.bodySemi, fontSize: 12, color: T.white },
+  value: { fontFamily: T.bodyMed, fontSize: 11, color: T.muted },
   track: {
     height: 5,
-    backgroundColor: T.bg3,
     borderRadius: 3,
+    backgroundColor: T.glass,
     overflow: "hidden",
   },
-  fill: {
-    height: "100%",
-    borderRadius: 3,
-    shadowOpacity: 0.45,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 0 },
-  },
-
-  // Remaining
-  remaining: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 10,
-    color: T.muted,
-  },
+  fill: { height: "100%", borderRadius: 3, backgroundColor: T.accent },
 });

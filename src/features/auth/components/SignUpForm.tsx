@@ -83,10 +83,11 @@ export function SignUpForm({ onSuccess, onSignIn }: Props) {
 
   async function handleSubmit() {
     if (!canSubmit) return;
-    await signUp({ email, password });
-    onSuccess();
+    try {
+      await signUp({ email, password });
+      onSuccess();
+    } catch (e) {}
   }
-
   async function handleGoogleSignUp() {
     if (isLoading) return;
     setSsoError(null);

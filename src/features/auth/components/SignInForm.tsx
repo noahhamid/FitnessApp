@@ -76,8 +76,12 @@ export function SignInForm({ onSuccess, onForgotPassword, onSignUp }: Props) {
 
   async function handleSubmit() {
     if (!canSubmit) return;
-    await signIn({ email, password });
-    onSuccess();
+    try {
+      await signIn({ email, password });
+      onSuccess();
+    } catch (e) {
+      // swallow here — `error` from useSignIn already has it for the banner
+    }
   }
 
   return (
@@ -142,7 +146,7 @@ export function SignInForm({ onSuccess, onForgotPassword, onSignUp }: Props) {
         {error && (
           <View style={s.errorBanner}>
             <Text style={s.errorText}>
-              {(error as Error).message ?? "Sign in failed. Please try again."}
+              {(error as Error).message || "Sign in failed. Please try again."}
             </Text>
           </View>
         )}

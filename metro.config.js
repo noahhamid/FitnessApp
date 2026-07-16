@@ -1,6 +1,6 @@
 const { getDefaultConfig } = require("expo/metro-config");
 
-/** @type {import('expo/metro-config').MetroConfig} */
+
 const config = getDefaultConfig(__dirname);
 
 const defaultResolveRequest = config.resolver.resolveRequest;
@@ -25,5 +25,7 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
 
   return context.resolveRequest(context, moduleName, platform);
 };
+
+config.resolver.sourceExts.push('mjs');
 
 module.exports = config;

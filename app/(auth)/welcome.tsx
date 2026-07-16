@@ -1,4 +1,4 @@
-import { WelcomeSlides } from "@/src/features/auth";
+import { WelcomeSlides } from "@/src/features/auth/components/WelcomeSlides";
 import { router } from "expo-router";
 
 export default function WelcomeRoute() {

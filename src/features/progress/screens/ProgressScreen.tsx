@@ -772,12 +772,17 @@ export default function ProgressScreen() {
         </View>
 
         {/* ── Body weight — demoted from hero, still fully functional ────────── */}
+        {/* ── Body weight — compact teaser, full detail lives in the Weight tab ── */}
         <View style={s.section}>
           <SectionHeader
             title="Body weight"
             right={<Text style={s.sectionSub}>{period}</Text>}
           />
-          <View style={s.weightHero}>
+          <TouchableOpacity
+            style={s.weightHero}
+            activeOpacity={0.85}
+            onPress={() => router.push("/(tabs)/weight")}
+          >
             <View style={s.weightLeft}>
               <Text style={s.wEyebrow}>CURRENT WEIGHT</Text>
               <View style={s.wNumberRow}>
@@ -796,19 +801,11 @@ export default function ProgressScreen() {
                 </View>
               )}
             </View>
-            <MiniSparkline data={periodWeights} />
-          </View>
-        </View>
-
-        {/* ── Weight trend ─────────────────────────────────────────────────── */}
-        <View style={s.section}>
-          <SectionHeader
-            title="Weight trend"
-            right={<Text style={s.sectionSub}>{period}</Text>}
-          />
-          <View style={s.card}>
-            <WeightChart periodMonths={periodMonths} />
-          </View>
+            <View style={{ alignItems: "center", gap: 6 }}>
+              <MiniSparkline data={periodWeights} />
+              <Text style={s.sectionLink}>Full detail ›</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* ── Training volume — real period-aware trend, not a fixed compare ── */}

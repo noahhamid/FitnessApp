@@ -1,367 +1,355 @@
-import { useAuth } from "@/src/features/auth/hooks/useAuth";
-import { CalorieCard } from "@/src/features/dashboard/components/CaloriCard";
-import {
-  WeeklyCard,
-  WeightCard,
-} from "@/src/features/dashboard/components/DashboardComponents";
-import { StreakBanner } from "@/src/features/dashboard/components/StreakBanner";
+import React, { useMemo, useState } from "react";
+import { View, Text, ScrollView, StatusBar, StyleSheet } from "react-native";
 
-import {
-  useWeightGoal,
-  useWeightLog,
-} from "@/src/features/nutrition/hooks/useWeight";
-import { fetchDailyTotals } from "@/src/features/nutrition/services/nutrition.service";
-import {
-  ApiWorkoutSession,
-  calendarWeekDatesMonSunLocal,
-  fetchWorkoutSessions,
-  localCalendarYmdFromIso,
-  mapIncompleteToTodayPlan,
-  todayLocalYmd,
-} from "@/src/features/workout/services/workout.service";
-import { Ionicons } from "@expo/vector-icons";
-import { useQueries, useQuery } from "@tanstack/react-query";
-import { router } from "expo-router";
-import { useMemo } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  ActivityIndicator,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import ActivityHeader, { CalendarDay } from "../components/ActivityHeader";
+import TodaysChallengeCard from "../components/TodaysChallengeCard";
+import { WorkoutHeroCard } from "../components/WorkoutHeroCard";
+import { NutritionCard } from "../components/NutritionCard";
+import { PressableScale } from "../../nutrition/components/PressableScale"; // adjust path to wherever you land the shared components
 
+// ─── Theme tokens ────────────────────────────────────────────────────────────
+// Same tokens as WorkoutPlanCard / MealScreen — this is the one that should
+// get hoisted into a real shared theme.ts first, since it's now identical
+// across three screens.
 const T = {
-  bg0: "#121212",
-  bg1: "#1E1E1E",
-  bg2: "#252525",
-  bg3: "#2C2C2C",
-  gold: "#FFC700",
-  text: "#FFFFFF",
-  sub: "#A0A0A0",
-  muted: "#606060",
-  border: "#FFFFFF0A",
-  borderMid: "#FFFFFF15",
-  red: "#FF4444",
+  bg: "#111318",
+  glass: "rgba(255,255,255,0.08)",
+  glassBorder: "rgba(255,255,255,0.14)",
+  ringGlass: "rgba(10,11,14,0.42)",
+  ringBorder: "rgba(255,199,0,0.65)",
+  accent: "#FFC700",
+  white: "#FFFFFF",
+  muted: "rgba(255,255,255,0.7)",
+
+  display: "SpaceGrotesk_700Bold",
+  bodyMed: "Inter_500Medium",
+  bodySemi: "Inter_600SemiBold",
+  bodyBold: "Inter_700Bold",
 };
 
-function SectionGap() {
-  return <View style={{ height: 20 }} />;
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type Category =
+  | "All"
+  | "Strength"
+  | "Cardio"
+  | "HIIT"
+  | "Chest"
+  | "Back"
+  | "Arms"
+  | "Legs"
+  | "Core"
+  | "Yoga";
+
+interface Workout {
+  id: string;
+  title: string;
+  tag: string;
+  calories: number;
+  minutes: number;
+  imageUrl: string;
+  categories: Category[]; // a workout can belong to more than one filter
 }
 
-function SectionLabel({ label }: { label: string }) {
-  return <Text style={s.sectionLabel}>{label}</Text>;
-}
+// ─── Workout library ─────────────────────────────────────────────────────────
+// Unchanged from your version — same ids, titles, images, categories.
 
-function streakFromCalendarDays(days: Set<string>): number {
-  let count = 0;
-  const cursor = new Date();
-  for (let i = 0; i < 400; i++) {
-    const ymd = todayLocalYmd(cursor);
-    if (days.has(ymd)) count += 1;
-    else break;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return count;
-}
+const WORKOUTS: Workout[] = [
+  {
+    id: "bicep-curls",
+    title: "Bicep Curls",
+    tag: "Beginner friendly",
+    calories: 180,
+    minutes: 12,
+    imageUrl:
+      "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=600&q=80",
+    categories: ["Strength", "Arms"],
+  },
+  {
+    id: "bench-press",
+    title: "Bench Press",
+    tag: "Intermediate",
+    calories: 260,
+    minutes: 20,
+    imageUrl:
+      "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80",
+    categories: ["Strength", "Chest"],
+  },
+  {
+    id: "deadlifts",
+    title: "Deadlifts",
+    tag: "Advanced",
+    calories: 320,
+    minutes: 25,
+    imageUrl:
+      "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&q=80",
+    categories: ["Strength", "Back", "Legs"],
+  },
+  {
+    id: "squats",
+    title: "Squats",
+    tag: "Beginner friendly",
+    calories: 240,
+    minutes: 18,
+    imageUrl:
+      "https://images.unsplash.com/photo-1566241142559-40e1dab266c6?w=600&q=80",
+    categories: ["Strength", "Legs"],
+  },
+  {
+    id: "running",
+    title: "Running",
+    tag: "Outdoor",
+    calories: 350,
+    minutes: 30,
+    imageUrl:
+      "https://images.unsplash.com/photo-1502224562085-639556652f33?w=600&q=80",
+    categories: ["Cardio"],
+  },
+  {
+    id: "cycling",
+    title: "Cycling",
+    tag: "Outdoor",
+    calories: 400,
+    minutes: 35,
+    imageUrl:
+      "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600&q=80",
+    categories: ["Cardio", "Legs"],
+  },
+  {
+    id: "jump-rope",
+    title: "Jump Rope",
+    tag: "Fat burn",
+    calories: 220,
+    minutes: 15,
+    imageUrl:
+      "https://images.unsplash.com/photo-1517344368193-41552b6ad3f5?w=600&q=80",
+    categories: ["Cardio", "HIIT"],
+  },
+  {
+    id: "burpees",
+    title: "Burpees",
+    tag: "High intensity",
+    calories: 280,
+    minutes: 10,
+    imageUrl:
+      "https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=600&q=80",
+    categories: ["HIIT", "Core"],
+  },
+  {
+    id: "push-ups",
+    title: "Push Ups",
+    tag: "Bodyweight",
+    calories: 150,
+    minutes: 10,
+    imageUrl:
+      "https://images.unsplash.com/photo-1598971639058-fab3c3109a34?w=600&q=80",
+    categories: ["Strength", "Chest", "Arms"],
+  },
+  {
+    id: "pull-ups",
+    title: "Pull Ups",
+    tag: "Bodyweight",
+    calories: 190,
+    minutes: 12,
+    imageUrl:
+      "https://images.unsplash.com/photo-1598266663439-2056e6900339?w=600&q=80",
+    categories: ["Strength", "Back", "Arms"],
+  },
+  {
+    id: "plank",
+    title: "Plank Hold",
+    tag: "Core stability",
+    calories: 90,
+    minutes: 8,
+    imageUrl:
+      "https://images.unsplash.com/photo-1566241142248-38d0b3527c8e?w=600&q=80",
+    categories: ["Core"],
+  },
+  {
+    id: "yoga-flow",
+    title: "Sun Salutation",
+    tag: "Recovery",
+    calories: 120,
+    minutes: 20,
+    imageUrl:
+      "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&q=80",
+    categories: ["Yoga"],
+  },
+];
+
+const CATEGORIES: Category[] = [
+  "All",
+  "Strength",
+  "Cardio",
+  "HIIT",
+  "Chest",
+  "Back",
+  "Arms",
+  "Legs",
+  "Core",
+  "Yoga",
+];
+
+// ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function DashboardScreen() {
-  const { user } = useAuth();
+  const [selectedDate, setSelectedDate] = useState<number>(18);
+  const [activeFilter, setActiveFilter] = useState<Category>("All");
 
-  const weekDates = useMemo(() => calendarWeekDatesMonSunLocal(new Date()), []);
-  const todayYmd = todayLocalYmd(new Date());
+  const calendarDays: CalendarDay[] = [
+    { label: "M", date: 16 },
+    { label: "T", date: 17 },
+    { label: "W", date: 18 },
+    { label: "T", date: 19 },
+    { label: "F", date: 20 },
+    { label: "S", date: 21 },
+    { label: "S", date: 22 },
+  ];
 
-  const dailyTotalsQueries = useQueries({
-    queries: weekDates.map((date) => ({
-      queryKey: ["nutrition", "totals", date] as const,
-      queryFn: () => fetchDailyTotals(date),
-    })),
-  });
-
-  const totalsLoading = dailyTotalsQueries.some((q) => q.isPending);
-
-  const { data: completedWorkouts = [] } = useQuery({
-    queryKey: ["dashboard", "workouts", "completed"] as const,
-    queryFn: () => fetchWorkoutSessions(`?limit=80&completed=true`),
-  });
-
-  const { data: openWorkouts = [] } = useQuery({
-    queryKey: ["dashboard", "workouts", "open"] as const,
-    queryFn: () => fetchWorkoutSessions(`?limit=20&completed=false`),
-  });
-
-  const completedDaySet = useMemo(() => {
-    const next = new Set<string>();
-    for (const row of completedWorkouts) {
-      if (!row.completedAt) continue;
-      next.add(localCalendarYmdFromIso(row.completedAt));
-    }
-    return next;
-  }, [completedWorkouts]);
-
-  const weeklyBars = useMemo(() => {
-    return weekDates.map((ymd, i) => {
-      const cal = dailyTotalsQueries[i]?.data?.cal ?? 0;
-      const workout = completedWorkouts.some((w) => {
-        const endTs = w.completedAt ?? w.startedAt;
-        return localCalendarYmdFromIso(endTs) === ymd;
-      });
-      return { cal, workout };
-    });
-  }, [weekDates, dailyTotalsQueries, completedWorkouts]);
-
-  const streakDays = streakFromCalendarDays(completedDaySet);
-  const bestStreakGuess =
-    streakDays > 0
-      ? Math.max(Math.ceil(streakDays * 1.25), streakDays + 7)
-      : 21;
-
-  const { data: weightRows = [], isPending: weightsPending } = useWeightLog();
-  const { data: weightGoalRecord } = useWeightGoal();
-
-  const weightChartSorted = useMemo(() => {
-    const rows = [...weightRows].sort((a, b) =>
-      a.log_date.localeCompare(b.log_date),
-    );
-    return rows.map((r) => ({ w: r.weight, date: r.log_date }));
-  }, [weightRows]);
-
-  const plannedToday = useMemo(() => {
-    const openToday = openWorkouts.filter((w: ApiWorkoutSession) => {
-      if (w.completedAt) return false;
-      return localCalendarYmdFromIso(w.startedAt) === todayYmd;
-    });
-    if (!openToday.length) return [];
-    return openToday
-      .slice(0, 3)
-      .map((sess, idx) => mapIncompleteToTodayPlan(sess, idx));
-  }, [openWorkouts, todayYmd]);
-
-  const heroFirst =
-    user?.name?.trim()?.split(/\s+/)?.[0]?.toUpperCase() ?? "ATHLETE";
-
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const filteredWorkouts = useMemo(() => {
+    if (activeFilter === "All") return WORKOUTS;
+    return WORKOUTS.filter((w) => w.categories.includes(activeFilter));
+  }, [activeFilter]);
 
   return (
-    <SafeAreaView edges={["top"]} style={s.screen}>
-      <StatusBar barStyle="light-content" backgroundColor={T.bg0} />
-
+    <View style={s.screen}>
+      <StatusBar barStyle="light-content" backgroundColor={T.bg} />
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── HEADER ─────────────────────────────── */}
-        <View style={s.header}>
-          <View>
-            <Text style={s.greeting}>{greeting}</Text>
-            <Text style={s.heroName}>{heroFirst}</Text>
-          </View>
-          <TouchableOpacity
-            style={s.bellBtn}
-            activeOpacity={0.75}
-            onPress={() => router.push("/(app)/(tabs)/train")}
-          >
-            <Ionicons name="barbell-outline" size={20} color={T.gold} />
-          </TouchableOpacity>
+        {/* Header + calendar strip */}
+        <ActivityHeader
+          monthLabel="May 2024"
+          days={calendarDays}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          onPressGrid={() => {}}
+          onPrevMonth={() => {}}
+          onNextMonth={() => {}}
+        />
+
+        {/* Today's Challenge hero card */}
+        <View style={s.heroSpacing}>
+          <TodaysChallengeCard
+            title="Today's Challenge"
+            subtitle="Do your plan before 9:00 AM"
+            tag="Cardio"
+            image={require("@/assets/images/shadow.png")}
+            onPress={() => {}}
+          />
         </View>
 
-        {/* ── STREAK ─────────────────────────────── */}
-        <View style={s.px}>
-          <StreakBanner days={streakDays} best={bestStreakGuess} />
-        </View>
-
-        <SectionGap />
-
-        {/* ── AI FOOD SCANNER CTA ─────────────────── */}
-        <View style={s.px}>
-          <TouchableOpacity
-            style={s.scannerBtn}
-            activeOpacity={0.85}
-            onPress={() => router.push("/(app)/(tabs)/nutrition")}
-          >
-            <View style={s.scannerIconWrap}>
-              <Ionicons name="camera-outline" size={26} color={T.bg0} />
-            </View>
-            <View style={s.scannerText}>
-              <Text style={s.scannerTitle}>AI Food Scanner</Text>
-              <Text style={s.scannerSub}>Scan your meal — instant macros</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={T.bg0} />
-          </TouchableOpacity>
-        </View>
-
-        <SectionGap />
-
-        {/* ── CALORIES ───────────────────────────── */}
-        <View style={s.px}>
-          <CalorieCard />
-        </View>
-
-        <SectionGap />
-
-        {/* ── QUICK ACTIONS ──────────────────────── */}
-        <View style={s.px}>
-          <View style={s.actionsRow}>
-            {[
-              {
-                icon: "barbell-outline" as const,
-                label: "TRAIN",
-                route: "/(app)/(tabs)/train" as const,
-              },
-              {
-                icon: "nutrition-outline" as const,
-                label: "NUTRITION",
-                route: "/(app)/(tabs)/nutrition" as const,
-              },
-              {
-                icon: "trending-up-outline" as const,
-                label: "PROGRESS",
-                route: "/(app)/(tabs)/progress" as const,
-              },
-              {
-                icon: "flash-outline" as const,
-                label: "FOCUS",
-                route: "/(app)/focus-mode" as const,
-              },
-            ].map((action) => (
-              <TouchableOpacity
-                key={action.label}
-                style={s.actionBtn}
-                activeOpacity={0.75}
-                onPress={() => router.push(action.route)}
+        {/* Category pill filter bar */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.filterRow}
+        >
+          {CATEGORIES.map((cat) => {
+            const isActive = activeFilter === cat;
+            return (
+              <PressableScale
+                key={cat}
+                onPress={() => setActiveFilter(cat)}
+                scaleTo={0.95}
+                style={[
+                  s.filterPill,
+                  isActive ? s.filterPillActive : s.filterPillInactive,
+                ]}
               >
-                <Ionicons name={action.icon} size={22} color={T.gold} />
-                <Text style={s.actionLabel}>{action.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+                <Text style={[s.filterText, isActive && s.filterTextActive]}>
+                  {cat}
+                </Text>
+              </PressableScale>
+            );
+          })}
+        </ScrollView>
+
+        {/* Horizontal-scroll workout cards */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.workoutRow}
+          style={s.heroSpacing}
+        >
+          {filteredWorkouts.map((w) => (
+            <WorkoutHeroCard
+              key={w.id}
+              title={w.title}
+              tag={w.tag}
+              calories={w.calories}
+              minutes={w.minutes}
+              imageUrl={w.imageUrl}
+              compact
+              onPress={() => {}}
+            />
+          ))}
+        </ScrollView>
+
+        <NutritionCard target={1200} burned={328} remaining={872} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: T.bg0,
-    maxWidth: 430,
-    alignSelf: "center",
-    width: "100%",
+    backgroundColor: T.bg,
   },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 110 },
-  px: { paddingHorizontal: 16 },
-
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 20,
-  },
-  greeting: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 14,
-    color: T.sub,
-  },
-  heroName: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 42,
-    color: T.text,
-    lineHeight: 44,
-    letterSpacing: 0.5,
-  },
-  bellBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: T.gold + "18",
-    borderWidth: 1,
-    borderColor: T.gold + "35",
-    alignItems: "center",
-    justifyContent: "center",
+    paddingBottom: 128,
   },
 
-  sectionLabel: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 12,
-    color: T.muted,
-    letterSpacing: 2,
-    paddingHorizontal: 16,
-    marginBottom: 12,
+  heroSpacing: {
+    marginBottom: 24,
   },
 
-  // ── AI Scanner CTA ──────────────────────────────────────────────────────
-  scannerBtn: {
+  // Category pill row — glass inactive, solid gold active (same language as
+  // LogActionsRow's primary button)
+  filterRow: {
     flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: T.gold,
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    gap: 14,
-  },
-  scannerIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: "rgba(0,0,0,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scannerText: {
-    flex: 1,
-  },
-  scannerTitle: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 18,
-    color: T.bg0,
-    letterSpacing: 0.3,
-  },
-  scannerSub: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 12,
-    color: T.bg0,
-    opacity: 0.7,
-    marginTop: 2,
-  },
-
-  // ── Quick actions ────────────────────────────────────────────────────────
-  actionsRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  actionBtn: {
-    flex: 1,
-    backgroundColor: T.bg1,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: T.borderMid,
-    paddingVertical: 16,
-    alignItems: "center",
     gap: 8,
+    marginBottom: 24,
+    paddingRight: 20, // so last pill isn't clipped
   },
-  actionLabel: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 10,
-    color: T.sub,
-    letterSpacing: 1,
+  filterPill: {
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderWidth: 1,
+  },
+  filterPillActive: {
+    backgroundColor: T.accent,
+    borderColor: T.accent,
+  },
+  filterPillInactive: {
+    backgroundColor: T.glass,
+    borderColor: T.glassBorder,
+  },
+  filterText: {
+    fontFamily: T.bodySemi,
+    color: T.white,
+    fontSize: 13,
+  },
+  filterTextActive: {
+    fontFamily: T.bodyBold,
+    color: T.bg,
   },
 
-  loadingBox: {
-    padding: 28,
-    alignItems: "center",
-    backgroundColor: T.bg1,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: T.border,
+  // Horizontal workout row
+  workoutRow: {
+    flexDirection: "row",
+    gap: 12,
+    paddingRight: 20,
   },
 });
