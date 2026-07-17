@@ -10,15 +10,15 @@ import {
 
 // ── Design Tokens — "Muscle Monster" Theme ─────────────────────────────────
 const T = {
-  bg: "#121212", // Deep matte charcoal — sheet/screen surface
-  card: "#1E1E1E", // Card surface
-  pill: "#282828", // Secondary control pill background
-  track: "#2A2A2A", // Progress track background
-  gold: "#FFC700", // Primary accent
+  bg: "#0A0A0A", // Deep matte black — sheet/screen surface
+  card: "#1A1A1A", // Card surface
+  pill: "#242424", // Secondary control pill background
+  track: "#242424", // Progress track background
+  gold: "#FF1F4D", // Primary accent
   green: "#30D158", // Done state
   red: "#FF4444", // Urgency state
   text: "#FFFFFF",
-  sub: "#A0A0A0",
+  sub: "#A8A8A8",
   muted: "#5A5A5A",
 };
 
@@ -336,6 +336,6 @@ const s = StyleSheet.create({
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 16,
     letterSpacing: 2,
-    color: "#121212",
+    color: "#0A0A0A",
   },
 });

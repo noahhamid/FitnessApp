@@ -12,12 +12,12 @@ import {
 
 // ── Design Tokens — "Muscle Monster" Theme ─────────────────────────────────
 const T = {
-  bg0: "#121212",
-  bg2: "#1E1E1E",
-  bg3: "#282828",
-  gold: "#FFC700",
+  bg0: "#0A0A0A",
+  bg2: "#1A1A1A",
+  bg3: "#242424",
+  gold: "#FF1F4D",
   text: "#FFFFFF",
-  sub: "#A0A0A0",
+  sub: "#A8A8A8",
   muted: "#5A5A5A",
 };
 

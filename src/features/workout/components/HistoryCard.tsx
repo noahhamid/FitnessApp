@@ -20,18 +20,18 @@ import { VOLUME_SPARKLINE } from "@/src/features/workout/services/workout.servic
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const T = {
-  bg0: "#121212",
-  bg1: "#1E1E1E",
-  bg2: "#282828",
-  bg3: "#303030",
+  bg0: "#0A0A0A",
+  bg1: "#141414",
+  bg2: "#1A1A1A",
+  bg3: "#242424",
   border: "#FFFFFF0A",
   borderMid: "#FFFFFF14",
-  gold: "#FFC700",
-  goldDim: "#FFC70018",
-  goldBorder: "#FFC70030",
+  gold: "#FF1F4D",
+  goldDim: "#FF1F4D18",
+  goldBorder: "#FF1F4D30",
   text: "#FFFFFF",
-  sub: "#A0A0A0",
-  muted: "#555555",
+  sub: "#A8A8A8",
+  muted: "#5A5A5A",
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -187,7 +187,7 @@ const s = StyleSheet.create({
     gap: 14,
     overflow: "hidden",
     // subtle depth instead of a border — keeps the "borderless" surface
-    // while still separating the card from the #121212 background
+    // while still separating the card from the #0A0A0A background
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,

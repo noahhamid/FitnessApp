@@ -19,16 +19,16 @@ import {
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
 const T = {
-  bg0: "#121212", // Main background
-  bg1: "#1A1A1A", // Sheet background
-  bg2: "#1E1E1E", // Card / row surface
-  bg3: "#252525", // Input / chip surface
-  gold: "#FFC700", // Primary accent
-  goldDim: "#FFC70018", // Gold tint for pressed/selected surfaces
+  bg0: "#0A0A0A", // Main background
+  bg1: "#141414", // Sheet background
+  bg2: "#1A1A1A", // Card / row surface
+  bg3: "#242424", // Input / chip surface
+  gold: "#FF1F4D", // Primary accent
+  goldDim: "#FF1F4D18", // Accent tint for pressed/selected surfaces
   text: "#FFFFFF", // Headers / exercise names
-  sub: "#A0A0A0", // Secondary details
+  sub: "#A8A8A8", // Secondary details
   muted: "#5A5A5A", // Placeholder / disabled
-  border: "#2A2A2A", // Subtle divider
+  border: "#242424", // Subtle divider
 };
 
 type Exercise = { id: string; name: string; muscle: string; tag: string };

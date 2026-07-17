@@ -58,7 +58,7 @@ const s = StyleSheet.create({
     width: "100%",
     paddingVertical: 16,
     paddingHorizontal: 20,
-    borderRadius: 14,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -68,16 +68,15 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: C.border,
   },
-  // Fixed: was muted2 which may not exist — use explicit fallback
   disabled: { backgroundColor: C.bg3, borderWidth: 1.5, borderColor: C.border },
-  pressed: { opacity: 0.84, transform: [{ scale: 0.97 }] },
-  // Fixed: was 18px — too large for split-button layouts, 14px fits everywhere
+  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   text: {
     fontFamily: FONTS.bold,
     fontSize: 14,
-    letterSpacing: 1,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
   },
-  textFilled: { color: C.bg },
+  textFilled: { color: "#FFFFFF" },
   textOutline: { color: C.text },
   textDisabled: { color: C.muted },
 });

@@ -12,12 +12,12 @@ import {
 
 // ── Design Tokens — "Muscle Monster" Theme ─────────────────────────────────
 const T = {
-  bg0: "#121212",
-  bg2: "#1E1E1E", // Sheet surface
-  bg3: "#282828", // Preset / secondary pill surface
-  gold: "#FFC700", // Primary accent
+  bg0: "#0A0A0A",
+  bg2: "#1A1A1A", // Sheet surface
+  bg3: "#242424", // Preset / secondary pill surface
+  gold: "#FF1F4D", // Primary accent
   text: "#FFFFFF",
-  sub: "#A0A0A0",
+  sub: "#A8A8A8",
   muted: "#5A5A5A",
 };
 
@@ -335,7 +335,7 @@ const s = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: T.bg3, // #282828
+    backgroundColor: T.bg3, // #242424
     alignItems: "center",
   },
   presetActive: {

@@ -23,13 +23,13 @@ if (
 
 // ── Design Tokens ─────────────────────────────────────────────────────────────
 const T = {
-  bg0: "#121212",
-  bg2: "#1E1E1E",
-  bg3: "#252525",
-  gold: "#FFC700",
-  goldDim: "#FFC70018",
+  bg0: "#0A0A0A",
+  bg2: "#1A1A1A",
+  bg3: "#242424",
+  gold: "#FF1F4D",
+  goldDim: "#FF1F4D18",
   text: "#FFFFFF",
-  sub: "#A0A0A0",
+  sub: "#A8A8A8",
   muted: "#5A5A5A",
 };
 
@@ -465,7 +465,7 @@ const s = StyleSheet.create({
     marginTop: 1,
   },
   weightPill: {
-    backgroundColor: "rgba(255,199,0,0.16)",
+    backgroundColor: "rgba(255,31,77,0.16)",
     borderRadius: 20,
     paddingHorizontal: 8,
     paddingVertical: 3,

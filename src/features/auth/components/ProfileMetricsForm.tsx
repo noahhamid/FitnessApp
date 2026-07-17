@@ -21,14 +21,14 @@ import { useSaveProfile } from "../hooks/useProfile";
 // Move into src/ui/tokens.ts and export as `C` for app-wide reuse;
 // kept local here so this file is drop-in ready.
 const C = {
-  bg: "#121212",
-  bg2: "#181818",
-  card: "#1E1E1E",
-  border: "#2A2A2A",
-  accent: "#FFC700",
-  accentDim: "rgba(255, 199, 0, 0.10)",
+  bg: "#0A0A0A",
+  bg2: "#111111",
+  card: "#141414",
+  border: "#242424",
+  accent: "#FF1F4D",
+  accentDim: "rgba(255, 31, 77, 0.10)",
   text: "#FFFFFF",
-  muted: "#A0A0A0",
+  muted: "#A8A8A8",
 };
 
 type Props = {

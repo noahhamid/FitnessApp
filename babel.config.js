@@ -5,11 +5,13 @@ module.exports = function (api) {
       [
         "babel-preset-expo",
         {
-          // Web bundles load as classic scripts (no type="module"), so import.meta
-          // from dependencies like zustand must be rewritten for the browser.
           unstable_transformImportMeta: true,
         },
       ],
+    ],
+    // THIS IS THE CRITICAL PART
+    plugins: [
+      'react-native-reanimated/plugin', 
     ],
   };
 };

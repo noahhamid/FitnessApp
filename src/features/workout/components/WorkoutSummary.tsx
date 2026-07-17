@@ -11,13 +11,13 @@ import {
 
 // ── Design Tokens — "Muscle Monster" ────────────────────────────────────────
 const T = {
-  bg0: "#121212", // Deep matte charcoal — screen background
-  bg2: "#1E1E1E", // Card / block surface
-  bg3: "#282828", // Elevated stat block
-  gold: "#FFC700", // Primary accent — badge, key stats, CTA
-  goldDim: "#3A320A", // Gold-tinted wash for PR card border/bg
+  bg0: "#0A0A0A", // Deep matte black — screen background
+  bg2: "#1A1A1A", // Card / block surface
+  bg3: "#242424", // Elevated stat block
+  gold: "#FF1F4D", // Primary accent — badge, key stats, CTA
+  goldDim: "#FF1F4D18", // Accent-tinted wash for PR card border/bg
   text: "#FFFFFF",
-  sub: "#A0A0A0",
+  sub: "#A8A8A8",
   muted: "#5A5A5A",
 };
 

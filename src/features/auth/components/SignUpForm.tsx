@@ -15,17 +15,17 @@ import { authClient } from "@/src/lib/auth-client";
 WebBrowser.maybeCompleteAuthSession();
 
 const COLORS = {
-  canvas: "#121212",
-  surface: "#1E1E1E",
-  border: "#2A2A2A",
-  borderFocused: "#FFC700",
-  accent: "#FFC700",
+  canvas: "#0A0A0A",
+  surface: "#141414",
+  border: "#242424",
+  borderFocused: "#FF1F4D",
+  accent: "#FF1F4D",
   textPrimary: "#FFFFFF",
-  textMuted: "#A0A0A0",
-  textHint: "#555555",
-  errorRed: "#FF4D6A",
-  errorRedDim: "rgba(255,77,106,0.10)",
-  divider: "#232323",
+  textMuted: "#A8A8A8",
+  textHint: "#5A5A5A",
+  errorRed: "#FF1F4D",
+  errorRedDim: "rgba(255,31,77,0.10)",
+  divider: "#242424",
 };
 
 type Props = {

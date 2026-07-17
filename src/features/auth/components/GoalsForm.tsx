@@ -19,15 +19,15 @@ import type { GoalId } from "../services/goals.service";
 const { width: SW } = Dimensions.get("window");
 
 const C = {
-  bg: "#121212",
-  bg2: "#181818",
-  card: "#1E1E1E",
-  border: "#2A2A2A",
-  accent: "#FFC700",
-  accentDim: "rgba(255, 199, 0, 0.12)",
-  accentGlow: "rgba(255, 199, 0, 0.35)",
+  bg: "#0A0A0A",
+  bg2: "#111111",
+  card: "#141414",
+  border: "#242424",
+  accent: "#FF1F4D",
+  accentDim: "#FF1F4D33",
+  accentGlow: "#FF1F4D55",
   text: "#FFFFFF",
-  muted: "#A0A0A0",
+  muted: "#A8A8A8",
 };
 
 type Props = { onNext: (goalId: string) => void };

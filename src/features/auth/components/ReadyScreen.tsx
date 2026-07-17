@@ -5,13 +5,13 @@ import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const C = {
-  bg: "#121212",
-  surface: "#1E1E1E",
-  border: "#2A2A2A",
-  accent: "#FFC700",
+  bg: "#0A0A0A",
+  surface: "#141414",
+  border: "#242424",
+  accent: "#FF1F4D",
   text: "#FFFFFF",
-  muted: "#A0A0A0",
-  dim: "#555555",
+  muted: "#A8A8A8",
+  dim: "#5A5A5A",
 };
 
 type Props = {

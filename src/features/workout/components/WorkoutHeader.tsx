@@ -11,13 +11,13 @@ import {
 
 // ── Design Tokens — "Muscle Monster" ────────────────────────────────────────
 const T = {
-  bg0: "#121212", // Deep matte charcoal — header surface
-  bg2: "#1E1E1E", // Muted dark gray — secondary surface
-  bg3: "#252525", // Elevated chip surface
+  bg0: "#0A0A0A", // Deep matte black — header surface
+  bg2: "#1A1A1A", // Muted dark gray — secondary surface
+  bg3: "#242424", // Elevated chip surface
   track: "#242424", // Progress bar track (deep gray, near-invisible)
-  gold: "#FFC700", // Primary accent — timer, progress fill, FINISH
+  gold: "#FF1F4D", // Primary accent — timer, progress fill, FINISH
   text: "#FFFFFF", // Workout title
-  sub: "#A0A0A0", // Subtext, secondary buttons
+  sub: "#A8A8A8", // Subtext, secondary buttons
   muted: "#5A5A5A", // Tertiary / disabled
 };
 
