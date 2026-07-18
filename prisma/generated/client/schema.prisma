@@ -7,6 +7,84 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Workout Generation ───────────────────────────────────────────────────────
+
+model Exercise {
+  id              String                @id @default(cuid())
+  name            String                @unique
+  muscleGroup     MuscleGroup
+  movementPattern MovementPattern
+  minEquipment    EquipmentAccess // minimum tier required — see EQUIPMENT_RANK in code
+  planExercises   WorkoutPlanExercise[]
+
+  @@map("exercise")
+}
+
+model WorkoutPlan {
+  id          String          @id @default(cuid())
+  splitLabel  String
+  daysPerWeek Int
+  goalId      String
+  experience  ExperienceLevel
+  equipment   EquipmentAccess
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  days WorkoutPlanDay[] // ← was PlanDay[], fix to this
+
+  @@map("workout_plan")
+}
+
+model WorkoutPlanDay {
+  id       String      @id @default(cuid())
+  planId   String
+  plan     WorkoutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  dayIndex Int // 0-based order within the week
+  label    String // e.g. "Push", "Full Body A", "Upper A"
+
+  exercises WorkoutPlanExercise[]
+
+  @@map("workout_plan_day")
+}
+
+model WorkoutPlanExercise {
+  id            String         @id @default(cuid())
+  dayId         String
+  day           WorkoutPlanDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  exerciseId    String
+  exercise      Exercise       @relation(fields: [exerciseId], references: [id])
+  orderIndex    Int
+  targetSets    Int
+  targetRepsMin Int
+  targetRepsMax Int
+
+  @@map("workout_plan_exercise")
+}
+
+enum MuscleGroup {
+  chest
+  back
+  shoulders
+  quads
+  hamstrings
+  glutes
+  calves
+  biceps
+  triceps
+  core
+}
+
+enum MovementPattern {
+  push
+  pull
+  hinge
+  squat
+  carry
+}
+
 // ─── Better Auth ──────────────────────────────────────────────────────────────
 
 model User {
@@ -26,19 +104,24 @@ model User {
   mealLogs        MealLog[]
   weightLogs      WeightLog[]
   weightGoal      WeightGoal?
+  workoutPlan     WorkoutPlan?
 
   @@map("user")
 }
 
 model UserProfile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goalId    String?
-  weightKg  Decimal? @db.Decimal(6, 2)
-  heightCm  Int?
-  age       Int?
-  updatedAt DateTime @updatedAt
+  id          String           @id @default(cuid())
+  userId      String           @unique
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goalId      String?
+  weightKg    Decimal?         @db.Decimal(6, 2)
+  heightCm    Int?
+  age         Int?
+  gender      Gender?
+  daysPerWeek Int?
+  experience  ExperienceLevel?
+  equipment   EquipmentAccess?
+  updatedAt   DateTime         @updatedAt
 
   @@map("user_profile")
 }
@@ -181,4 +264,21 @@ enum Meal {
   Lunch
   Dinner
   Snack
+}
+
+enum Gender {
+  male
+  female
+}
+
+enum ExperienceLevel {
+  novice
+  intermediate
+  advanced
+}
+
+enum EquipmentAccess {
+  full_gym
+  home_dumbbells
+  bodyweight
 }

@@ -71,6 +71,59 @@ function serializeSession(session: {
     })),
   };
 }
+function serializePlan(plan: {
+  id: string;
+  splitLabel: string;
+  daysPerWeek: number;
+  goalId: string;
+  experience: string;
+  equipment: string;
+  updatedAt: Date;
+  days: Array<{
+    id: string;
+    dayIndex: number;
+    label: string;
+    exercises: Array<{
+      id: string;
+      orderIndex: number;
+      targetSets: number;
+      targetRepsMin: number;
+      targetRepsMax: number;
+      exercise: { id: string; name: string; muscleGroup: string; movementPattern: string };
+    }>;
+  }>;
+}) {
+  return {
+    id: plan.id,
+    splitLabel: plan.splitLabel,
+    daysPerWeek: plan.daysPerWeek,
+    goalId: plan.goalId,
+    experience: plan.experience,
+    equipment: plan.equipment,
+    updatedAt: plan.updatedAt.toISOString(),
+    days: plan.days
+      .sort((a, b) => a.dayIndex - b.dayIndex)
+      .map((day) => ({
+        id: day.id,
+        dayIndex: day.dayIndex,
+        label: day.label,
+        exercises: day.exercises
+          .sort((a, b) => a.orderIndex - b.orderIndex)
+          .map((ex) => ({
+            id: ex.id,
+            orderIndex: ex.orderIndex,
+            exerciseId: ex.exercise.id,
+            exerciseName: ex.exercise.name,
+            muscleGroup: ex.exercise.muscleGroup,
+            movementPattern: ex.exercise.movementPattern,
+            targetSets: ex.targetSets,
+            targetRepsMin: ex.targetRepsMin,
+            targetRepsMax: ex.targetRepsMax,
+          })),
+      })),
+  };
+}
+ 
 
 async function findOwnedSession(userId: string, sessionId: string) {
   return prisma.workoutSession.findFirst({
@@ -142,6 +195,27 @@ const listSessions = async (c: Context<AppEnv>) => {
 workoutsRouter.post("/", createSession);
 workoutsRouter.get("/", listSessions);
 
+workoutsRouter.get("/plan", async (c) => {
+  const user = getUser(c);
+ 
+  const plan = await prisma.workoutPlan.findUnique({
+    where: { userId: user.id },
+    include: {
+      days: {
+        include: {
+          exercises: {
+            include: { exercise: true },
+          },
+        },
+      },
+    },
+  });
+ 
+  if (!plan) return ok(c, null);
+  return ok(c, serializePlan(plan));
+});
+ 
+
 workoutsRouter.get("/:id", async (c) => {
   const user = getUser(c);
   const session = await findOwnedSession(user.id, c.req.param("id"));
@@ -149,6 +223,7 @@ workoutsRouter.get("/:id", async (c) => {
   if (!session) return err(c, "Workout session not found", 404);
   return ok(c, serializeSession(session));
 });
+
 
 workoutsRouter.patch("/:id", async (c) => {
   const parsed = await parseJson(c, updateSessionSchema);

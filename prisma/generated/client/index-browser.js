@@ -120,6 +120,43 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
   Serializable: 'Serializable'
 });
 
+exports.Prisma.ExerciseScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  muscleGroup: 'muscleGroup',
+  movementPattern: 'movementPattern',
+  minEquipment: 'minEquipment'
+};
+
+exports.Prisma.WorkoutPlanScalarFieldEnum = {
+  id: 'id',
+  splitLabel: 'splitLabel',
+  daysPerWeek: 'daysPerWeek',
+  goalId: 'goalId',
+  experience: 'experience',
+  equipment: 'equipment',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  userId: 'userId'
+};
+
+exports.Prisma.WorkoutPlanDayScalarFieldEnum = {
+  id: 'id',
+  planId: 'planId',
+  dayIndex: 'dayIndex',
+  label: 'label'
+};
+
+exports.Prisma.WorkoutPlanExerciseScalarFieldEnum = {
+  id: 'id',
+  dayId: 'dayId',
+  exerciseId: 'exerciseId',
+  orderIndex: 'orderIndex',
+  targetSets: 'targetSets',
+  targetRepsMin: 'targetRepsMin',
+  targetRepsMax: 'targetRepsMax'
+};
+
 exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -137,6 +174,10 @@ exports.Prisma.UserProfileScalarFieldEnum = {
   weightKg: 'weightKg',
   heightCm: 'heightCm',
   age: 'age',
+  gender: 'gender',
+  daysPerWeek: 'daysPerWeek',
+  experience: 'experience',
+  equipment: 'equipment',
   updatedAt: 'updatedAt'
 };
 
@@ -252,6 +293,44 @@ exports.Prisma.JsonNullValueFilter = {
   JsonNull: Prisma.JsonNull,
   AnyNull: Prisma.AnyNull
 };
+exports.MuscleGroup = exports.$Enums.MuscleGroup = {
+  chest: 'chest',
+  back: 'back',
+  shoulders: 'shoulders',
+  quads: 'quads',
+  hamstrings: 'hamstrings',
+  glutes: 'glutes',
+  calves: 'calves',
+  biceps: 'biceps',
+  triceps: 'triceps',
+  core: 'core'
+};
+
+exports.MovementPattern = exports.$Enums.MovementPattern = {
+  push: 'push',
+  pull: 'pull',
+  hinge: 'hinge',
+  squat: 'squat',
+  carry: 'carry'
+};
+
+exports.EquipmentAccess = exports.$Enums.EquipmentAccess = {
+  full_gym: 'full_gym',
+  home_dumbbells: 'home_dumbbells',
+  bodyweight: 'bodyweight'
+};
+
+exports.ExperienceLevel = exports.$Enums.ExperienceLevel = {
+  novice: 'novice',
+  intermediate: 'intermediate',
+  advanced: 'advanced'
+};
+
+exports.Gender = exports.$Enums.Gender = {
+  male: 'male',
+  female: 'female'
+};
+
 exports.Meal = exports.$Enums.Meal = {
   Breakfast: 'Breakfast',
   Lunch: 'Lunch',
@@ -260,6 +339,10 @@ exports.Meal = exports.$Enums.Meal = {
 };
 
 exports.Prisma.ModelName = {
+  Exercise: 'Exercise',
+  WorkoutPlan: 'WorkoutPlan',
+  WorkoutPlanDay: 'WorkoutPlanDay',
+  WorkoutPlanExercise: 'WorkoutPlanExercise',
   User: 'User',
   UserProfile: 'UserProfile',
   Session: 'Session',

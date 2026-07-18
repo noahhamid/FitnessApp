@@ -1,3 +1,17 @@
+import { Redirect } from "expo-router";
+
+// ============================================================
+// TEMP: bypassing auth gate while working on frontend UI only.
+// Your real index.tsx (with useAuth/useAuthHydration/fetchUserProfile)
+// is commented out below — restore it once backend work resumes.
+// ============================================================
+
+export default function Index() {
+  return <Redirect href="/(auth)/welcome" />;
+}
+
+/* --- REAL VERSION, RESTORE LATER ---
+
 import { useAuth, useAuthHydration } from "@/src/features/auth/hooks/useAuth";
 import { useAuthStore } from "@/src/features/auth/hooks/useAuth";
 import { fetchUserProfile } from "@/src/features/profile/services/profile.service";
@@ -54,3 +68,5 @@ export default function Index() {
   if (!resolvedOnboarding) return <Redirect href="/(auth)/onboarding/goals" />;
   return <Redirect href="/(app)/(tabs)" />;
 }
+
+*/

@@ -1,20 +1,26 @@
-import React, { useRef, useEffect } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
+  Pressable,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
   Animated,
+  LayoutChangeEvent,
 } from "react-native";
-import {
-  LayoutGrid,
-  PersonStanding,
-  Dumbbell,
-  Flame,
-  CircleDot,
-  Wind,
-} from "lucide-react-native";
+
+// Font family strings + palette — same convention as the other components.
+// Worth pulling into a shared theme.ts alongside them at some point.
+const T = {
+  glassBorder: "rgba(255,255,255,0.14)",
+  accent: "#FFC700",
+  accentText: "#1A1300",
+  white: "#FFFFFF",
+  muted: "rgba(255,255,255,0.62)",
+
+  bodySemi: "Inter_600SemiBold",
+  bodyBold: "Inter_700Bold",
+};
 
 export type Category =
   | "All workouts"
@@ -24,131 +30,176 @@ export type Category =
   | "Core"
   | "Mobility";
 
-const ICONS: Record<Category, React.ComponentType<any>> = {
-  "All workouts": LayoutGrid,
-  "Lower body": PersonStanding,
-  "Upper body": Dumbbell,
-  "Full body": Flame,
-  Core: CircleDot,
-  Mobility: Wind,
-};
+type ChipLayout = { x: number; width: number };
 
-const LIME = "#D4F445";
-const LIME_DIM = "rgba(212,244,69,0.10)";
-
-const Chip = ({
-  category,
-  isActive,
+function Chip({
+  label,
+  active,
   onPress,
+  onLayout,
 }: {
-  category: Category;
-  isActive: boolean;
+  label: string;
+  active: boolean;
   onPress: () => void;
-}) => {
-  const Icon = ICONS[category];
+  onLayout: (e: LayoutChangeEvent) => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
 
-  // ── native driver: transform only ──────────────────────────────────────────
-  const pressScale = useRef(new Animated.Value(1)).current;
-
-  // ── JS driver: background color only ───────────────────────────────────────
-  const bgAnim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
-
-  useEffect(() => {
-    // must stay useNativeDriver: false because it drives backgroundColor
-    Animated.timing(bgAnim, {
-      toValue: isActive ? 1 : 0,
-      duration: 220,
-      useNativeDriver: false,
-    }).start();
-  }, [isActive]);
-
-  const onPressIn = () =>
-    Animated.spring(pressScale, {
-      toValue: 0.91,
+  const onPressIn = useCallback(() => {
+    Animated.spring(scale, {
+      toValue: 0.94,
       useNativeDriver: true,
-      friction: 5,
-      tension: 120,
+      friction: 7,
+      tension: 160,
     }).start();
+  }, [scale]);
 
-  const onPressOut = () =>
-    Animated.spring(pressScale, {
+  const onPressOut = useCallback(() => {
+    Animated.spring(scale, {
       toValue: 1,
       useNativeDriver: true,
       friction: 5,
-      tension: 100,
+      tension: 160,
     }).start();
-
-  const bgColor = bgAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [LIME_DIM, LIME],
-  });
-
-  const iconColor = isActive ? "#121400" : "#9AA0AE";
-  const textColor = isActive ? "#121400" : "#FFFFFF";
+  }, [scale]);
 
   return (
-    <TouchableOpacity
-      activeOpacity={1}
-      onPress={onPress}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
-    >
-      {/* outer: native transform only */}
-      <Animated.View style={{ transform: [{ scale: pressScale }] }}>
-        {/* inner: JS-driven backgroundColor only */}
-        <Animated.View style={[s.chip, { backgroundColor: bgColor }]}>
-          <Icon size={15} color={iconColor} strokeWidth={2.2} />
-          <Text style={[s.label, { color: textColor }]}>{category}</Text>
-        </Animated.View>
-      </Animated.View>
-    </TouchableOpacity>
+    <Animated.View onLayout={onLayout} style={{ transform: [{ scale }] }}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        hitSlop={4}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+        style={[s.chip, active && s.chipActive]}
+      >
+        <Text style={[s.chipText, active && s.chipTextActive]}>{label}</Text>
+      </Pressable>
+    </Animated.View>
   );
-};
+}
 
-type Props = {
+export function CategoryFilter({
+  categories,
+  active,
+  onChange,
+}: {
   categories: Category[];
   active: Category;
-  onChange: (cat: Category) => void;
-};
+  onChange: (c: Category) => void;
+}) {
+  const [layoutMap, setLayoutMap] = useState<
+    Partial<Record<Category, ChipLayout>>
+  >({});
+  const indicatorX = useRef(new Animated.Value(0)).current;
+  const indicatorWidth = useRef(new Animated.Value(0)).current;
+  const measuredOnce = useRef(false);
 
-export function CategoryFilter({ categories, active, onChange }: Props) {
+  const handleChipLayout = useCallback(
+    (cat: Category) => (e: LayoutChangeEvent) => {
+      const { x, width } = e.nativeEvent.layout;
+      setLayoutMap((prev) => {
+        const existing = prev[cat];
+        if (existing && existing.x === x && existing.width === width)
+          return prev;
+        return { ...prev, [cat]: { x, width } };
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const l = layoutMap[active];
+    if (!l) return;
+
+    if (!measuredOnce.current) {
+      // Snap into place on first measurement instead of sliding in from the
+      // corner — nothing to animate from yet, so a spring here would look
+      // like a glitch rather than a transition.
+      indicatorX.setValue(l.x);
+      indicatorWidth.setValue(l.width);
+      measuredOnce.current = true;
+      return;
+    }
+
+    // translateX and width are animated together on the same node, so both
+    // stay on the JS driver (useNativeDriver: false) — width can't go
+    // native anyway, and mixing driver modes on one node is what breaks
+    // (see ActiveWorkoutScreen's panel height/transform fix).
+    Animated.spring(indicatorX, {
+      toValue: l.x,
+      useNativeDriver: false,
+      friction: 9,
+      tension: 90,
+    }).start();
+    Animated.spring(indicatorWidth, {
+      toValue: l.width,
+      useNativeDriver: false,
+      friction: 9,
+      tension: 90,
+    }).start();
+  }, [active, layoutMap, indicatorX, indicatorWidth]);
+
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={s.row}
+      contentContainerStyle={s.scrollContent}
     >
-      {categories.map((cat) => (
-        <Chip
-          key={cat}
-          category={cat}
-          isActive={cat === active}
-          onPress={() => onChange(cat)}
+      <View style={s.row}>
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            s.indicator,
+            { transform: [{ translateX: indicatorX }], width: indicatorWidth },
+          ]}
         />
-      ))}
+        {categories.map((cat) => (
+          <Chip
+            key={cat}
+            label={cat}
+            active={cat === active}
+            onPress={() => onChange(cat)}
+            onLayout={handleChipLayout(cat)}
+          />
+        ))}
+      </View>
     </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
+  scrollContent: { paddingRight: 8 },
   row: {
     flexDirection: "row",
+    alignItems: "center",
     gap: 8,
-    paddingRight: 20,
-    paddingBottom: 4,
+  },
+  indicator: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    borderRadius: 999,
+    backgroundColor: T.accent,
   },
   chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    borderRadius: 999,
-    paddingVertical: 10,
     paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: T.glassBorder,
   },
-  label: {
+  chipActive: {
+    borderColor: "transparent",
+  },
+  chipText: {
+    fontFamily: T.bodySemi,
     fontSize: 13,
-    fontWeight: "700",
+    color: T.muted,
+  },
+  chipTextActive: {
+    fontFamily: T.bodyBold,
+    color: T.accentText,
   },
 });

@@ -1,22 +1,43 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   Animated,
   Easing,
+  StyleProp,
+  ViewStyle,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Circle } from "react-native-svg";
-import { ArrowUpRight } from "lucide-react-native";
+import Svg, {
+  Circle,
+  Defs,
+  LinearGradient as SvgGradient,
+  Stop,
+} from "react-native-svg";
+import { Play } from "lucide-react-native";
 
+// Font family strings + palette — same convention as the other components.
+// Worth pulling into a shared theme.ts alongside them at some point.
 const T = {
-  lime: "#D4F445",
-  limeDeep: "#B9DE1E",
-  dark: "#121400",
-  text: "#0F1400",
-  fade: "rgba(15,20,0,0.6)",
+  panel: "#15161C",
+  panelBorder: "rgba(255,255,255,0.08)",
+  glow: "rgba(255,199,0,0.10)",
+  glass: "rgba(255,255,255,0.06)",
+  glassBorder: "rgba(255,255,255,0.10)",
+  hairline: "rgba(255,255,255,0.10)",
+
+  accent: "#FFC700",
+  accentSoft: "#FFE066",
+  accentText: "#1A1300",
+
+  white: "#FFFFFF",
+  muted: "rgba(255,255,255,0.62)",
+
+  display: "SpaceGrotesk_700Bold",
+  bodyMed: "Inter_500Medium",
+  bodySemi: "Inter_600SemiBold",
+  bodyBold: "Inter_700Bold",
 };
 
 type Props = {
@@ -26,68 +47,90 @@ type Props = {
   calories: number;
   percent: number;
   onPress?: () => void;
+  style?: StyleProp<ViewStyle>;
+  testID?: string;
 };
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-const ProgressRing = ({
+function ProgressRing({
   percent,
-  size = 44,
+  size = 84,
 }: {
   percent: number;
   size?: number;
-}) => {
-  const strokeWidth = 4;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const anim = useRef(new Animated.Value(0)).current;
+}) {
+  const sw = 7;
+  const r = (size - sw) / 2;
+  const circ = 2 * Math.PI * r;
+  const clamped = Math.max(0, Math.min(100, percent));
+  const prog = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.timing(anim, {
-      toValue: percent / 100,
+    Animated.timing(prog, {
+      toValue: clamped / 100,
       duration: 900,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-      delay: 400,
+      useNativeDriver: false, // strokeDashoffset isn't native-animatable
     }).start();
-  }, [percent]);
+  }, [clamped, prog]);
 
-  const strokeDashoffset = anim.interpolate({
+  const offset = prog.interpolate({
     inputRange: [0, 1],
-    outputRange: [circumference, 0],
+    outputRange: [circ, 0],
   });
 
   return (
-    <View style={{ width: size, height: size }}>
-      <Svg width={size} height={size}>
+    <View
+      style={{
+        width: size,
+        height: size,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Svg width={size} height={size} style={StyleSheet.absoluteFillObject}>
+        <Defs>
+          <SvgGradient
+            id="continueRingGrad"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
+            <Stop offset="0%" stopColor={T.accent} />
+            <Stop offset="100%" stopColor={T.accentSoft} />
+          </SvgGradient>
+        </Defs>
         <Circle
           cx={size / 2}
           cy={size / 2}
-          r={radius}
-          stroke="rgba(15,20,0,0.15)"
-          strokeWidth={strokeWidth}
+          r={r}
+          stroke="rgba(255,255,255,0.10)"
+          strokeWidth={sw}
           fill="none"
         />
         <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
-          r={radius}
-          stroke={T.dark}
-          strokeWidth={strokeWidth}
+          r={r}
+          stroke="url(#continueRingGrad)"
+          strokeWidth={sw}
           fill="none"
-          strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={strokeDashoffset}
+          strokeDasharray={`${circ} ${circ}`}
+          strokeDashoffset={offset}
           strokeLinecap="round"
           rotation={-90}
           origin={`${size / 2}, ${size / 2}`}
         />
       </Svg>
-      <View style={s.ringLabelWrap}>
-        <Text style={s.ringLabelText}>{percent}%</Text>
-      </View>
+      <Text style={s.ringPercent}>
+        {Math.round(clamped)}
+        <Text style={s.ringPercentSign}>%</Text>
+      </Text>
     </View>
   );
-};
+}
 
 export function ContinueWorkoutCard({
   title,
@@ -96,196 +139,187 @@ export function ContinueWorkoutCard({
   calories,
   percent,
   onPress,
+  style,
+  testID,
 }: Props) {
   const scale = useRef(new Animated.Value(1)).current;
-  const float = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(float, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(float, {
-          toValue: 0,
-          duration: 2000,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
-
-  const floatY = float.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -8],
-  });
-
-  const onPressIn = () =>
+  const onPressIn = useCallback(() => {
     Animated.spring(scale, {
-      toValue: 0.97,
+      toValue: 0.98,
       useNativeDriver: true,
-      friction: 6,
+      friction: 7,
+      tension: 140,
     }).start();
-  const onPressOut = () =>
+  }, [scale]);
+
+  const onPressOut = useCallback(() => {
     Animated.spring(scale, {
       toValue: 1,
       useNativeDriver: true,
-      friction: 5,
+      friction: 6,
+      tension: 140,
     }).start();
+  }, [scale]);
 
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
-      <TouchableOpacity
-        activeOpacity={0.95}
+    <Animated.View style={[{ transform: [{ scale }] }, style]}>
+      <Pressable
         onPress={onPress}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
+        disabled={!onPress}
+        testID={testID}
+        accessibilityRole={onPress ? "button" : undefined}
+        accessibilityLabel={`Continue ${title}, ${tag}, ${Math.round(percent)} percent complete, ${minutes} minutes left, ${calories} calories`}
+        android_ripple={{ color: "rgba(255,255,255,0.08)", borderless: false }}
+        hitSlop={4}
+        style={s.pressableReset}
       >
-        <LinearGradient
-          colors={[T.lime, T.limeDeep]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={s.card}
-        >
-          <View style={s.textCol}>
-            <Text style={s.eyebrow}>Progress</Text>
-            <Text style={s.title}>{title}</Text>
-            <Text style={s.meta}>
-              {tag} • {minutes} mins
+        <View style={s.card}>
+          {/* the one bit of color on the card, kept deliberately faint */}
+          <View style={s.glow} pointerEvents="none" />
+
+          <View style={s.left}>
+            <Text style={s.eyebrow}>Continue workout</Text>
+            <Text style={s.title} numberOfLines={1} ellipsizeMode="tail">
+              {title}
             </Text>
 
-            <View style={s.caloriePill}>
-              <Text style={s.calorieValue}>{calories}</Text>
-              <Text style={s.calorieLabel}>CALORIES</Text>
-              <View style={s.arrowCircle}>
-                <ArrowUpRight size={14} color={T.lime} />
+            <View style={s.tagPill}>
+              <Text style={s.tagText}>{tag}</Text>
+            </View>
+
+            <View style={s.statRow}>
+              <View style={s.statItem}>
+                <Text style={s.statValue}>{minutes}</Text>
+                <Text style={s.statLabel}>min left</Text>
+              </View>
+              <View style={s.hairline} />
+              <View style={s.statItem}>
+                <Text style={s.statValue}>{calories}</Text>
+                <Text style={s.statLabel}>cal</Text>
               </View>
             </View>
           </View>
 
-          <View style={s.imageWrap}>
-            <View style={s.heroGlow} />
-            <Animated.Image
-              source={require("@/assets/images/shadow.png")}
-              style={[s.heroImage, { transform: [{ translateY: floatY }] }]}
-              resizeMode="contain"
-            />
-            <View style={s.ringWrap}>
-              <ProgressRing percent={percent} />
+          <View style={s.right}>
+            <ProgressRing percent={percent} />
+            <View style={s.playBadge}>
+              <Play
+                size={14}
+                color={T.accentText}
+                strokeWidth={2.5}
+                fill={T.accentText}
+              />
             </View>
           </View>
-        </LinearGradient>
-      </TouchableOpacity>
+        </View>
+      </Pressable>
     </Animated.View>
   );
 }
 
 const s = StyleSheet.create({
+  pressableReset: { borderRadius: 28 },
   card: {
-    borderRadius: 26,
+    borderRadius: 28,
+    backgroundColor: T.panel,
+    borderWidth: 1,
+    borderColor: T.panelBorder,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
     flexDirection: "row",
+    alignItems: "center",
     overflow: "hidden",
-    height: 168,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 5,
   },
-  textCol: {
-    flex: 1,
-    padding: 16,
-    justifyContent: "space-between",
-  },
-  eyebrow: {
-    color: T.fade,
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  title: {
-    color: T.text,
-    fontSize: 21,
-    fontWeight: "800",
-    marginTop: 2,
-  },
-  meta: {
-    color: T.fade,
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  caloriePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    backgroundColor: T.dark,
-    borderRadius: 999,
-    paddingLeft: 12,
-    paddingRight: 5,
-    paddingVertical: 5,
-    marginTop: 10,
-    gap: 5,
-  },
-  calorieValue: {
-    color: T.lime,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  calorieLabel: {
-    color: "rgba(212,244,69,0.6)",
-    fontSize: 8,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-  arrowCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "rgba(212,244,69,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 3,
+  glow: {
+    position: "absolute",
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: T.glow,
+    top: -60,
+    right: -50,
   },
 
-  imageWrap: {
-    width: 130,
-    height: "100%",
+  left: { flex: 1, gap: 6, paddingRight: 14 },
+  eyebrow: {
+    fontFamily: T.bodyBold,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    color: T.accent,
+  },
+  title: {
+    fontFamily: T.display,
+    fontSize: 21,
+    letterSpacing: -0.4,
+    color: T.white,
+  },
+  tagPill: {
+    alignSelf: "flex-start",
+    backgroundColor: T.glass,
+    borderWidth: 1,
+    borderColor: T.glassBorder,
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    marginTop: 2,
+  },
+  tagText: {
+    fontFamily: T.bodyBold,
+    fontSize: 9.5,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    color: T.white,
+  },
+
+  statRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 8,
+  },
+  statItem: { gap: 1 },
+  statValue: {
+    fontFamily: T.display,
+    fontSize: 15,
+    color: T.white,
+    fontVariant: ["tabular-nums"],
+  },
+  statLabel: { fontFamily: T.bodyMed, fontSize: 10, color: T.muted },
+  hairline: { width: 1, height: 24, backgroundColor: T.hairline },
+
+  right: {
+    width: 84,
+    height: 84,
     alignItems: "center",
     justifyContent: "center",
-    position: "relative",
   },
-  heroGlow: {
+  playBadge: {
     position: "absolute",
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "rgba(15,20,0,0.1)",
-  },
-  heroImage: {
-    width: 140,
-    height: 168,
-  },
-  ringWrap: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    backgroundColor: T.lime,
-    borderRadius: 20,
-    padding: 2,
-  },
-  ringLabelWrap: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    bottom: -2,
+    right: -2,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: T.accent,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 3,
+    borderColor: T.panel,
   },
-  ringLabelText: {
-    color: T.text,
-    fontSize: 9,
-    fontWeight: "800",
+  ringPercent: {
+    fontFamily: T.display,
+    fontSize: 18,
+    color: T.white,
+    fontVariant: ["tabular-nums"],
   },
+  ringPercentSign: { fontFamily: T.bodySemi, fontSize: 11, color: T.muted },
 });

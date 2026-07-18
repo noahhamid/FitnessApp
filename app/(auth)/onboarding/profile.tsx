@@ -10,13 +10,14 @@ export default function OnboardingProfileRoute() {
       <ProfileMetricsForm
         goalId={goalId}
         onBack={() => router.back()}
-        onNext={({ weightKg, heightCm, age }) =>
+        onNext={({ weightKg, heightCm, age, gender }) =>
           router.push({
-            pathname: "/(auth)/onboarding/nutrition-goals",
+            pathname: "/(auth)/onboarding/training-setup",
             params: {
               weightKg: String(weightKg),
               heightCm: String(heightCm),
               age: String(age),
+              gender,
               goalId,
             },
           })

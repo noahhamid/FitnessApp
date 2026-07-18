@@ -39,11 +39,14 @@ const MAX_KG = 180;
 const MIN_CM = 120;
 const MAX_CM = 220;
 
+type Gender = "male" | "female";
+
 type Props = {
   onNext: (metrics: {
     weightKg: number;
     heightCm: number;
     age: number;
+    gender: Gender;
   }) => void;
   onBack: () => void;
   goalId?: string;
@@ -119,13 +122,14 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
   const [weightKg, setWeightKg] = useState(70);
   const [heightCm, setHeightCm] = useState(170);
   const [age, setAge] = useState("");
+  const [gender, setGender] = useState<Gender | null>(null);
   const [unit, setUnit] = useState<"kg" | "lbs">("kg");
   const [loading, setLoading] = useState(false);
   const mountedRef = useRef(true);
 
   const { mutateAsync: saveProfile, error } = useSaveProfile();
 
-  const canFinish = !!age;
+  const canFinish = !!age && !!gender;
   const subCopy = goalId
     ? GOAL_COPY[goalId]
     : "We need your stats to personalise your plan.";
@@ -151,14 +155,16 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
     try {
       await Promise.all([
         saveProfile({
+          goalId: goalId,
+          gender: gender!,
           weight_kg: weightKg,
           height_cm: heightCm,
           age: parseInt(age, 10),
           weight_unit: unit,
         }),
-        new Promise((r) => setTimeout(r, 1500)),
+        new Promise((r) => setTimeout(r, 800)),
       ]);
-      onNext({ weightKg, heightCm, age: parseInt(age, 10) });
+      onNext({ weightKg, heightCm, age: parseInt(age, 10), gender: gender! });
     } catch {
       if (mountedRef.current) setLoading(false);
     }
@@ -197,6 +203,28 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
             <ProgressDots total={2} current={1} />
             <Text style={s.headline}>YOUR{"\n"}STATS.</Text>
             <Text style={s.sub}>{subCopy}</Text>
+          </View>
+
+          {/* --- GENDER --- */}
+          <Text style={s.sectionLabel}>GENDER</Text>
+          <View style={[s.segment, { marginBottom: 28 }]}>
+            {(["male", "female"] as const).map((g) => (
+              <Pressable
+                key={g}
+                onPress={() => setGender(g)}
+                style={[
+                  s.segmentTab,
+                  gender === g && s.segmentTabActive,
+                  { flex: 1 },
+                ]}
+              >
+                <Text
+                  style={[s.segmentText, gender === g && s.segmentTextActive]}
+                >
+                  {g === "male" ? "MALE" : "FEMALE"}
+                </Text>
+              </Pressable>
+            ))}
           </View>
 
           {/* --- WEIGHT --- */}
