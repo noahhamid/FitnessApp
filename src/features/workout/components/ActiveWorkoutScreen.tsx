@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Animated,
   Easing,
+  TextInput,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,15 +17,18 @@ import Svg, {
   LinearGradient as SvgGradient,
   Stop,
 } from "react-native-svg";
-import { X, Pause, Play, SkipForward, Check } from "lucide-react-native";
+import {
+  X,
+  Pause,
+  Play,
+  SkipForward,
+  Check,
+  Minus,
+  Plus,
+} from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { WorkoutPlan } from "../data/workouts";
 
-// ─── design tokens ───────────────────────────────────────────────────────────
-// Fonts are referenced here by name only — load the actual weights once at
-// your root layout (app/_layout.tsx), not per-screen. Snippet is in the chat
-// reply. If you'd rather this screen keep its own energy color instead of
-// matching the dashboard, change accent below.
 const T = {
   accent: "#FFC700",
   accentSoft: "#FFE066",
@@ -48,7 +52,21 @@ const T = {
 };
 
 type Phase = "exercise" | "rest" | "done";
-type Props = { plan: WorkoutPlan; onClose: () => void; onFinish: () => void };
+
+export interface SetLog {
+  exerciseName: string;
+  reps?: number;
+  weight?: number;
+  durationSec?: number;
+  completed: boolean;
+}
+
+type Props = {
+  plan: WorkoutPlan;
+  onClose: () => void;
+  onFinish: (logs: SetLog[]) => void;
+  lastPerformance?: Record<string, { weight?: number; reps?: number }>;
+};
 
 const fmt = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -57,7 +75,6 @@ const haptic = (style: Haptics.ImpactFeedbackStyle) => {
   Haptics.impactAsync(style).catch(() => {});
 };
 
-// ─── animated SVG countdown ring (JS driver — strokeDashoffset isn't native) ─
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const CountdownRing = ({
@@ -79,7 +96,7 @@ const CountdownRing = ({
       toValue: total > 0 ? left / total : 0,
       duration: 900,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: false, // width/stroke aren't native-animatable
+      useNativeDriver: false,
     }).start();
   }, [left]);
 
@@ -131,7 +148,6 @@ const CountdownRing = ({
   );
 };
 
-// ─── progress dots ───────────────────────────────────────────────────────────
 const DotsStrip = ({ total, current }: { total: number; current: number }) => (
   <View style={s.dotsRow}>
     {Array.from({ length: total }).map((_, i) => (
@@ -146,8 +162,60 @@ const DotsStrip = ({ total, current }: { total: number; current: number }) => (
   </View>
 );
 
-// ─── screen ───────────────────────────────────────────────────────────────────
-export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
+// ─── weight/reps stepper — compact inline number adjuster ───────────────────
+const Stepper = ({
+  label,
+  value,
+  onChange,
+  step = 1,
+  unit,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  step?: number;
+  unit?: string;
+}) => (
+  <View style={s.stepperWrap}>
+    <Text style={s.stepperLabel}>{label}</Text>
+    <View style={s.stepperRow}>
+      <TouchableOpacity
+        style={s.stepperBtn}
+        onPress={() => onChange(Math.max(0, value - step))}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Minus size={14} color={T.white} strokeWidth={2.4} />
+      </TouchableOpacity>
+      <View style={s.stepperValueWrap}>
+        <TextInput
+          style={s.stepperInput}
+          value={String(value)}
+          keyboardType="numeric"
+          onChangeText={(t) => {
+            const n = parseInt(t.replace(/[^0-9]/g, ""), 10);
+            onChange(isNaN(n) ? 0 : n);
+          }}
+          selectTextOnFocus
+        />
+        {unit && <Text style={s.stepperUnit}>{unit}</Text>}
+      </View>
+      <TouchableOpacity
+        style={s.stepperBtn}
+        onPress={() => onChange(value + step)}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Plus size={14} color={T.white} strokeWidth={2.4} />
+      </TouchableOpacity>
+    </View>
+  </View>
+);
+
+export function ActiveWorkoutScreen({
+  plan,
+  onClose,
+  onFinish,
+  lastPerformance,
+}: Props) {
   const insets = useSafeAreaInsets();
   const exs = plan.exercises;
 
@@ -165,6 +233,24 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
   const doneSets =
     exs.slice(0, exIdx).reduce((a, e) => a + e.sets, 0) + (setNum - 1);
 
+  // ── real performance tracking ──────────────────────────────────────────
+  const logsRef = useRef<SetLog[]>([]);
+  const lastForCurrent = lastPerformance?.[ex.name];
+  const [currentReps, setCurrentReps] = useState(
+    ex.reps ?? lastForCurrent?.reps ?? 8,
+  );
+  const [currentWeight, setCurrentWeight] = useState(
+    lastForCurrent?.weight ?? 0,
+  );
+
+  // reset the input fields whenever the exercise changes, seeded from
+  // target reps + last time this exercise was performed (0 if never)
+  useEffect(() => {
+    const last = lastPerformance?.[ex.name];
+    setCurrentReps(ex.reps ?? last?.reps ?? 8);
+    setCurrentWeight(last?.weight ?? 0);
+  }, [exIdx]);
+
   // ── animated values ────────────────────────────────────────────────────────
   const panelY = useRef(new Animated.Value(60)).current;
   const imgScale = useRef(new Animated.Value(1)).current;
@@ -180,7 +266,6 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
   const doneOpacity = useRef(new Animated.Value(0)).current;
   const doneScale = useRef(new Animated.Value(0.6)).current;
 
-  // mount slide-up
   useEffect(() => {
     Animated.spring(panelY, {
       toValue: 0,
@@ -190,7 +275,6 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
     }).start();
   }, []);
 
-  // progress bar
   useEffect(() => {
     Animated.timing(barWidth, {
       toValue: doneSets / totalSets,
@@ -200,14 +284,12 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
     }).start();
   }, [doneSets]);
 
-  // elapsed timer
   useEffect(() => {
     if (paused || phase === "done") return;
     const t = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(t);
   }, [paused, phase]);
 
-  // init countdown
   useEffect(() => {
     if (phase === "rest") setSecsLeft(ex.restSec);
     else if (phase === "exercise" && ex.type === "duration")
@@ -215,7 +297,6 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
     else setSecsLeft(null);
   }, [phase, exIdx, setNum]);
 
-  // countdown tick
   useEffect(() => {
     if (paused || secsLeft === null) return;
     if (secsLeft <= 0) {
@@ -226,7 +307,6 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
     return () => clearTimeout(t);
   }, [secsLeft, paused]);
 
-  // panel morphs between exercise and rest modes
   useEffect(() => {
     const toRest = phase === "rest";
 
@@ -251,7 +331,6 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
     ]).start();
   }, [phase]);
 
-  // exercise image + hero cross-fade/zoom on change
   useEffect(() => {
     exFade.setValue(0);
     exSlide.setValue(14);
@@ -277,7 +356,6 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
     ]).start();
   }, [exIdx]);
 
-  // set counter pulse
   useEffect(() => {
     Animated.sequence([
       Animated.timing(setNumScale, {
@@ -293,7 +371,6 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
     ]).start();
   }, [setNum]);
 
-  // workout complete: a short celebration beat, then hand off to the parent
   useEffect(() => {
     if (phase !== "done") return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
@@ -312,12 +389,23 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
         useNativeDriver: true,
       }),
     ]).start();
-    const t = setTimeout(onFinish, 1500);
+    const t = setTimeout(() => onFinish(logsRef.current), 1500);
     return () => clearTimeout(t);
   }, [phase]);
 
+  const logCurrentSet = (completed: boolean) => {
+    logsRef.current.push({
+      exerciseName: ex.name,
+      reps: ex.type === "reps" ? currentReps : undefined,
+      weight: ex.type === "reps" ? currentWeight : undefined,
+      durationSec: ex.type === "duration" ? (ex.durationSec ?? 0) : undefined,
+      completed,
+    });
+  };
+
   const advance = () => {
     if (phase === "exercise") {
+      logCurrentSet(true);
       const lastSet = setNum >= ex.sets;
       const lastEx = exIdx >= exs.length - 1;
       if (lastSet && lastEx) {
@@ -387,12 +475,9 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
     advance();
   };
 
-  // Panel heights are hand-tuned estimates (not measured against real device
-  // content) — nudge these two numbers if your longest exercise name / cue
-  // text ever clips against the overflow:'hidden' below.
   const panelHeight = panelExpand.interpolate({
     inputRange: [0, 1],
-    outputRange: [300, 372],
+    outputRange: [300, 440], // slightly taller now to fit the steppers
   });
   const barPct = barWidth.interpolate({
     inputRange: [0, 1],
@@ -401,7 +486,6 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
 
   return (
     <View style={s.screen}>
-      {/* full-bleed image — always visible, never obscured */}
       <Animated.Image
         source={{ uri: ex.imageUrl }}
         style={[s.bgImage, { transform: [{ scale: imgScale }] }]}
@@ -420,8 +504,6 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
         pointerEvents="none"
       />
 
-      {/* top-anchored content — flows naturally, so it can never collide with
-          the panel below regardless of how tall the panel gets */}
       <View
         style={[s.topContent, { paddingTop: insets.top + 8 }]}
         pointerEvents="box-none"
@@ -486,14 +568,6 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
         </Animated.View>
       </View>
 
-      {/* bottom panel — morphs between exercise and rest content.
-          Split into two nested Animated.Views on purpose: the outer one only
-          ever carries the native-driven `transform`, the inner one only ever
-          carries the JS-driven `height`/`paddingBottom`. Mixing native- and
-          JS-driven props on the *same* Animated.View throws
-          "Attempting to run JS driven animation on animated node that has
-          been moved to native" — RN can't reconcile one node being partly
-          offloaded to native and partly ticked from JS. */}
       <Animated.View
         style={[s.panelOuter, { transform: [{ translateY: panelY }] }]}
       >
@@ -506,7 +580,6 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
           <DotsStrip total={exs.length} current={exIdx} />
 
           <View style={s.panelBody}>
-            {/* exercise content */}
             <Animated.View
               style={[s.contentLayer, { opacity: exContentOpacity }]}
               pointerEvents={phase === "exercise" ? "auto" : "none"}
@@ -538,12 +611,7 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
                 </View>
 
                 <View style={s.centerDisplay}>
-                  {ex.type === "reps" ? (
-                    <>
-                      <Text style={s.bigNumber}>{ex.reps}</Text>
-                      <Text style={s.bigLabel}>Reps</Text>
-                    </>
-                  ) : (
+                  {ex.type === "duration" && (
                     <>
                       <Text style={s.bigNumber}>{fmt(secsLeft ?? 0)}</Text>
                       <Text style={s.bigLabel}>Hold</Text>
@@ -559,6 +627,26 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
                   </Text>
                 </View>
               </View>
+
+              {/* weight/reps steppers — only for rep-based exercises,
+                  pre-filled from last time this exercise was logged */}
+              {ex.type === "reps" && (
+                <View style={s.stepperGrid}>
+                  <Stepper
+                    label="WEIGHT"
+                    value={currentWeight}
+                    onChange={setCurrentWeight}
+                    step={2.5}
+                    unit="kg"
+                  />
+                  <Stepper
+                    label="REPS"
+                    value={currentReps}
+                    onChange={setCurrentReps}
+                    step={1}
+                  />
+                </View>
+              )}
 
               {ex.type === "reps" ? (
                 <Animated.View style={{ transform: [{ scale: btnScale }] }}>
@@ -589,7 +677,6 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
               )}
             </Animated.View>
 
-            {/* rest content */}
             <Animated.View
               style={[s.contentLayer, { opacity: restContentOpacity }]}
               pointerEvents={phase === "rest" ? "auto" : "none"}
@@ -647,7 +734,6 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
         </Animated.View>
       </Animated.View>
 
-      {/* completion moment */}
       <Animated.View
         pointerEvents={phase === "done" ? "auto" : "none"}
         style={[s.doneOverlay, { opacity: doneOpacity }]}
@@ -666,12 +752,10 @@ export function ActiveWorkoutScreen({ plan, onClose, onFinish }: Props) {
   );
 }
 
-// ─── styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: T.bg },
   bgImage: { ...StyleSheet.absoluteFillObject },
 
-  // top content
   topContent: { paddingHorizontal: 18, gap: 12 },
   topBar: { flexDirection: "row", alignItems: "center", gap: 10 },
   iconBtn: {
@@ -736,7 +820,6 @@ const s = StyleSheet.create({
     textShadowRadius: 6,
   },
 
-  // panel — split across two views, see the JSX comment for why
   panelOuter: { position: "absolute", bottom: 0, left: 0, right: 0 },
   panel: {
     backgroundColor: T.panel,
@@ -765,10 +848,9 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     paddingHorizontal: 20,
     paddingTop: 12,
-    gap: 16,
+    gap: 14,
   },
 
-  // exercise content
   cueLabel: {
     color: T.muted,
     fontFamily: T.bodySemi,
@@ -825,6 +907,56 @@ const s = StyleSheet.create({
     marginTop: -2,
   },
 
+  // steppers
+  stepperGrid: { flexDirection: "row", gap: 12 },
+  stepperWrap: { flex: 1 },
+  stepperLabel: {
+    color: T.muted,
+    fontFamily: T.bodySemi,
+    fontSize: 10,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  stepperRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: T.glass,
+    borderWidth: 1,
+    borderColor: T.glassBorder,
+    borderRadius: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+  },
+  stepperBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepperValueWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "center",
+    gap: 3,
+  },
+  stepperInput: {
+    color: T.white,
+    fontFamily: T.display,
+    fontSize: 18,
+    textAlign: "center",
+    minWidth: 32,
+    padding: 0,
+  },
+  stepperUnit: {
+    color: T.muted,
+    fontFamily: T.bodyMed,
+    fontSize: 11,
+  },
+
   cta: {
     flexDirection: "row",
     alignItems: "center",
@@ -855,7 +987,6 @@ const s = StyleSheet.create({
     letterSpacing: 0.1,
   },
 
-  // rest content
   restRow: { flexDirection: "row", gap: 16, alignItems: "center", flex: 1 },
   restLeft: { alignItems: "center", gap: 8 },
   restEyebrow: {
@@ -923,7 +1054,6 @@ const s = StyleSheet.create({
   },
   skipText: { color: T.muted, fontFamily: T.bodySemi, fontSize: 12.5 },
 
-  // completion overlay
   doneOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(9,9,12,0.94)",

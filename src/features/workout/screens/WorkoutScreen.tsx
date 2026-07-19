@@ -14,9 +14,13 @@ import {
 import { WorkoutTabHeader } from "../components/WorkoutTabHeader";
 import { WorkoutPlanCard } from "../components/WorkoutPlanCard";
 import { WorkoutDetailScreen } from "../components/WorkoutDetailScreen";
-import { ActiveWorkoutScreen } from "../components/ActiveWorkoutScreen";
+import {
+  ActiveWorkoutScreen,
+  type SetLog,
+} from "../components/ActiveWorkoutScreen";
 import { useWorkoutPlan } from "../hooks/useWorkoutPlan";
-import { adaptPlanDay } from "@/src/lib/workout-plan-adapter";
+import { useLastPerformance } from "../hooks/useLastPerformance";
+import { adaptPlanDay } from "../lib/workout-plan-adapter";
 import {
   useStartWorkoutSession,
   useCompleteWorkoutSession,
@@ -96,6 +100,7 @@ export default function WorkoutScreen() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   const { data: apiPlan, isLoading, error } = useWorkoutPlan();
+  const { data: lastPerformance } = useLastPerformance();
   const startSession = useStartWorkoutSession();
   const completeSession = useCompleteWorkoutSession();
 
@@ -126,24 +131,36 @@ export default function WorkoutScreen() {
     }
   };
 
-  const handleFinish = async () => {
-    if (!selectedDay || !activeSessionId) {
+  const handleFinish = async (logs: SetLog[]) => {
+    if (!activeSessionId) {
       setView("list");
       setSelectedDay(null);
       return;
     }
 
+    // Group the flat log of individual sets back into
+    // { exerciseName, sets: [...] } shape the API expects.
+    const byExercise = new Map<string, SetLog[]>();
+    for (const log of logs) {
+      const existing = byExercise.get(log.exerciseName) ?? [];
+      existing.push(log);
+      byExercise.set(log.exerciseName, existing);
+    }
+
     try {
       await completeSession.mutateAsync({
         sessionId: activeSessionId,
-        exercises: selectedDay.exercises.map((ex) => ({
-          exerciseName: ex.name,
-          sets: Array.from({ length: ex.sets }, () => ({
-            reps: ex.reps ?? undefined,
-            durationSec: ex.durationSec ?? undefined,
-            completed: true,
-          })),
-        })),
+        exercises: Array.from(byExercise.entries()).map(
+          ([exerciseName, sets]) => ({
+            exerciseName,
+            sets: sets.map((s) => ({
+              reps: s.reps,
+              weight: s.weight,
+              durationSec: s.durationSec,
+              completed: s.completed,
+            })),
+          }),
+        ),
       });
     } catch (e) {
       console.log("Failed to log completed workout:", e);
@@ -175,6 +192,7 @@ export default function WorkoutScreen() {
         plan={selectedDay}
         onClose={() => setView("detail")}
         onFinish={handleFinish}
+        lastPerformance={lastPerformance}
       />
     );
   }

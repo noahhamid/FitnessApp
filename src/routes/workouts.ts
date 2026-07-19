@@ -214,6 +214,48 @@ workoutsRouter.get("/plan", async (c) => {
   if (!plan) return ok(c, null);
   return ok(c, serializePlan(plan));
 });
+
+// ============================================================
+// ADD to src/routes/workouts.ts — register BEFORE workoutsRouter.get("/:id", ...)
+// since it's a specific path, same reasoning as /plan.
+// ============================================================
+
+workoutsRouter.get("/last-performance", async (c) => {
+  const user = getUser(c);
+
+  // Pull recent completed sessions and derive the most recent set logged
+  // per exercise name. Capped at last 100 sessions — plenty of history
+  // without scanning someone's entire lifetime of workouts on every load.
+  const sessions = await prisma.workoutSession.findMany({
+    where: { userId: user.id, completedAt: { not: null } },
+    include: { exercises: true },
+    orderBy: { completedAt: "desc" },
+    take: 100,
+  });
+
+  const lastByExercise: Record<string, { weight?: number; reps?: number }> = {};
+
+  for (const session of sessions) {
+    for (const exercise of session.exercises) {
+      if (lastByExercise[exercise.exerciseName]) continue; // already found a more recent one
+
+      const sets = exercise.sets as Array<{
+        weight?: number;
+        reps?: number;
+        completed?: boolean;
+      }>;
+      const lastCompletedSet = [...sets].reverse().find((s) => s.completed);
+      if (lastCompletedSet) {
+        lastByExercise[exercise.exerciseName] = {
+          weight: lastCompletedSet.weight,
+          reps: lastCompletedSet.reps,
+        };
+      }
+    }
+  }
+
+  return ok(c, lastByExercise);
+});
  
 
 workoutsRouter.get("/:id", async (c) => {
