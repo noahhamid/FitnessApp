@@ -1,39 +1,22 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Tabs } from "expo-router";
-import {
-  Animated,
-  LayoutChangeEvent,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Animated, Platform, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
-import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import Svg, { Circle, Line, Path, Polyline, Rect } from "react-native-svg";
 
-// ─── Theme tokens ────────────────────────────────────────────────────────────
-// Same values as the rest of the app (Meal / Dashboard / Workout).
 const T = {
-  bg: "#111318",
-  glass: "rgba(255,255,255,0.10)",
-  glassBorder: "rgba(255,255,255,0.16)",
-  accent: "#FFC700",
-  muted: "rgba(255,255,255,0.4)",
-  bodySemi: "Inter_600SemiBold",
+  bg: "#121212",
+  gold: "#FFC700",
+  inactive: "#505050",
+  border: "#FFFFFF08",
 };
 
-const CENTER_INDEX = 2; // Nutrition sits in the middle of the 5 routes
-
 // ─── Icons ────────────────────────────────────────────────────────────────────
-// Same custom SVGs as before, just recolored to the shared tokens.
 
 function IconHome({ active }: { active: boolean }) {
-  const c = active ? T.accent : T.muted;
+  const c = active ? T.gold : T.inactive;
   return (
-    <Svg width={21} height={21} viewBox="0 0 24 24" fill="none">
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
       <Path
         d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H15v-5h-6v5H4a1 1 0 01-1-1V10.5z"
         stroke={c}
@@ -46,9 +29,9 @@ function IconHome({ active }: { active: boolean }) {
 }
 
 function IconTrain({ active }: { active: boolean }) {
-  const c = active ? T.accent : T.muted;
+  const c = active ? T.gold : T.inactive;
   return (
-    <Svg width={21} height={21} viewBox="0 0 24 24" fill="none">
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
       <Line
         x1="5.5"
         y1="12"
@@ -99,7 +82,7 @@ function IconTrain({ active }: { active: boolean }) {
 }
 
 function IconNutrition({ active }: { active: boolean }) {
-  const c = active ? T.bg : T.muted;
+  const c = active ? T.bg : T.inactive;
   const w = 1.6;
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
@@ -135,9 +118,9 @@ function IconNutrition({ active }: { active: boolean }) {
 }
 
 function IconProgress({ active }: { active: boolean }) {
-  const c = active ? T.accent : T.muted;
+  const c = active ? T.gold : T.inactive;
   return (
-    <Svg width={21} height={21} viewBox="0 0 24 24" fill="none">
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
       <Polyline
         points="3,18 8,12 13,15 21,5"
         stroke={c}
@@ -151,9 +134,9 @@ function IconProgress({ active }: { active: boolean }) {
 }
 
 function IconProfile({ active }: { active: boolean }) {
-  const c = active ? T.accent : T.muted;
+  const c = active ? T.gold : T.inactive;
   return (
-    <Svg width={21} height={21} viewBox="0 0 24 24" fill="none">
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
       <Circle cx="12" cy="8" r="3.5" stroke={c} strokeWidth={1.6} />
       <Path
         d="M4 20c0-3.5 3.6-6.5 8-6.5s8 3 8 6.5"
@@ -165,51 +148,80 @@ function IconProfile({ active }: { active: boolean }) {
   );
 }
 
-const ICONS: Record<string, (active: boolean) => React.ReactNode> = {
-  index: (a) => <IconHome active={a} />,
-  train: (a) => <IconTrain active={a} />,
-  nutrition: (a) => <IconNutrition active={a} />,
-  progress: (a) => <IconProgress active={a} />,
-  profile: (a) => <IconProfile active={a} />,
-};
+// ─── Tab ─────────────────────────────────────────────────────────────────────
 
-const LABELS: Record<string, string> = {
-  index: "Home",
-  train: "Train",
-  nutrition: "Nutrition",
-  progress: "Progress",
-  profile: "Profile",
-};
-
-// ─── Center FAB — springs up/pops gold when it becomes active ──────────────
-
-function CenterFab({ focused }: { focused: boolean }) {
-  const scale = useRef(new Animated.Value(1)).current;
+function Tab({
+  icon,
+  label,
+  focused,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  focused: boolean;
+}) {
+  // One Animated.Value drives both the icon bounce and the dot below it —
+  // both native-driven (scale + opacity), so there's no risk of the
+  // native/JS-driver mixing bug from ActiveWorkoutScreen's panel earlier.
+  const anim = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.spring(scale, {
-        toValue: 1.12,
-        useNativeDriver: true,
-        speed: 22,
-        bounciness: 9,
-      }),
-      Animated.spring(scale, {
-        toValue: 1,
-        useNativeDriver: true,
-        speed: 16,
-        bounciness: 8,
-      }),
-    ]).start();
-  }, [focused]);
+    Animated.spring(anim, {
+      toValue: focused ? 1 : 0,
+      useNativeDriver: true,
+      friction: 6,
+      tension: 140,
+    }).start();
+  }, [focused, anim]);
+
+  const iconScale = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.15],
+  });
+
+  return (
+    <View style={s.tab}>
+      <Animated.View style={{ transform: [{ scale: iconScale }] }}>
+        {icon}
+      </Animated.View>
+      <Text style={[s.label, focused && s.labelActive]}>{label}</Text>
+      <Animated.View
+        pointerEvents="none"
+        style={[s.activeDot, { opacity: anim, transform: [{ scale: anim }] }]}
+      />
+    </View>
+  );
+}
+
+// Center FAB — dark surface morphs to gold as it becomes active instead of
+// an instant color cut. backgroundColor + scale share one native-driven
+// Animated.Value, so it's a single consistent native node, not two.
+function CenterTab({ focused }: { focused: boolean }) {
+  const anim = useRef(new Animated.Value(focused ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.spring(anim, {
+      toValue: focused ? 1 : 0,
+      useNativeDriver: true,
+      friction: 5,
+      tension: 170,
+    }).start();
+  }, [focused, anim]);
+
+  const fabScale = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.08],
+  });
+  const fabBg = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["#1E1E1E", T.gold],
+  });
 
   return (
     <View style={s.centerOuter}>
       <Animated.View
         style={[
           s.centerFab,
-          focused && s.centerFabActive,
-          { transform: [{ scale }] },
+          { backgroundColor: fabBg, transform: [{ scale: fabScale }] },
         ]}
       >
         <IconNutrition active={focused} />
@@ -219,116 +231,84 @@ function CenterFab({ focused }: { focused: boolean }) {
   );
 }
 
-// ─── Custom tab bar ──────────────────────────────────────────────────────────
-
-function CustomTabBar({ state, navigation }: BottomTabBarProps) {
-  const insets = useSafeAreaInsets();
-  const bottomOffset = Math.max(insets.bottom, 12) + 8; // floats clear of the home indicator
-
-  const [rowWidth, setRowWidth] = useState(0);
-  const itemCount = state.routes.length;
-  const itemWidth = rowWidth > 0 ? rowWidth / itemCount : 0;
-
-  const indicatorX = useRef(new Animated.Value(0)).current;
-  const indicatorOpacity = useRef(new Animated.Value(0)).current;
-  const INSET = 6;
-
-  useEffect(() => {
-    if (itemWidth === 0) return;
-    Animated.spring(indicatorX, {
-      toValue: state.index * itemWidth + INSET,
-      useNativeDriver: true,
-      speed: 16,
-      bounciness: 7,
-    }).start();
-    Animated.timing(indicatorOpacity, {
-      toValue: state.index === CENTER_INDEX ? 0 : 1,
-      duration: 160,
-      useNativeDriver: true,
-    }).start();
-  }, [state.index, itemWidth]);
-
-  const handleLayout = (e: LayoutChangeEvent) =>
-    setRowWidth(e.nativeEvent.layout.width);
-
-  return (
-    <View style={[s.wrap, { bottom: bottomOffset }]}>
-      <View style={s.bar}>
-        <BlurView
-          intensity={40}
-          tint="dark"
-          style={StyleSheet.absoluteFillObject}
-        />
-        <View style={s.tint} pointerEvents="none" />
-
-        <View style={s.row} onLayout={handleLayout}>
-          {rowWidth > 0 && (
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                s.indicator,
-                {
-                  width: itemWidth - INSET * 2,
-                  opacity: indicatorOpacity,
-                  transform: [{ translateX: indicatorX }],
-                },
-              ]}
-            />
-          )}
-
-          {state.routes.map((route, index) => {
-            const focused = state.index === index;
-            const isCenter = index === CENTER_INDEX;
-
-            const onPress = () => {
-              const event = navigation.emit({
-                type: "tabPress",
-                target: route.key,
-                canPreventDefault: true,
-              });
-              if (!focused && !event.defaultPrevented) {
-                navigation.navigate(route.name);
-              }
-            };
-
-            if (isCenter) {
-              return (
-                <Pressable key={route.key} onPress={onPress} style={s.slot}>
-                  <CenterFab focused={focused} />
-                </Pressable>
-              );
-            }
-
-            return (
-              <Pressable key={route.key} onPress={onPress} style={s.slot}>
-                <View style={s.tab}>
-                  {ICONS[route.name]?.(focused)}
-                  <Text style={[s.label, focused && s.labelActive]}>
-                    {LABELS[route.name] ?? route.name}
-                  </Text>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-    </View>
-  );
-}
-
 // ─── Layout ──────────────────────────────────────────────────────────────────
 
+const IS_IOS = Platform.OS === "ios";
+
 export default function AppTabsLayout() {
+  const insets = useSafeAreaInsets();
+  // Respect the device's home indicator / gesture bar,
+  // with a sensible minimum so the bar never feels cramped.
+  const bottomPad = Math.max(insets.bottom, IS_IOS ? 16 : 8);
+
   return (
     <Tabs
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: false,
+        tabBarStyle: [
+          s.tabBar,
+          {
+            paddingBottom: bottomPad,
+            height: 52 + bottomPad, // icon area (52) + dynamic safe-area pad
+          },
+        ],
+      }}
     >
-      <Tabs.Screen name="index" />
-      <Tabs.Screen name="train" />
-      <Tabs.Screen name="nutrition" />
-      <Tabs.Screen name="progress" />
-      <Tabs.Screen name="profile" />
+      <Tabs.Screen
+        name="index"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <Tab
+              icon={<IconHome active={focused} />}
+              label="Home"
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="train"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <Tab
+              icon={<IconTrain active={focused} />}
+              label="Train"
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="nutrition"
+        options={{
+          tabBarIcon: ({ focused }) => <CenterTab focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="progress"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <Tab
+              icon={<IconProgress active={focused} />}
+              label="Progress"
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <Tab
+              icon={<IconProfile active={focused} />}
+              label="Profile"
+              focused={focused}
+            />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
@@ -336,70 +316,55 @@ export default function AppTabsLayout() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  wrap: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-  },
-  bar: {
-    height: 68,
-    borderRadius: 28,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: T.glassBorder,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 10,
-  },
-  // Sits over the BlurView so the frosted effect reads as "dark glass"
-  // consistent with every other card in the app, rather than iOS's default
-  // light frost.
-  tint: { ...StyleSheet.absoluteFillObject, backgroundColor: T.glass },
-
-  row: { flex: 1, flexDirection: "row", position: "relative" },
-  slot: { flex: 1, alignItems: "center", justifyContent: "center" },
-
-  // Sliding highlight behind the focused flat tab — same transparent-fill,
-  // gold-border pill used by DashboardCalendar's selected day.
-  indicator: {
-    position: "absolute",
-    top: 8,
-    height: 52,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: T.accent,
-    backgroundColor: "transparent",
+  tabBar: {
+    backgroundColor: T.bg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: T.border,
+    // height & paddingBottom are set dynamically above via useSafeAreaInsets.
+    // paddingTop nudges icons down slightly so they sit centered & airy.
+    paddingTop: 6,
+    elevation: 0,
   },
 
-  tab: { alignItems: "center", gap: 4 },
+  // Regular tab — icon + label stacked, bottom-aligned
+  tab: {
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 5,
+    width: 60,
+    height: 46, // fixed inner height; bar height grows via bottomPad only
+    paddingBottom: 4,
+  },
   label: {
-    fontFamily: T.bodySemi,
-    fontSize: 9.5,
-    color: T.muted,
+    fontFamily: "Inter_600SemiBold", // was "DMSans_500Medium" — never loaded anywhere, silently fell back to system font
+    fontSize: 10,
+    color: T.inactive,
     letterSpacing: 0.1,
   },
-  labelActive: { color: T.accent },
+  labelActive: {
+    color: T.gold,
+  },
+  activeDot: {
+    position: "absolute",
+    bottom: -6,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: T.gold,
+  },
 
-  centerOuter: { alignItems: "center", gap: 4, marginTop: -22 },
+  // Center FAB
+  centerOuter: {
+    alignItems: "center",
+    gap: 5,
+    marginTop: -18,
+    width: 60,
+  },
   centerFab: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    backgroundColor: T.glass,
-    borderWidth: 1,
-    borderColor: T.glassBorder,
+    width: 50,
+    height: 50,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-  },
-  centerFabActive: {
-    backgroundColor: T.accent,
-    borderColor: T.accent,
-    shadowColor: T.accent,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 14,
-    elevation: 8,
   },
 });
