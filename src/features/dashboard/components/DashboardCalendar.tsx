@@ -13,13 +13,13 @@ import { T } from "../theme";
 const CIRCLE_SIZE = 34;
 const LABEL_HEIGHT = 13;
 const LABEL_MARGIN = 6;
-const INDICATOR_PAD_V = 7; // extra breathing room above/below the label+number
+const INDICATOR_PAD_V = 7;
 const INDICATOR_HEIGHT =
   LABEL_HEIGHT + LABEL_MARGIN + CIRCLE_SIZE + INDICATOR_PAD_V * 2;
-const INDICATOR_INSET = 7; // horizontal padding — more room than before so it doesn't hug the cell edges
+const INDICATOR_INSET = 7;
 
 export type CalendarDay = {
-  label: string; // M, T, W...
+  label: string;
   date: number;
   hasWorkout?: boolean;
   hasMeal?: boolean;
@@ -45,8 +45,6 @@ export function DashboardCalendar({ days, selectedDate, onSelectDate }: Props) {
 
   useEffect(() => {
     if (itemWidth === 0) return;
-    // Slide to the inset left edge of the selected cell (not centered on a
-    // fixed-width circle anymore — the pill now matches the cell width).
     const targetX = selectedIndex * itemWidth + INDICATOR_INSET;
     Animated.spring(indicatorX, {
       toValue: targetX,
@@ -144,20 +142,17 @@ export function DashboardCalendar({ days, selectedDate, onSelectDate }: Props) {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   card: {
     backgroundColor: T.glass,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: T.glassBorder,
-    borderRadius: 22,
+    borderRadius: 20,
     paddingHorizontal: 10,
     paddingTop: 14,
     paddingBottom: 10,
   },
   wrap: { position: "relative" },
-  // Transparent fill, gold border only — and now tall enough to wrap both
-  // the day name and the number instead of just circling the number.
   indicator: {
     position: "absolute",
     left: 0,
@@ -189,6 +184,6 @@ const styles = StyleSheet.create({
   dots: { flexDirection: "row", gap: 3, marginTop: 4 },
   dot: { width: 4, height: 4, borderRadius: 2 },
   dotWorkout: { backgroundColor: T.accent },
-  dotMeal: { backgroundColor: "#6FA5C4" },
-  dotEmpty: { backgroundColor: "rgba(255,255,255,0.15)" },
+  dotMeal: { backgroundColor: T.secondary },
+  dotEmpty: { backgroundColor: T.border },
 });

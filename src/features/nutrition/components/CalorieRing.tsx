@@ -19,7 +19,7 @@ export function CalorieRing({
 }: Props) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const pct = Math.max(0, Math.min(consumed / goal, 1));
+  const pct = goal > 0 ? Math.max(0, Math.min(consumed / goal, 1)) : 0;
   const offset = circumference * (1 - pct);
 
   return (

@@ -3,7 +3,6 @@ import { api } from "@/src/lib/api";
 
 interface StartSessionInput {
   notes?: string;
-  exercises: { exerciseName: string; sets: unknown[] }[];
 }
 
 interface StartSessionResponse {
@@ -16,6 +15,13 @@ export function useStartWorkoutSession() {
     mutationFn: (input: StartSessionInput) =>
       api.post<StartSessionResponse>("/api/workouts", input),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["workout-sessions"] }),
+  });
+}
+
+export function useAddExerciseToSession() {
+  return useMutation({
+    mutationFn: ({ sessionId, exerciseName }: { sessionId: string; exerciseName: string }) =>
+      api.post(`/api/workouts/${sessionId}/exercises`, { exerciseName, sets: [] }),
   });
 }
 

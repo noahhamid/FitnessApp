@@ -1,4 +1,4 @@
-import type { WorkoutPlan, Exercise, ExerciseType } from "../data/workouts";
+import type { WorkoutPlan, Exercise, ExerciseType } from "@/src/features/workout/data/workouts";
 
 // ── Types matching the real backend response (GET /api/workouts/plan) ──
 export interface ApiPlanExercise {
@@ -69,6 +69,10 @@ const COVER_BY_LABEL_HINT: { match: RegExp; url: string }[] = [
 ];
 const DEFAULT_COVER = "https://muscleevo.net/wp-content/uploads/2020/08/full-body-workout.jpg";
 
+export function imageForMuscleGroup(muscleGroup: string): string {
+  return IMAGE_BY_MUSCLE_GROUP[muscleGroup] ?? DEFAULT_COVER;
+}
+
 function coverImageForDay(label: string): string {
   const hit = COVER_BY_LABEL_HINT.find((h) => h.match.test(label));
   return hit?.url ?? DEFAULT_COVER;
@@ -111,6 +115,7 @@ function adaptExercise(ex: ApiPlanExercise, goalId: string): Exercise {
     instructions:
       CUE_BY_PATTERN[ex.movementPattern] ??
       "Focus on controlled form and full range of motion.",
+    muscleGroup: ex.muscleGroup,
   };
 }
 
@@ -123,5 +128,39 @@ export function adaptPlanDay(day: ApiPlanDay, goalId: string): WorkoutPlan {
     exercises: day.exercises
       .sort((a, b) => a.orderIndex - b.orderIndex)
       .map((ex) => adaptExercise(ex, goalId)),
+  };
+}
+
+// ── Adapter for browsed library exercises (no plan-assigned target reps) ──
+export interface LibraryExerciseInput {
+  id: string;
+  name: string;
+  muscleGroup: string;
+  movementPattern: string;
+}
+
+// Default sets/reps for a manually-added exercise, since there's no
+// generated target range the way there is for plan-assigned exercises.
+const DEFAULT_SETS = 3;
+const DEFAULT_REPS = 10;
+
+export function adaptLibraryExercise(
+  ex: LibraryExerciseInput,
+  goalId: string,
+): Exercise {
+  const type = inferExerciseType(ex.name);
+
+  return {
+    id: ex.id,
+    name: ex.name,
+    type,
+    sets: DEFAULT_SETS,
+    ...(type === "reps" ? { reps: DEFAULT_REPS } : { durationSec: 40 }),
+    restSec: REST_SEC_BY_GOAL[goalId] ?? 60,
+    imageUrl: IMAGE_BY_MUSCLE_GROUP[ex.muscleGroup] ?? DEFAULT_COVER,
+    instructions:
+      CUE_BY_PATTERN[ex.movementPattern] ??
+      "Focus on controlled form and full range of motion.",
+    muscleGroup: ex.muscleGroup,
   };
 }

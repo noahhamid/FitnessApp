@@ -5,11 +5,12 @@ export interface Exercise {
   name: string;
   type: ExerciseType;
   sets: number;
-  reps?: number;       // for type "reps"
-  durationSec?: number; // for type "duration"
-  restSec: number;      // rest after each set
+  reps?: number;
+  durationSec?: number;
+  restSec: number;
   imageUrl: string;
   instructions: string;
+  muscleGroup?: string;   // <-- ADD THIS LINE
 }
 
 export interface WorkoutPlan {
@@ -471,3 +472,9 @@ export const WORKOUT_PLANS: Record<string, WorkoutPlan> = {
     ],
   },
 };
+
+
+
+
+
+

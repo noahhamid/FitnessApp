@@ -6,6 +6,7 @@ import { err, ok } from "../lib/response";
 import { parseJson, parseQuery } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
 import type { AppEnv } from "../types/hono";
+import { GYM_FOODS } from "../lib/gymFoods";
 
 const mealEnum = z.enum(["Breakfast", "Lunch", "Dinner", "Snack"]);
 
@@ -16,6 +17,12 @@ const goalsSchema = z.object({
   fat: z.number().int().positive(),
 });
 
+const waterAdjustSchema = z.object({
+  logDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  delta: z.number().int(), // +1 to add a glass, -1 to remove
+});
+
+// ── update mealLogSchema to accept the new fields ──────────────────────────
 const mealLogSchema = z.object({
   logDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   meal: mealEnum,
@@ -24,6 +31,8 @@ const mealLogSchema = z.object({
   protein: z.number().nonnegative(),
   carbs: z.number().nonnegative(),
   fat: z.number().nonnegative(),
+  imageUrl: z.string().url().optional(),
+  source: z.enum(["manual", "scan"]).default("manual"),
 });
 
 const mealLogUpdateSchema = mealLogSchema.partial();
@@ -38,17 +47,21 @@ const logDateQuerySchema = z.object({
 function serializeMealLog(entry: {
   id: string;
   logDate: Date;
+  loggedAt: Date;
   meal: string;
   name: string;
   cal: number;
   protein: { toString(): string };
   carbs: { toString(): string };
   fat: { toString(): string };
+  imageUrl: string | null;
+  source: string;
   userId: string;
 }) {
   return {
     ...entry,
     logDate: entry.logDate.toISOString().slice(0, 10),
+    loggedAt: entry.loggedAt.toISOString(),
     protein: Number(entry.protein),
     carbs: Number(entry.carbs),
     fat: Number(entry.fat),
@@ -127,6 +140,8 @@ nutritionRouter.post("/log", async (c) => {
       protein: parsed.data.protein,
       carbs: parsed.data.carbs,
       fat: parsed.data.fat,
+      imageUrl: parsed.data.imageUrl,
+      source: parsed.data.source,
     },
   });
 
@@ -203,5 +218,154 @@ nutritionRouter.get("/totals", async (c) => {
     protein: Number(result._sum.protein ?? 0),
     carbs: Number(result._sum.carbs ?? 0),
     fat: Number(result._sum.fat ?? 0),
+  });
+
+  
+});
+
+nutritionRouter.get("/water", async (c) => {
+  const query = parseQuery(c, logDateQuerySchema);
+  if (!query.success) return query.response;
+
+  const dateStr = query.data.date ?? todayLogDate();
+  const logDate = parseLogDate(dateStr);
+  if (!logDate) return err(c, "Invalid date format", 400);
+
+  const user = getUser(c);
+  const log = await prisma.waterLog.findUnique({
+    where: { userId_logDate: { userId: user.id, logDate } },
+  });
+
+  return ok(c, { glasses: log?.glasses ?? 0 });
+});
+
+nutritionRouter.post("/water", async (c) => {
+  const parsed = await parseJson(c, waterAdjustSchema);
+  if (!parsed.success) return parsed.response;
+
+  const dateStr = parsed.data.logDate ?? todayLogDate();
+  const logDate = parseLogDate(dateStr);
+  if (!logDate) return err(c, "Invalid logDate", 400);
+
+  const user = getUser(c);
+  const existing = await prisma.waterLog.findUnique({
+    where: { userId_logDate: { userId: user.id, logDate } },
+  });
+  const nextGlasses = Math.max(0, (existing?.glasses ?? 0) + parsed.data.delta);
+
+  const log = await prisma.waterLog.upsert({
+    where: { userId_logDate: { userId: user.id, logDate } },
+    update: { glasses: nextGlasses },
+    create: { userId: user.id, logDate, glasses: nextGlasses },
+  });
+
+  return ok(c, { glasses: log.glasses });
+});
+
+// ── Weekly trend + streak ───────────────────────────────────────────────
+function isoDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+nutritionRouter.get("/weekly", async (c) => {
+  const query = parseQuery(c, logDateQuerySchema);
+  if (!query.success) return query.response;
+
+  const endStr = query.data.date ?? todayLogDate();
+  const end = parseLogDate(endStr);
+  if (!end) return err(c, "Invalid date format", 400);
+
+  const user = getUser(c);
+  const goal = await prisma.nutritionGoal.findUnique({ where: { userId: user.id } });
+  const calorieGoal = goal?.calories ?? 2000;
+
+  const start = new Date(end);
+  start.setDate(start.getDate() - 6);
+
+  const logs = await prisma.mealLog.groupBy({
+    by: ["logDate"],
+    where: { userId: user.id, logDate: { gte: start, lte: end } },
+    _sum: { cal: true },
+  });
+
+  const byDate = new Map(logs.map((l) => [isoDate(l.logDate), l._sum.cal ?? 0]));
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    const key = isoDate(d);
+    const cal = byDate.get(key) ?? 0;
+    return {
+      date: key,
+      label: d.toLocaleDateString("en-US", { weekday: "narrow" }),
+      pct: cal === 0 ? 0 : Math.min(100, Math.round((cal / calorieGoal) * 100)),
+      isToday: key === endStr,
+    };
+  });
+
+  // streak: consecutive days with a log, counting back from today
+  let streak = 0;
+  const cursor = new Date(end);
+  while (true) {
+    const key = isoDate(cursor);
+    const has = byDate.get(key);
+    if (!has) break;
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return ok(c, { days, streak });
+});
+
+nutritionRouter.get("/suggestions", async (c) => {
+  const query = parseQuery(c, logDateQuerySchema);
+  if (!query.success) return query.response;
+
+  const dateStr = query.data.date ?? todayLogDate();
+  const logDate = parseLogDate(dateStr);
+  if (!logDate) return err(c, "Invalid date format", 400);
+
+  const user = getUser(c);
+
+  const [goal, totalsResult] = await Promise.all([
+    prisma.nutritionGoal.findUnique({ where: { userId: user.id } }),
+    prisma.mealLog.aggregate({
+      where: { userId: user.id, logDate },
+      _sum: { cal: true, protein: true, carbs: true, fat: true },
+    }),
+  ]);
+
+  const calGoal = goal?.calories ?? 2400;
+  const proteinGoal = goal?.protein ?? 150;
+
+  const consumedCal = totalsResult._sum.cal ?? 0;
+  const consumedProtein = Number(totalsResult._sum.protein ?? 0);
+
+  const remainingCal = Math.max(0, calGoal - consumedCal);
+  const remainingProtein = Math.max(0, proteinGoal - consumedProtein);
+
+  if (remainingProtein < 5 || remainingCal < 50) {
+    return ok(c, null);
+  }
+
+  const buffer = 60;
+  let candidates = GYM_FOODS.filter((f) => f.cal <= remainingCal + buffer);
+  if (candidates.length === 0) {
+    candidates = [...GYM_FOODS].sort((a, b) => a.cal - b.cal).slice(0, 5);
+  }
+
+  const ranked = [...candidates].sort((a, b) => b.protein - a.protein);
+  const picks = ranked.slice(0, 2);
+
+  const headline = `You've got ${Math.round(remainingProtein)}g of protein left today.`;
+  const body =
+    picks.length === 2
+      ? `${picks[0].name} or ${picks[1].name.toLowerCase()} closes the gap without blowing your calorie budget.`
+      : `${picks[0]?.name ?? "A protein-forward meal"} closes the gap without blowing your calorie budget.`;
+
+  return ok(c, {
+    headline,
+    body,
+    suggestions: picks.map((f) => ({ label: f.name, calories: f.cal })),
   });
 });

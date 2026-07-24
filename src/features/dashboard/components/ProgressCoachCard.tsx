@@ -1,6 +1,13 @@
 import { Scale, Sparkles } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import Svg, { Polyline } from "react-native-svg";
+import Svg, {
+  Polyline,
+  Polygon,
+  Circle,
+  Defs,
+  LinearGradient,
+  Stop,
+} from "react-native-svg";
 import { T } from "../theme";
 
 type Props = {
@@ -23,6 +30,12 @@ export function ProgressCoachCard({
   const step = width / (sparklinePoints.length - 1);
   const points = sparklinePoints.map((y, i) => `${i * step},${y}`).join(" ");
 
+  const lastX = (sparklinePoints.length - 1) * step;
+  const lastY = sparklinePoints[sparklinePoints.length - 1];
+
+  // area fill: same points, closed down to the baseline
+  const areaPoints = `0,${height} ${points} ${lastX},${height}`;
+
   return (
     <View style={styles.card}>
       <View style={styles.top}>
@@ -40,11 +53,30 @@ export function ProgressCoachCard({
             viewBox={`0 0 ${width} ${height}`}
             style={styles.spark}
           >
+            <Defs>
+              <LinearGradient id="sparkFade" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={T.accent} stopOpacity={0.28} />
+                <Stop offset="1" stopColor={T.accent} stopOpacity={0} />
+              </LinearGradient>
+            </Defs>
+            <Polygon points={areaPoints} fill="url(#sparkFade)" />
             <Polyline
               points={points}
               fill="none"
               stroke={T.accent}
               strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <Circle cx={lastX} cy={lastY} r={3} fill={T.accent} />
+            <Circle
+              cx={lastX}
+              cy={lastY}
+              r={5.5}
+              fill="none"
+              stroke={T.accent}
+              strokeOpacity={0.3}
+              strokeWidth={1}
             />
           </Svg>
         </View>
@@ -90,8 +122,8 @@ const styles = StyleSheet.create({
     alignItems: "baseline",
   },
   label: { fontFamily: T.bodySemi, fontSize: 11, color: T.muted },
-  value: { fontFamily: T.display, fontSize: 14, color: T.accent },
-  spark: { marginTop: 6 },
+  value: { fontFamily: T.displaySemi, fontSize: 14, color: T.accent },
+  spark: { marginTop: 8 },
   divider: { height: 1, backgroundColor: T.glassBorder, marginHorizontal: 18 },
   bottom: { padding: 16, paddingTop: 14 },
   eyebrowRow: {

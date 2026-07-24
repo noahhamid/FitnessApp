@@ -251,6 +251,16 @@ exports.Prisma.MealLogScalarFieldEnum = {
   protein: 'protein',
   carbs: 'carbs',
   fat: 'fat',
+  loggedAt: 'loggedAt',
+  imageUrl: 'imageUrl',
+  source: 'source',
+  userId: 'userId'
+};
+
+exports.Prisma.WaterLogScalarFieldEnum = {
+  id: 'id',
+  logDate: 'logDate',
+  glasses: 'glasses',
   userId: 'userId'
 };
 
@@ -338,6 +348,11 @@ exports.Meal = exports.$Enums.Meal = {
   Snack: 'Snack'
 };
 
+exports.MealSource = exports.$Enums.MealSource = {
+  manual: 'manual',
+  scan: 'scan'
+};
+
 exports.Prisma.ModelName = {
   Exercise: 'Exercise',
   WorkoutPlan: 'WorkoutPlan',
@@ -352,6 +367,7 @@ exports.Prisma.ModelName = {
   WorkoutExercise: 'WorkoutExercise',
   NutritionGoal: 'NutritionGoal',
   MealLog: 'MealLog',
+  WaterLog: 'WaterLog',
   WeightLog: 'WeightLog',
   WeightGoal: 'WeightGoal'
 };

@@ -104,6 +104,7 @@ model User {
   mealLogs        MealLog[]
   weightLogs      WeightLog[]
   weightGoal      WeightGoal?
+  waterLogs       WaterLog[]
   workoutPlan     WorkoutPlan?
 
   @@map("user")
@@ -215,20 +216,40 @@ model NutritionGoal {
 }
 
 model MealLog {
-  id      String   @id @default(cuid())
-  logDate DateTime @db.Date
-  meal    Meal
-  name    String
-  cal     Int
-  protein Decimal  @db.Decimal(6, 1)
-  carbs   Decimal  @db.Decimal(6, 1)
-  fat     Decimal  @db.Decimal(6, 1)
+  id       String     @id @default(cuid())
+  logDate  DateTime   @db.Date
+  meal     Meal
+  name     String
+  cal      Int
+  protein  Decimal    @db.Decimal(6, 1)
+  carbs    Decimal    @db.Decimal(6, 1)
+  fat      Decimal    @db.Decimal(6, 1)
+  loggedAt DateTime   @default(now()) // NEW — powers "7:40 AM" on MealPhotoCard
+  imageUrl String? // NEW — scan photo or null for manual
+  source   MealSource @default(manual) // NEW
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, logDate])
   @@map("meal_log")
+}
+
+enum MealSource {
+  manual
+  scan
+}
+
+model WaterLog {
+  id      String   @id @default(cuid())
+  logDate DateTime @db.Date
+  glasses Int      @default(0)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, logDate])
+  @@map("water_log")
 }
 
 // ─── Weight ───────────────────────────────────────────────────────────────────

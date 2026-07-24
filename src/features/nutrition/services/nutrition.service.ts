@@ -4,8 +4,11 @@ import { api } from "@/src/lib/api";
 import type {
   DailyTotals,
   FoodLibraryItem,
+  FoodScanResult,
   MealLogEntry,
   NutritionGoals,
+  NutritionSuggestion,
+  WeeklyTrend,
 } from "../types/nutrition.types";
 import { FOOD_SEARCH_SEED } from "./food-library.seed";
 
@@ -25,13 +28,21 @@ type ApiMealLog = {
   id: string;
   userId: string;
   logDate: string;
+  loggedAt: string;
   meal: MealLogEntry["meal"];
   name: string;
   cal: number;
   protein: number;
   carbs: number;
   fat: number;
+  imageUrl: string | null;
+  source: "manual" | "scan";
 };
+
+type ApiWater = { glasses: number };
+
+type ApiWeeklyDay = { date: string; label: string; pct: number; isToday: boolean };
+type ApiWeeklyTrend = { days: ApiWeeklyDay[]; streak: number };
 
 /** Default macro targets for dashboard fallbacks. */
 export const NUTRITION_GOALS = {
@@ -57,7 +68,7 @@ function toMealLogEntry(row: ApiMealLog): MealLogEntry {
   return {
     id: row.id,
     user_id: row.userId,
-    logged_at: `${row.logDate}T12:00:00.000Z`,
+    logged_at: row.loggedAt,
     log_date: row.logDate,
     meal: row.meal,
     name: row.name,
@@ -67,7 +78,23 @@ function toMealLogEntry(row: ApiMealLog): MealLogEntry {
     fat: Number(row.fat),
     quantity: 1,
     unit: "serving",
+    image_url: row.imageUrl,
+    source: row.source,
   };
+}
+
+function toWeeklyTrend(row: ApiWeeklyTrend): WeeklyTrend {
+  return {
+    days: row.days,
+    streak: row.streak,
+  };
+}
+
+export async function scanFoodImage(
+  base64: string,
+  mimeType: string,
+): Promise<FoodScanResult> {
+  return api.post<FoodScanResult>("/api/ai/food-scan", { base64, mimeType });
 }
 
 async function readCustomFoods(): Promise<FoodLibraryItem[]> {
@@ -78,6 +105,12 @@ async function readCustomFoods(): Promise<FoodLibraryItem[]> {
 
 async function writeCustomFoods(foods: FoodLibraryItem[]): Promise<void> {
   await AsyncStorage.setItem(CUSTOM_FOODS_KEY, JSON.stringify(foods));
+}
+export async function fetchSuggestion(date?: string): Promise<NutritionSuggestion | null> {
+  const logDate = date ?? new Date().toISOString().split("T")[0];
+  return api.get<NutritionSuggestion | null>(
+    `/api/nutrition/suggestions?date=${encodeURIComponent(logDate)}`,
+  );
 }
 
 export async function fetchNutritionGoals(): Promise<NutritionGoals | null> {
@@ -116,6 +149,8 @@ export async function addMealEntry(
     protein: entry.protein,
     carbs: entry.carbs,
     fat: entry.fat,
+    imageUrl: entry.image_url ?? undefined,
+    source: entry.source ?? "manual",
   });
   return toMealLogEntry(row);
 }
@@ -129,6 +164,31 @@ export async function fetchDailyTotals(date?: string): Promise<DailyTotals> {
   return api.get<DailyTotals>(
     `/api/nutrition/totals?date=${encodeURIComponent(logDate)}`,
   );
+}
+
+export async function fetchWater(date?: string): Promise<{ glasses: number }> {
+  const logDate = date ?? new Date().toISOString().split("T")[0];
+  const row = await api.get<ApiWater>(
+    `/api/nutrition/water?date=${encodeURIComponent(logDate)}`,
+  );
+  return row;
+}
+
+export async function adjustWater(
+  delta: number,
+  date?: string,
+): Promise<{ glasses: number }> {
+  const row = await api.post<ApiWater>("/api/nutrition/water", {
+    delta,
+    logDate: date,
+  });
+  return row;
+}
+
+export async function fetchWeeklyTrend(date?: string): Promise<WeeklyTrend> {
+  const qs = date ? `?date=${encodeURIComponent(date)}` : "";
+  const row = await api.get<ApiWeeklyTrend>(`/api/nutrition/weekly${qs}`);
+  return toWeeklyTrend(row);
 }
 
 export async function searchFoods(query: string): Promise<FoodLibraryItem[]> {

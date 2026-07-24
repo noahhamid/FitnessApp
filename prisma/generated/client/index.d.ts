@@ -79,6 +79,11 @@ export type NutritionGoal = $Result.DefaultSelection<Prisma.$NutritionGoalPayloa
  */
 export type MealLog = $Result.DefaultSelection<Prisma.$MealLogPayload>
 /**
+ * Model WaterLog
+ * 
+ */
+export type WaterLog = $Result.DefaultSelection<Prisma.$WaterLogPayload>
+/**
  * Model WeightLog
  * 
  */
@@ -118,6 +123,14 @@ export const MovementPattern: {
 };
 
 export type MovementPattern = (typeof MovementPattern)[keyof typeof MovementPattern]
+
+
+export const MealSource: {
+  manual: 'manual',
+  scan: 'scan'
+};
+
+export type MealSource = (typeof MealSource)[keyof typeof MealSource]
 
 
 export const Meal: {
@@ -164,6 +177,10 @@ export const MuscleGroup: typeof $Enums.MuscleGroup
 export type MovementPattern = $Enums.MovementPattern
 
 export const MovementPattern: typeof $Enums.MovementPattern
+
+export type MealSource = $Enums.MealSource
+
+export const MealSource: typeof $Enums.MealSource
 
 export type Meal = $Enums.Meal
 
@@ -431,6 +448,16 @@ export class PrismaClient<
     * ```
     */
   get mealLog(): Prisma.MealLogDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.waterLog`: Exposes CRUD operations for the **WaterLog** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more WaterLogs
+    * const waterLogs = await prisma.waterLog.findMany()
+    * ```
+    */
+  get waterLog(): Prisma.WaterLogDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.weightLog`: Exposes CRUD operations for the **WeightLog** model.
@@ -898,6 +925,7 @@ export namespace Prisma {
     WorkoutExercise: 'WorkoutExercise',
     NutritionGoal: 'NutritionGoal',
     MealLog: 'MealLog',
+    WaterLog: 'WaterLog',
     WeightLog: 'WeightLog',
     WeightGoal: 'WeightGoal'
   };
@@ -915,7 +943,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "exercise" | "workoutPlan" | "workoutPlanDay" | "workoutPlanExercise" | "user" | "userProfile" | "session" | "account" | "verification" | "workoutSession" | "workoutExercise" | "nutritionGoal" | "mealLog" | "weightLog" | "weightGoal"
+      modelProps: "exercise" | "workoutPlan" | "workoutPlanDay" | "workoutPlanExercise" | "user" | "userProfile" | "session" | "account" | "verification" | "workoutSession" | "workoutExercise" | "nutritionGoal" | "mealLog" | "waterLog" | "weightLog" | "weightGoal"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1881,6 +1909,80 @@ export namespace Prisma {
           }
         }
       }
+      WaterLog: {
+        payload: Prisma.$WaterLogPayload<ExtArgs>
+        fields: Prisma.WaterLogFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.WaterLogFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WaterLogPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.WaterLogFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WaterLogPayload>
+          }
+          findFirst: {
+            args: Prisma.WaterLogFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WaterLogPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.WaterLogFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WaterLogPayload>
+          }
+          findMany: {
+            args: Prisma.WaterLogFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WaterLogPayload>[]
+          }
+          create: {
+            args: Prisma.WaterLogCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WaterLogPayload>
+          }
+          createMany: {
+            args: Prisma.WaterLogCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.WaterLogCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WaterLogPayload>[]
+          }
+          delete: {
+            args: Prisma.WaterLogDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WaterLogPayload>
+          }
+          update: {
+            args: Prisma.WaterLogUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WaterLogPayload>
+          }
+          deleteMany: {
+            args: Prisma.WaterLogDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.WaterLogUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.WaterLogUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WaterLogPayload>[]
+          }
+          upsert: {
+            args: Prisma.WaterLogUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WaterLogPayload>
+          }
+          aggregate: {
+            args: Prisma.WaterLogAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateWaterLog>
+          }
+          groupBy: {
+            args: Prisma.WaterLogGroupByArgs<ExtArgs>
+            result: $Utils.Optional<WaterLogGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.WaterLogCountArgs<ExtArgs>
+            result: $Utils.Optional<WaterLogCountAggregateOutputType> | number
+          }
+        }
+      }
       WeightLog: {
         payload: Prisma.$WeightLogPayload<ExtArgs>
         fields: Prisma.WeightLogFieldRefs
@@ -2150,6 +2252,7 @@ export namespace Prisma {
     workoutExercise?: WorkoutExerciseOmit
     nutritionGoal?: NutritionGoalOmit
     mealLog?: MealLogOmit
+    waterLog?: WaterLogOmit
     weightLog?: WeightLogOmit
     weightGoal?: WeightGoalOmit
   }
@@ -2330,6 +2433,7 @@ export namespace Prisma {
     workoutSessions: number
     mealLogs: number
     weightLogs: number
+    waterLogs: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2338,6 +2442,7 @@ export namespace Prisma {
     workoutSessions?: boolean | UserCountOutputTypeCountWorkoutSessionsArgs
     mealLogs?: boolean | UserCountOutputTypeCountMealLogsArgs
     weightLogs?: boolean | UserCountOutputTypeCountWeightLogsArgs
+    waterLogs?: boolean | UserCountOutputTypeCountWaterLogsArgs
   }
 
   // Custom InputTypes
@@ -2384,6 +2489,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountWeightLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: WeightLogWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountWaterLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: WaterLogWhereInput
   }
 
 
@@ -7121,6 +7233,7 @@ export namespace Prisma {
     mealLogs?: boolean | User$mealLogsArgs<ExtArgs>
     weightLogs?: boolean | User$weightLogsArgs<ExtArgs>
     weightGoal?: boolean | User$weightGoalArgs<ExtArgs>
+    waterLogs?: boolean | User$waterLogsArgs<ExtArgs>
     workoutPlan?: boolean | User$workoutPlanArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
@@ -7165,6 +7278,7 @@ export namespace Prisma {
     mealLogs?: boolean | User$mealLogsArgs<ExtArgs>
     weightLogs?: boolean | User$weightLogsArgs<ExtArgs>
     weightGoal?: boolean | User$weightGoalArgs<ExtArgs>
+    waterLogs?: boolean | User$waterLogsArgs<ExtArgs>
     workoutPlan?: boolean | User$workoutPlanArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
@@ -7182,6 +7296,7 @@ export namespace Prisma {
       mealLogs: Prisma.$MealLogPayload<ExtArgs>[]
       weightLogs: Prisma.$WeightLogPayload<ExtArgs>[]
       weightGoal: Prisma.$WeightGoalPayload<ExtArgs> | null
+      waterLogs: Prisma.$WaterLogPayload<ExtArgs>[]
       workoutPlan: Prisma.$WorkoutPlanPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -7594,6 +7709,7 @@ export namespace Prisma {
     mealLogs<T extends User$mealLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$mealLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MealLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     weightLogs<T extends User$weightLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$weightLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WeightLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     weightGoal<T extends User$weightGoalArgs<ExtArgs> = {}>(args?: Subset<T, User$weightGoalArgs<ExtArgs>>): Prisma__WeightGoalClient<$Result.GetResult<Prisma.$WeightGoalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    waterLogs<T extends User$waterLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$waterLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WaterLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     workoutPlan<T extends User$workoutPlanArgs<ExtArgs> = {}>(args?: Subset<T, User$workoutPlanArgs<ExtArgs>>): Prisma__WorkoutPlanClient<$Result.GetResult<Prisma.$WorkoutPlanPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -8198,6 +8314,30 @@ export namespace Prisma {
      */
     include?: WeightGoalInclude<ExtArgs> | null
     where?: WeightGoalWhereInput
+  }
+
+  /**
+   * User.waterLogs
+   */
+  export type User$waterLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WaterLog
+     */
+    select?: WaterLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WaterLog
+     */
+    omit?: WaterLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WaterLogInclude<ExtArgs> | null
+    where?: WaterLogWhereInput
+    orderBy?: WaterLogOrderByWithRelationInput | WaterLogOrderByWithRelationInput[]
+    cursor?: WaterLogWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: WaterLogScalarFieldEnum | WaterLogScalarFieldEnum[]
   }
 
   /**
@@ -16016,6 +16156,9 @@ export namespace Prisma {
     protein: Decimal | null
     carbs: Decimal | null
     fat: Decimal | null
+    loggedAt: Date | null
+    imageUrl: string | null
+    source: $Enums.MealSource | null
     userId: string | null
   }
 
@@ -16028,6 +16171,9 @@ export namespace Prisma {
     protein: Decimal | null
     carbs: Decimal | null
     fat: Decimal | null
+    loggedAt: Date | null
+    imageUrl: string | null
+    source: $Enums.MealSource | null
     userId: string | null
   }
 
@@ -16040,6 +16186,9 @@ export namespace Prisma {
     protein: number
     carbs: number
     fat: number
+    loggedAt: number
+    imageUrl: number
+    source: number
     userId: number
     _all: number
   }
@@ -16068,6 +16217,9 @@ export namespace Prisma {
     protein?: true
     carbs?: true
     fat?: true
+    loggedAt?: true
+    imageUrl?: true
+    source?: true
     userId?: true
   }
 
@@ -16080,6 +16232,9 @@ export namespace Prisma {
     protein?: true
     carbs?: true
     fat?: true
+    loggedAt?: true
+    imageUrl?: true
+    source?: true
     userId?: true
   }
 
@@ -16092,6 +16247,9 @@ export namespace Prisma {
     protein?: true
     carbs?: true
     fat?: true
+    loggedAt?: true
+    imageUrl?: true
+    source?: true
     userId?: true
     _all?: true
   }
@@ -16191,6 +16349,9 @@ export namespace Prisma {
     protein: Decimal
     carbs: Decimal
     fat: Decimal
+    loggedAt: Date
+    imageUrl: string | null
+    source: $Enums.MealSource
     userId: string
     _count: MealLogCountAggregateOutputType | null
     _avg: MealLogAvgAggregateOutputType | null
@@ -16222,6 +16383,9 @@ export namespace Prisma {
     protein?: boolean
     carbs?: boolean
     fat?: boolean
+    loggedAt?: boolean
+    imageUrl?: boolean
+    source?: boolean
     userId?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["mealLog"]>
@@ -16235,6 +16399,9 @@ export namespace Prisma {
     protein?: boolean
     carbs?: boolean
     fat?: boolean
+    loggedAt?: boolean
+    imageUrl?: boolean
+    source?: boolean
     userId?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["mealLog"]>
@@ -16248,6 +16415,9 @@ export namespace Prisma {
     protein?: boolean
     carbs?: boolean
     fat?: boolean
+    loggedAt?: boolean
+    imageUrl?: boolean
+    source?: boolean
     userId?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["mealLog"]>
@@ -16261,10 +16431,13 @@ export namespace Prisma {
     protein?: boolean
     carbs?: boolean
     fat?: boolean
+    loggedAt?: boolean
+    imageUrl?: boolean
+    source?: boolean
     userId?: boolean
   }
 
-  export type MealLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "logDate" | "meal" | "name" | "cal" | "protein" | "carbs" | "fat" | "userId", ExtArgs["result"]["mealLog"]>
+  export type MealLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "logDate" | "meal" | "name" | "cal" | "protein" | "carbs" | "fat" | "loggedAt" | "imageUrl" | "source" | "userId", ExtArgs["result"]["mealLog"]>
   export type MealLogInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -16289,6 +16462,9 @@ export namespace Prisma {
       protein: Prisma.Decimal
       carbs: Prisma.Decimal
       fat: Prisma.Decimal
+      loggedAt: Date
+      imageUrl: string | null
+      source: $Enums.MealSource
       userId: string
     }, ExtArgs["result"]["mealLog"]>
     composites: {}
@@ -16722,6 +16898,9 @@ export namespace Prisma {
     readonly protein: FieldRef<"MealLog", 'Decimal'>
     readonly carbs: FieldRef<"MealLog", 'Decimal'>
     readonly fat: FieldRef<"MealLog", 'Decimal'>
+    readonly loggedAt: FieldRef<"MealLog", 'DateTime'>
+    readonly imageUrl: FieldRef<"MealLog", 'String'>
+    readonly source: FieldRef<"MealLog", 'MealSource'>
     readonly userId: FieldRef<"MealLog", 'String'>
   }
     
@@ -17139,6 +17318,1090 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: MealLogInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model WaterLog
+   */
+
+  export type AggregateWaterLog = {
+    _count: WaterLogCountAggregateOutputType | null
+    _avg: WaterLogAvgAggregateOutputType | null
+    _sum: WaterLogSumAggregateOutputType | null
+    _min: WaterLogMinAggregateOutputType | null
+    _max: WaterLogMaxAggregateOutputType | null
+  }
+
+  export type WaterLogAvgAggregateOutputType = {
+    glasses: number | null
+  }
+
+  export type WaterLogSumAggregateOutputType = {
+    glasses: number | null
+  }
+
+  export type WaterLogMinAggregateOutputType = {
+    id: string | null
+    logDate: Date | null
+    glasses: number | null
+    userId: string | null
+  }
+
+  export type WaterLogMaxAggregateOutputType = {
+    id: string | null
+    logDate: Date | null
+    glasses: number | null
+    userId: string | null
+  }
+
+  export type WaterLogCountAggregateOutputType = {
+    id: number
+    logDate: number
+    glasses: number
+    userId: number
+    _all: number
+  }
+
+
+  export type WaterLogAvgAggregateInputType = {
+    glasses?: true
+  }
+
+  export type WaterLogSumAggregateInputType = {
+    glasses?: true
+  }
+
+  export type WaterLogMinAggregateInputType = {
+    id?: true
+    logDate?: true
+    glasses?: true
+    userId?: true
+  }
+
+  export type WaterLogMaxAggregateInputType = {
+    id?: true
+    logDate?: true
+    glasses?: true
+    userId?: true
+  }
+
+  export type WaterLogCountAggregateInputType = {
+    id?: true
+    logDate?: true
+    glasses?: true
+    userId?: true
+    _all?: true
+  }
+
+  export type WaterLogAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which WaterLog to aggregate.
+     */
+    where?: WaterLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of WaterLogs to fetch.
+     */
+    orderBy?: WaterLogOrderByWithRelationInput | WaterLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: WaterLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` WaterLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` WaterLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned WaterLogs
+    **/
+    _count?: true | WaterLogCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: WaterLogAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: WaterLogSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: WaterLogMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: WaterLogMaxAggregateInputType
+  }
+
+  export type GetWaterLogAggregateType<T extends WaterLogAggregateArgs> = {
+        [P in keyof T & keyof AggregateWaterLog]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateWaterLog[P]>
+      : GetScalarType<T[P], AggregateWaterLog[P]>
+  }
+
+
+
+
+  export type WaterLogGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: WaterLogWhereInput
+    orderBy?: WaterLogOrderByWithAggregationInput | WaterLogOrderByWithAggregationInput[]
+    by: WaterLogScalarFieldEnum[] | WaterLogScalarFieldEnum
+    having?: WaterLogScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: WaterLogCountAggregateInputType | true
+    _avg?: WaterLogAvgAggregateInputType
+    _sum?: WaterLogSumAggregateInputType
+    _min?: WaterLogMinAggregateInputType
+    _max?: WaterLogMaxAggregateInputType
+  }
+
+  export type WaterLogGroupByOutputType = {
+    id: string
+    logDate: Date
+    glasses: number
+    userId: string
+    _count: WaterLogCountAggregateOutputType | null
+    _avg: WaterLogAvgAggregateOutputType | null
+    _sum: WaterLogSumAggregateOutputType | null
+    _min: WaterLogMinAggregateOutputType | null
+    _max: WaterLogMaxAggregateOutputType | null
+  }
+
+  type GetWaterLogGroupByPayload<T extends WaterLogGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<WaterLogGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof WaterLogGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], WaterLogGroupByOutputType[P]>
+            : GetScalarType<T[P], WaterLogGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type WaterLogSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    logDate?: boolean
+    glasses?: boolean
+    userId?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["waterLog"]>
+
+  export type WaterLogSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    logDate?: boolean
+    glasses?: boolean
+    userId?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["waterLog"]>
+
+  export type WaterLogSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    logDate?: boolean
+    glasses?: boolean
+    userId?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["waterLog"]>
+
+  export type WaterLogSelectScalar = {
+    id?: boolean
+    logDate?: boolean
+    glasses?: boolean
+    userId?: boolean
+  }
+
+  export type WaterLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "logDate" | "glasses" | "userId", ExtArgs["result"]["waterLog"]>
+  export type WaterLogInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type WaterLogIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type WaterLogIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $WaterLogPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "WaterLog"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      logDate: Date
+      glasses: number
+      userId: string
+    }, ExtArgs["result"]["waterLog"]>
+    composites: {}
+  }
+
+  type WaterLogGetPayload<S extends boolean | null | undefined | WaterLogDefaultArgs> = $Result.GetResult<Prisma.$WaterLogPayload, S>
+
+  type WaterLogCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<WaterLogFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: WaterLogCountAggregateInputType | true
+    }
+
+  export interface WaterLogDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['WaterLog'], meta: { name: 'WaterLog' } }
+    /**
+     * Find zero or one WaterLog that matches the filter.
+     * @param {WaterLogFindUniqueArgs} args - Arguments to find a WaterLog
+     * @example
+     * // Get one WaterLog
+     * const waterLog = await prisma.waterLog.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends WaterLogFindUniqueArgs>(args: SelectSubset<T, WaterLogFindUniqueArgs<ExtArgs>>): Prisma__WaterLogClient<$Result.GetResult<Prisma.$WaterLogPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one WaterLog that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {WaterLogFindUniqueOrThrowArgs} args - Arguments to find a WaterLog
+     * @example
+     * // Get one WaterLog
+     * const waterLog = await prisma.waterLog.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends WaterLogFindUniqueOrThrowArgs>(args: SelectSubset<T, WaterLogFindUniqueOrThrowArgs<ExtArgs>>): Prisma__WaterLogClient<$Result.GetResult<Prisma.$WaterLogPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first WaterLog that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WaterLogFindFirstArgs} args - Arguments to find a WaterLog
+     * @example
+     * // Get one WaterLog
+     * const waterLog = await prisma.waterLog.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends WaterLogFindFirstArgs>(args?: SelectSubset<T, WaterLogFindFirstArgs<ExtArgs>>): Prisma__WaterLogClient<$Result.GetResult<Prisma.$WaterLogPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first WaterLog that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WaterLogFindFirstOrThrowArgs} args - Arguments to find a WaterLog
+     * @example
+     * // Get one WaterLog
+     * const waterLog = await prisma.waterLog.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends WaterLogFindFirstOrThrowArgs>(args?: SelectSubset<T, WaterLogFindFirstOrThrowArgs<ExtArgs>>): Prisma__WaterLogClient<$Result.GetResult<Prisma.$WaterLogPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more WaterLogs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WaterLogFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all WaterLogs
+     * const waterLogs = await prisma.waterLog.findMany()
+     * 
+     * // Get first 10 WaterLogs
+     * const waterLogs = await prisma.waterLog.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const waterLogWithIdOnly = await prisma.waterLog.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends WaterLogFindManyArgs>(args?: SelectSubset<T, WaterLogFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WaterLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a WaterLog.
+     * @param {WaterLogCreateArgs} args - Arguments to create a WaterLog.
+     * @example
+     * // Create one WaterLog
+     * const WaterLog = await prisma.waterLog.create({
+     *   data: {
+     *     // ... data to create a WaterLog
+     *   }
+     * })
+     * 
+     */
+    create<T extends WaterLogCreateArgs>(args: SelectSubset<T, WaterLogCreateArgs<ExtArgs>>): Prisma__WaterLogClient<$Result.GetResult<Prisma.$WaterLogPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many WaterLogs.
+     * @param {WaterLogCreateManyArgs} args - Arguments to create many WaterLogs.
+     * @example
+     * // Create many WaterLogs
+     * const waterLog = await prisma.waterLog.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends WaterLogCreateManyArgs>(args?: SelectSubset<T, WaterLogCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many WaterLogs and returns the data saved in the database.
+     * @param {WaterLogCreateManyAndReturnArgs} args - Arguments to create many WaterLogs.
+     * @example
+     * // Create many WaterLogs
+     * const waterLog = await prisma.waterLog.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many WaterLogs and only return the `id`
+     * const waterLogWithIdOnly = await prisma.waterLog.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends WaterLogCreateManyAndReturnArgs>(args?: SelectSubset<T, WaterLogCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WaterLogPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a WaterLog.
+     * @param {WaterLogDeleteArgs} args - Arguments to delete one WaterLog.
+     * @example
+     * // Delete one WaterLog
+     * const WaterLog = await prisma.waterLog.delete({
+     *   where: {
+     *     // ... filter to delete one WaterLog
+     *   }
+     * })
+     * 
+     */
+    delete<T extends WaterLogDeleteArgs>(args: SelectSubset<T, WaterLogDeleteArgs<ExtArgs>>): Prisma__WaterLogClient<$Result.GetResult<Prisma.$WaterLogPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one WaterLog.
+     * @param {WaterLogUpdateArgs} args - Arguments to update one WaterLog.
+     * @example
+     * // Update one WaterLog
+     * const waterLog = await prisma.waterLog.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends WaterLogUpdateArgs>(args: SelectSubset<T, WaterLogUpdateArgs<ExtArgs>>): Prisma__WaterLogClient<$Result.GetResult<Prisma.$WaterLogPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more WaterLogs.
+     * @param {WaterLogDeleteManyArgs} args - Arguments to filter WaterLogs to delete.
+     * @example
+     * // Delete a few WaterLogs
+     * const { count } = await prisma.waterLog.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends WaterLogDeleteManyArgs>(args?: SelectSubset<T, WaterLogDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more WaterLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WaterLogUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many WaterLogs
+     * const waterLog = await prisma.waterLog.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends WaterLogUpdateManyArgs>(args: SelectSubset<T, WaterLogUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more WaterLogs and returns the data updated in the database.
+     * @param {WaterLogUpdateManyAndReturnArgs} args - Arguments to update many WaterLogs.
+     * @example
+     * // Update many WaterLogs
+     * const waterLog = await prisma.waterLog.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more WaterLogs and only return the `id`
+     * const waterLogWithIdOnly = await prisma.waterLog.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends WaterLogUpdateManyAndReturnArgs>(args: SelectSubset<T, WaterLogUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WaterLogPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one WaterLog.
+     * @param {WaterLogUpsertArgs} args - Arguments to update or create a WaterLog.
+     * @example
+     * // Update or create a WaterLog
+     * const waterLog = await prisma.waterLog.upsert({
+     *   create: {
+     *     // ... data to create a WaterLog
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the WaterLog we want to update
+     *   }
+     * })
+     */
+    upsert<T extends WaterLogUpsertArgs>(args: SelectSubset<T, WaterLogUpsertArgs<ExtArgs>>): Prisma__WaterLogClient<$Result.GetResult<Prisma.$WaterLogPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of WaterLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WaterLogCountArgs} args - Arguments to filter WaterLogs to count.
+     * @example
+     * // Count the number of WaterLogs
+     * const count = await prisma.waterLog.count({
+     *   where: {
+     *     // ... the filter for the WaterLogs we want to count
+     *   }
+     * })
+    **/
+    count<T extends WaterLogCountArgs>(
+      args?: Subset<T, WaterLogCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], WaterLogCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a WaterLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WaterLogAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends WaterLogAggregateArgs>(args: Subset<T, WaterLogAggregateArgs>): Prisma.PrismaPromise<GetWaterLogAggregateType<T>>
+
+    /**
+     * Group by WaterLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WaterLogGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends WaterLogGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: WaterLogGroupByArgs['orderBy'] }
+        : { orderBy?: WaterLogGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, WaterLogGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetWaterLogGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the WaterLog model
+   */
+  readonly fields: WaterLogFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for WaterLog.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__WaterLogClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the WaterLog model
+   */
+  interface WaterLogFieldRefs {
+    readonly id: FieldRef<"WaterLog", 'String'>
+    readonly logDate: FieldRef<"WaterLog", 'DateTime'>
+    readonly glasses: FieldRef<"WaterLog", 'Int'>
+    readonly userId: FieldRef<"WaterLog", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * WaterLog findUnique
+   */
+  export type WaterLogFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WaterLog
+     */
+    select?: WaterLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WaterLog
+     */
+    omit?: WaterLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WaterLogInclude<ExtArgs> | null
+    /**
+     * Filter, which WaterLog to fetch.
+     */
+    where: WaterLogWhereUniqueInput
+  }
+
+  /**
+   * WaterLog findUniqueOrThrow
+   */
+  export type WaterLogFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WaterLog
+     */
+    select?: WaterLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WaterLog
+     */
+    omit?: WaterLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WaterLogInclude<ExtArgs> | null
+    /**
+     * Filter, which WaterLog to fetch.
+     */
+    where: WaterLogWhereUniqueInput
+  }
+
+  /**
+   * WaterLog findFirst
+   */
+  export type WaterLogFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WaterLog
+     */
+    select?: WaterLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WaterLog
+     */
+    omit?: WaterLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WaterLogInclude<ExtArgs> | null
+    /**
+     * Filter, which WaterLog to fetch.
+     */
+    where?: WaterLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of WaterLogs to fetch.
+     */
+    orderBy?: WaterLogOrderByWithRelationInput | WaterLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for WaterLogs.
+     */
+    cursor?: WaterLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` WaterLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` WaterLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of WaterLogs.
+     */
+    distinct?: WaterLogScalarFieldEnum | WaterLogScalarFieldEnum[]
+  }
+
+  /**
+   * WaterLog findFirstOrThrow
+   */
+  export type WaterLogFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WaterLog
+     */
+    select?: WaterLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WaterLog
+     */
+    omit?: WaterLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WaterLogInclude<ExtArgs> | null
+    /**
+     * Filter, which WaterLog to fetch.
+     */
+    where?: WaterLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of WaterLogs to fetch.
+     */
+    orderBy?: WaterLogOrderByWithRelationInput | WaterLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for WaterLogs.
+     */
+    cursor?: WaterLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` WaterLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` WaterLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of WaterLogs.
+     */
+    distinct?: WaterLogScalarFieldEnum | WaterLogScalarFieldEnum[]
+  }
+
+  /**
+   * WaterLog findMany
+   */
+  export type WaterLogFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WaterLog
+     */
+    select?: WaterLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WaterLog
+     */
+    omit?: WaterLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WaterLogInclude<ExtArgs> | null
+    /**
+     * Filter, which WaterLogs to fetch.
+     */
+    where?: WaterLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of WaterLogs to fetch.
+     */
+    orderBy?: WaterLogOrderByWithRelationInput | WaterLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing WaterLogs.
+     */
+    cursor?: WaterLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` WaterLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` WaterLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of WaterLogs.
+     */
+    distinct?: WaterLogScalarFieldEnum | WaterLogScalarFieldEnum[]
+  }
+
+  /**
+   * WaterLog create
+   */
+  export type WaterLogCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WaterLog
+     */
+    select?: WaterLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WaterLog
+     */
+    omit?: WaterLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WaterLogInclude<ExtArgs> | null
+    /**
+     * The data needed to create a WaterLog.
+     */
+    data: XOR<WaterLogCreateInput, WaterLogUncheckedCreateInput>
+  }
+
+  /**
+   * WaterLog createMany
+   */
+  export type WaterLogCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many WaterLogs.
+     */
+    data: WaterLogCreateManyInput | WaterLogCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * WaterLog createManyAndReturn
+   */
+  export type WaterLogCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WaterLog
+     */
+    select?: WaterLogSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the WaterLog
+     */
+    omit?: WaterLogOmit<ExtArgs> | null
+    /**
+     * The data used to create many WaterLogs.
+     */
+    data: WaterLogCreateManyInput | WaterLogCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WaterLogIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * WaterLog update
+   */
+  export type WaterLogUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WaterLog
+     */
+    select?: WaterLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WaterLog
+     */
+    omit?: WaterLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WaterLogInclude<ExtArgs> | null
+    /**
+     * The data needed to update a WaterLog.
+     */
+    data: XOR<WaterLogUpdateInput, WaterLogUncheckedUpdateInput>
+    /**
+     * Choose, which WaterLog to update.
+     */
+    where: WaterLogWhereUniqueInput
+  }
+
+  /**
+   * WaterLog updateMany
+   */
+  export type WaterLogUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update WaterLogs.
+     */
+    data: XOR<WaterLogUpdateManyMutationInput, WaterLogUncheckedUpdateManyInput>
+    /**
+     * Filter which WaterLogs to update
+     */
+    where?: WaterLogWhereInput
+    /**
+     * Limit how many WaterLogs to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * WaterLog updateManyAndReturn
+   */
+  export type WaterLogUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WaterLog
+     */
+    select?: WaterLogSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the WaterLog
+     */
+    omit?: WaterLogOmit<ExtArgs> | null
+    /**
+     * The data used to update WaterLogs.
+     */
+    data: XOR<WaterLogUpdateManyMutationInput, WaterLogUncheckedUpdateManyInput>
+    /**
+     * Filter which WaterLogs to update
+     */
+    where?: WaterLogWhereInput
+    /**
+     * Limit how many WaterLogs to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WaterLogIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * WaterLog upsert
+   */
+  export type WaterLogUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WaterLog
+     */
+    select?: WaterLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WaterLog
+     */
+    omit?: WaterLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WaterLogInclude<ExtArgs> | null
+    /**
+     * The filter to search for the WaterLog to update in case it exists.
+     */
+    where: WaterLogWhereUniqueInput
+    /**
+     * In case the WaterLog found by the `where` argument doesn't exist, create a new WaterLog with this data.
+     */
+    create: XOR<WaterLogCreateInput, WaterLogUncheckedCreateInput>
+    /**
+     * In case the WaterLog was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<WaterLogUpdateInput, WaterLogUncheckedUpdateInput>
+  }
+
+  /**
+   * WaterLog delete
+   */
+  export type WaterLogDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WaterLog
+     */
+    select?: WaterLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WaterLog
+     */
+    omit?: WaterLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WaterLogInclude<ExtArgs> | null
+    /**
+     * Filter which WaterLog to delete.
+     */
+    where: WaterLogWhereUniqueInput
+  }
+
+  /**
+   * WaterLog deleteMany
+   */
+  export type WaterLogDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which WaterLogs to delete
+     */
+    where?: WaterLogWhereInput
+    /**
+     * Limit how many WaterLogs to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * WaterLog without action
+   */
+  export type WaterLogDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WaterLog
+     */
+    select?: WaterLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WaterLog
+     */
+    omit?: WaterLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WaterLogInclude<ExtArgs> | null
   }
 
 
@@ -19508,10 +20771,23 @@ export namespace Prisma {
     protein: 'protein',
     carbs: 'carbs',
     fat: 'fat',
+    loggedAt: 'loggedAt',
+    imageUrl: 'imageUrl',
+    source: 'source',
     userId: 'userId'
   };
 
   export type MealLogScalarFieldEnum = (typeof MealLogScalarFieldEnum)[keyof typeof MealLogScalarFieldEnum]
+
+
+  export const WaterLogScalarFieldEnum: {
+    id: 'id',
+    logDate: 'logDate',
+    glasses: 'glasses',
+    userId: 'userId'
+  };
+
+  export type WaterLogScalarFieldEnum = (typeof WaterLogScalarFieldEnum)[keyof typeof WaterLogScalarFieldEnum]
 
 
   export const WeightLogScalarFieldEnum: {
@@ -19738,6 +21014,20 @@ export namespace Prisma {
    * Reference to a field of type 'Meal[]'
    */
   export type ListEnumMealFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Meal[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'MealSource'
+   */
+  export type EnumMealSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MealSource'>
+    
+
+
+  /**
+   * Reference to a field of type 'MealSource[]'
+   */
+  export type ListEnumMealSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MealSource[]'>
     
 
 
@@ -20037,6 +21327,7 @@ export namespace Prisma {
     mealLogs?: MealLogListRelationFilter
     weightLogs?: WeightLogListRelationFilter
     weightGoal?: XOR<WeightGoalNullableScalarRelationFilter, WeightGoalWhereInput> | null
+    waterLogs?: WaterLogListRelationFilter
     workoutPlan?: XOR<WorkoutPlanNullableScalarRelationFilter, WorkoutPlanWhereInput> | null
   }
 
@@ -20056,6 +21347,7 @@ export namespace Prisma {
     mealLogs?: MealLogOrderByRelationAggregateInput
     weightLogs?: WeightLogOrderByRelationAggregateInput
     weightGoal?: WeightGoalOrderByWithRelationInput
+    waterLogs?: WaterLogOrderByRelationAggregateInput
     workoutPlan?: WorkoutPlanOrderByWithRelationInput
   }
 
@@ -20078,6 +21370,7 @@ export namespace Prisma {
     mealLogs?: MealLogListRelationFilter
     weightLogs?: WeightLogListRelationFilter
     weightGoal?: XOR<WeightGoalNullableScalarRelationFilter, WeightGoalWhereInput> | null
+    waterLogs?: WaterLogListRelationFilter
     workoutPlan?: XOR<WorkoutPlanNullableScalarRelationFilter, WorkoutPlanWhereInput> | null
   }, "id" | "email">
 
@@ -20603,6 +21896,9 @@ export namespace Prisma {
     protein?: DecimalFilter<"MealLog"> | Decimal | DecimalJsLike | number | string
     carbs?: DecimalFilter<"MealLog"> | Decimal | DecimalJsLike | number | string
     fat?: DecimalFilter<"MealLog"> | Decimal | DecimalJsLike | number | string
+    loggedAt?: DateTimeFilter<"MealLog"> | Date | string
+    imageUrl?: StringNullableFilter<"MealLog"> | string | null
+    source?: EnumMealSourceFilter<"MealLog"> | $Enums.MealSource
     userId?: StringFilter<"MealLog"> | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }
@@ -20616,6 +21912,9 @@ export namespace Prisma {
     protein?: SortOrder
     carbs?: SortOrder
     fat?: SortOrder
+    loggedAt?: SortOrder
+    imageUrl?: SortOrderInput | SortOrder
+    source?: SortOrder
     userId?: SortOrder
     user?: UserOrderByWithRelationInput
   }
@@ -20632,6 +21931,9 @@ export namespace Prisma {
     protein?: DecimalFilter<"MealLog"> | Decimal | DecimalJsLike | number | string
     carbs?: DecimalFilter<"MealLog"> | Decimal | DecimalJsLike | number | string
     fat?: DecimalFilter<"MealLog"> | Decimal | DecimalJsLike | number | string
+    loggedAt?: DateTimeFilter<"MealLog"> | Date | string
+    imageUrl?: StringNullableFilter<"MealLog"> | string | null
+    source?: EnumMealSourceFilter<"MealLog"> | $Enums.MealSource
     userId?: StringFilter<"MealLog"> | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }, "id">
@@ -20645,6 +21947,9 @@ export namespace Prisma {
     protein?: SortOrder
     carbs?: SortOrder
     fat?: SortOrder
+    loggedAt?: SortOrder
+    imageUrl?: SortOrderInput | SortOrder
+    source?: SortOrder
     userId?: SortOrder
     _count?: MealLogCountOrderByAggregateInput
     _avg?: MealLogAvgOrderByAggregateInput
@@ -20665,7 +21970,63 @@ export namespace Prisma {
     protein?: DecimalWithAggregatesFilter<"MealLog"> | Decimal | DecimalJsLike | number | string
     carbs?: DecimalWithAggregatesFilter<"MealLog"> | Decimal | DecimalJsLike | number | string
     fat?: DecimalWithAggregatesFilter<"MealLog"> | Decimal | DecimalJsLike | number | string
+    loggedAt?: DateTimeWithAggregatesFilter<"MealLog"> | Date | string
+    imageUrl?: StringNullableWithAggregatesFilter<"MealLog"> | string | null
+    source?: EnumMealSourceWithAggregatesFilter<"MealLog"> | $Enums.MealSource
     userId?: StringWithAggregatesFilter<"MealLog"> | string
+  }
+
+  export type WaterLogWhereInput = {
+    AND?: WaterLogWhereInput | WaterLogWhereInput[]
+    OR?: WaterLogWhereInput[]
+    NOT?: WaterLogWhereInput | WaterLogWhereInput[]
+    id?: StringFilter<"WaterLog"> | string
+    logDate?: DateTimeFilter<"WaterLog"> | Date | string
+    glasses?: IntFilter<"WaterLog"> | number
+    userId?: StringFilter<"WaterLog"> | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type WaterLogOrderByWithRelationInput = {
+    id?: SortOrder
+    logDate?: SortOrder
+    glasses?: SortOrder
+    userId?: SortOrder
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type WaterLogWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    userId_logDate?: WaterLogUserIdLogDateCompoundUniqueInput
+    AND?: WaterLogWhereInput | WaterLogWhereInput[]
+    OR?: WaterLogWhereInput[]
+    NOT?: WaterLogWhereInput | WaterLogWhereInput[]
+    logDate?: DateTimeFilter<"WaterLog"> | Date | string
+    glasses?: IntFilter<"WaterLog"> | number
+    userId?: StringFilter<"WaterLog"> | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id" | "userId_logDate">
+
+  export type WaterLogOrderByWithAggregationInput = {
+    id?: SortOrder
+    logDate?: SortOrder
+    glasses?: SortOrder
+    userId?: SortOrder
+    _count?: WaterLogCountOrderByAggregateInput
+    _avg?: WaterLogAvgOrderByAggregateInput
+    _max?: WaterLogMaxOrderByAggregateInput
+    _min?: WaterLogMinOrderByAggregateInput
+    _sum?: WaterLogSumOrderByAggregateInput
+  }
+
+  export type WaterLogScalarWhereWithAggregatesInput = {
+    AND?: WaterLogScalarWhereWithAggregatesInput | WaterLogScalarWhereWithAggregatesInput[]
+    OR?: WaterLogScalarWhereWithAggregatesInput[]
+    NOT?: WaterLogScalarWhereWithAggregatesInput | WaterLogScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"WaterLog"> | string
+    logDate?: DateTimeWithAggregatesFilter<"WaterLog"> | Date | string
+    glasses?: IntWithAggregatesFilter<"WaterLog"> | number
+    userId?: StringWithAggregatesFilter<"WaterLog"> | string
   }
 
   export type WeightLogWhereInput = {
@@ -21060,6 +22421,7 @@ export namespace Prisma {
     mealLogs?: MealLogCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
   }
 
@@ -21079,6 +22441,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogUncheckedCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
   }
 
@@ -21098,6 +22461,7 @@ export namespace Prisma {
     mealLogs?: MealLogUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
   }
 
@@ -21117,6 +22481,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUncheckedUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
   }
 
@@ -21682,6 +23047,9 @@ export namespace Prisma {
     protein: Decimal | DecimalJsLike | number | string
     carbs: Decimal | DecimalJsLike | number | string
     fat: Decimal | DecimalJsLike | number | string
+    loggedAt?: Date | string
+    imageUrl?: string | null
+    source?: $Enums.MealSource
     user: UserCreateNestedOneWithoutMealLogsInput
   }
 
@@ -21694,6 +23062,9 @@ export namespace Prisma {
     protein: Decimal | DecimalJsLike | number | string
     carbs: Decimal | DecimalJsLike | number | string
     fat: Decimal | DecimalJsLike | number | string
+    loggedAt?: Date | string
+    imageUrl?: string | null
+    source?: $Enums.MealSource
     userId: string
   }
 
@@ -21706,6 +23077,9 @@ export namespace Prisma {
     protein?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     carbs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     fat?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    loggedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: EnumMealSourceFieldUpdateOperationsInput | $Enums.MealSource
     user?: UserUpdateOneRequiredWithoutMealLogsNestedInput
   }
 
@@ -21718,6 +23092,9 @@ export namespace Prisma {
     protein?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     carbs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     fat?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    loggedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: EnumMealSourceFieldUpdateOperationsInput | $Enums.MealSource
     userId?: StringFieldUpdateOperationsInput | string
   }
 
@@ -21730,6 +23107,9 @@ export namespace Prisma {
     protein: Decimal | DecimalJsLike | number | string
     carbs: Decimal | DecimalJsLike | number | string
     fat: Decimal | DecimalJsLike | number | string
+    loggedAt?: Date | string
+    imageUrl?: string | null
+    source?: $Enums.MealSource
     userId: string
   }
 
@@ -21742,6 +23122,9 @@ export namespace Prisma {
     protein?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     carbs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     fat?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    loggedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: EnumMealSourceFieldUpdateOperationsInput | $Enums.MealSource
   }
 
   export type MealLogUncheckedUpdateManyInput = {
@@ -21753,6 +23136,57 @@ export namespace Prisma {
     protein?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     carbs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     fat?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    loggedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: EnumMealSourceFieldUpdateOperationsInput | $Enums.MealSource
+    userId?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type WaterLogCreateInput = {
+    id?: string
+    logDate: Date | string
+    glasses?: number
+    user: UserCreateNestedOneWithoutWaterLogsInput
+  }
+
+  export type WaterLogUncheckedCreateInput = {
+    id?: string
+    logDate: Date | string
+    glasses?: number
+    userId: string
+  }
+
+  export type WaterLogUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    logDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    glasses?: IntFieldUpdateOperationsInput | number
+    user?: UserUpdateOneRequiredWithoutWaterLogsNestedInput
+  }
+
+  export type WaterLogUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    logDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    glasses?: IntFieldUpdateOperationsInput | number
+    userId?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type WaterLogCreateManyInput = {
+    id?: string
+    logDate: Date | string
+    glasses?: number
+    userId: string
+  }
+
+  export type WaterLogUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    logDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    glasses?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type WaterLogUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    logDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    glasses?: IntFieldUpdateOperationsInput | number
     userId?: StringFieldUpdateOperationsInput | string
   }
 
@@ -22258,6 +23692,12 @@ export namespace Prisma {
     isNot?: WeightGoalWhereInput | null
   }
 
+  export type WaterLogListRelationFilter = {
+    every?: WaterLogWhereInput
+    some?: WaterLogWhereInput
+    none?: WaterLogWhereInput
+  }
+
   export type WorkoutPlanNullableScalarRelationFilter = {
     is?: WorkoutPlanWhereInput | null
     isNot?: WorkoutPlanWhereInput | null
@@ -22285,6 +23725,10 @@ export namespace Prisma {
   }
 
   export type WeightLogOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type WaterLogOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -22807,6 +24251,13 @@ export namespace Prisma {
     not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
   }
 
+  export type EnumMealSourceFilter<$PrismaModel = never> = {
+    equals?: $Enums.MealSource | EnumMealSourceFieldRefInput<$PrismaModel>
+    in?: $Enums.MealSource[] | ListEnumMealSourceFieldRefInput<$PrismaModel>
+    notIn?: $Enums.MealSource[] | ListEnumMealSourceFieldRefInput<$PrismaModel>
+    not?: NestedEnumMealSourceFilter<$PrismaModel> | $Enums.MealSource
+  }
+
   export type MealLogCountOrderByAggregateInput = {
     id?: SortOrder
     logDate?: SortOrder
@@ -22816,6 +24267,9 @@ export namespace Prisma {
     protein?: SortOrder
     carbs?: SortOrder
     fat?: SortOrder
+    loggedAt?: SortOrder
+    imageUrl?: SortOrder
+    source?: SortOrder
     userId?: SortOrder
   }
 
@@ -22835,6 +24289,9 @@ export namespace Prisma {
     protein?: SortOrder
     carbs?: SortOrder
     fat?: SortOrder
+    loggedAt?: SortOrder
+    imageUrl?: SortOrder
+    source?: SortOrder
     userId?: SortOrder
   }
 
@@ -22847,6 +24304,9 @@ export namespace Prisma {
     protein?: SortOrder
     carbs?: SortOrder
     fat?: SortOrder
+    loggedAt?: SortOrder
+    imageUrl?: SortOrder
+    source?: SortOrder
     userId?: SortOrder
   }
 
@@ -22881,6 +24341,50 @@ export namespace Prisma {
     _sum?: NestedDecimalFilter<$PrismaModel>
     _min?: NestedDecimalFilter<$PrismaModel>
     _max?: NestedDecimalFilter<$PrismaModel>
+  }
+
+  export type EnumMealSourceWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.MealSource | EnumMealSourceFieldRefInput<$PrismaModel>
+    in?: $Enums.MealSource[] | ListEnumMealSourceFieldRefInput<$PrismaModel>
+    notIn?: $Enums.MealSource[] | ListEnumMealSourceFieldRefInput<$PrismaModel>
+    not?: NestedEnumMealSourceWithAggregatesFilter<$PrismaModel> | $Enums.MealSource
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumMealSourceFilter<$PrismaModel>
+    _max?: NestedEnumMealSourceFilter<$PrismaModel>
+  }
+
+  export type WaterLogUserIdLogDateCompoundUniqueInput = {
+    userId: string
+    logDate: Date | string
+  }
+
+  export type WaterLogCountOrderByAggregateInput = {
+    id?: SortOrder
+    logDate?: SortOrder
+    glasses?: SortOrder
+    userId?: SortOrder
+  }
+
+  export type WaterLogAvgOrderByAggregateInput = {
+    glasses?: SortOrder
+  }
+
+  export type WaterLogMaxOrderByAggregateInput = {
+    id?: SortOrder
+    logDate?: SortOrder
+    glasses?: SortOrder
+    userId?: SortOrder
+  }
+
+  export type WaterLogMinOrderByAggregateInput = {
+    id?: SortOrder
+    logDate?: SortOrder
+    glasses?: SortOrder
+    userId?: SortOrder
+  }
+
+  export type WaterLogSumOrderByAggregateInput = {
+    glasses?: SortOrder
   }
 
   export type WeightLogCountOrderByAggregateInput = {
@@ -23213,6 +24717,13 @@ export namespace Prisma {
     connect?: WeightGoalWhereUniqueInput
   }
 
+  export type WaterLogCreateNestedManyWithoutUserInput = {
+    create?: XOR<WaterLogCreateWithoutUserInput, WaterLogUncheckedCreateWithoutUserInput> | WaterLogCreateWithoutUserInput[] | WaterLogUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: WaterLogCreateOrConnectWithoutUserInput | WaterLogCreateOrConnectWithoutUserInput[]
+    createMany?: WaterLogCreateManyUserInputEnvelope
+    connect?: WaterLogWhereUniqueInput | WaterLogWhereUniqueInput[]
+  }
+
   export type WorkoutPlanCreateNestedOneWithoutUserInput = {
     create?: XOR<WorkoutPlanCreateWithoutUserInput, WorkoutPlanUncheckedCreateWithoutUserInput>
     connectOrCreate?: WorkoutPlanCreateOrConnectWithoutUserInput
@@ -23270,6 +24781,13 @@ export namespace Prisma {
     create?: XOR<WeightGoalCreateWithoutUserInput, WeightGoalUncheckedCreateWithoutUserInput>
     connectOrCreate?: WeightGoalCreateOrConnectWithoutUserInput
     connect?: WeightGoalWhereUniqueInput
+  }
+
+  export type WaterLogUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<WaterLogCreateWithoutUserInput, WaterLogUncheckedCreateWithoutUserInput> | WaterLogCreateWithoutUserInput[] | WaterLogUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: WaterLogCreateOrConnectWithoutUserInput | WaterLogCreateOrConnectWithoutUserInput[]
+    createMany?: WaterLogCreateManyUserInputEnvelope
+    connect?: WaterLogWhereUniqueInput | WaterLogWhereUniqueInput[]
   }
 
   export type WorkoutPlanUncheckedCreateNestedOneWithoutUserInput = {
@@ -23386,6 +24904,20 @@ export namespace Prisma {
     update?: XOR<XOR<WeightGoalUpdateToOneWithWhereWithoutUserInput, WeightGoalUpdateWithoutUserInput>, WeightGoalUncheckedUpdateWithoutUserInput>
   }
 
+  export type WaterLogUpdateManyWithoutUserNestedInput = {
+    create?: XOR<WaterLogCreateWithoutUserInput, WaterLogUncheckedCreateWithoutUserInput> | WaterLogCreateWithoutUserInput[] | WaterLogUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: WaterLogCreateOrConnectWithoutUserInput | WaterLogCreateOrConnectWithoutUserInput[]
+    upsert?: WaterLogUpsertWithWhereUniqueWithoutUserInput | WaterLogUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: WaterLogCreateManyUserInputEnvelope
+    set?: WaterLogWhereUniqueInput | WaterLogWhereUniqueInput[]
+    disconnect?: WaterLogWhereUniqueInput | WaterLogWhereUniqueInput[]
+    delete?: WaterLogWhereUniqueInput | WaterLogWhereUniqueInput[]
+    connect?: WaterLogWhereUniqueInput | WaterLogWhereUniqueInput[]
+    update?: WaterLogUpdateWithWhereUniqueWithoutUserInput | WaterLogUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: WaterLogUpdateManyWithWhereWithoutUserInput | WaterLogUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: WaterLogScalarWhereInput | WaterLogScalarWhereInput[]
+  }
+
   export type WorkoutPlanUpdateOneWithoutUserNestedInput = {
     create?: XOR<WorkoutPlanCreateWithoutUserInput, WorkoutPlanUncheckedCreateWithoutUserInput>
     connectOrCreate?: WorkoutPlanCreateOrConnectWithoutUserInput
@@ -23494,6 +25026,20 @@ export namespace Prisma {
     delete?: WeightGoalWhereInput | boolean
     connect?: WeightGoalWhereUniqueInput
     update?: XOR<XOR<WeightGoalUpdateToOneWithWhereWithoutUserInput, WeightGoalUpdateWithoutUserInput>, WeightGoalUncheckedUpdateWithoutUserInput>
+  }
+
+  export type WaterLogUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<WaterLogCreateWithoutUserInput, WaterLogUncheckedCreateWithoutUserInput> | WaterLogCreateWithoutUserInput[] | WaterLogUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: WaterLogCreateOrConnectWithoutUserInput | WaterLogCreateOrConnectWithoutUserInput[]
+    upsert?: WaterLogUpsertWithWhereUniqueWithoutUserInput | WaterLogUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: WaterLogCreateManyUserInputEnvelope
+    set?: WaterLogWhereUniqueInput | WaterLogWhereUniqueInput[]
+    disconnect?: WaterLogWhereUniqueInput | WaterLogWhereUniqueInput[]
+    delete?: WaterLogWhereUniqueInput | WaterLogWhereUniqueInput[]
+    connect?: WaterLogWhereUniqueInput | WaterLogWhereUniqueInput[]
+    update?: WaterLogUpdateWithWhereUniqueWithoutUserInput | WaterLogUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: WaterLogUpdateManyWithWhereWithoutUserInput | WaterLogUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: WaterLogScalarWhereInput | WaterLogScalarWhereInput[]
   }
 
   export type WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput = {
@@ -23682,12 +25228,30 @@ export namespace Prisma {
     divide?: Decimal | DecimalJsLike | number | string
   }
 
+  export type EnumMealSourceFieldUpdateOperationsInput = {
+    set?: $Enums.MealSource
+  }
+
   export type UserUpdateOneRequiredWithoutMealLogsNestedInput = {
     create?: XOR<UserCreateWithoutMealLogsInput, UserUncheckedCreateWithoutMealLogsInput>
     connectOrCreate?: UserCreateOrConnectWithoutMealLogsInput
     upsert?: UserUpsertWithoutMealLogsInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutMealLogsInput, UserUpdateWithoutMealLogsInput>, UserUncheckedUpdateWithoutMealLogsInput>
+  }
+
+  export type UserCreateNestedOneWithoutWaterLogsInput = {
+    create?: XOR<UserCreateWithoutWaterLogsInput, UserUncheckedCreateWithoutWaterLogsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutWaterLogsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutWaterLogsNestedInput = {
+    create?: XOR<UserCreateWithoutWaterLogsInput, UserUncheckedCreateWithoutWaterLogsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutWaterLogsInput
+    upsert?: UserUpsertWithoutWaterLogsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutWaterLogsInput, UserUpdateWithoutWaterLogsInput>, UserUncheckedUpdateWithoutWaterLogsInput>
   }
 
   export type UserCreateNestedOneWithoutWeightLogsInput = {
@@ -24106,6 +25670,13 @@ export namespace Prisma {
     not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
   }
 
+  export type NestedEnumMealSourceFilter<$PrismaModel = never> = {
+    equals?: $Enums.MealSource | EnumMealSourceFieldRefInput<$PrismaModel>
+    in?: $Enums.MealSource[] | ListEnumMealSourceFieldRefInput<$PrismaModel>
+    notIn?: $Enums.MealSource[] | ListEnumMealSourceFieldRefInput<$PrismaModel>
+    not?: NestedEnumMealSourceFilter<$PrismaModel> | $Enums.MealSource
+  }
+
   export type NestedEnumMealWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.Meal | EnumMealFieldRefInput<$PrismaModel>
     in?: $Enums.Meal[] | ListEnumMealFieldRefInput<$PrismaModel>
@@ -24130,6 +25701,16 @@ export namespace Prisma {
     _sum?: NestedDecimalFilter<$PrismaModel>
     _min?: NestedDecimalFilter<$PrismaModel>
     _max?: NestedDecimalFilter<$PrismaModel>
+  }
+
+  export type NestedEnumMealSourceWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.MealSource | EnumMealSourceFieldRefInput<$PrismaModel>
+    in?: $Enums.MealSource[] | ListEnumMealSourceFieldRefInput<$PrismaModel>
+    notIn?: $Enums.MealSource[] | ListEnumMealSourceFieldRefInput<$PrismaModel>
+    not?: NestedEnumMealSourceWithAggregatesFilter<$PrismaModel> | $Enums.MealSource
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumMealSourceFilter<$PrismaModel>
+    _max?: NestedEnumMealSourceFilter<$PrismaModel>
   }
 
   export type WorkoutPlanExerciseCreateWithoutExerciseInput = {
@@ -24205,6 +25786,7 @@ export namespace Prisma {
     mealLogs?: MealLogCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutWorkoutPlanInput = {
@@ -24223,6 +25805,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogUncheckedCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutWorkoutPlanInput = {
@@ -24281,6 +25864,7 @@ export namespace Prisma {
     mealLogs?: MealLogUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutWorkoutPlanInput = {
@@ -24299,6 +25883,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUncheckedUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type WorkoutPlanDayUpsertWithWhereUniqueWithoutPlanInput = {
@@ -24686,6 +26271,9 @@ export namespace Prisma {
     protein: Decimal | DecimalJsLike | number | string
     carbs: Decimal | DecimalJsLike | number | string
     fat: Decimal | DecimalJsLike | number | string
+    loggedAt?: Date | string
+    imageUrl?: string | null
+    source?: $Enums.MealSource
   }
 
   export type MealLogUncheckedCreateWithoutUserInput = {
@@ -24697,6 +26285,9 @@ export namespace Prisma {
     protein: Decimal | DecimalJsLike | number | string
     carbs: Decimal | DecimalJsLike | number | string
     fat: Decimal | DecimalJsLike | number | string
+    loggedAt?: Date | string
+    imageUrl?: string | null
+    source?: $Enums.MealSource
   }
 
   export type MealLogCreateOrConnectWithoutUserInput = {
@@ -24748,6 +26339,28 @@ export namespace Prisma {
   export type WeightGoalCreateOrConnectWithoutUserInput = {
     where: WeightGoalWhereUniqueInput
     create: XOR<WeightGoalCreateWithoutUserInput, WeightGoalUncheckedCreateWithoutUserInput>
+  }
+
+  export type WaterLogCreateWithoutUserInput = {
+    id?: string
+    logDate: Date | string
+    glasses?: number
+  }
+
+  export type WaterLogUncheckedCreateWithoutUserInput = {
+    id?: string
+    logDate: Date | string
+    glasses?: number
+  }
+
+  export type WaterLogCreateOrConnectWithoutUserInput = {
+    where: WaterLogWhereUniqueInput
+    create: XOR<WaterLogCreateWithoutUserInput, WaterLogUncheckedCreateWithoutUserInput>
+  }
+
+  export type WaterLogCreateManyUserInputEnvelope = {
+    data: WaterLogCreateManyUserInput | WaterLogCreateManyUserInput[]
+    skipDuplicates?: boolean
   }
 
   export type WorkoutPlanCreateWithoutUserInput = {
@@ -24965,6 +26578,9 @@ export namespace Prisma {
     protein?: DecimalFilter<"MealLog"> | Decimal | DecimalJsLike | number | string
     carbs?: DecimalFilter<"MealLog"> | Decimal | DecimalJsLike | number | string
     fat?: DecimalFilter<"MealLog"> | Decimal | DecimalJsLike | number | string
+    loggedAt?: DateTimeFilter<"MealLog"> | Date | string
+    imageUrl?: StringNullableFilter<"MealLog"> | string | null
+    source?: EnumMealSourceFilter<"MealLog"> | $Enums.MealSource
     userId?: StringFilter<"MealLog"> | string
   }
 
@@ -25019,6 +26635,32 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type WaterLogUpsertWithWhereUniqueWithoutUserInput = {
+    where: WaterLogWhereUniqueInput
+    update: XOR<WaterLogUpdateWithoutUserInput, WaterLogUncheckedUpdateWithoutUserInput>
+    create: XOR<WaterLogCreateWithoutUserInput, WaterLogUncheckedCreateWithoutUserInput>
+  }
+
+  export type WaterLogUpdateWithWhereUniqueWithoutUserInput = {
+    where: WaterLogWhereUniqueInput
+    data: XOR<WaterLogUpdateWithoutUserInput, WaterLogUncheckedUpdateWithoutUserInput>
+  }
+
+  export type WaterLogUpdateManyWithWhereWithoutUserInput = {
+    where: WaterLogScalarWhereInput
+    data: XOR<WaterLogUpdateManyMutationInput, WaterLogUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type WaterLogScalarWhereInput = {
+    AND?: WaterLogScalarWhereInput | WaterLogScalarWhereInput[]
+    OR?: WaterLogScalarWhereInput[]
+    NOT?: WaterLogScalarWhereInput | WaterLogScalarWhereInput[]
+    id?: StringFilter<"WaterLog"> | string
+    logDate?: DateTimeFilter<"WaterLog"> | Date | string
+    glasses?: IntFilter<"WaterLog"> | number
+    userId?: StringFilter<"WaterLog"> | string
+  }
+
   export type WorkoutPlanUpsertWithoutUserInput = {
     update: XOR<WorkoutPlanUpdateWithoutUserInput, WorkoutPlanUncheckedUpdateWithoutUserInput>
     create: XOR<WorkoutPlanCreateWithoutUserInput, WorkoutPlanUncheckedCreateWithoutUserInput>
@@ -25069,6 +26711,7 @@ export namespace Prisma {
     mealLogs?: MealLogCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
   }
 
@@ -25087,6 +26730,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogUncheckedCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
   }
 
@@ -25121,6 +26765,7 @@ export namespace Prisma {
     mealLogs?: MealLogUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
   }
 
@@ -25139,6 +26784,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUncheckedUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
   }
 
@@ -25157,6 +26803,7 @@ export namespace Prisma {
     mealLogs?: MealLogCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
   }
 
@@ -25175,6 +26822,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogUncheckedCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
   }
 
@@ -25209,6 +26857,7 @@ export namespace Prisma {
     mealLogs?: MealLogUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
   }
 
@@ -25227,6 +26876,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUncheckedUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
   }
 
@@ -25245,6 +26895,7 @@ export namespace Prisma {
     mealLogs?: MealLogCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
   }
 
@@ -25263,6 +26914,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogUncheckedCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
   }
 
@@ -25297,6 +26949,7 @@ export namespace Prisma {
     mealLogs?: MealLogUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
   }
 
@@ -25315,6 +26968,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUncheckedUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
   }
 
@@ -25333,6 +26987,7 @@ export namespace Prisma {
     mealLogs?: MealLogCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
   }
 
@@ -25351,6 +27006,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogUncheckedCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
   }
 
@@ -25407,6 +27063,7 @@ export namespace Prisma {
     mealLogs?: MealLogUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
   }
 
@@ -25425,6 +27082,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUncheckedUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
   }
 
@@ -25517,6 +27175,7 @@ export namespace Prisma {
     mealLogs?: MealLogCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
   }
 
@@ -25535,6 +27194,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogUncheckedCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
   }
 
@@ -25569,6 +27229,7 @@ export namespace Prisma {
     mealLogs?: MealLogUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
   }
 
@@ -25587,6 +27248,7 @@ export namespace Prisma {
     mealLogs?: MealLogUncheckedUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUncheckedUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
   }
 
@@ -25605,6 +27267,7 @@ export namespace Prisma {
     nutritionGoal?: NutritionGoalCreateNestedOneWithoutUserInput
     weightLogs?: WeightLogCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
   }
 
@@ -25623,6 +27286,7 @@ export namespace Prisma {
     nutritionGoal?: NutritionGoalUncheckedCreateNestedOneWithoutUserInput
     weightLogs?: WeightLogUncheckedCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
   }
 
@@ -25657,6 +27321,7 @@ export namespace Prisma {
     nutritionGoal?: NutritionGoalUpdateOneWithoutUserNestedInput
     weightLogs?: WeightLogUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
   }
 
@@ -25673,6 +27338,99 @@ export namespace Prisma {
     workoutSessions?: WorkoutSessionUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
     nutritionGoal?: NutritionGoalUncheckedUpdateOneWithoutUserNestedInput
+    weightLogs?: WeightLogUncheckedUpdateManyWithoutUserNestedInput
+    weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
+    workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
+  }
+
+  export type UserCreateWithoutWaterLogsInput = {
+    id?: string
+    name: string
+    email: string
+    emailVerified?: boolean
+    image?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    sessions?: SessionCreateNestedManyWithoutUserInput
+    accounts?: AccountCreateNestedManyWithoutUserInput
+    workoutSessions?: WorkoutSessionCreateNestedManyWithoutUserInput
+    profile?: UserProfileCreateNestedOneWithoutUserInput
+    nutritionGoal?: NutritionGoalCreateNestedOneWithoutUserInput
+    mealLogs?: MealLogCreateNestedManyWithoutUserInput
+    weightLogs?: WeightLogCreateNestedManyWithoutUserInput
+    weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
+    workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutWaterLogsInput = {
+    id?: string
+    name: string
+    email: string
+    emailVerified?: boolean
+    image?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
+    workoutSessions?: WorkoutSessionUncheckedCreateNestedManyWithoutUserInput
+    profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
+    nutritionGoal?: NutritionGoalUncheckedCreateNestedOneWithoutUserInput
+    mealLogs?: MealLogUncheckedCreateNestedManyWithoutUserInput
+    weightLogs?: WeightLogUncheckedCreateNestedManyWithoutUserInput
+    weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
+    workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutWaterLogsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutWaterLogsInput, UserUncheckedCreateWithoutWaterLogsInput>
+  }
+
+  export type UserUpsertWithoutWaterLogsInput = {
+    update: XOR<UserUpdateWithoutWaterLogsInput, UserUncheckedUpdateWithoutWaterLogsInput>
+    create: XOR<UserCreateWithoutWaterLogsInput, UserUncheckedCreateWithoutWaterLogsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutWaterLogsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutWaterLogsInput, UserUncheckedUpdateWithoutWaterLogsInput>
+  }
+
+  export type UserUpdateWithoutWaterLogsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    emailVerified?: BoolFieldUpdateOperationsInput | boolean
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sessions?: SessionUpdateManyWithoutUserNestedInput
+    accounts?: AccountUpdateManyWithoutUserNestedInput
+    workoutSessions?: WorkoutSessionUpdateManyWithoutUserNestedInput
+    profile?: UserProfileUpdateOneWithoutUserNestedInput
+    nutritionGoal?: NutritionGoalUpdateOneWithoutUserNestedInput
+    mealLogs?: MealLogUpdateManyWithoutUserNestedInput
+    weightLogs?: WeightLogUpdateManyWithoutUserNestedInput
+    weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
+    workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutWaterLogsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    emailVerified?: BoolFieldUpdateOperationsInput | boolean
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
+    workoutSessions?: WorkoutSessionUncheckedUpdateManyWithoutUserNestedInput
+    profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
+    nutritionGoal?: NutritionGoalUncheckedUpdateOneWithoutUserNestedInput
+    mealLogs?: MealLogUncheckedUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUncheckedUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
@@ -25693,6 +27451,7 @@ export namespace Prisma {
     nutritionGoal?: NutritionGoalCreateNestedOneWithoutUserInput
     mealLogs?: MealLogCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
   }
 
@@ -25711,6 +27470,7 @@ export namespace Prisma {
     nutritionGoal?: NutritionGoalUncheckedCreateNestedOneWithoutUserInput
     mealLogs?: MealLogUncheckedCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
   }
 
@@ -25745,6 +27505,7 @@ export namespace Prisma {
     nutritionGoal?: NutritionGoalUpdateOneWithoutUserNestedInput
     mealLogs?: MealLogUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
   }
 
@@ -25763,6 +27524,7 @@ export namespace Prisma {
     nutritionGoal?: NutritionGoalUncheckedUpdateOneWithoutUserNestedInput
     mealLogs?: MealLogUncheckedUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
   }
 
@@ -25781,6 +27543,7 @@ export namespace Prisma {
     nutritionGoal?: NutritionGoalCreateNestedOneWithoutUserInput
     mealLogs?: MealLogCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogCreateNestedManyWithoutUserInput
+    waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
   }
 
@@ -25799,6 +27562,7 @@ export namespace Prisma {
     nutritionGoal?: NutritionGoalUncheckedCreateNestedOneWithoutUserInput
     mealLogs?: MealLogUncheckedCreateNestedManyWithoutUserInput
     weightLogs?: WeightLogUncheckedCreateNestedManyWithoutUserInput
+    waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
   }
 
@@ -25833,6 +27597,7 @@ export namespace Prisma {
     nutritionGoal?: NutritionGoalUpdateOneWithoutUserNestedInput
     mealLogs?: MealLogUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUpdateManyWithoutUserNestedInput
+    waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
   }
 
@@ -25851,6 +27616,7 @@ export namespace Prisma {
     nutritionGoal?: NutritionGoalUncheckedUpdateOneWithoutUserNestedInput
     mealLogs?: MealLogUncheckedUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUncheckedUpdateManyWithoutUserNestedInput
+    waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
   }
 
@@ -25993,12 +27759,21 @@ export namespace Prisma {
     protein: Decimal | DecimalJsLike | number | string
     carbs: Decimal | DecimalJsLike | number | string
     fat: Decimal | DecimalJsLike | number | string
+    loggedAt?: Date | string
+    imageUrl?: string | null
+    source?: $Enums.MealSource
   }
 
   export type WeightLogCreateManyUserInput = {
     id?: string
     logDate: Date | string
     weight: Decimal | DecimalJsLike | number | string
+  }
+
+  export type WaterLogCreateManyUserInput = {
+    id?: string
+    logDate: Date | string
+    glasses?: number
   }
 
   export type SessionUpdateWithoutUserInput = {
@@ -26108,6 +27883,9 @@ export namespace Prisma {
     protein?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     carbs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     fat?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    loggedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: EnumMealSourceFieldUpdateOperationsInput | $Enums.MealSource
   }
 
   export type MealLogUncheckedUpdateWithoutUserInput = {
@@ -26119,6 +27897,9 @@ export namespace Prisma {
     protein?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     carbs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     fat?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    loggedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: EnumMealSourceFieldUpdateOperationsInput | $Enums.MealSource
   }
 
   export type MealLogUncheckedUpdateManyWithoutUserInput = {
@@ -26130,6 +27911,9 @@ export namespace Prisma {
     protein?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     carbs?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     fat?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    loggedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    source?: EnumMealSourceFieldUpdateOperationsInput | $Enums.MealSource
   }
 
   export type WeightLogUpdateWithoutUserInput = {
@@ -26148,6 +27932,24 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     logDate?: DateTimeFieldUpdateOperationsInput | Date | string
     weight?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type WaterLogUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    logDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    glasses?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type WaterLogUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    logDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    glasses?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type WaterLogUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    logDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    glasses?: IntFieldUpdateOperationsInput | number
   }
 
   export type WorkoutExerciseCreateManySessionInput = {

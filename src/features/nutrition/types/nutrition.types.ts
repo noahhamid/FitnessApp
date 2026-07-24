@@ -11,6 +11,25 @@ export type NutritionGoals = {
   fat: number;
   updated_at: string;
 };
+export type FoodScanResult = {
+  name: string;
+  cal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
+
+export type WeeklyTrendDay = {
+  date: string;
+  label: string;
+  pct: number;
+  isToday: boolean;
+};
+
+export type WeeklyTrend = {
+  days: WeeklyTrendDay[];
+  streak: number;
+};
 
 export type MealLogEntry = {
   id: string;
@@ -25,6 +44,14 @@ export type MealLogEntry = {
   fat: number;
   quantity: number;
   unit: string;
+  image_url: string | null;   // NEW
+  source: "manual" | "scan";  // NEW
+};
+
+export type NutritionSuggestion = {
+  headline: string;
+  body: string;
+  suggestions: { label: string; calories: number }[];
 };
 
 /** Local food catalog item (seed + device AsyncStorage custom foods). */

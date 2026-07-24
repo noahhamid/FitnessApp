@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 import { T } from "../theme";
 import { MealHeader } from "../components/MealHeader";
@@ -8,56 +9,89 @@ import { DaySelector } from "../components/DaySelector";
 import { DailySummaryCard } from "../components/DailySummaryCard";
 import { WaterTracker } from "../components/WaterTracker";
 import { LogActionsRow, LOG_ACTION_ICONS } from "../components/LogActionsRow";
-import { MealPhotoCard, MealMacros } from "../components/MealPhotoCard";
+import { MealPhotoCard } from "../components/MealPhotoCard";
 import { EmptyMealSlot } from "../components/EmptyMealSlot";
 import { FadeInUp } from "../components/FadeInUp";
 import { AiSuggestionCard } from "../components/AiSuggestionCard";
 import { WeeklyTrendCard } from "../components/WeeklyTrendCard";
 
-// ── Mock data — replace with real state / API results ────────────────────────
-const DAYS = [
-  { label: "MON", num: 3, hasLog: true },
-  { label: "TUE", num: 4, hasLog: true },
-  { label: "WED", num: 5, hasLog: true },
-  { label: "THU", num: 6, hasLog: false },
-  { label: "FRI", num: 7, hasLog: false },
-  { label: "SAT", num: 8, hasLog: false },
-];
+import {
+  useMealLog,
+  useDailyTotals,
+  useNutritionGoals,
+  useWater,
+  useAdjustWater,
+  useWeeklyTrend,
+  useSuggestion,
+} from "../hooks/useNutrition";
+import type { MealLogEntry, MealType } from "../types/nutrition.types";
 
-type Meal = {
-  slot: string;
-  name: string;
-  time: string;
-  calories: number;
-  macros: MealMacros;
-  imageUrl: string;
-} | null;
-
-const MEALS: Record<string, Meal> = {
-  Breakfast: {
-    slot: "Breakfast",
-    name: "Greek yogurt bowl",
-    time: "7:40 AM",
-    calories: 310,
-    macros: { carbs: 28, protein: 22, fat: 9 },
-    imageUrl:
-      "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=500&h=400&fit=crop",
-  },
-  Lunch: {
-    slot: "Lunch",
-    name: "Grilled chicken salad",
-    time: "1:05 PM",
-    calories: 546,
-    macros: { carbs: 30, protein: 48, fat: 21 },
-    imageUrl:
-      "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=400&fit=crop",
-  },
-  Dinner: null,
-  Snack: null,
+const WATER_GOAL_GLASSES = 8;
+const MEAL_SLOTS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"];
+const RECOMMENDED_RANGE: Record<MealType, string> = {
+  Breakfast: "Recommended 300–450 Cal",
+  Lunch: "Recommended 450–600 Cal",
+  Dinner: "Recommended 550–700 Cal",
+  Snack: "Recommended 150–250 Cal",
 };
 
+function todayStr(): string {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function dayNum(dateStr: string): number {
+  return new Date(dateStr + "T00:00:00").getDate();
+}
+
+function dayLabel(dateStr: string): string {
+  return new Date(dateStr + "T00:00:00")
+    .toLocaleDateString("en-US", { weekday: "short" })
+    .toUpperCase();
+}
+
 export default function MealScreen() {
-  const [activeDay, setActiveDay] = useState(3); // THU
+  const router = useRouter();
+  const [selectedDate, setSelectedDate] = useState(todayStr());
+
+  const { data: goals } = useNutritionGoals();
+  const { data: meals = [] } = useMealLog(selectedDate);
+  const { data: totals } = useDailyTotals(selectedDate);
+  const { data: water } = useWater(selectedDate);
+  const adjustWater = useAdjustWater(selectedDate);
+  const { data: weekly } = useWeeklyTrend(selectedDate);
+  const { data: suggestion } = useSuggestion(selectedDate);
+
+  const mealsBySlot = useMemo(() => {
+    const map: Partial<Record<MealType, MealLogEntry>> = {};
+    for (const entry of meals) {
+      if (!map[entry.meal]) map[entry.meal] = entry;
+    }
+    return map;
+  }, [meals]);
+
+  const days = useMemo(() => {
+    if (!weekly) return [];
+    return weekly.days.map((d) => ({
+      label: dayLabel(d.date),
+      num: dayNum(d.date),
+      hasLog: d.pct > 0,
+      date: d.date,
+    }));
+  }, [weekly]);
+
+  const activeDayIndex = days.findIndex((d) => d.date === selectedDate);
+
+  const calorieGoal = goals?.calories ?? 2400;
+  const consumed = totals?.cal ?? 0;
+  const caloriesLeft = Math.max(0, calorieGoal - consumed);
 
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
@@ -68,16 +102,20 @@ export default function MealScreen() {
       />
 
       <MealHeader
-        eyebrow="Thursday · Diet"
+        eyebrow={`${dayLabel(selectedDate)} · Diet`}
         title="Today's plate"
-        caloriesLeft={1644}
-        streakDays={5}
+        caloriesLeft={caloriesLeft}
+        streakDays={weekly?.streak ?? 0}
       />
+
       <View style={styles.daySelectorWrap}>
         <DaySelector
-          days={DAYS}
-          activeIndex={activeDay}
-          onSelect={setActiveDay}
+          days={days}
+          activeIndex={activeDayIndex}
+          onSelect={(i) => {
+            const picked = days[i];
+            if (picked) setSelectedDate(picked.date);
+          }}
         />
       </View>
 
@@ -87,16 +125,20 @@ export default function MealScreen() {
         showsVerticalScrollIndicator={false}
       >
         <DailySummaryCard
-          consumed={856}
-          calorieGoal={2500}
-          carbs={{ value: 173, goal: 280 }}
-          protein={{ value: 128, goal: 165 }}
-          fat={{ value: 52, goal: 80 }}
+          consumed={consumed}
+          calorieGoal={calorieGoal}
+          carbs={{ value: totals?.carbs ?? 0, goal: goals?.carbs ?? 0 }}
+          protein={{ value: totals?.protein ?? 0, goal: goals?.protein ?? 0 }}
+          fat={{ value: totals?.fat ?? 0, goal: goals?.fat ?? 0 }}
           goalLabel="Lean muscle gain"
           onEditGoal={() => {}}
         />
 
-        <WaterTracker glasses={3} total={6} onAdd={() => {}} />
+        <WaterTracker
+          glasses={water?.glasses ?? 0}
+          total={WATER_GOAL_GLASSES}
+          onAdd={() => adjustWater.mutate(1)}
+        />
 
         <LogActionsRow
           actions={[
@@ -105,19 +147,21 @@ export default function MealScreen() {
               label: "Scan food",
               icon: LOG_ACTION_ICONS.camera,
               primary: true,
-              onPress: () => {},
-            },
-            {
-              key: "search",
-              label: "Search",
-              icon: LOG_ACTION_ICONS.search,
-              onPress: () => {},
+              onPress: () =>
+                router.push({
+                  pathname: "/scan-meal",
+                  params: { date: selectedDate },
+                }),
             },
             {
               key: "manual",
               label: "Manual",
               icon: LOG_ACTION_ICONS.manual,
-              onPress: () => {},
+              onPress: () =>
+                router.push({
+                  pathname: "/log-meal",
+                  params: { date: selectedDate },
+                }),
             },
           ]}
         />
@@ -127,61 +171,66 @@ export default function MealScreen() {
           <Text style={styles.sectionLink}>See all →</Text>
         </View>
 
-        {Object.entries(MEALS).map(([slot, meal], i) => (
-          <FadeInUp key={slot} delay={i * 70}>
-            {meal ? (
-              <MealPhotoCard
-                slot={meal.slot}
-                name={meal.name}
-                time={meal.time}
-                calories={meal.calories}
-                macros={meal.macros}
-                imageUrl={meal.imageUrl}
-                onPress={() => {}}
-                entranceDelay={0} // FadeInUp already staggers the wrapper
-              />
-            ) : (
-              <EmptyMealSlot
-                slot={slot}
-                recommendedRange={
-                  slot === "Dinner"
-                    ? "Recommended 550–700 Cal"
-                    : "Recommended 150–250 Cal"
-                }
-                onAdd={() => {}}
-              />
-            )}
-          </FadeInUp>
-        ))}
+        {MEAL_SLOTS.map((slot, i) => {
+          const entry = mealsBySlot[slot];
+          return (
+            <FadeInUp key={slot} delay={i * 70}>
+              {entry ? (
+                <MealPhotoCard
+                  slot={entry.meal}
+                  name={entry.name}
+                  time={formatTime(entry.logged_at)}
+                  calories={entry.cal}
+                  macros={{
+                    carbs: entry.carbs,
+                    protein: entry.protein,
+                    fat: entry.fat,
+                  }}
+                  imageUrl={entry.image_url ?? undefined}
+                  onPress={() => {}}
+                  entranceDelay={0}
+                />
+              ) : (
+                <EmptyMealSlot
+                  slot={slot}
+                  recommendedRange={RECOMMENDED_RANGE[slot]}
+                  onAdd={() =>
+                    router.push({
+                      pathname: "/log-meal",
+                      params: { slot, date: selectedDate },
+                    })
+                  }
+                />
+              )}
+            </FadeInUp>
+          );
+        })}
 
-        <AiSuggestionCard
-          headline="You've got 37g of protein left today."
-          body="A salmon dinner or a shake after your lift closes the gap without going over on carbs."
-          imageUrl="https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&h=500&fit=crop"
-          suggestions={[
-            { label: "Salmon bowl", calories: 420 },
-            { label: "Protein shake", calories: 160 },
-          ]}
-          onSelect={() => {}}
-        />
+        {suggestion && (
+          <AiSuggestionCard
+            headline={suggestion.headline}
+            body={suggestion.body}
+            imageUrl="https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&h=500&fit=crop"
+            suggestions={suggestion.suggestions}
+            onSelect={() => {}}
+          />
+        )}
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>This week</Text>
           <Text style={styles.sectionLink}>Full report →</Text>
         </View>
 
-        <WeeklyTrendCard
-          days={[
-            { label: "M", pct: 74 },
-            { label: "T", pct: 88 },
-            { label: "W", pct: 65 },
-            { label: "T", pct: 92 },
-            { label: "F", pct: 34, isToday: true },
-            { label: "S", pct: 0 },
-            { label: "S", pct: 0 },
-          ]}
-          streak={5}
-        />
+        {weekly && (
+          <WeeklyTrendCard
+            days={weekly.days.map((d) => ({
+              label: d.label,
+              pct: d.pct,
+              isToday: d.isToday,
+            }))}
+            streak={weekly.streak}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );

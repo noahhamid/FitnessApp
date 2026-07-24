@@ -100,11 +100,12 @@ function UpNextWorkoutCardBase({
             </View>
           )}
 
+          {/* warm-black gradient, matching T.bg instead of a cool off-palette black */}
           <LinearGradient
             colors={[
-              "rgba(9,9,12,0.15)",
-              "rgba(9,9,12,0.35)",
-              "rgba(9,9,12,0.95)",
+              "rgba(14,13,12,0.15)",
+              "rgba(14,13,12,0.4)",
+              "rgba(14,13,12,0.96)",
             ]}
             locations={[0, 0.35, 1]}
             style={StyleSheet.absoluteFillObject}
@@ -118,14 +119,13 @@ function UpNextWorkoutCardBase({
           </View>
 
           <View style={s.bottom}>
-            {/* two-line display headline instead of a single truncated title */}
+            {/* two-line display headline — this is the largest type on the dashboard */}
             <Text style={s.headline}>
               {line1}
               {"\n"}
               {line2}
             </Text>
 
-            {/* inline meta row instead of chip row */}
             <View style={s.metaRow}>
               <View style={s.metaItem}>
                 <Clock size={12} color={T.muted} strokeWidth={2.2} />
@@ -204,7 +204,7 @@ const s = StyleSheet.create({
 
   bottom: { position: "absolute", left: 18, right: 18, bottom: 16 },
   headline: {
-    fontFamily: T.display,
+    fontFamily: T.displayBold,
     fontSize: 24,
     lineHeight: 27,
     color: T.white,

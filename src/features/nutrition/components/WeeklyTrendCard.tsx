@@ -38,8 +38,7 @@ export function WeeklyTrendCard({ days, streak }: Props) {
       <View style={styles.streakRow}>
         <Flame size={13} color={T.accent} strokeWidth={2.4} />
         <Text style={styles.streak}>
-          <Text style={styles.streakBold}>{streak}-day</Text> logging streak —
-          your best this month
+          <Text style={styles.streakBold}>{streak}-day</Text> logging streak
         </Text>
       </View>
     </View>

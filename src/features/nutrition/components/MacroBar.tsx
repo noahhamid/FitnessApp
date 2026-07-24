@@ -20,7 +20,7 @@ export function MacroBar({
   goal,
   unit = "g",
 }: Props) {
-  const pct = Math.max(0, Math.min((value / goal) * 100, 100));
+  const pct = goal > 0 ? Math.max(0, Math.min((value / goal) * 100, 100)) : 0;
 
   return (
     <View style={styles.row}>

@@ -9,8 +9,6 @@ import {
   LayoutChangeEvent,
 } from "react-native";
 
-// Font family strings + palette — same convention as the other components.
-// Worth pulling into a shared theme.ts alongside them at some point.
 const T = {
   glassBorder: "rgba(255,255,255,0.14)",
   accent: "#FFC700",
@@ -22,6 +20,9 @@ const T = {
   bodyBold: "Inter_700Bold",
 };
 
+// Kept for backward compatibility wherever this specific union was
+// imported elsewhere — the component itself is now generic, so new
+// usages don't need to conform to this particular set of labels.
 export type Category =
   | "All workouts"
   | "Lower body"
@@ -80,24 +81,24 @@ function Chip({
   );
 }
 
-export function CategoryFilter({
+export function CategoryFilter<T extends string>({
   categories,
   active,
   onChange,
 }: {
-  categories: Category[];
-  active: Category;
-  onChange: (c: Category) => void;
+  categories: T[];
+  active: T;
+  onChange: (c: T) => void;
 }) {
-  const [layoutMap, setLayoutMap] = useState<
-    Partial<Record<Category, ChipLayout>>
-  >({});
+  const [layoutMap, setLayoutMap] = useState<Partial<Record<T, ChipLayout>>>(
+    {},
+  );
   const indicatorX = useRef(new Animated.Value(0)).current;
   const indicatorWidth = useRef(new Animated.Value(0)).current;
   const measuredOnce = useRef(false);
 
   const handleChipLayout = useCallback(
-    (cat: Category) => (e: LayoutChangeEvent) => {
+    (cat: T) => (e: LayoutChangeEvent) => {
       const { x, width } = e.nativeEvent.layout;
       setLayoutMap((prev) => {
         const existing = prev[cat];

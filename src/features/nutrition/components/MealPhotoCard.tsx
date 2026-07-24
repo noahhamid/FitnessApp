@@ -17,14 +17,13 @@ import { PressableScale } from "./PressableScale";
 export type MealMacros = { carbs: number; protein: number; fat: number };
 
 type Props = {
-  slot: string; // "Breakfast", "Lunch", ...
+  slot: string;
   name: string;
-  time: string; // "7:40 AM"
+  time: string;
   calories: number;
   macros: MealMacros;
-  imageUrl: string;
+  imageUrl?: string; // was: imageUrl: string
   onPress?: () => void;
-  /** Optional delay (ms) before the entrance animation starts — for staggering list items */
   entranceDelay?: number;
   style?: StyleProp<ViewStyle>;
   testID?: string;
@@ -113,7 +112,7 @@ function MealPhotoCardBase({
         style={s.pressableReset}
       >
         <View style={s.card}>
-          {imgStatus !== "error" ? (
+          {imageUrl && imgStatus !== "error" ? (
             <>
               <Image
                 source={{ uri: imageUrl }}

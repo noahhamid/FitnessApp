@@ -2,17 +2,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   DailyTotals,
-  FoodLibraryItem,
   MealLogEntry,
   NutritionGoals,
+  NutritionSuggestion,
+  WeeklyTrend,
 } from "../types/nutrition.types";
 import {
   addMealEntry,
+  adjustWater,
   deleteMealEntry,
   fetchDailyTotals,
   fetchMealLog,
   fetchNutritionGoals,
-  searchFoods,
+  fetchSuggestion,
+  fetchWater,
+  fetchWeeklyTrend,
   upsertNutritionGoals,
 } from "../services/nutrition.service";
 
@@ -20,23 +24,17 @@ const KEYS = {
   goals: ["nutrition", "goals"] as const,
   log: (date: string) => ["nutrition", "log", date] as const,
   totals: (date: string) => ["nutrition", "totals", date] as const,
-  search: (q: string) => ["nutrition", "search", q] as const,
+  water: (date: string) => ["nutrition", "water", date] as const,
+  weekly: (date: string) => ["nutrition", "weekly", date] as const,
 };
 
-/** Calendar day in device local TZ (aligned with workout logs). */
 function today(): string {
   const n = new Date();
-  const y = n.getFullYear();
-  const m = String(n.getMonth() + 1).padStart(2, "0");
-  const d = String(n.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
 }
 
 export function useNutritionGoals() {
-  return useQuery<NutritionGoals | null>({
-    queryKey: KEYS.goals,
-    queryFn: fetchNutritionGoals,
-  });
+  return useQuery<NutritionGoals | null>({ queryKey: KEYS.goals, queryFn: fetchNutritionGoals });
 }
 
 export function useUpdateGoals() {
@@ -48,17 +46,11 @@ export function useUpdateGoals() {
 }
 
 export function useMealLog(date = today()) {
-  return useQuery<MealLogEntry[]>({
-    queryKey: KEYS.log(date),
-    queryFn: () => fetchMealLog(date),
-  });
+  return useQuery<MealLogEntry[]>({ queryKey: KEYS.log(date), queryFn: () => fetchMealLog(date) });
 }
 
 export function useDailyTotals(date = today()) {
-  return useQuery<DailyTotals>({
-    queryKey: KEYS.totals(date),
-    queryFn: () => fetchDailyTotals(date),
-  });
+  return useQuery<DailyTotals>({ queryKey: KEYS.totals(date), queryFn: () => fetchDailyTotals(date) });
 }
 
 export function useAddMeal() {
@@ -68,6 +60,7 @@ export function useAddMeal() {
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: KEYS.log(vars.log_date) });
       qc.invalidateQueries({ queryKey: KEYS.totals(vars.log_date) });
+      qc.invalidateQueries({ queryKey: ["nutrition", "weekly"] });
     },
   });
 }
@@ -79,14 +72,30 @@ export function useDeleteMeal(date = today()) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.log(date) });
       qc.invalidateQueries({ queryKey: KEYS.totals(date) });
+      qc.invalidateQueries({ queryKey: ["nutrition", "weekly"] });
     },
   });
 }
 
-export function useFoodSearch(query: string) {
-  return useQuery<FoodLibraryItem[]>({
-    queryKey: KEYS.search(query),
-    queryFn: () => searchFoods(query),
-    enabled: query.length > 1,
+export function useWater(date = today()) {
+  return useQuery<{ glasses: number }>({ queryKey: KEYS.water(date), queryFn: () => fetchWater(date) });
+}
+
+export function useAdjustWater(date = today()) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (delta: number) => adjustWater(delta, date),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEYS.water(date) }),
   });
+}
+
+export function useSuggestion(date = today()) {
+  return useQuery<NutritionSuggestion | null>({
+    queryKey: ["nutrition", "suggestion", date],
+    queryFn: () => fetchSuggestion(date),
+  });
+}
+
+export function useWeeklyTrend(date = today()) {
+  return useQuery<WeeklyTrend>({ queryKey: KEYS.weekly(date), queryFn: () => fetchWeeklyTrend(date) });
 }

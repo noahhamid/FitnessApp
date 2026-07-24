@@ -121,6 +121,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "baseline",
   },
-  sectionTitle: { fontFamily: T.display, fontSize: 17, color: T.white },
+  sectionTitle: { fontFamily: T.displaySemi, fontSize: 17, color: T.white },
   sectionLink: { fontFamily: T.bodySemi, fontSize: 11, color: T.accent },
 });

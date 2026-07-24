@@ -5,6 +5,16 @@ import { err, ok } from "../lib/response";
 import { parseJson, parseQuery } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
 import type { AppEnv } from "../types/hono";
+import { computeProgressionSuggestion } from "../lib/progression-calc";
+
+interface PersonalRecord {
+  exerciseName: string;
+  heaviestWeight: number;
+  repsAtHeaviest: number;
+  estimatedOneRepMax: number;
+  achievedAt: string; // ISO date
+}
+ 
 
 const setSchema = z.object({
   reps: z.number().int().nonnegative().optional(),
@@ -48,6 +58,13 @@ const exerciseUpdateSchema = z.object({
 const listQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).optional(),
   completed: z.enum(["true", "false"]).optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+ 
+
+const exerciseLibraryQuerySchema = z.object({
+  muscleGroup: z.string().optional(),
 });
 
 function serializeSession(session: {
@@ -71,6 +88,7 @@ function serializeSession(session: {
     })),
   };
 }
+
 function serializePlan(plan: {
   id: string;
   splitLabel: string;
@@ -123,7 +141,6 @@ function serializePlan(plan: {
       })),
   };
 }
- 
 
 async function findOwnedSession(userId: string, sessionId: string) {
   return prisma.workoutSession.findFirst({
@@ -172,8 +189,12 @@ const createSession = async (c: Context<AppEnv>) => {
 const listSessions = async (c: Context<AppEnv>) => {
   const query = parseQuery(c, listQuerySchema);
   if (!query.success) return query.response;
-
+ 
   const user = getUser(c);
+ 
+  const from = query.data.from ? new Date(`${query.data.from}T00:00:00.000Z`) : null;
+  const to = query.data.to ? new Date(`${query.data.to}T23:59:59.999Z`) : null;
+ 
   const sessions = await prisma.workoutSession.findMany({
     where: {
       userId: user.id,
@@ -182,12 +203,19 @@ const listSessions = async (c: Context<AppEnv>) => {
         : query.data.completed === "false"
           ? { completedAt: null }
           : {}),
+      ...((from || to) && {
+        completedAt: {
+          ...(query.data.completed === "true" ? { not: null } : {}),
+          ...(from ? { gte: from } : {}),
+          ...(to ? { lte: to } : {}),
+        },
+      }),
     },
     include: { exercises: true },
     orderBy: { startedAt: "desc" },
     take: query.data.limit ?? 50,
   });
-
+ 
   return ok(c, sessions.map(serializeSession));
 };
 
@@ -195,9 +223,86 @@ const listSessions = async (c: Context<AppEnv>) => {
 workoutsRouter.post("/", createSession);
 workoutsRouter.get("/", listSessions);
 
-workoutsRouter.get("/plan", async (c) => {
+// ============================================================
+// Everything below until /:id must stay ABOVE the dynamic /:id
+// route further down — Hono matches /:id greedily, so specific
+// paths like /plan, /last-performance, /exercises would otherwise
+// get swallowed by it and 404 as "session not found".
+// ============================================================
+
+
+workoutsRouter.get("/progression", async (c) => {
   const user = getUser(c);
  
+  const plan = await prisma.workoutPlan.findUnique({
+    where: { userId: user.id },
+    include: {
+      days: {
+        include: {
+          exercises: { include: { exercise: true } },
+        },
+      },
+    },
+  });
+ 
+  if (!plan) return ok(c, []);
+ 
+  // Unique exercises across the whole plan (a Push/Pull/Legs split can
+  // repeat the same exercise across weeks, but we only need one
+  // suggestion per exercise name, not one per plan-slot).
+  const exerciseTargets = new Map<
+    string,
+    { targetRepsMin: number; targetRepsMax: number }
+  >();
+  for (const day of plan.days) {
+    for (const planEx of day.exercises) {
+      if (!exerciseTargets.has(planEx.exercise.name)) {
+        exerciseTargets.set(planEx.exercise.name, {
+          targetRepsMin: planEx.targetRepsMin,
+          targetRepsMax: planEx.targetRepsMax,
+        });
+      }
+    }
+  }
+ 
+  // Most recent completed session's sets, per exercise name.
+  const recentSessions = await prisma.workoutSession.findMany({
+    where: { userId: user.id, completedAt: { not: null } },
+    include: { exercises: true },
+    orderBy: { completedAt: "desc" },
+    take: 50,
+  });
+ 
+  const lastSetsByExercise = new Map<string, any[]>();
+  for (const session of recentSessions) {
+    for (const ex of session.exercises) {
+      if (!exerciseTargets.has(ex.exerciseName)) continue; // not in current plan
+      if (lastSetsByExercise.has(ex.exerciseName)) continue; // already found most recent
+      lastSetsByExercise.set(ex.exerciseName, ex.sets as any[]);
+    }
+  }
+ 
+  const suggestions = Array.from(exerciseTargets.entries()).map(
+    ([exerciseName, target]) =>
+      computeProgressionSuggestion({
+        exerciseName,
+        targetRepsMin: target.targetRepsMin,
+        targetRepsMax: target.targetRepsMax,
+        lastSessionSets: lastSetsByExercise.get(exerciseName) ?? [],
+      }),
+  );
+ 
+  // Only surface exercises that actually have something to report —
+  // "increase" suggestions are the interesting ones for the UI; skip
+  // "no_data" entries so the list isn't cluttered with exercises never
+  // yet performed.
+  const actionable = suggestions.filter((s) => s.direction !== "no_data");
+ 
+  return ok(c, actionable);
+});
+workoutsRouter.get("/plan", async (c) => {
+  const user = getUser(c);
+
   const plan = await prisma.workoutPlan.findUnique({
     where: { userId: user.id },
     include: {
@@ -210,15 +315,10 @@ workoutsRouter.get("/plan", async (c) => {
       },
     },
   });
- 
+
   if (!plan) return ok(c, null);
   return ok(c, serializePlan(plan));
 });
-
-// ============================================================
-// ADD to src/routes/workouts.ts — register BEFORE workoutsRouter.get("/:id", ...)
-// since it's a specific path, same reasoning as /plan.
-// ============================================================
 
 workoutsRouter.get("/last-performance", async (c) => {
   const user = getUser(c);
@@ -256,7 +356,101 @@ workoutsRouter.get("/last-performance", async (c) => {
 
   return ok(c, lastByExercise);
 });
+
+workoutsRouter.get("/exercises", async (c) => {
+  const query = parseQuery(c, exerciseLibraryQuerySchema);
+  if (!query.success) return query.response;
+
+  const user = getUser(c);
+
+  const profile = await prisma.userProfile.findUnique({
+    where: { userId: user.id },
+  });
+  const userEquipment = (profile?.equipment ?? "full_gym") as
+    | "bodyweight"
+    | "home_dumbbells"
+    | "full_gym";
+
+  const RANK: Record<string, number> = {
+    bodyweight: 0,
+    home_dumbbells: 1,
+    full_gym: 2,
+  };
+
+  const exercises = await prisma.exercise.findMany({
+    where: query.data.muscleGroup
+      ? { muscleGroup: query.data.muscleGroup as any }
+      : undefined,
+    orderBy: { name: "asc" },
+  });
+
+  // Only show exercises the user can actually perform with their equipment.
+  const eligible = exercises.filter(
+    (ex) => RANK[userEquipment] >= RANK[ex.minEquipment],
+  );
+
+  return ok(
+    c,
+    eligible.map((ex) => ({
+      id: ex.id,
+      name: ex.name,
+      muscleGroup: ex.muscleGroup,
+      movementPattern: ex.movementPattern,
+      minEquipment: ex.minEquipment,
+    })),
+  );
+});
+
+workoutsRouter.get("/personal-records", async (c) => {
+  const user = getUser(c);
  
+  const sessions = await prisma.workoutSession.findMany({
+    where: { userId: user.id, completedAt: { not: null } },
+    include: { exercises: true },
+    orderBy: { completedAt: "asc" }, // ascending so later PRs correctly overwrite earlier ones
+  });
+ 
+  const records = new Map<string, PersonalRecord>();
+ 
+  for (const session of sessions) {
+    for (const exercise of session.exercises) {
+      const sets = exercise.sets as Array<{
+        weight?: number;
+        reps?: number;
+        completed?: boolean;
+      }>;
+ 
+      for (const set of sets) {
+        if (!set.completed || set.weight == null || set.reps == null) continue;
+ 
+        // Epley formula: est. 1RM = weight × (1 + reps/30)
+        const estimatedOneRepMax = Math.round(set.weight * (1 + set.reps / 30) * 10) / 10;
+ 
+        const existing = records.get(exercise.exerciseName);
+        const isNewRecord =
+          !existing ||
+          set.weight > existing.heaviestWeight ||
+          (set.weight === existing.heaviestWeight && set.reps > existing.repsAtHeaviest);
+ 
+        if (isNewRecord) {
+          records.set(exercise.exerciseName, {
+            exerciseName: exercise.exerciseName,
+            heaviestWeight: set.weight,
+            repsAtHeaviest: set.reps,
+            estimatedOneRepMax,
+            achievedAt: session.completedAt!.toISOString(),
+          });
+        }
+      }
+    }
+  }
+ 
+  const sorted = Array.from(records.values()).sort(
+    (a, b) => new Date(b.achievedAt).getTime() - new Date(a.achievedAt).getTime(),
+  );
+ 
+  return ok(c, sorted);
+});
 
 workoutsRouter.get("/:id", async (c) => {
   const user = getUser(c);
@@ -265,7 +459,6 @@ workoutsRouter.get("/:id", async (c) => {
   if (!session) return err(c, "Workout session not found", 404);
   return ok(c, serializeSession(session));
 });
-
 
 workoutsRouter.patch("/:id", async (c) => {
   const parsed = await parseJson(c, updateSessionSchema);
