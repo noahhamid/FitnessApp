@@ -1,125 +1,125 @@
-import { router } from "expo-router";
+import { useEffect } from 'react';
+import { router } from 'expo-router';
 import {
-  ImageBackground,
   StyleSheet,
   Text,
   View,
-  Pressable,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { FONTS } from "@/src/ui/tokens";
+  Image,
+  StatusBar,
+  useColorScheme,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { FONTS } from '@/src/ui/tokens';
 
-const C = {
-  bg: "#121212",
-  accent: "#FFC700",
-  text: "#FFFFFF",
-  muted: "rgba(255,255,255,0.65)",
+// Define your color palettes for both modes
+const THEMES = {
+  dark: {
+    bg: '#080808',
+    red: '#D32F2F',
+    text: '#FFFFFF',
+    muted: 'rgba(255, 255, 255, 0.65)',
+    wrapperBg: '#121212',
+  },
+  light: {
+    bg: '#F9F9F9',
+    red: '#D32F2F',
+    text: '#111111',
+    muted: 'rgba(0, 0, 0, 0.60)',
+    wrapperBg: '#FFFFFF',
+  },
 };
 
 export function WelcomeSlides() {
+  // Get current color scheme ('light', 'dark', or null/undefined)
+  const colorScheme = useColorScheme();
+
+  // Fallback to 'dark' if scheme is unavailable
+  const theme = THEMES[colorScheme === 'light' ? 'light' : 'dark'];
+
+  useEffect(() => {
+    // Automatically navigate to the next screen after 3 seconds
+    const timer = setTimeout(() => {
+      router.replace('/(auth)/onboarding/goals');
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <View style={s.root}>
-      <ImageBackground
-        source={require("../../../../assets/images/welcome-hero.jpg")}
-        style={s.bg}
-        resizeMode="cover"
-      >
-        {/* Gradient scrim: transparent at top, solid bg color at bottom
-            so the button/text block sits on a fully readable surface. */}
-        <LinearGradient
-          colors={["transparent", "rgba(18,18,18,0.4)", C.bg]}
-          locations={[0, 0.55, 1]}
-          style={s.scrim}
-        />
-
-        <SafeAreaView style={s.content}>
-          <View style={{ flex: 1 }} />
-
-          <View style={s.textBlock}>
-            <Text style={s.welcomeTo}>Welcome to</Text>
-            <Text style={s.brand}>Muscle Monster</Text>
-            <Text style={s.sub}>
-              Personalized fitness made simple and effective.
-            </Text>
+    <View style={[s.root, { backgroundColor: theme.bg }]}>
+      <StatusBar
+        barStyle={colorScheme === 'light' ? 'dark-content' : 'light-content'}
+        backgroundColor={theme.bg}
+      />
+      <SafeAreaView style={s.content}>
+        <View style={s.logoContainer}>
+          <View
+            style={[
+              s.imageWrapper,
+              {
+                borderColor: theme.red,
+                backgroundColor: theme.wrapperBg,
+                shadowColor: theme.red,
+              },
+            ]}
+          >
+            <Image
+              source={require('../../../../assets/images/potentialpeak_logo.jpg')}
+              style={s.logo}
+              resizeMode="cover"
+            />
           </View>
-
-          <Pressable
-            style={s.primaryBtn}
-            onPress={() => router.push("/(auth)/sign-up")}
-          >
-            <Text style={s.primaryBtnText}>Get Started</Text>
-            <View style={s.arrowCircle}>
-              <Text style={s.arrowText}>→</Text>
-            </View>
-          </Pressable>
-
-          <Pressable
-            style={s.secondaryBtn}
-            onPress={() => router.push("/(auth)/sign-in")}
-          >
-            <Text style={s.secondaryBtnText}>I already have an account</Text>
-          </Pressable>
-        </SafeAreaView>
-      </ImageBackground>
+          <Text style={[s.brand, { color: theme.text }]}>
+            Potential<Text style={[s.redtext, { color: theme.red }]}>Peak</Text>
+          </Text>
+          <Text style={[s.sub, { color: theme.muted }]}>
+            Push. Grow. Repeat.
+          </Text>
+        </View>
+      </SafeAreaView>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg },
-  bg: { flex: 1 },
-  scrim: { ...StyleSheet.absoluteFillObject },
-  content: { flex: 1, paddingHorizontal: 24, justifyContent: "flex-end" },
-  textBlock: { marginBottom: 24 },
-  welcomeTo: {
-    fontFamily: FONTS.regular,
-    fontSize: 15,
-    color: C.muted,
-    marginBottom: 2,
+  root: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  logoContainer: {
+    alignItems: 'center',
+  },
+  imageWrapper: {
+    width: 120,
+    height: 120,
+    borderRadius: 28,
+    overflow: 'hidden',
+    borderWidth: 2,
+    marginBottom: 24,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  logo: {
+    width: '100%',
+    height: '100%',
   },
   brand: {
-    fontFamily: FONTS.black,
-    fontSize: 34,
-    color: C.accent,
-    letterSpacing: -0.5,
-    marginBottom: 10,
+    fontFamily: FONTS.extraBold,
+    fontSize: 46,
+    letterSpacing: -1,
   },
+  redtext: {},
   sub: {
     fontFamily: FONTS.regular,
-    fontSize: 14,
-    color: C.muted,
-    lineHeight: 20,
-  },
-  primaryBtn: {
-    backgroundColor: C.accent,
-    borderRadius: 30,
-    paddingVertical: 8,
-    paddingLeft: 24,
-    paddingRight: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  primaryBtnText: {
-    fontFamily: FONTS.bold,
-    fontSize: 16,
-    color: "#121212",
-  },
-  arrowCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#121212",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  arrowText: { color: C.accent, fontSize: 18, fontFamily: FONTS.bold },
-  secondaryBtn: { paddingVertical: 16, alignItems: "center", marginBottom: 8 },
-  secondaryBtnText: {
-    fontFamily: FONTS.regular,
     fontSize: 13,
-    color: C.muted,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
   },
 });

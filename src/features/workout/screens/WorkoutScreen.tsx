@@ -20,7 +20,7 @@ import {
 } from "../components/ActiveWorkoutScreen";
 import { useWorkoutPlan } from "../hooks/useWorkoutPlan";
 import { useLastPerformance } from "../hooks/useLastPerformance";
-import { adaptPlanDay } from "../lib/workout-plan-adapter";
+import { adaptPlanDay } from "@/src/lib/workout-plan-adapter";
 import {
   useStartWorkoutSession,
   useCompleteWorkoutSession,
