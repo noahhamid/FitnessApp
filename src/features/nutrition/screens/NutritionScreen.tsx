@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 
-import { T } from "../theme";
+import { T } from "@/src/theme";
 import { MealHeader } from "../components/MealHeader";
 import { DaySelector } from "../components/DaySelector";
 import { DailySummaryCard } from "../components/DailySummaryCard";
@@ -66,7 +67,7 @@ export default function MealScreen() {
   const { data: totals } = useDailyTotals(selectedDate);
   const { data: water } = useWater(selectedDate);
   const adjustWater = useAdjustWater(selectedDate);
-  const { data: weekly } = useWeeklyTrend(selectedDate);
+  const { data: weekly } = useWeeklyTrend();
   const { data: suggestion } = useSuggestion(selectedDate);
 
   const mealsBySlot = useMemo(() => {
@@ -95,8 +96,13 @@ export default function MealScreen() {
 
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
+      <LinearGradient
+        colors={["rgba(28,63,46,0.06)", "rgba(28,63,46,0)"]}
+        style={styles.topWash}
+        pointerEvents="none"
+      />
       <StatusBar
-        barStyle="light-content"
+        barStyle="dark-content"
         backgroundColor={T.bg}
         translucent={false}
       />
@@ -238,6 +244,13 @@ export default function MealScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: T.bg },
+  topWash: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 260,
+  },
   daySelectorWrap: { paddingHorizontal: 20, paddingBottom: 4 },
   scroll: { flex: 1 },
   content: {

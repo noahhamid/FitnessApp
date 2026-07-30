@@ -9,36 +9,9 @@ import {
   StyleProp,
   ViewStyle,
 } from "react-native";
-import Svg, {
-  Circle,
-  Defs,
-  LinearGradient as SvgGradient,
-  Stop,
-} from "react-native-svg";
+import Svg, { Circle } from "react-native-svg";
 import { Play } from "lucide-react-native";
-
-// Font family strings + palette — same convention as the other components.
-// Worth pulling into a shared theme.ts alongside them at some point.
-const T = {
-  panel: "#15161C",
-  panelBorder: "rgba(255,255,255,0.08)",
-  glow: "rgba(255,199,0,0.10)",
-  glass: "rgba(255,255,255,0.06)",
-  glassBorder: "rgba(255,255,255,0.10)",
-  hairline: "rgba(255,255,255,0.10)",
-
-  accent: "#FFC700",
-  accentSoft: "#FFE066",
-  accentText: "#1A1300",
-
-  white: "#FFFFFF",
-  muted: "rgba(255,255,255,0.62)",
-
-  display: "SpaceGrotesk_700Bold",
-  bodyMed: "Inter_500Medium",
-  bodySemi: "Inter_600SemiBold",
-  bodyBold: "Inter_700Bold",
-};
+import { T } from "@/src/theme";
 
 type Props = {
   title: string;
@@ -71,7 +44,7 @@ function ProgressRing({
       toValue: clamped / 100,
       duration: 900,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: false, // strokeDashoffset isn't native-animatable
+      useNativeDriver: false,
     }).start();
   }, [clamped, prog]);
 
@@ -90,23 +63,11 @@ function ProgressRing({
       }}
     >
       <Svg width={size} height={size} style={StyleSheet.absoluteFillObject}>
-        <Defs>
-          <SvgGradient
-            id="continueRingGrad"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="100%"
-          >
-            <Stop offset="0%" stopColor={T.accent} />
-            <Stop offset="100%" stopColor={T.accentSoft} />
-          </SvgGradient>
-        </Defs>
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke="rgba(255,255,255,0.10)"
+          stroke={T.border}
           strokeWidth={sw}
           fill="none"
         />
@@ -114,7 +75,7 @@ function ProgressRing({
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke="url(#continueRingGrad)"
+          stroke={T.accent}
           strokeWidth={sw}
           fill="none"
           strokeDasharray={`${circ} ${circ}`}
@@ -172,14 +133,11 @@ export function ContinueWorkoutCard({
         testID={testID}
         accessibilityRole={onPress ? "button" : undefined}
         accessibilityLabel={`Continue ${title}, ${tag}, ${Math.round(percent)} percent complete, ${minutes} minutes left, ${calories} calories`}
-        android_ripple={{ color: "rgba(255,255,255,0.08)", borderless: false }}
+        android_ripple={{ color: "rgba(10,10,10,0.06)", borderless: false }}
         hitSlop={4}
         style={s.pressableReset}
       >
         <View style={s.card}>
-          {/* the one bit of color on the card, kept deliberately faint */}
-          <View style={s.glow} pointerEvents="none" />
-
           <View style={s.left}>
             <Text style={s.eyebrow}>Continue workout</Text>
             <Text style={s.title} numberOfLines={1} ellipsizeMode="tail">
@@ -208,9 +166,9 @@ export function ContinueWorkoutCard({
             <View style={s.playBadge}>
               <Play
                 size={14}
-                color={T.accentText}
+                color={T.onImage}
                 strokeWidth={2.5}
-                fill={T.accentText}
+                fill={T.onImage}
               />
             </View>
           </View>
@@ -221,31 +179,22 @@ export function ContinueWorkoutCard({
 }
 
 const s = StyleSheet.create({
-  pressableReset: { borderRadius: 28 },
+  pressableReset: { borderRadius: 24 },
   card: {
-    borderRadius: 28,
-    backgroundColor: T.panel,
-    borderWidth: 1,
-    borderColor: T.panelBorder,
+    borderRadius: 24,
+    backgroundColor: T.glass,
+    borderWidth: 0.5,
+    borderColor: T.glassBorder,
     paddingVertical: 20,
     paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 5,
-  },
-  glow: {
-    position: "absolute",
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: T.glow,
-    top: -60,
-    right: -50,
+    shadowColor: "#0A0A0A",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    elevation: 2,
   },
 
   left: { flex: 1, gap: 6, paddingRight: 14 },
@@ -257,16 +206,14 @@ const s = StyleSheet.create({
     color: T.accent,
   },
   title: {
-    fontFamily: T.display,
+    fontFamily: T.displayBold,
     fontSize: 21,
     letterSpacing: -0.4,
     color: T.white,
   },
   tagPill: {
     alignSelf: "flex-start",
-    backgroundColor: T.glass,
-    borderWidth: 1,
-    borderColor: T.glassBorder,
+    backgroundColor: T.accentTint,
     borderRadius: 999,
     paddingHorizontal: 9,
     paddingVertical: 4,
@@ -277,7 +224,7 @@ const s = StyleSheet.create({
     fontSize: 9.5,
     letterSpacing: 0.6,
     textTransform: "uppercase",
-    color: T.white,
+    color: T.accent,
   },
 
   statRow: {
@@ -288,13 +235,13 @@ const s = StyleSheet.create({
   },
   statItem: { gap: 1 },
   statValue: {
-    fontFamily: T.display,
+    fontFamily: T.displaySemi,
     fontSize: 15,
     color: T.white,
     fontVariant: ["tabular-nums"],
   },
   statLabel: { fontFamily: T.bodyMed, fontSize: 10, color: T.muted },
-  hairline: { width: 1, height: 24, backgroundColor: T.hairline },
+  hairline: { width: 1, height: 24, backgroundColor: T.border },
 
   right: {
     width: 84,
@@ -313,10 +260,10 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 3,
-    borderColor: T.panel,
+    borderColor: T.glass,
   },
   ringPercent: {
-    fontFamily: T.display,
+    fontFamily: T.displaySemi,
     fontSize: 18,
     color: T.white,
     fontVariant: ["tabular-nums"],

@@ -9,16 +9,7 @@ import {
 import { Plus, Check } from "lucide-react-native";
 import { CategoryFilter } from "./CategoryFilter";
 import { useExerciseLibrary } from "../hooks/useExerciseLibrary";
-
-const T = {
-  card: "#1C1F26",
-  text: "#FFFFFF",
-  faint: "#9AA0AE",
-  accent: "#FFC700",
-  accentText: "#1A1300",
-  display: "SpaceGrotesk_700Bold",
-  bodySemi: "Inter_600SemiBold",
-};
+import { T } from "@/src/theme";
 
 const MUSCLE_GROUP_CATEGORIES = [
   "All",
@@ -107,7 +98,7 @@ export function ExerciseLibrarySection({ addedIds, onAdd, onView }: Props) {
                 {added ? (
                   <Check size={16} color={T.accent} strokeWidth={2.4} />
                 ) : (
-                  <Plus size={16} color={T.accentText} strokeWidth={2.4} />
+                  <Plus size={16} color={T.onImage} strokeWidth={2.4} />
                 )}
               </Pressable>
             </Pressable>
@@ -121,15 +112,22 @@ export function ExerciseLibrarySection({ addedIds, onAdd, onView }: Props) {
 const s = StyleSheet.create({
   wrap: { marginTop: 32 },
   sectionTitle: {
-    color: T.text,
-    fontFamily: T.display,
+    fontFamily: T.displayBold,
+    color: T.white,
     fontSize: 19,
     letterSpacing: -0.3,
   },
-  sectionSub: { color: T.faint, fontSize: 12, marginTop: 2, marginBottom: 16 },
+  sectionSub: {
+    fontFamily: T.bodyMed,
+    color: T.faint,
+    fontSize: 12,
+    marginTop: 2,
+    marginBottom: 16,
+  },
   filterWrap: { marginBottom: 16 },
   loadingWrap: { paddingVertical: 24, alignItems: "center" },
   emptyText: {
+    fontFamily: T.bodyMed,
     color: T.faint,
     fontSize: 12,
     textAlign: "center",
@@ -139,13 +137,25 @@ const s = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: T.card,
+    backgroundColor: T.glass,
+    borderWidth: 0.5,
+    borderColor: T.glassBorder,
     borderRadius: 16,
     padding: 14,
     gap: 12,
+    shadowColor: "#0A0A0A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 1,
   },
-  rowName: { color: T.text, fontFamily: T.bodySemi, fontSize: 14 },
-  rowMeta: { color: T.faint, fontSize: 11.5, marginTop: 2 },
+  rowName: { fontFamily: T.bodySemi, color: T.white, fontSize: 14 },
+  rowMeta: {
+    fontFamily: T.bodyMed,
+    color: T.faint,
+    fontSize: 11.5,
+    marginTop: 2,
+  },
   addBtn: {
     width: 34,
     height: 34,
@@ -155,6 +165,6 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   addBtnAdded: {
-    backgroundColor: "rgba(255,199,0,0.12)",
+    backgroundColor: T.accentTint,
   },
 });

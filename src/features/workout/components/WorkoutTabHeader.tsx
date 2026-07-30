@@ -9,20 +9,7 @@ import {
   Easing,
 } from "react-native";
 import { Bell } from "lucide-react-native";
-
-// Font family strings + palette — same convention as the other components.
-// Worth pulling into a shared theme.ts alongside them at some point.
-const T = {
-  text: "#FFFFFF",
-  faint: "rgba(255,255,255,0.6)",
-  accent: "#FFC700",
-  panel: "#15161C",
-  panelBorder: "rgba(255,255,255,0.10)",
-  badge: "#FF5A5A",
-
-  display: "SpaceGrotesk_700Bold",
-  bodySemi: "Inter_600SemiBold",
-};
+import { T } from "@/src/theme";
 
 type Props = {
   name: string;
@@ -39,7 +26,6 @@ export function WorkoutTabHeader({
   hasNotification = true,
   onPressBell,
 }: Props) {
-  // bell press feedback
   const bellScale = useRef(new Animated.Value(1)).current;
   const onBellPressIn = useCallback(() => {
     Animated.spring(bellScale, {
@@ -58,8 +44,6 @@ export function WorkoutTabHeader({
     }).start();
   }, [bellScale]);
 
-  // a soft ring pulses outward from the notification dot on a loop — only
-  // while there's actually something to flag, so it never runs for nothing
   const pulse = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (!hasNotification) return;
@@ -119,7 +103,7 @@ export function WorkoutTabHeader({
           }
           style={s.bellWrap}
         >
-          <Bell size={20} color={T.text} strokeWidth={2} />
+          <Bell size={19} color={T.white} strokeWidth={2} />
           {hasNotification && (
             <>
               <Animated.View
@@ -147,13 +131,11 @@ const s = StyleSheet.create({
   },
   left: { flexDirection: "row", alignItems: "center", gap: 12 },
 
-  // gold ring with a small gap before the photo, echoing the progress rings
-  // used everywhere else in the app instead of a flat colored border
   avatarRing: {
     width: 54,
     height: 54,
     borderRadius: 27,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: T.accent,
     padding: 2,
     alignItems: "center",
@@ -162,10 +144,10 @@ const s = StyleSheet.create({
   avatar: { width: "100%", height: "100%", borderRadius: 23 },
 
   greeting: {
-    fontFamily: T.display,
+    fontFamily: T.displayBold,
     fontSize: 18,
     letterSpacing: -0.3,
-    color: T.text,
+    color: T.white,
   },
   subtitleRow: {
     flexDirection: "row",
@@ -177,19 +159,24 @@ const s = StyleSheet.create({
   subtitle: { fontFamily: T.bodySemi, fontSize: 12, color: T.faint },
 
   bellWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: T.panel,
-    borderWidth: 1,
-    borderColor: T.panelBorder,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: T.glass,
+    borderWidth: 0.5,
+    borderColor: T.glassBorder,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#0A0A0A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 1,
   },
   badgePulse: {
     position: "absolute",
-    top: 10,
-    right: 11,
+    top: 9,
+    right: 10,
     width: 8,
     height: 8,
     borderRadius: 4,
@@ -197,13 +184,13 @@ const s = StyleSheet.create({
   },
   badge: {
     position: "absolute",
-    top: 10,
-    right: 11,
+    top: 9,
+    right: 10,
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: T.badge,
     borderWidth: 1.5,
-    borderColor: T.panel,
+    borderColor: T.bg,
   },
 });

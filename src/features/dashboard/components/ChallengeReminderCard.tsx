@@ -75,6 +75,11 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 13,
     gap: 10,
+    shadowColor: "#0A0A0A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 1,
   },
   iconBadge: {
     width: 32,

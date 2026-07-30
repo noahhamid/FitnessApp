@@ -1,6 +1,7 @@
+import { useEffect, useRef } from "react";
 import { Flame } from "lucide-react-native";
-import { StyleSheet, Text, View } from "react-native";
-import { T } from "../theme";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { T } from "@/src/theme";
 
 type Day = { label: string; pct: number; isToday?: boolean };
 
@@ -9,6 +10,49 @@ type Props = {
   streak: number;
 };
 
+// Signature motion for this card: each bar grows from 0 to its real
+// height rather than appearing — a smaller echo of the same "reveal the
+// data arriving" idea as CalorieRing, staggered left-to-right like the
+// screen's standard card entrance.
+function Bar({
+  pct,
+  isToday,
+  delay,
+}: {
+  pct: number;
+  isToday?: boolean;
+  delay: number;
+}) {
+  const grow = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    grow.setValue(0);
+    const anim = Animated.timing(grow, {
+      toValue: 1,
+      duration: 560,
+      delay,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false, // height can't ride the native driver
+    });
+    anim.start();
+    return () => anim.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pct]);
+
+  const height = grow.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0%", `${pct}%`],
+  });
+
+  return (
+    <View style={styles.barTrack}>
+      <Animated.View
+        style={[styles.barFill, { height, opacity: isToday ? 1 : 0.55 }]}
+      />
+    </View>
+  );
+}
+
 export function WeeklyTrendCard({ days, streak }: Props) {
   return (
     <View style={styles.card}>
@@ -16,14 +60,7 @@ export function WeeklyTrendCard({ days, streak }: Props) {
 
       <View style={styles.chart}>
         {days.map((d, i) => (
-          <View key={i} style={styles.barTrack}>
-            <View
-              style={[
-                styles.barFill,
-                { height: `${d.pct}%`, opacity: d.isToday ? 1 : 0.55 },
-              ]}
-            />
-          </View>
+          <Bar key={i} pct={d.pct} isToday={d.isToday} delay={i * 60} />
         ))}
       </View>
 
@@ -48,10 +85,15 @@ export function WeeklyTrendCard({ days, streak }: Props) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: T.glass,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: T.glassBorder,
-    borderRadius: 22,
+    borderRadius: 20,
     padding: 18,
+    shadowColor: "#0A0A0A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 1,
   },
   title: { fontFamily: T.bodySemi, fontSize: 12, color: T.muted },
   chart: {
@@ -65,7 +107,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: "100%",
     borderRadius: 7,
-    backgroundColor: T.glass,
+    backgroundColor: T.accentTint,
     justifyContent: "flex-end",
     overflow: "hidden",
   },

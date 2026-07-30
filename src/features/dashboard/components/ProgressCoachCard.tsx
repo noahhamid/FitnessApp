@@ -1,5 +1,12 @@
+import { useEffect, useMemo, useRef } from "react";
 import { Scale, Sparkles } from "lucide-react-native";
-import { StyleSheet, Text, View } from "react-native";
+import {
+  Animated as RNAnimated,
+  Easing,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import Svg, {
   Polyline,
   Polygon,
@@ -8,7 +15,10 @@ import Svg, {
   LinearGradient,
   Stop,
 } from "react-native-svg";
-import { T } from "../theme";
+import { T } from "@/src/theme";
+
+const AnimatedPolyline = RNAnimated.createAnimatedComponent(Polyline);
+const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
 
 type Props = {
   progressLabel: string; // "Weight this month"
@@ -17,6 +27,16 @@ type Props = {
   coachHeadline: string;
   coachBody: string;
 };
+
+function polylineLength(points: { x: number; y: number }[]): number {
+  let total = 0;
+  for (let i = 1; i < points.length; i++) {
+    const dx = points[i].x - points[i - 1].x;
+    const dy = points[i].y - points[i - 1].y;
+    total += Math.sqrt(dx * dx + dy * dy);
+  }
+  return total;
+}
 
 export function ProgressCoachCard({
   progressLabel,
@@ -28,16 +48,90 @@ export function ProgressCoachCard({
   const width = 220;
   const height = 26;
   const step = width / (sparklinePoints.length - 1);
-  const points = sparklinePoints.map((y, i) => `${i * step},${y}`).join(" ");
+
+  const coords = useMemo(
+    () => sparklinePoints.map((y, i) => ({ x: i * step, y })),
+    [sparklinePoints, step],
+  );
+  const points = coords.map((p) => `${p.x},${p.y}`).join(" ");
+  const lineLength = useMemo(() => polylineLength(coords), [coords]);
 
   const lastX = (sparklinePoints.length - 1) * step;
   const lastY = sparklinePoints[sparklinePoints.length - 1];
-
-  // area fill: same points, closed down to the baseline
   const areaPoints = `0,${height} ${points} ${lastX},${height}`;
 
+  const entrance = useRef(new RNAnimated.Value(0)).current;
+  const draw = useRef(new RNAnimated.Value(0)).current;
+  const pulse = useRef(new RNAnimated.Value(0)).current;
+
+  useEffect(() => {
+    RNAnimated.timing(entrance, {
+      toValue: 1,
+      duration: 380,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+
+    // the line draws itself left to right, like the trend is being
+    // plotted live rather than handed to you pre-finished
+    RNAnimated.timing(draw, {
+      toValue: 1,
+      duration: 900,
+      delay: 200,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false, // strokeDashoffset isn't a native-driver prop
+    }).start();
+
+    const loop = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(pulse, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: false,
+        }),
+        RNAnimated.timing(pulse, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: false,
+        }),
+        RNAnimated.delay(500),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [lineLength]);
+
+  const dashOffset = draw.interpolate({
+    inputRange: [0, 1],
+    outputRange: [lineLength, 0],
+  });
+  const haloRadius = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [4, 10],
+  });
+  const haloOpacity = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.35, 0],
+  });
+
   return (
-    <View style={styles.card}>
+    <RNAnimated.View
+      style={[
+        styles.card,
+        {
+          opacity: entrance,
+          transform: [
+            {
+              translateY: entrance.interpolate({
+                inputRange: [0, 1],
+                outputRange: [10, 0],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
       <View style={styles.top}>
         <View style={styles.icon}>
           <Scale size={16} color={T.accent} strokeWidth={2} />
@@ -60,24 +154,27 @@ export function ProgressCoachCard({
               </LinearGradient>
             </Defs>
             <Polygon points={areaPoints} fill="url(#sparkFade)" />
-            <Polyline
+            <AnimatedPolyline
               points={points}
               fill="none"
               stroke={T.accent}
               strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
+              strokeDasharray={lineLength}
+              strokeDashoffset={dashOffset}
             />
-            <Circle cx={lastX} cy={lastY} r={3} fill={T.accent} />
-            <Circle
+            {/* soft breathing halo marks this as the current, live value */}
+            <AnimatedCircle
               cx={lastX}
               cy={lastY}
-              r={5.5}
+              r={haloRadius}
               fill="none"
               stroke={T.accent}
-              strokeOpacity={0.3}
               strokeWidth={1}
+              strokeOpacity={haloOpacity}
             />
+            <Circle cx={lastX} cy={lastY} r={3} fill={T.accent} />
           </Svg>
         </View>
       </View>
@@ -89,28 +186,35 @@ export function ProgressCoachCard({
           <Sparkles size={11} color={T.accent} strokeWidth={2.2} />
           <Text style={styles.eyebrow}>COACH'S NOTE</Text>
         </View>
-        <Text style={styles.headline}>{coachHeadline}</Text>
-        <Text style={styles.coachBody}>{coachBody}</Text>
+
+        <View style={styles.noteRow}>
+          <View style={styles.quoteBar} />
+          <View style={styles.noteText}>
+            <Text style={styles.headline}>{coachHeadline}</Text>
+            <Text style={styles.coachBody}>{coachBody}</Text>
+          </View>
+        </View>
       </View>
-    </View>
+    </RNAnimated.View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: T.glass,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: T.glassBorder,
-    borderRadius: 20,
+    borderRadius: T.radius.md,
     overflow: "hidden",
+    ...T.shadow.card,
   },
   top: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16 },
   icon: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: T.radius.sm,
     backgroundColor: T.ringGlass,
-    borderWidth: 1.5,
+    borderWidth: 0.5,
     borderColor: T.ringBorder,
     alignItems: "center",
     justifyContent: "center",
@@ -122,7 +226,12 @@ const styles = StyleSheet.create({
     alignItems: "baseline",
   },
   label: { fontFamily: T.bodySemi, fontSize: 11, color: T.muted },
-  value: { fontFamily: T.displaySemi, fontSize: 14, color: T.accent },
+  value: {
+    fontFamily: T.displaySemi,
+    fontSize: 14.5,
+    color: T.accent,
+    letterSpacing: -0.1,
+  },
   spark: { marginTop: 8 },
   divider: { height: 1, backgroundColor: T.glassBorder, marginHorizontal: 18 },
   bottom: { padding: 16, paddingTop: 14 },
@@ -130,7 +239,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginBottom: 6,
+    marginBottom: 10,
   },
   eyebrow: {
     fontFamily: T.bodyBold,
@@ -138,16 +247,24 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     color: T.accent,
   },
+  noteRow: { flexDirection: "row", gap: 10 },
+  quoteBar: {
+    width: 2.5,
+    borderRadius: 2,
+    backgroundColor: T.accentLine,
+  },
+  noteText: { flex: 1 },
   headline: {
-    fontFamily: T.display,
-    fontSize: 13.5,
+    fontFamily: T.displaySemi,
+    fontSize: 14,
     color: T.white,
-    marginBottom: 3,
+    letterSpacing: -0.2,
+    marginBottom: 4,
   },
   coachBody: {
     fontFamily: T.bodyMed,
-    fontSize: 11,
+    fontSize: 11.5,
     color: T.muted,
-    lineHeight: 16,
+    lineHeight: 17,
   },
 });

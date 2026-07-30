@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { UtensilsCrossed } from "lucide-react-native";
-import { T } from "../theme";
+import { T } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
 export type MealMacros = { carbs: number; protein: number; fat: number };
@@ -22,7 +22,7 @@ type Props = {
   time: string;
   calories: number;
   macros: MealMacros;
-  imageUrl?: string; // was: imageUrl: string
+  imageUrl?: string;
   onPress?: () => void;
   entranceDelay?: number;
   style?: StyleProp<ViewStyle>;
@@ -41,7 +41,6 @@ function MealPhotoCardBase({
   style,
   testID,
 }: Props) {
-  // --- entrance animation (same timing as WorkoutPlanCard) -------------
   const entrance = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     const anim = Animated.timing(entrance, {
@@ -56,7 +55,6 @@ function MealPhotoCardBase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- image load state (shimmer while loading, icon fallback on error) -
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">(
     "loading",
   );
@@ -131,7 +129,7 @@ function MealPhotoCardBase({
             </>
           ) : (
             <View style={s.imageFallback}>
-              <UtensilsCrossed size={28} color={T.muted} strokeWidth={1.6} />
+              <UtensilsCrossed size={28} color={T.faint} strokeWidth={1.6} />
             </View>
           )}
 
@@ -139,7 +137,7 @@ function MealPhotoCardBase({
             colors={[
               "rgba(9,9,12,0.00)",
               "rgba(9,9,12,0.12)",
-              "rgba(9,9,12,0.90)",
+              "rgba(9,9,12,0.88)",
             ]}
             locations={[0, 0.38, 1]}
             style={StyleSheet.absoluteFillObject}
@@ -152,7 +150,6 @@ function MealPhotoCardBase({
             </Text>
           </View>
 
-          {/* translucent ring — same treatment as the workout card's duration ring */}
           <View style={s.calRing}>
             <Text style={s.calValue}>{calories}</Text>
             <Text style={s.calUnit}>cal</Text>
@@ -191,12 +188,12 @@ const s = StyleSheet.create({
     height: 168,
     borderRadius: 24,
     overflow: "hidden",
-    backgroundColor: T.bg,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
+    backgroundColor: T.glass,
+    shadowColor: "#0A0A0A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
     shadowRadius: 18,
-    elevation: 6,
+    elevation: 3,
   },
 
   image: { ...StyleSheet.absoluteFillObject },
@@ -208,7 +205,7 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: T.bg,
+    backgroundColor: T.glass,
   },
 
   tagPill: {
@@ -216,9 +213,9 @@ const s = StyleSheet.create({
     top: 12,
     left: 14,
     maxWidth: 130,
-    backgroundColor: T.glass,
+    backgroundColor: T.onImageGlass,
     borderWidth: 1,
-    borderColor: T.glassBorder,
+    borderColor: T.onImageBorder,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -228,7 +225,7 @@ const s = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.8,
     textTransform: "uppercase",
-    color: T.white,
+    color: T.onImage,
   },
 
   calRing: {
@@ -239,8 +236,8 @@ const s = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: T.ringBorder,
-    backgroundColor: T.ringGlass,
+    borderColor: T.accent,
+    backgroundColor: T.onImageGlass,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -248,13 +245,13 @@ const s = StyleSheet.create({
     fontFamily: T.display,
     fontSize: 12,
     lineHeight: 14,
-    color: T.accent,
+    color: T.onImage,
     fontVariant: ["tabular-nums"],
   },
   calUnit: {
     fontFamily: T.bodySemi,
     fontSize: 8,
-    color: T.muted,
+    color: T.onImageMuted,
     marginTop: -1,
   },
 
@@ -269,17 +266,17 @@ const s = StyleSheet.create({
     fontFamily: T.display,
     fontSize: 17,
     letterSpacing: -0.3,
-    color: T.white,
-    textShadowColor: "rgba(0,0,0,0.5)",
+    color: T.onImage,
+    textShadowColor: "rgba(0,0,0,0.4)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 6,
   },
-  subtitle: { fontFamily: T.bodyMed, fontSize: 11.5, color: T.muted },
+  subtitle: { fontFamily: T.bodyMed, fontSize: 11.5, color: T.onImageMuted },
   macroRow: { flexDirection: "row", gap: 6, marginTop: 2 },
   macroChip: {
-    backgroundColor: T.glass,
+    backgroundColor: T.onImageGlass,
     borderWidth: 1,
-    borderColor: T.glassBorder,
+    borderColor: T.onImageBorder,
     borderRadius: 999,
     paddingHorizontal: 9,
     paddingVertical: 4,
@@ -288,6 +285,6 @@ const s = StyleSheet.create({
     fontFamily: T.bodySemi,
     fontSize: 10,
     letterSpacing: 0.2,
-    color: T.white,
+    color: T.onImage,
   },
 });

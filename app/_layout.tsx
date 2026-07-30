@@ -17,6 +17,7 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
+import { authClient } from "@/src/lib/auth-client";
 
 import * as WebBrowser from "expo-web-browser";
 
@@ -33,7 +34,10 @@ export default function RootLayout() {
     DMSans_500Medium,
     DMSans_600SemiBold,
   });
-
+  useEffect(() => {
+    const cookie = authClient.getCookie?.();
+    console.log("STORED SESSION COOKIE ON APP LOAD:", cookie);
+  }, []);
   useEffect(() => {
     WebBrowser.warmUpAsync();
     return () => {

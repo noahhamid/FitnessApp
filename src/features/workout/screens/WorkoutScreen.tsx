@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -6,15 +6,24 @@ import {
   StatusBar,
   StyleSheet,
   Animated,
+  Easing,
   ActivityIndicator,
   Pressable,
   StyleProp,
   ViewStyle,
 } from "react-native";
-
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  ChevronLeft,
+  ArrowRight,
+  AlertCircle,
+  Dumbbell as DumbbellIcon,
+} from "lucide-react-native";
+import { T } from "@/src/theme";
 import { WorkoutTabHeader } from "../components/WorkoutTabHeader";
 import { WorkoutPlanCard } from "../components/WorkoutPlanCard";
 import { WorkoutDetailScreen } from "../components/WorkoutDetailScreen";
+import { ContinueWorkoutCard } from "../components/ContinueWorkoutCard";
 import {
   ActiveWorkoutScreen,
   type SetLog,
@@ -24,6 +33,7 @@ import { ExerciseDetailCard } from "../components/ExerciseDetailCard";
 import type { LibraryExercise } from "../hooks/useExerciseLibrary";
 import { useWorkoutPlan } from "../hooks/useWorkoutPlan";
 import { useLastPerformance } from "../hooks/useLastPerformance";
+import { useInProgressSession } from "../hooks/useInProgressSession";
 import {
   adaptPlanDay,
   adaptLibraryExercise,
@@ -36,18 +46,12 @@ import {
   useAddExerciseToSession,
 } from "../hooks/useWorkoutSession";
 import type { WorkoutPlan } from "../data/workouts";
-import { useState } from "react";
-
-const T = {
-  bg: "#000000",
-  text: "#FFFFFF",
-  faint: "#9AA0AE",
-  accent: "#FFC700",
-  display: "SpaceGrotesk_700Bold",
-};
+import { useAuth } from "@/src/features/auth/hooks/useAuth";
 
 type ViewState = "today" | "fullPlan" | "detail" | "active" | "libraryDetail";
 
+// Standard entrance used everywhere in this app: fade + rise,
+// Easing.out(Easing.cubic), 380–480ms, staggered per-section by delay.
 const Reveal = ({
   children,
   delay = 0,
@@ -58,20 +62,22 @@ const Reveal = ({
   style?: StyleProp<ViewStyle>;
 }) => {
   const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(18)).current;
+  const translateY = useRef(new Animated.Value(14)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 420,
+        duration: 440,
         delay,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(translateY, {
         toValue: 0,
-        duration: 420,
+        duration: 440,
         delay,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start();
@@ -85,8 +91,6 @@ const Reveal = ({
   );
 };
 
-// Rough duration estimate for the plan card, matching the same formula
-// WorkoutDetailScreen uses internally.
 function estimateMinutes(plan: WorkoutPlan): number {
   const seconds = plan.exercises.reduce((sum, ex) => {
     const work =
@@ -97,9 +101,6 @@ function estimateMinutes(plan: WorkoutPlan): number {
 }
 
 function muscleSummary(plan: WorkoutPlan): string {
-  // WorkoutPlanCard splits this string on "," to render separate chips.
-  // Real muscle groups now, deduplicated and capitalized — not parsed
-  // exercise-name fragments like "Barbell"/"Dumbbell" from before.
   const groups = plan.exercises
     .map((e) => e.muscleGroup)
     .filter((g): g is string => !!g);
@@ -113,8 +114,10 @@ export default function WorkoutScreen() {
   const [selectedDay, setSelectedDay] = useState<WorkoutPlan | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
+  const { user } = useAuth();
   const { data: apiPlan, isLoading, error } = useWorkoutPlan();
   const { data: lastPerformance } = useLastPerformance();
+  const { inProgress } = useInProgressSession();
   const startSession = useStartWorkoutSession();
   const addExercise = useAddExerciseToSession();
   const completeSession = useCompleteWorkoutSession();
@@ -139,10 +142,6 @@ export default function WorkoutScreen() {
     [extraExercises],
   );
 
-  // Extras only apply to today's session, not the underlying generated plan —
-  // they reset if you leave and come back, which is intentional for v1
-  // (persisting "today's ad-hoc additions" across sessions is a separate,
-  // bigger decision about whether extras should become part of the plan).
   const todaysWorkout = useMemo(() => {
     if (!baseTodaysWorkout) return null;
     if (extraExercises.length === 0) return baseTodaysWorkout;
@@ -168,6 +167,17 @@ export default function WorkoutScreen() {
     setView("detail");
   };
 
+  const handleResume = () => {
+    if (!inProgress) return;
+    // Reopens the SAME session (no new session created, no exercises
+    // re-added) — just restarts the exercise sequence from the top.
+    // See useInProgressSession's note on why a true mid-set resume
+    // isn't possible with what's currently persisted.
+    setSelectedDay(inProgress.plan);
+    setActiveSessionId(inProgress.sessionId);
+    setView("active");
+  };
+
   const handleStart = async (plan: WorkoutPlan) => {
     if (starting) return; // guards against rapid double-taps
     setStarting(true);
@@ -178,16 +188,17 @@ export default function WorkoutScreen() {
         notes: `${apiPlan?.splitLabel ?? "Workout"} — ${plan.title}`,
       });
 
-      // Sets start empty and get filled in as the workout progresses —
-      // this matches the backend's own intended flow for /:id/exercises
-      // (sets defaults to [] there, unlike the stricter min(1) required
-      // when creating the session itself).
-      for (const ex of plan.exercises) {
-        await addExercise.mutateAsync({
-          sessionId: session.id,
-          exerciseName: ex.name,
-        });
-      }
+      // Parallelized — was a sequential awaited loop before, which meant
+      // N exercises = N back-to-back round-trips before the active screen
+      // ever appeared. All independent, so no reason not to fire together.
+      await Promise.all(
+        plan.exercises.map((ex) =>
+          addExercise.mutateAsync({
+            sessionId: session.id,
+            exerciseName: ex.name,
+          }),
+        ),
+      );
 
       setActiveSessionId(session.id);
       setView("active");
@@ -205,8 +216,6 @@ export default function WorkoutScreen() {
       return;
     }
 
-    // Group the flat log of individual sets back into
-    // { exerciseName, sets: [...] } shape the API expects.
     const byExercise = new Map<string, SetLog[]>();
     for (const log of logs) {
       const existing = byExercise.get(log.exerciseName) ?? [];
@@ -249,6 +258,7 @@ export default function WorkoutScreen() {
           setSelectedDay(null);
         }}
         onStart={() => selectedDay && handleStart(selectedDay)}
+        starting={starting}
       />
     );
   }
@@ -269,15 +279,25 @@ export default function WorkoutScreen() {
   if (view === "fullPlan") {
     return (
       <View style={s.screen}>
-        <StatusBar barStyle="light-content" />
+        <LinearGradient
+          colors={["rgba(28,63,46,0.06)", "rgba(28,63,46,0)"]}
+          style={s.topWash}
+          pointerEvents="none"
+        />
+        <StatusBar barStyle="dark-content" backgroundColor={T.bg} />
         <ScrollView
           style={s.scroll}
           contentContainerStyle={s.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           <Reveal delay={0} style={s.fullPlanHeader}>
-            <Pressable onPress={() => setView("today")} hitSlop={8}>
-              <Text style={s.backLink}>← Today</Text>
+            <Pressable
+              onPress={() => setView("today")}
+              hitSlop={8}
+              style={s.backRow}
+            >
+              <ChevronLeft size={16} color={T.faint} strokeWidth={2.4} />
+              <Text style={s.backLink}>Today</Text>
             </Pressable>
             <Text style={s.sectionTitle}>Full plan</Text>
             {apiPlan && (
@@ -345,7 +365,12 @@ export default function WorkoutScreen() {
   // ── Today screen ─────────────────────────────────────────────────────────
   return (
     <View style={s.screen}>
-      <StatusBar barStyle="light-content" />
+      <LinearGradient
+        colors={["rgba(28,63,46,0.06)", "rgba(28,63,46,0)"]}
+        style={s.topWash}
+        pointerEvents="none"
+      />
+      <StatusBar barStyle="dark-content" backgroundColor={T.bg} />
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.scrollContent}
@@ -353,7 +378,7 @@ export default function WorkoutScreen() {
       >
         <Reveal delay={0}>
           <WorkoutTabHeader
-            name="James"
+            name={user?.name ?? "there"}
             avatarUrl="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=200&q=80"
             onPressBell={() => {}}
           />
@@ -362,7 +387,12 @@ export default function WorkoutScreen() {
         <Reveal delay={80} style={s.splitHeader}>
           {apiPlan && (
             <>
-              <Text style={s.splitLabel}>{apiPlan.splitLabel}</Text>
+              <View style={s.splitLabelRow}>
+                <View style={s.splitDot} />
+                <Text style={s.splitLabel}>
+                  {apiPlan.splitLabel.toUpperCase()}
+                </Text>
+              </View>
               <Text style={s.splitSub}>{apiPlan.daysPerWeek} days / week</Text>
             </>
           )}
@@ -375,21 +405,40 @@ export default function WorkoutScreen() {
         )}
 
         {!isLoading && error && (
-          <View style={s.centerState}>
+          <Reveal delay={0} style={s.centerState}>
+            <View style={s.centerIcon}>
+              <AlertCircle size={20} color={T.accent} strokeWidth={1.8} />
+            </View>
             <Text style={s.emptyTitle}>Couldn't load your plan</Text>
             <Text style={s.emptySubtitle}>
               Pull to refresh, or check your connection.
             </Text>
-          </View>
+          </Reveal>
         )}
 
         {!isLoading && !error && !todaysWorkout && (
-          <View style={s.centerState}>
+          <Reveal delay={0} style={s.centerState}>
+            <View style={s.centerIcon}>
+              <DumbbellIcon size={20} color={T.accent} strokeWidth={1.8} />
+            </View>
             <Text style={s.emptyTitle}>No plan yet</Text>
             <Text style={s.emptySubtitle}>
               Finish onboarding to get a personalized training split.
             </Text>
-          </View>
+          </Reveal>
+        )}
+
+        {inProgress && (
+          <Reveal delay={100} style={{ marginBottom: T.space.lg }}>
+            <ContinueWorkoutCard
+              title={inProgress.plan.title}
+              tag={inProgress.plan.tag}
+              minutes={inProgress.minutesLeft}
+              calories={inProgress.estCalories}
+              percent={inProgress.percent}
+              onPress={handleResume}
+            />
+          </Reveal>
         )}
 
         {todaysWorkout && (
@@ -412,8 +461,13 @@ export default function WorkoutScreen() {
             </Reveal>
 
             <Reveal delay={240} style={s.seeFullPlanWrap}>
-              <Pressable onPress={() => setView("fullPlan")} hitSlop={8}>
-                <Text style={s.seeFullPlanText}>See full plan →</Text>
+              <Pressable
+                onPress={() => setView("fullPlan")}
+                hitSlop={8}
+                style={s.seeFullPlanRow}
+              >
+                <Text style={s.seeFullPlanText}>See full plan</Text>
+                <ArrowRight size={14} color={T.accent} strokeWidth={2.4} />
               </Pressable>
             </Reveal>
 
@@ -435,37 +489,87 @@ export default function WorkoutScreen() {
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: T.bg },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 128 },
-  splitHeader: { marginBottom: 20 },
+  scrollContent: {
+    paddingHorizontal: T.space.xl,
+    paddingTop: T.space.lg,
+    paddingBottom: 128, // tab-bar clearance, screen-specific
+  },
+  splitHeader: { marginBottom: T.space.xl },
+  splitLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  splitDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: T.accent,
+  },
   splitLabel: {
     color: T.accent,
-    fontFamily: T.display,
-    fontSize: 15,
-    letterSpacing: -0.2,
+    fontFamily: T.bodyBold,
+    fontSize: 10.5,
+    letterSpacing: 1,
   },
-  splitSub: { color: T.faint, fontSize: 12, marginTop: 2 },
+  splitSub: {
+    color: T.faint,
+    fontFamily: T.bodyMed,
+    fontSize: 12,
+    marginTop: 4,
+  },
   sectionTitle: {
     color: T.text,
-    fontFamily: T.display,
+    fontFamily: T.displaySemi,
     fontSize: 21,
     letterSpacing: -0.4,
-    marginBottom: 14,
+    marginBottom: T.space.md + 2,
   },
-  centerState: { alignItems: "center", paddingVertical: 48, gap: 6 },
-  emptyTitle: { color: T.text, fontSize: 15, fontWeight: "700" },
-  emptySubtitle: { color: T.faint, fontSize: 12, textAlign: "center" },
-  seeFullPlanWrap: { alignItems: "center", marginTop: 20 },
+  centerState: {
+    alignItems: "center",
+    paddingVertical: T.space.xxxl + 8,
+    gap: 6,
+  },
+  centerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: T.radius.md,
+    backgroundColor: T.ringGlass,
+    borderWidth: 0.5,
+    borderColor: T.ringBorder,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: T.space.xs,
+  },
+  emptyTitle: { color: T.text, fontFamily: T.bodyBold, fontSize: 15 },
+  emptySubtitle: {
+    color: T.faint,
+    fontFamily: T.bodyMed,
+    fontSize: 12,
+    textAlign: "center",
+  },
+  seeFullPlanWrap: { alignItems: "center", marginTop: T.space.xl },
+  seeFullPlanRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   seeFullPlanText: {
     color: T.accent,
-    fontFamily: T.display,
+    fontFamily: T.bodyBold,
     fontSize: 13,
     letterSpacing: -0.1,
   },
-  fullPlanHeader: { marginBottom: 18 },
+  fullPlanHeader: { marginBottom: T.space.lg + 2 },
+  backRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    marginBottom: T.space.lg,
+    alignSelf: "flex-start",
+  },
   backLink: {
     color: T.faint,
     fontSize: 13,
-    fontFamily: T.display,
-    marginBottom: 16,
+    fontFamily: T.bodySemi,
+  },
+  topWash: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 260,
   },
 });

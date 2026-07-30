@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 
-import { T } from "../theme";
+import { T } from "@/src/theme";
 import { PressableScale } from "../components/PressableScale";
 import { useAddMeal } from "../hooks/useNutrition";
 import type { MealType } from "../types/nutrition.types";
@@ -74,7 +74,7 @@ export default function LogMealScreen() {
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
       <StatusBar
-        barStyle="light-content"
+        barStyle="dark-content"
         backgroundColor={T.bg}
         translucent={false}
       />
@@ -215,10 +215,15 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     backgroundColor: T.glass,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: T.glassBorder,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#0A0A0A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 1,
   },
   headerTitle: { fontFamily: T.display, fontSize: 17, color: T.white },
   content: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 60, gap: 6 },
@@ -236,15 +241,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 13,
     backgroundColor: T.glass,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: T.glassBorder,
   },
   slotChipActive: { backgroundColor: T.accent, borderColor: T.accent },
   slotText: { fontFamily: T.bodySemi, fontSize: 11.5, color: T.white },
-  slotTextActive: { color: T.bg },
+  slotTextActive: { color: T.onImage },
   input: {
     backgroundColor: T.glass,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: T.glassBorder,
     borderRadius: 14,
     paddingHorizontal: 14,
@@ -258,7 +263,7 @@ const styles = StyleSheet.create({
   error: {
     fontFamily: T.bodyMed,
     fontSize: 11.5,
-    color: "#FF6B6B",
+    color: T.badge,
     marginTop: 12,
   },
   submitPressable: { borderRadius: 17, marginTop: 24 },
@@ -269,5 +274,5 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: "center",
   },
-  submitText: { fontFamily: T.bodyBold, fontSize: 14, color: T.bg },
+  submitText: { fontFamily: T.bodyBold, fontSize: 14, color: T.onImage },
 });

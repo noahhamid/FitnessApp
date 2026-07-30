@@ -1,6 +1,7 @@
+import { useEffect, useRef } from "react";
 import { GlassWater, Plus } from "lucide-react-native";
-import { StyleSheet, Text, View } from "react-native";
-import { T } from "../theme";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { T } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
 type Props = {
@@ -8,6 +9,29 @@ type Props = {
   total: number;
   onAdd: () => void;
 };
+
+// Signature motion for this card: a dash eases from empty to filled
+// instead of snapping, so tapping "+" reads as a small, immediate
+// confirmation rather than a silent state change.
+function Dash({ filled }: { filled: boolean }) {
+  const anim = useRef(new Animated.Value(filled ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: filled ? 1 : 0,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false, // backgroundColor can't ride the native driver
+    }).start();
+  }, [filled]);
+
+  const backgroundColor = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [T.border, T.accent],
+  });
+
+  return <Animated.View style={[styles.dash, { backgroundColor }]} />;
+}
 
 export function WaterTracker({ glasses, total, onAdd }: Props) {
   return (
@@ -25,17 +49,14 @@ export function WaterTracker({ glasses, total, onAdd }: Props) {
         </View>
         <View style={styles.dashes}>
           {Array.from({ length: total }).map((_, i) => (
-            <View
-              key={i}
-              style={[styles.dash, i < glasses && styles.dashFilled]}
-            />
+            <Dash key={i} filled={i < glasses} />
           ))}
         </View>
       </View>
 
       <PressableScale onPress={onAdd} scaleTo={0.9} style={styles.addPressable}>
         <View style={styles.add}>
-          <Plus size={15} color={T.bg} strokeWidth={2.4} />
+          <Plus size={15} color={T.onImage} strokeWidth={2.4} />
         </View>
       </PressableScale>
     </View>
@@ -48,17 +69,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
     backgroundColor: T.glass,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: T.glassBorder,
     borderRadius: 20,
     padding: 16,
+    shadowColor: "#0A0A0A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 1,
   },
   icon: {
     width: 36,
     height: 36,
     borderRadius: 11,
     backgroundColor: T.ringGlass,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: T.ringBorder,
     alignItems: "center",
     justifyContent: "center",
@@ -72,8 +98,7 @@ const styles = StyleSheet.create({
   label: { fontFamily: T.bodySemi, fontSize: 12, color: T.white },
   value: { fontFamily: T.bodyMed, fontSize: 11, color: T.muted },
   dashes: { flexDirection: "row", gap: 4 },
-  dash: { height: 6, flex: 1, borderRadius: 3, backgroundColor: T.glass },
-  dashFilled: { backgroundColor: T.accent },
+  dash: { height: 6, flex: 1, borderRadius: 3 },
   addPressable: { borderRadius: 15 },
   add: {
     width: 30,

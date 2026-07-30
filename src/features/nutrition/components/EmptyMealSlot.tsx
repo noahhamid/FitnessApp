@@ -1,6 +1,6 @@
 import { Plus } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { T } from "../theme";
+import { T } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
 type Props = {
@@ -9,8 +9,8 @@ type Props = {
   onAdd: () => void;
 };
 
-// Same 168px height as MealPhotoCard so empty and logged slots line up in a
-// scroll list, but a dashed glass panel instead of a photo.
+// 88px height — empty and logged slots line up in the scroll list via
+// consistent vertical rhythm, not matching height with MealPhotoCard directly.
 export function EmptyMealSlot({ slot, recommendedRange, onAdd }: Props) {
   return (
     <PressableScale onPress={onAdd} scaleTo={0.98} style={s.pressableReset}>

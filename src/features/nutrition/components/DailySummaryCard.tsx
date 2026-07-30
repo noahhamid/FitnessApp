@@ -1,6 +1,6 @@
 import { Wheat, Egg, Droplet } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { T } from "../theme";
+import { T } from "@/src/theme";
 import { CalorieRing } from "./CalorieRing";
 import { MacroBar } from "./MacroBar";
 
@@ -66,15 +66,15 @@ export function DailySummaryCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: T.glass,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: T.glassBorder,
-    borderRadius: 24,
+    borderRadius: 22,
     padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 18,
-    elevation: 6,
+    shadowColor: "#0A0A0A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 1,
   },
   top: { flexDirection: "row", alignItems: "center", gap: 18 },
   macros: { flex: 1 },
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 16,
     paddingTop: 14,
-    borderTopWidth: 1,
+    borderTopWidth: 0.5,
     borderTopColor: T.glassBorder,
   },
   footerText: { fontFamily: T.bodyMed, fontSize: 11.5, color: T.muted },

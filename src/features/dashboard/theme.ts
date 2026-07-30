@@ -14,6 +14,9 @@ muted: "#ADADA8",           // alias of faint
 displayBold: "SpaceGrotesk-Bold",
 ringGlass: "#F4F7F5",       // alias of accentSoft
 ringBorder: "#EBEBEB",      // alias of border — avatar ring stays neutral, only the icon carries accent
+display: "SpaceGrotesk-Medium",   // used for the coach headline, one step down from displaySemi
+onImage: "#FFFFFF",   // dedicated token for text over the dark photo scrim — do not reuse T.white here
+
 
   displaySemi: "SpaceGrotesk-SemiBold",
   bodyMed: "PlusJakartaSans-Medium",

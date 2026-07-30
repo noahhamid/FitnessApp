@@ -15,7 +15,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { ChevronLeft, Camera, RotateCcw } from "lucide-react-native";
 
-import { T } from "../theme";
+import { T } from "@/src/theme";
 import { PressableScale } from "../components/PressableScale";
 import { useAddMeal } from "../hooks/useNutrition";
 import { scanFoodImage } from "../services/nutrition.service";
@@ -125,7 +125,7 @@ export default function ScanMealScreen() {
         fat: Number(fat) || 0,
         quantity: 1,
         unit: "serving",
-        image_url: null, // no upload endpoint yet — see note in service layer
+        image_url: null,
         source: "scan",
       },
       { onSuccess: () => router.back() },
@@ -135,7 +135,7 @@ export default function ScanMealScreen() {
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
       <StatusBar
-        barStyle="light-content"
+        barStyle="dark-content"
         backgroundColor={T.bg}
         translucent={false}
       />
@@ -203,7 +203,7 @@ export default function ScanMealScreen() {
             <View style={styles.previewWrap}>
               <Image source={{ uri: photoUri }} style={styles.preview} />
               <PressableScale onPress={retake} style={styles.retakeBtn}>
-                <RotateCcw size={14} color={T.white} strokeWidth={2.2} />
+                <RotateCcw size={14} color={T.onImage} strokeWidth={2.2} />
                 <Text style={styles.retakeText}>Retake</Text>
               </PressableScale>
             </View>
@@ -324,10 +324,15 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     backgroundColor: T.glass,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: T.glassBorder,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#0A0A0A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 1,
   },
   headerTitle: { fontFamily: T.display, fontSize: 17, color: T.white },
   centerFill: {
@@ -363,12 +368,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 28,
   },
-  captureBtnText: { fontFamily: T.bodyBold, fontSize: 14, color: T.bg },
+  captureBtnText: { fontFamily: T.bodyBold, fontSize: 14, color: T.onImage },
   previewSmall: { width: 120, height: 120, borderRadius: 18 },
   error: {
     fontFamily: T.bodyMed,
     fontSize: 12.5,
-    color: "#FF6B6B",
+    color: T.badge,
     textAlign: "center",
     marginBottom: 14,
   },
@@ -382,12 +387,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "rgba(9,9,12,0.6)",
+    backgroundColor: T.onImageGlass,
+    borderWidth: 1,
+    borderColor: T.onImageBorder,
     borderRadius: 999,
     paddingVertical: 7,
     paddingHorizontal: 12,
   },
-  retakeText: { fontFamily: T.bodySemi, fontSize: 11, color: T.white },
+  retakeText: { fontFamily: T.bodySemi, fontSize: 11, color: T.onImage },
   label: {
     fontFamily: T.bodySemi,
     fontSize: 11.5,
@@ -402,15 +409,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 13,
     backgroundColor: T.glass,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: T.glassBorder,
   },
   slotChipActive: { backgroundColor: T.accent, borderColor: T.accent },
   slotText: { fontFamily: T.bodySemi, fontSize: 11.5, color: T.white },
-  slotTextActive: { color: T.bg },
+  slotTextActive: { color: T.onImage },
   input: {
     backgroundColor: T.glass,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: T.glassBorder,
     borderRadius: 14,
     paddingHorizontal: 14,
@@ -429,5 +436,5 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: "center",
   },
-  submitText: { fontFamily: T.bodyBold, fontSize: 14, color: T.bg },
+  submitText: { fontFamily: T.bodyBold, fontSize: 14, color: T.onImage },
 });

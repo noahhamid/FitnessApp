@@ -2,18 +2,12 @@ import { Tabs } from "expo-router";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Line, Path, Polyline, Rect } from "react-native-svg";
-
-const T = {
-  bg: "#121212",
-  gold: "#FFC700",
-  inactive: "#505050",
-  border: "#FFFFFF08",
-};
+import { T } from "@/src/theme";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 function IconHome({ active }: { active: boolean }) {
-  const c = active ? T.gold : T.inactive;
+  const c = active ? T.accent : T.faint;
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
       <Path
@@ -28,7 +22,7 @@ function IconHome({ active }: { active: boolean }) {
 }
 
 function IconTrain({ active }: { active: boolean }) {
-  const c = active ? T.gold : T.inactive;
+  const c = active ? T.accent : T.faint;
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
       <Line
@@ -81,7 +75,9 @@ function IconTrain({ active }: { active: boolean }) {
 }
 
 function IconNutrition({ active }: { active: boolean }) {
-  const c = active ? T.bg : T.inactive;
+  // flipped from the old logic — icon must read against a filled accent FAB
+  // when active, and against a light neutral surface when inactive
+  const c = active ? T.onImage : T.faint;
   const w = 1.6;
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
@@ -117,7 +113,7 @@ function IconNutrition({ active }: { active: boolean }) {
 }
 
 function IconProgress({ active }: { active: boolean }) {
-  const c = active ? T.gold : T.inactive;
+  const c = active ? T.accent : T.faint;
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
       <Polyline
@@ -133,7 +129,7 @@ function IconProgress({ active }: { active: boolean }) {
 }
 
 function IconProfile({ active }: { active: boolean }) {
-  const c = active ? T.gold : T.inactive;
+  const c = active ? T.accent : T.faint;
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
       <Circle cx="12" cy="8" r="3.5" stroke={c} strokeWidth={1.6} />
@@ -166,7 +162,6 @@ function Tab({
   );
 }
 
-// Center FAB — gold filled pill when active, dark surface when inactive
 function CenterTab({ focused }: { focused: boolean }) {
   return (
     <View style={s.centerOuter}>
@@ -184,8 +179,6 @@ const IS_IOS = Platform.OS === "ios";
 
 export default function AppTabsLayout() {
   const insets = useSafeAreaInsets();
-  // Respect the device's home indicator / gesture bar,
-  // with a sensible minimum so the bar never feels cramped.
   const bottomPad = Math.max(insets.bottom, IS_IOS ? 16 : 8);
 
   return (
@@ -197,7 +190,7 @@ export default function AppTabsLayout() {
           s.tabBar,
           {
             paddingBottom: bottomPad,
-            height: 52 + bottomPad, // icon area (52) + dynamic safe-area pad
+            height: 52 + bottomPad,
           },
         ],
       }}
@@ -267,32 +260,28 @@ const s = StyleSheet.create({
     backgroundColor: T.bg,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: T.border,
-    // height & paddingBottom are set dynamically above via useSafeAreaInsets.
-    // paddingTop nudges icons down slightly so they sit centered & airy.
     paddingTop: 6,
     elevation: 0,
   },
 
-  // Regular tab — icon + label stacked, bottom-aligned
   tab: {
     alignItems: "center",
     justifyContent: "flex-end",
     gap: 5,
     width: 60,
-    height: 46, // fixed inner height; bar height grows via bottomPad only
+    height: 46,
     paddingBottom: 4,
   },
   label: {
-    fontFamily: "Inter_600SemiBold", // was "DMSans_500Medium" — never loaded anywhere, silently fell back to system font
+    fontFamily: T.bodySemi,
     fontSize: 10,
-    color: T.inactive,
+    color: T.faint,
     letterSpacing: 0.1,
   },
   labelActive: {
-    color: T.gold,
+    color: T.accent,
   },
 
-  // Center FAB
   centerOuter: {
     alignItems: "center",
     gap: 5,
@@ -303,11 +292,14 @@ const s = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 14,
-    backgroundColor: "#1E1E1E",
+    backgroundColor: T.glass,
+    borderWidth: 0.5,
+    borderColor: T.glassBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   centerFabActive: {
-    backgroundColor: T.gold,
+    backgroundColor: T.accent,
+    borderColor: T.accent,
   },
 });

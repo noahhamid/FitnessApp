@@ -51,11 +51,10 @@ const SESSION_KEY = ["auth", "session"] as const;
 // ── useSession — reactive session from Better Auth ────────────────────────────
 
 export function useAuthSession() {
-  // Better Auth's built-in reactive hook
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending, error } = authClient.useSession();
+  console.log("SESSION STATE:", { session, isPending, error });
   return { session, isPending };
 }
-
 // ── useAuth — main hook (replaces old Supabase useAuth) ──────────────────────
 
 export function useAuth() {

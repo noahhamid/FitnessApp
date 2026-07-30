@@ -1,7 +1,7 @@
 import { ComponentType } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { LucideProps } from "lucide-react-native";
-import { T } from "../theme";
+import { T } from "@/src/theme";
 
 type Props = {
   icon: ComponentType<LucideProps>;
@@ -11,8 +11,6 @@ type Props = {
   unit?: string;
 };
 
-// Distinguished by icon + label, not color — matches the workout card's
-// monochrome-gold visual language rather than reintroducing multi-hue coding.
 export function MacroBar({
   icon: Icon,
   label,
@@ -55,9 +53,9 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 7,
-    backgroundColor: T.glass,
-    borderWidth: 1,
-    borderColor: T.glassBorder,
+    backgroundColor: T.ringGlass,
+    borderWidth: 0.5,
+    borderColor: T.ringBorder,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -72,7 +70,7 @@ const styles = StyleSheet.create({
   track: {
     height: 5,
     borderRadius: 3,
-    backgroundColor: T.glass,
+    backgroundColor: T.accentTint,
     overflow: "hidden",
   },
   fill: { height: "100%", borderRadius: 3, backgroundColor: T.accent },

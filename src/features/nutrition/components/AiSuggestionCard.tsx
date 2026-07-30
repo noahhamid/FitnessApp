@@ -1,7 +1,7 @@
 import { Sparkles } from "lucide-react-native";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { T } from "../theme";
+import { T } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
 type Suggestion = { label: string; calories: number };
@@ -14,8 +14,6 @@ type Props = {
   onSelect: (s: Suggestion) => void;
 };
 
-// Same photo + gradient treatment as MealPhotoCard — a suggestion is still
-// food, it deserves a photo rather than a plain text card.
 export function AiSuggestionCard({
   headline,
   body,
@@ -27,15 +25,22 @@ export function AiSuggestionCard({
     <View style={styles.card}>
       <Image
         source={{ uri: imageUrl }}
-        style={styles.image}
+        style={StyleSheet.absoluteFillObject}
         resizeMode="cover"
       />
       <LinearGradient
-        colors={["rgba(9,9,12,0.05)", "rgba(9,9,12,0.35)", "rgba(9,9,12,0.94)"]}
+        colors={["rgba(9,9,12,0.05)", "rgba(9,9,12,0.32)", "rgba(9,9,12,0.90)"]}
         locations={[0, 0.4, 1]}
         style={StyleSheet.absoluteFillObject}
       />
 
+      {/*
+        Content sits in normal flow (not absolutely positioned from the
+        bottom) so the card's minHeight grows to fit however much text
+        there is. A fixed card height + bottom-pinned absolute content
+        was clipping long headlines/bodies/wrapped chips against the top
+        edge via overflow:hidden — this removes that ceiling entirely.
+      */}
       <View style={styles.content}>
         <View style={styles.eyebrowRow}>
           <Sparkles size={12} color={T.accent} strokeWidth={2.2} />
@@ -67,18 +72,22 @@ export function AiSuggestionCard({
 
 const styles = StyleSheet.create({
   card: {
-    height: 220,
+    minHeight: 220,
     borderRadius: 24,
     overflow: "hidden",
-    backgroundColor: T.bg,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
+    backgroundColor: T.glass,
+    justifyContent: "flex-end",
+    shadowColor: "#0A0A0A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
     shadowRadius: 18,
-    elevation: 6,
+    elevation: 3,
   },
-  image: { ...StyleSheet.absoluteFillObject },
-  content: { position: "absolute", left: 18, right: 18, bottom: 16 },
+  content: {
+    paddingHorizontal: 18,
+    paddingTop: 40,
+    paddingBottom: 16,
+  },
   eyebrowRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -94,15 +103,18 @@ const styles = StyleSheet.create({
   headline: {
     fontFamily: T.display,
     fontSize: 18,
-    color: T.white,
+    color: T.onImage,
     lineHeight: 22,
     marginBottom: 6,
     maxWidth: "92%",
+    textShadowColor: "rgba(0,0,0,0.35)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   body: {
     fontFamily: T.bodyMed,
     fontSize: 12,
-    color: T.muted,
+    color: T.onImageMuted,
     lineHeight: 17,
     marginBottom: 13,
     maxWidth: "94%",
@@ -110,12 +122,12 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   chipPressable: { borderRadius: 999 },
   chip: {
-    backgroundColor: T.glass,
+    backgroundColor: T.onImageGlass,
     borderWidth: 1,
-    borderColor: T.glassBorder,
+    borderColor: T.onImageBorder,
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 13,
   },
-  chipText: { fontFamily: T.bodySemi, fontSize: 11, color: T.white },
+  chipText: { fontFamily: T.bodySemi, fontSize: 11, color: T.onImage },
 });

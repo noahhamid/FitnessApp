@@ -1,6 +1,6 @@
 import { Flame } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { T } from "../theme";
+import { T } from "@/src/theme";
 
 type Props = {
   eyebrow: string;
@@ -31,7 +31,7 @@ export function MealHeader({
       <View style={styles.titleRow}>
         <Text style={styles.title}>{title}</Text>
         <View style={styles.calChip}>
-          <Flame size={12} color={T.bg} strokeWidth={2.4} />
+          <Flame size={12} color={T.onImage} strokeWidth={2.4} />
           <Text style={styles.calChipText}>
             {caloriesLeft.toLocaleString()} left
           </Text>
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 5,
     backgroundColor: T.glass,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: T.glassBorder,
     borderRadius: 999,
     paddingVertical: 5,
@@ -90,5 +90,5 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     paddingHorizontal: 12,
   },
-  calChipText: { fontFamily: T.bodyBold, fontSize: 11, color: T.bg },
+  calChipText: { fontFamily: T.bodyBold, fontSize: 11, color: T.onImage },
 });

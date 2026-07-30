@@ -10,19 +10,7 @@ import {
 import { ChevronLeft } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { LibraryExercise } from "../hooks/useExerciseLibrary";
-
-const T = {
-  bg: "#000000",
-  panel: "#15161C",
-  panelBorder: "rgba(255,255,255,0.08)",
-  accent: "#FFC700",
-  accentText: "#1A1300",
-  white: "#FFFFFF",
-  muted: "rgba(255,255,255,0.62)",
-  display: "SpaceGrotesk_700Bold",
-  bodyMed: "Inter_500Medium",
-  bodyBold: "Inter_700Bold",
-};
+import { T } from "@/src/theme";
 
 type Props = {
   exercise: LibraryExercise;
@@ -55,7 +43,7 @@ export function ExerciseDetailCard({
           />
           <View style={s.heroOverlay} />
           <Pressable style={s.backBtn} onPress={onBack} hitSlop={8}>
-            <ChevronLeft size={20} color={T.white} />
+            <ChevronLeft size={20} color={T.onImage} />
           </Pressable>
         </View>
 
@@ -87,7 +75,12 @@ export function ExerciseDetailCard({
             onPress={onAddToToday}
             disabled={addedToToday}
           >
-            <Text style={s.secondaryBtnText}>
+            <Text
+              style={[
+                s.secondaryBtnText,
+                addedToToday && s.secondaryBtnTextDone,
+              ]}
+            >
               {addedToToday
                 ? "Added to today's session ✓"
                 : "Add to today's session"}
@@ -105,7 +98,7 @@ const s = StyleSheet.create({
   heroImage: { width: "100%", height: "100%" },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(10,10,10,0.28)",
   },
   backBtn: {
     position: "absolute",
@@ -114,14 +107,14 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: T.onImageGlass,
     alignItems: "center",
     justifyContent: "center",
   },
   content: { paddingHorizontal: 20, paddingTop: 20 },
   tagPill: {
     alignSelf: "flex-start",
-    backgroundColor: "rgba(255,199,0,0.12)",
+    backgroundColor: T.accentTint,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -134,7 +127,7 @@ const s = StyleSheet.create({
     textTransform: "capitalize",
   },
   title: {
-    fontFamily: T.display,
+    fontFamily: T.displayBold,
     fontSize: 26,
     color: T.white,
     letterSpacing: -0.5,
@@ -143,9 +136,9 @@ const s = StyleSheet.create({
   metaRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
   metaChip: {
     flex: 1,
-    backgroundColor: T.panel,
-    borderWidth: 1,
-    borderColor: T.panelBorder,
+    backgroundColor: T.glass,
+    borderWidth: 0.5,
+    borderColor: T.glassBorder,
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: "center",
@@ -158,7 +151,7 @@ const s = StyleSheet.create({
     marginBottom: 4,
   },
   metaValue: {
-    fontFamily: T.display,
+    fontFamily: T.displaySemi,
     fontSize: 13,
     color: T.white,
     textTransform: "capitalize",
@@ -173,15 +166,19 @@ const s = StyleSheet.create({
   primaryBtnText: {
     fontFamily: T.bodyBold,
     fontSize: 14.5,
-    color: T.accentText,
+    color: T.onImage,
   },
   secondaryBtn: {
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.14)",
+    borderWidth: 1,
+    borderColor: T.border,
     borderRadius: 999,
     paddingVertical: 15,
     alignItems: "center",
   },
-  secondaryBtnDone: { borderColor: T.accent },
+  secondaryBtnDone: {
+    borderColor: T.accent,
+    backgroundColor: T.accentTint,
+  },
   secondaryBtnText: { fontFamily: T.bodyBold, fontSize: 14, color: T.white },
+  secondaryBtnTextDone: { color: T.accent },
 });
