@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { api } from "@/src/lib/api";
 
-const WEEKDAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT"];
+const WEEKDAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
 export interface WeekDay {
   label: string;
@@ -22,14 +22,16 @@ function mondayOfThisWeek(): Date {
 }
 
 function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
-
 export function useWeekOverview() {
   const monday = mondayOfThisWeek();
   const weekDates = useMemo(
     () =>
-      Array.from({ length: 6 }, (_, i) => {
+      Array.from({ length: 7 }, (_, i) => {
         const d = new Date(monday);
         d.setDate(d.getDate() + i);
         return d;

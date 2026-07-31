@@ -4,6 +4,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 
+import { useCallback } from "react";
+import { useWaterResync } from "@/src/features/nutrition/hooks/useNutrition";
 import { T } from "@/src/theme";
 import { MealHeader } from "../components/MealHeader";
 import { DaySelector } from "../components/DaySelector";
@@ -67,6 +69,7 @@ export default function MealScreen() {
   const { data: totals } = useDailyTotals(selectedDate);
   const { data: water } = useWater(selectedDate);
   const adjustWater = useAdjustWater(selectedDate);
+  useWaterResync(selectedDate);
   const { data: weekly } = useWeeklyTrend();
   const { data: suggestion } = useSuggestion(selectedDate);
 

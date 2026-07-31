@@ -28,28 +28,7 @@ import {
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { WorkoutPlan } from "../data/workouts";
-
-const T = {
-  accent: "#FFC700",
-  accentSoft: "#FFE066",
-  accentText: "#1A1300",
-
-  bg: "#09090C",
-  panel: "#111318",
-  panelBorder: "rgba(255,255,255,0.07)",
-  glass: "rgba(255,255,255,0.05)",
-  glassBorder: "rgba(255,255,255,0.10)",
-
-  white: "#FFFFFF",
-  muted: "#9AA0AE",
-
-  display: "SpaceGrotesk_700Bold",
-  displayMed: "SpaceGrotesk_500Medium",
-  body: "Inter_400Regular",
-  bodyMed: "Inter_500Medium",
-  bodySemi: "Inter_600SemiBold",
-  bodyBold: "Inter_700Bold",
-};
+import { T } from "@/src/theme";
 
 type Phase = "exercise" | "rest" | "done";
 
@@ -117,8 +96,8 @@ const CountdownRing = ({
       <Svg width={size} height={size} style={StyleSheet.absoluteFillObject}>
         <Defs>
           <SvgGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor={T.accent} />
-            <Stop offset="100%" stopColor={T.accentSoft} />
+            <Stop offset="0%" stopColor={T.accentOnDark} />
+            <Stop offset="100%" stopColor={T.accentOnDarkSoft} />
           </SvgGradient>
         </Defs>
         <Circle
@@ -184,7 +163,7 @@ const Stepper = ({
         onPress={() => onChange(Math.max(0, value - step))}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Minus size={14} color={T.white} strokeWidth={2.4} />
+        <Minus size={14} color={T.onDark} strokeWidth={2.4} />
       </TouchableOpacity>
       <View style={s.stepperValueWrap}>
         <TextInput
@@ -204,7 +183,7 @@ const Stepper = ({
         onPress={() => onChange(value + step)}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Plus size={14} color={T.white} strokeWidth={2.4} />
+        <Plus size={14} color={T.onDark} strokeWidth={2.4} />
       </TouchableOpacity>
     </View>
   </View>
@@ -517,7 +496,7 @@ export function ActiveWorkoutScreen({
             accessibilityRole="button"
             accessibilityLabel="Close workout"
           >
-            <X size={18} color={T.white} strokeWidth={2.2} />
+            <X size={18} color={T.onDark} strokeWidth={2.2} />
           </TouchableOpacity>
 
           <View style={s.titleBlock}>
@@ -539,9 +518,9 @@ export function ActiveWorkoutScreen({
               accessibilityLabel={paused ? "Resume workout" : "Pause workout"}
             >
               {paused ? (
-                <Play size={16} color={T.white} strokeWidth={2.2} />
+                <Play size={16} color={T.onDark} strokeWidth={2.2} />
               ) : (
-                <Pause size={16} color={T.white} strokeWidth={2.2} />
+                <Pause size={16} color={T.onDark} strokeWidth={2.2} />
               )}
             </TouchableOpacity>
           </Animated.View>
@@ -657,7 +636,11 @@ export function ActiveWorkoutScreen({
                     accessibilityRole="button"
                     accessibilityLabel="Mark set complete"
                   >
-                    <Check size={16} color={T.accentText} strokeWidth={3} />
+                    <Check
+                      size={16}
+                      color={T.accentOnDarkText}
+                      strokeWidth={3}
+                    />
                     <Text style={s.ctaText}>Done — next set</Text>
                   </TouchableOpacity>
                 </Animated.View>
@@ -726,7 +709,11 @@ export function ActiveWorkoutScreen({
                 accessibilityRole="button"
                 accessibilityLabel="Skip rest"
               >
-                <SkipForward size={13} color={T.muted} strokeWidth={2.4} />
+                <SkipForward
+                  size={13}
+                  color={T.onDarkMuted}
+                  strokeWidth={2.4}
+                />
                 <Text style={s.skipText}>Skip rest</Text>
               </TouchableOpacity>
             </Animated.View>
@@ -741,7 +728,7 @@ export function ActiveWorkoutScreen({
         <Animated.View
           style={[s.doneBadge, { transform: [{ scale: doneScale }] }]}
         >
-          <Check size={30} color={T.accentText} strokeWidth={3} />
+          <Check size={30} color={T.accentOnDarkText} strokeWidth={3} />
         </Animated.View>
         <Text style={s.doneTitle}>Workout complete</Text>
         <Text style={s.doneSub}>
@@ -753,7 +740,7 @@ export function ActiveWorkoutScreen({
 }
 
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: T.bg },
+  screen: { flex: 1, backgroundColor: T.darkBg },
   bgImage: { ...StyleSheet.absoluteFillObject },
 
   topContent: { paddingHorizontal: 18, gap: 12 },
@@ -770,7 +757,7 @@ const s = StyleSheet.create({
   },
   titleBlock: { flex: 1, alignItems: "center", gap: 4 },
   topTitle: {
-    color: T.white,
+    color: T.onDark,
     fontFamily: T.bodySemi,
     fontSize: 13,
     letterSpacing: 0.1,
@@ -784,8 +771,8 @@ const s = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.10)",
   },
   elapsedText: {
-    color: T.accent,
-    fontFamily: T.display,
+    color: T.accentOnDark,
+    fontFamily: T.displaySemi,
     fontSize: 12.5,
     letterSpacing: -0.2,
     fontVariant: ["tabular-nums"],
@@ -797,12 +784,16 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.07)",
     overflow: "hidden",
   },
-  progressFill: { height: "100%", backgroundColor: T.accent, borderRadius: 2 },
+  progressFill: {
+    height: "100%",
+    backgroundColor: T.accentOnDark,
+    borderRadius: 2,
+  },
 
   heroWrap: { paddingRight: 40, marginTop: 2 },
   heroTitle: {
-    color: T.white,
-    fontFamily: T.display,
+    color: T.onDark,
+    fontFamily: T.displayExtraBold,
     fontSize: 27,
     letterSpacing: -0.6,
     lineHeight: 32,
@@ -822,11 +813,11 @@ const s = StyleSheet.create({
 
   panelOuter: { position: "absolute", bottom: 0, left: 0, right: 0 },
   panel: {
-    backgroundColor: T.panel,
+    backgroundColor: T.darkPanel,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     borderWidth: 1,
-    borderColor: T.panelBorder,
+    borderColor: T.darkPanelBorder,
     paddingHorizontal: 20,
     paddingTop: 18,
     overflow: "hidden",
@@ -840,8 +831,8 @@ const s = StyleSheet.create({
 
   dotsRow: { flexDirection: "row", gap: 4, marginBottom: 16 },
   dot: { height: 4, borderRadius: 2, flex: 1 },
-  dotDone: { backgroundColor: T.accent, opacity: 0.4 },
-  dotActive: { backgroundColor: T.accent },
+  dotDone: { backgroundColor: T.accentOnDark, opacity: 0.4 },
+  dotActive: { backgroundColor: T.accentOnDark },
   dotPending: { backgroundColor: "rgba(255,255,255,0.08)" },
 
   contentLayer: {
@@ -852,7 +843,7 @@ const s = StyleSheet.create({
   },
 
   cueLabel: {
-    color: T.muted,
+    color: T.onDarkMuted,
     fontFamily: T.bodySemi,
     fontSize: 10,
     letterSpacing: 1.4,
@@ -860,7 +851,7 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   exInstr: {
-    color: T.muted,
+    color: T.onDarkMuted,
     fontFamily: T.body,
     fontSize: 12.5,
     lineHeight: 18,
@@ -873,33 +864,33 @@ const s = StyleSheet.create({
   },
   statChip: { alignItems: "center", minWidth: 68 },
   statLabel: {
-    color: T.muted,
+    color: T.onDarkMuted,
     fontFamily: T.bodySemi,
     fontSize: 10,
     letterSpacing: 1.2,
     textTransform: "uppercase",
   },
   statValue: {
-    color: T.white,
-    fontFamily: T.display,
+    color: T.onDark,
+    fontFamily: T.displaySemi,
     fontSize: 19,
     letterSpacing: -0.3,
     marginTop: 3,
     fontVariant: ["tabular-nums"],
   },
-  statDim: { color: T.muted, fontFamily: T.bodySemi, fontSize: 13 },
+  statDim: { color: T.onDarkMuted, fontFamily: T.bodySemi, fontSize: 13 },
 
   centerDisplay: { alignItems: "center" },
   bigNumber: {
-    color: T.white,
-    fontFamily: T.display,
+    color: T.onDark,
+    fontFamily: T.displayExtraBold,
     fontSize: 54,
     letterSpacing: -2.5,
     lineHeight: 58,
     fontVariant: ["tabular-nums"],
   },
   bigLabel: {
-    color: T.muted,
+    color: T.onDarkMuted,
     fontFamily: T.bodySemi,
     fontSize: 11,
     letterSpacing: 1.4,
@@ -911,7 +902,7 @@ const s = StyleSheet.create({
   stepperGrid: { flexDirection: "row", gap: 12 },
   stepperWrap: { flex: 1 },
   stepperLabel: {
-    color: T.muted,
+    color: T.onDarkMuted,
     fontFamily: T.bodySemi,
     fontSize: 10,
     letterSpacing: 1.2,
@@ -921,9 +912,9 @@ const s = StyleSheet.create({
   stepperRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: T.glass,
+    backgroundColor: T.darkGlass,
     borderWidth: 1,
-    borderColor: T.glassBorder,
+    borderColor: T.darkGlassBorder,
     borderRadius: 14,
     paddingVertical: 6,
     paddingHorizontal: 6,
@@ -944,15 +935,15 @@ const s = StyleSheet.create({
     gap: 3,
   },
   stepperInput: {
-    color: T.white,
-    fontFamily: T.display,
+    color: T.onDark,
+    fontFamily: T.displaySemi,
     fontSize: 18,
     textAlign: "center",
     minWidth: 32,
     padding: 0,
   },
   stepperUnit: {
-    color: T.muted,
+    color: T.onDarkMuted,
     fontFamily: T.bodyMed,
     fontSize: 11,
   },
@@ -962,12 +953,12 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: T.accent,
+    backgroundColor: T.accentOnDark,
     borderRadius: 999,
     paddingVertical: 15,
   },
   ctaText: {
-    color: T.accentText,
+    color: T.accentOnDarkText,
     fontFamily: T.bodyBold,
     fontSize: 14.5,
     letterSpacing: 0.1,
@@ -975,13 +966,13 @@ const s = StyleSheet.create({
 
   ctaOutline: {
     borderWidth: 1.5,
-    borderColor: T.glassBorder,
+    borderColor: T.darkGlassBorder,
     borderRadius: 999,
     paddingVertical: 14,
     alignItems: "center",
   },
   ctaOutlineText: {
-    color: T.white,
+    color: T.onDark,
     fontFamily: T.bodyBold,
     fontSize: 14,
     letterSpacing: 0.1,
@@ -990,7 +981,7 @@ const s = StyleSheet.create({
   restRow: { flexDirection: "row", gap: 16, alignItems: "center", flex: 1 },
   restLeft: { alignItems: "center", gap: 8 },
   restEyebrow: {
-    color: T.accent,
+    color: T.accentOnDark,
     fontFamily: T.bodyBold,
     fontSize: 10,
     letterSpacing: 2.5,
@@ -998,8 +989,8 @@ const s = StyleSheet.create({
   },
 
   ringTime: {
-    color: T.white,
-    fontFamily: T.display,
+    color: T.onDark,
+    fontFamily: T.displayBold,
     fontSize: 28,
     letterSpacing: -1,
     marginTop: 2,
@@ -1008,15 +999,15 @@ const s = StyleSheet.create({
 
   restRight: { flex: 1 },
   nextCard: {
-    backgroundColor: T.glass,
+    backgroundColor: T.darkGlass,
     borderWidth: 1,
-    borderColor: T.glassBorder,
+    borderColor: T.darkGlassBorder,
     borderRadius: 18,
     padding: 12,
     gap: 6,
   },
   nextLabel: {
-    color: T.muted,
+    color: T.onDarkMuted,
     fontFamily: T.bodyBold,
     fontSize: 10,
     letterSpacing: 1,
@@ -1029,12 +1020,12 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.04)",
   },
   nextName: {
-    color: T.white,
+    color: T.onDark,
     fontFamily: T.displayMed,
     fontSize: 14.5,
     lineHeight: 19,
   },
-  nextMeta: { color: T.muted, fontFamily: T.bodyMed, fontSize: 11.5 },
+  nextMeta: { color: T.onDarkMuted, fontFamily: T.bodyMed, fontSize: 11.5 },
 
   lastExBlock: { flex: 1, justifyContent: "center", gap: 6 },
 
@@ -1044,15 +1035,15 @@ const s = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     alignSelf: "center",
-    backgroundColor: T.glass,
+    backgroundColor: T.darkGlass,
     borderWidth: 1,
-    borderColor: T.glassBorder,
+    borderColor: T.darkGlassBorder,
     borderRadius: 999,
     paddingVertical: 10,
     paddingHorizontal: 20,
     marginTop: 6,
   },
-  skipText: { color: T.muted, fontFamily: T.bodySemi, fontSize: 12.5 },
+  skipText: { color: T.onDarkMuted, fontFamily: T.bodySemi, fontSize: 12.5 },
 
   doneOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -1066,16 +1057,16 @@ const s = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: T.accent,
+    backgroundColor: T.accentOnDark,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 6,
   },
   doneTitle: {
-    color: T.white,
-    fontFamily: T.display,
+    color: T.onDark,
+    fontFamily: T.displayBold,
     fontSize: 22,
     letterSpacing: -0.4,
   },
-  doneSub: { color: T.muted, fontFamily: T.bodyMed, fontSize: 13 },
+  doneSub: { color: T.onDarkMuted, fontFamily: T.bodyMed, fontSize: 13 },
 });

@@ -21,16 +21,20 @@ function Dash({ filled }: { filled: boolean }) {
       toValue: filled ? 1 : 0,
       duration: 220,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: false, // backgroundColor can't ride the native driver
+      useNativeDriver: true, // now possible
     }).start();
   }, [filled]);
 
-  const backgroundColor = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [T.border, T.accent],
-  });
-
-  return <Animated.View style={[styles.dash, { backgroundColor }]} />;
+  return (
+    <View style={[styles.dash, { backgroundColor: T.border }]}>
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: T.accent, opacity: anim, borderRadius: 3 },
+        ]}
+      />
+    </View>
+  );
 }
 
 export function WaterTracker({ glasses, total, onAdd }: Props) {

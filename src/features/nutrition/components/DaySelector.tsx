@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  Easing,
   View,
 } from "react-native";
 import { T } from "@/src/theme";
@@ -70,14 +71,16 @@ export function DaySelector({ days, activeIndex, onSelect }: Props) {
     // can, since RN refuses to split one animated node into partly-native,
     // partly-JS.
     Animated.parallel([
-      Animated.spring(indicatorX, {
+      Animated.timing(indicatorX, {
         toValue: target.x,
-        ...T.motion.glide,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: false,
       }),
-      Animated.spring(indicatorWidth, {
+      Animated.timing(indicatorWidth, {
         toValue: target.width,
-        ...T.motion.glide,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: false,
       }),
     ]).start();
@@ -156,28 +159,29 @@ export function DaySelector({ days, activeIndex, onSelect }: Props) {
           {days.map((d, i) => {
             const active = i === activeIndex;
             return (
-              <PressableScale
-                key={d.date}
-                onPress={() => handleSelect(i, d.date)}
-                scaleTo={0.94}
-                style={styles.pressableReset}
-              >
-                <View style={styles.day} onLayout={handleItemLayout(i)}>
-                  <Text style={[styles.dname, active && styles.dnameActive]}>
-                    {d.label}
-                  </Text>
-                  <Animated.Text
-                    style={[
-                      styles.dnum,
-                      active && styles.dnumActive,
-                      { transform: [{ scale: getNumberScale(d.date) }] },
-                    ]}
-                  >
-                    {d.num}
-                  </Animated.Text>
-                  {d.hasLog && !active && <View style={styles.logDot} />}
-                </View>
-              </PressableScale>
+              <View key={d.date} onLayout={handleItemLayout(i)}>
+                <PressableScale
+                  onPress={() => handleSelect(i, d.date)}
+                  scaleTo={0.94}
+                  style={styles.pressableReset}
+                >
+                  <View style={styles.day}>
+                    <Text style={[styles.dname, active && styles.dnameActive]}>
+                      {d.label}
+                    </Text>
+                    <Animated.Text
+                      style={[
+                        styles.dnum,
+                        active && styles.dnumActive,
+                        { transform: [{ scale: getNumberScale(d.date) }] },
+                      ]}
+                    >
+                      {d.num}
+                    </Animated.Text>
+                    {d.hasLog && !active && <View style={styles.logDot} />}
+                  </View>
+                </PressableScale>
+              </View>
             );
           })}
         </View>

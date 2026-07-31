@@ -3,7 +3,10 @@ import { ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
-import { T } from "@/src/theme";
+import { useMealLog } from "@/src/features/nutrition/hooks/useNutrition";
+import { ChallengeReminderCard } from "../components/ChallengeReminderCard";
+
+import { T } from "../theme";
 import { DashboardHeader } from "../components/DashboardHeader";
 import { LinearGradient } from "expo-linear-gradient";
 import { DashboardCalendar } from "../components/DashboardCalendar";
@@ -12,14 +15,12 @@ import {
   SNAPSHOT_ICONS,
 } from "../components/TodaySnapshotRow";
 import { ProgressCoachCard } from "../components/ProgressCoachCard";
-import { ChallengeReminderCard } from "../components/ChallengeReminderCard";
+
 import { FadeInUp } from "../components/FadeInUp";
 import { UpNextWorkoutCard } from "../components/UpNextWorkoutCard";
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { useWeekOverview } from "../hooks/useWeekOverview";
-import { useDailyReminderStatus } from "../hooks/useDailyReminderStatus";
-import { getReminderContent } from "@/src/lib/reminder-content";
 import { useCoachCard } from "../hooks/useCoachCard";
 import { useTodaysWorkoutSummary } from "../hooks/useTodaysWorkoutSummary";
 import {
@@ -37,23 +38,52 @@ function getGreeting(): string {
 }
 
 function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
 }
 
 export default function DashboardScreen() {
   const today = todayStr();
-  const [selectedDate, setSelectedDate] = useState(new Date().getDate());
+  const [selectedDate, setSelectedDate] = useState(today);
 
   const { user } = useAuth();
   const { days } = useWeekOverview();
 
-  const { data: goals } = useNutritionGoals();
-  const { data: totals } = useDailyTotals(today);
-  const { data: water } = useWater(today);
-  const { data: weekly } = useWeeklyTrend(today);
+  const isToday = selectedDate === today;
 
-  const { state: reminderState, workoutDoneToday } = useDailyReminderStatus();
-  const reminderContent = getReminderContent(reminderState);
+  const { data: goals } = useNutritionGoals();
+  const { data: totals } = useDailyTotals(selectedDate);
+  const { data: water } = useWater(selectedDate);
+  const { data: weekly } = useWeeklyTrend(today);
+  const { data: mealsForDay } = useMealLog(selectedDate);
+
+  // --- Challenge card derivation (selected day) ---
+  const loggedMealTypes = new Set((mealsForDay ?? []).map((m) => m.meal));
+  const breakfastDone = loggedMealTypes.has("Breakfast");
+  const lunchDone = loggedMealTypes.has("Lunch");
+  const dinnerDone = loggedMealTypes.has("Dinner");
+
+  // Single source of truth for "was a workout actually completed" —
+  // comes from useWeekOverview's real completed-session data, shared
+  // by both the challenge card and the snapshot row below.
+  const workoutCompletedForDay =
+    days.find((d) => d.fullDate === selectedDate)?.hasWorkout ?? false;
+
+  const dayKind: "today" | "past" | "future" =
+    selectedDate === today ? "today" : selectedDate < today ? "past" : "future";
+
+  const challengeIncomplete =
+    !workoutCompletedForDay || !breakfastDone || !lunchDone || !dinnerDone;
+
+  function handleChallengePress() {
+    if (dayKind !== "today") return;
+    if (!workoutCompletedForDay) router.push("/(app)/(tabs)/train");
+    else router.push("/log-meal");
+  }
+
+  // --- Snapshot row workout status (today only) ---
+  const todayWorkoutDone =
+    days.find((d) => d.fullDate === today)?.hasWorkout ?? false;
 
   const {
     isLoading: coachLoading,
@@ -64,15 +94,14 @@ export default function DashboardScreen() {
     coachBody,
   } = useCoachCard();
 
-  const { summary: todaysWorkout } = useTodaysWorkoutSummary();
+  const { summary: todaysWorkout } = useTodaysWorkoutSummary(selectedDate);
 
-  const caloriesLeft =
-    goals && totals ? Math.max(0, goals.calories - totals.cal) : null;
+  const caloriesConsumed = totals ? totals.cal : null;
 
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
       <LinearGradient
-        colors={["rgba(28,63,46,0.07)", "rgba(28,63,46,0)"]}
+        colors={["rgba(28,63,46,0.06)", "rgba(28,63,46,0)"]}
         style={styles.topWash}
         pointerEvents="none"
       />
@@ -101,64 +130,75 @@ export default function DashboardScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {reminderContent && (
-          <FadeInUp delay={40}>
-            <ChallengeReminderCard
-              message={reminderContent.message}
-              deadlineLabel={reminderContent.actionLabel}
-              onPress={() => router.push(reminderContent.navigateTo)}
-            />
-          </FadeInUp>
-        )}
+        <ChallengeReminderCard
+          dayKind={dayKind}
+          workoutDone={workoutCompletedForDay}
+          breakfastDone={breakfastDone}
+          lunchDone={lunchDone}
+          dinnerDone={dinnerDone}
+          onPress={
+            dayKind === "today" && challengeIncomplete
+              ? handleChallengePress
+              : undefined
+          }
+        />
 
-        <FadeInUp delay={80}>
-          <TodaySnapshotRow
-            items={[
-              {
-                icon: SNAPSHOT_ICONS.calories,
-                value: caloriesLeft != null ? String(caloriesLeft) : "—",
-                label: "Cal left",
-              },
-              {
-                icon: SNAPSHOT_ICONS.workout,
-                value: workoutDoneToday ? "Done" : "Not yet",
-                label: "Workout",
-              },
-              {
-                icon: SNAPSHOT_ICONS.water,
-                value: water ? `${water.glasses}/8` : "0/8",
-                label: "Water",
-              },
-            ]}
-          />
-        </FadeInUp>
+        <TodaySnapshotRow
+          items={[
+            {
+              icon: SNAPSHOT_ICONS.calories,
+              value: caloriesConsumed != null ? String(caloriesConsumed) : "—",
+              label: "Calories",
+            },
+            {
+              icon: SNAPSHOT_ICONS.workout,
+              value: isToday
+                ? todayWorkoutDone
+                  ? "Done"
+                  : "Not yet"
+                : todaysWorkout
+                  ? "Done"
+                  : "—",
+              label: "Workout",
+            },
+            {
+              icon: SNAPSHOT_ICONS.water,
+              value: water ? `${water.glasses}/8` : "0/8",
+              label: "Water",
+            },
+          ]}
+        />
 
         {todaysWorkout && (
-          <FadeInUp delay={120}>
+          <>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Up next</Text>
+              <Text style={styles.sectionTitle}>
+                {isToday ? "Up next" : "Workout"}
+              </Text>
               <Text
                 style={styles.sectionLink}
                 onPress={() => router.push("/(app)/(tabs)/train")}
               >
-                Full plan
+                Full plan →
               </Text>
             </View>
 
-            <UpNextWorkoutCard
-              title={todaysWorkout.title}
-              tag={todaysWorkout.tag}
-              minutes={todaysWorkout.minutes}
-              exerciseCount={todaysWorkout.exerciseCount}
-              imageUrl={todaysWorkout.imageUrl}
-              onPress={() => router.push("/(app)/(tabs)/train")}
-              onStartPress={() => router.push("/(app)/(tabs)/train")}
-            />
-          </FadeInUp>
+            <FadeInUp>
+              <UpNextWorkoutCard
+                title={todaysWorkout.title}
+                tag={todaysWorkout.tag}
+                minutes={todaysWorkout.minutes}
+                exerciseCount={todaysWorkout.exerciseCount}
+                imageUrl={todaysWorkout.imageUrl}
+                onPress={() => router.push("/(app)/(tabs)/train")}
+                onStartPress={() => router.push("/(app)/(tabs)/train")}
+              />
+            </FadeInUp>
+          </>
         )}
 
         {!coachLoading && hasEnoughData && (
-          <FadeInUp delay={160}>
+          <FadeInUp delay={80}>
             <ProgressCoachCard
               progressLabel="Weight this month"
               progressValue={progressValue}
@@ -175,16 +215,13 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: T.bg },
-  calendarWrap: {
-    paddingHorizontal: T.space.xl,
-    paddingBottom: T.space.xs,
-  },
+  calendarWrap: { paddingHorizontal: 20, paddingBottom: 4 },
   scroll: { flex: 1 },
   content: {
-    paddingHorizontal: T.space.xl,
-    paddingTop: T.space.lg,
-    paddingBottom: T.space.xxxl + 20,
-    gap: T.space.lg,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 60,
+    gap: 16,
   },
   topWash: {
     position: "absolute",
@@ -197,17 +234,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "baseline",
-    marginBottom: T.space.sm,
   },
-  sectionTitle: {
-    fontFamily: T.displaySemi,
-    fontSize: 17,
-    color: T.white,
-    letterSpacing: -0.2,
-  },
-  sectionLink: {
-    fontFamily: T.bodySemi,
-    fontSize: 12,
-    color: T.accent,
-  },
+  sectionTitle: { fontFamily: T.displaySemi, fontSize: 17, color: T.white },
+  sectionLink: { fontFamily: T.bodySemi, fontSize: 11, color: T.accent },
 });

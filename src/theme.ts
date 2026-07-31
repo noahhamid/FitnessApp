@@ -106,4 +106,24 @@ export const T = {
     settle: { useNativeDriver: true, speed: 20, bounciness: 4 },
     quick: { useNativeDriver: true, duration: 140 },
   },
+
+  // ── Dark / immersive surface — reserved for the one full-screen mode
+  // that intentionally goes dark for glare/legibility during a workout
+  // (ActiveWorkoutScreen). No other screen should use these; everything
+  // else stays on the light paper surface above.
+  darkBg: "#0E0E10",
+  darkPanel: "#17181B",
+  darkPanelBorder: "rgba(255,255,255,0.08)",
+  darkGlass: "rgba(255,255,255,0.05)",
+  darkGlassBorder: "rgba(255,255,255,0.10)",
+  onDark: "#FFFFFF",
+  onDarkMuted: "#9DA3AA",
+
+  // Same accent hue as T.accent, lifted in lightness — the pine green at
+  // its normal, near-black-adjacent lightness is invisible on a dark
+  // background, so this is not a second accent color, just a legible
+  // tint of the same one for this one context.
+  accentOnDark: "#7FD9AE",
+  accentOnDarkSoft: "#B9EBD2",
+  accentOnDarkText: "#0A1F15", // ink text sitting on the bright accent (e.g. CTA label)
 };

@@ -89,6 +89,10 @@ function toWeeklyTrend(row: ApiWeeklyTrend): WeeklyTrend {
     streak: row.streak,
   };
 }
+function todayLocal(): string {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+}
 
 export async function scanFoodImage(
   base64: string,
@@ -107,7 +111,7 @@ async function writeCustomFoods(foods: FoodLibraryItem[]): Promise<void> {
   await AsyncStorage.setItem(CUSTOM_FOODS_KEY, JSON.stringify(foods));
 }
 export async function fetchSuggestion(date?: string): Promise<NutritionSuggestion | null> {
-  const logDate = date ?? new Date().toISOString().split("T")[0];
+const logDate = date ?? todayLocal();
   return api.get<NutritionSuggestion | null>(
     `/api/nutrition/suggestions?date=${encodeURIComponent(logDate)}`,
   );
@@ -131,7 +135,7 @@ export async function upsertNutritionGoals(
 }
 
 export async function fetchMealLog(date?: string): Promise<MealLogEntry[]> {
-  const logDate = date ?? new Date().toISOString().split("T")[0];
+  const logDate = date ?? todayLocal();
   const rows = await api.get<ApiMealLog[]>(
     `/api/nutrition/log?date=${encodeURIComponent(logDate)}`,
   );
@@ -160,14 +164,14 @@ export async function deleteMealEntry(id: string): Promise<void> {
 }
 
 export async function fetchDailyTotals(date?: string): Promise<DailyTotals> {
-  const logDate = date ?? new Date().toISOString().split("T")[0];
+  const logDate = date ?? todayLocal();
   return api.get<DailyTotals>(
     `/api/nutrition/totals?date=${encodeURIComponent(logDate)}`,
   );
 }
 
 export async function fetchWater(date?: string): Promise<{ glasses: number }> {
-  const logDate = date ?? new Date().toISOString().split("T")[0];
+ const logDate = date ?? todayLocal();
   const row = await api.get<ApiWater>(
     `/api/nutrition/water?date=${encodeURIComponent(logDate)}`,
   );

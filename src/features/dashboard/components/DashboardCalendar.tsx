@@ -27,14 +27,15 @@ const INDICATOR_INSET = 6;
 export type CalendarDay = {
   label: string;
   date: number;
+  fullDate: string; // ISO YYYY-MM-DD — the source of truth for selection
   hasWorkout?: boolean;
   hasMeal?: boolean;
 };
 
 type Props = {
   days: CalendarDay[];
-  selectedDate: number;
-  onSelectDate: (date: number) => void;
+  selectedDate: string; // now an ISO fullDate string, not a bare day number
+  onSelectDate: (fullDate: string) => void;
 };
 
 export function DashboardCalendar({ days, selectedDate, onSelectDate }: Props) {
@@ -43,7 +44,7 @@ export function DashboardCalendar({ days, selectedDate, onSelectDate }: Props) {
 
   const selectedIndex = Math.max(
     0,
-    days.findIndex((d) => d.date === selectedDate),
+    days.findIndex((d) => d.fullDate === selectedDate),
   );
 
   const indicatorX = useRef(new Animated.Value(0)).current;
@@ -103,7 +104,7 @@ export function DashboardCalendar({ days, selectedDate, onSelectDate }: Props) {
     setRowWidth(e.nativeEvent.layout.width);
 
   const handleSelect = (day: CalendarDay, index: number) => {
-    onSelectDate(day.date);
+    onSelectDate(day.fullDate);
     pulseDay(index);
   };
 
@@ -135,10 +136,10 @@ export function DashboardCalendar({ days, selectedDate, onSelectDate }: Props) {
 
         <View style={styles.row}>
           {days.map((day, index) => {
-            const isSelected = day.date === selectedDate;
+            const isSelected = day.fullDate === selectedDate;
             return (
               <TouchableOpacity
-                key={day.date}
+                key={day.fullDate}
                 activeOpacity={0.7}
                 onPress={() => handleSelect(day, index)}
                 style={styles.item}

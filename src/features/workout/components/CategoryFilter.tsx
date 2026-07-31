@@ -8,17 +8,7 @@ import {
   Animated,
   LayoutChangeEvent,
 } from "react-native";
-
-const T = {
-  glassBorder: "rgba(255,255,255,0.14)",
-  accent: "#FFC700",
-  accentText: "#1A1300",
-  white: "#FFFFFF",
-  muted: "rgba(255,255,255,0.62)",
-
-  bodySemi: "Inter_600SemiBold",
-  bodyBold: "Inter_700Bold",
-};
+import { T } from "@/src/theme";
 
 // Kept for backward compatibility wherever this specific union was
 // imported elsewhere — the component itself is now generic, so new
@@ -47,21 +37,11 @@ function Chip({
   const scale = useRef(new Animated.Value(1)).current;
 
   const onPressIn = useCallback(() => {
-    Animated.spring(scale, {
-      toValue: 0.94,
-      useNativeDriver: true,
-      friction: 7,
-      tension: 160,
-    }).start();
+    Animated.spring(scale, { toValue: 0.94, ...T.motion.settle }).start();
   }, [scale]);
 
   const onPressOut = useCallback(() => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      friction: 5,
-      tension: 160,
-    }).start();
+    Animated.spring(scale, { toValue: 1, ...T.motion.settle }).start();
   }, [scale]);
 
   return (
@@ -171,25 +151,29 @@ export function CategoryFilter<T extends string>({
 }
 
 const s = StyleSheet.create({
-  scrollContent: { paddingRight: 8 },
+  scrollContent: { paddingRight: T.space.sm },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: T.space.sm,
   },
   indicator: {
     position: "absolute",
     top: 0,
     bottom: 0,
-    borderRadius: 999,
+    borderRadius: T.radius.pill,
     backgroundColor: T.accent,
+    // same treatment as the calendar's selection pill — the one
+    // "currently chosen" shape on screen gets the lifted, accent-tinted
+    // shadow, nothing else does
+    ...T.shadow.lifted,
   },
   chip: {
-    paddingHorizontal: 16,
+    paddingHorizontal: T.space.lg,
     paddingVertical: 9,
-    borderRadius: 999,
+    borderRadius: T.radius.pill,
     borderWidth: 1,
-    borderColor: T.glassBorder,
+    borderColor: T.border,
   },
   chipActive: {
     borderColor: "transparent",
@@ -197,10 +181,12 @@ const s = StyleSheet.create({
   chipText: {
     fontFamily: T.bodySemi,
     fontSize: 13,
-    color: T.muted,
+    color: T.faint,
   },
   chipTextActive: {
     fontFamily: T.bodyBold,
-    color: T.accentText,
+    // cream, not stark white — same warm-text-on-accent choice as the
+    // workout card's CTA pill, so filled-accent surfaces read consistently
+    color: T.bg,
   },
 });
