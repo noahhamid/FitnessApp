@@ -7,6 +7,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { authClient } from "@/src/lib/auth";
+import { invalidateAuthHeaderCache } from "@/src/lib/api";
 import {
   signIn,
   signUp,
@@ -52,9 +53,9 @@ const SESSION_KEY = ["auth", "session"] as const;
 
 export function useAuthSession() {
   const { data: session, isPending, error } = authClient.useSession();
-  console.log("SESSION STATE:", { session, isPending, error });
   return { session, isPending };
 }
+
 // ── useAuth — main hook (replaces old Supabase useAuth) ──────────────────────
 
 export function useAuth() {
@@ -97,6 +98,7 @@ export function useSignIn() {
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       signIn(email, password),
     onSuccess: () => {
+      invalidateAuthHeaderCache();
       queryClient.invalidateQueries({ queryKey: SESSION_KEY });
     },
   });
@@ -115,6 +117,7 @@ export function useSignUp() {
       name?:     string;
     }) => signUp(email, password, name),
     onSuccess: () => {
+      invalidateAuthHeaderCache();
       queryClient.invalidateQueries({ queryKey: SESSION_KEY });
     },
   });
@@ -126,6 +129,7 @@ export function useSignOut() {
   return useMutation({
     mutationFn: signOut,
     onSuccess: async () => {
+      invalidateAuthHeaderCache();
       queryClient.clear();
       await queryClient.resetQueries();
       useAuthStore.getState().reset();
@@ -134,9 +138,19 @@ export function useSignOut() {
 }
 
 export function useGoogleSignIn() {
-  return useMutation({ mutationFn: signInWithGoogle });
+  return useMutation({
+    mutationFn: signInWithGoogle,
+    onSuccess: () => {
+      invalidateAuthHeaderCache();
+    },
+  });
 }
 
 export function useAppleSignIn() {
-  return useMutation({ mutationFn: signInWithApple });
+  return useMutation({
+    mutationFn: signInWithApple,
+    onSuccess: () => {
+      invalidateAuthHeaderCache();
+    },
+  });
 }

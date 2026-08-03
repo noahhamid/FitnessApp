@@ -27,8 +27,17 @@ function toDateStr(d: Date): string {
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
-export function useWeekOverview() {
-  const monday = mondayOfThisWeek();
+
+/**
+ * @param weekOffset 0 = current week (Mon–Sun), -1 = previous, +1 = next, etc.
+ */
+export function useWeekOverview(weekOffset = 0) {
+  const monday = useMemo(() => {
+    const d = mondayOfThisWeek();
+    d.setDate(d.getDate() + weekOffset * 7);
+    return d;
+  }, [weekOffset]);
+
   const weekDates = useMemo(
     () =>
       Array.from({ length: 7 }, (_, i) => {
@@ -40,7 +49,7 @@ export function useWeekOverview() {
   );
 
   const weekStart = toDateStr(weekDates[0]);
-  const weekEnd = toDateStr(weekDates[5]);
+  const weekEnd = toDateStr(weekDates[6]); // Sunday inclusive
 
   // One query for the whole week's workout sessions.
   const workoutQuery = useQuery({
@@ -53,15 +62,17 @@ export function useWeekOverview() {
 
   // One lightweight query per day for meal presence — nutrition's API
   // only supports a single-date lookup, not a range, so this fans out
-  // 6 parallel requests rather than one bulk call.
+  // 7 parallel requests rather than one bulk call.
   const mealQueries = useQueries({
     queries: weekDates.map((d) => ({
       queryKey: ["week-overview", "meals", toDateStr(d)],
-      queryFn: () => api.get<{ id: string }[]>(`/api/nutrition/log?date=${toDateStr(d)}`),
+      queryFn: () =>
+        api.get<{ id: string }[]>(`/api/nutrition/log?date=${toDateStr(d)}`),
     })),
   });
 
-  const isLoading = workoutQuery.isLoading || mealQueries.some((q) => q.isLoading);
+  const isLoading =
+    workoutQuery.isLoading || mealQueries.some((q) => q.isLoading);
 
   const workoutDatesWithSession = new Set(
     (workoutQuery.data ?? [])
@@ -80,5 +91,5 @@ export function useWeekOverview() {
     };
   });
 
-  return { days, isLoading };
+  return { days, isLoading, weekStart, weekEnd };
 }

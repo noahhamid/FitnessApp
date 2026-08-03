@@ -1,6 +1,8 @@
 import { Wheat, Egg, Droplet } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
+import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
 import { CalorieRing } from "./CalorieRing";
 import { MacroBar } from "./MacroBar";
 
@@ -25,8 +27,10 @@ export function DailySummaryCard({
   goalLabel,
   onEditGoal,
 }: Props) {
+  const { styles } = useThemedStyles(makeStyles);
+
   return (
-    <View style={styles.card}>
+    <GlassSurface style={styles.card}>
       <View style={styles.top}>
         <CalorieRing consumed={consumed} goal={calorieGoal} />
         <View style={styles.macros}>
@@ -59,35 +63,35 @@ export function DailySummaryCard({
           Edit →
         </Text>
       </View>
-    </View>
+    </GlassSurface>
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: T.glass,
-    borderWidth: 0.5,
-    borderColor: T.glassBorder,
-    borderRadius: 22,
-    padding: 20,
-    shadowColor: "#0A0A0A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 1,
-  },
-  top: { flexDirection: "row", alignItems: "center", gap: 18 },
-  macros: { flex: 1 },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 16,
-    paddingTop: 14,
-    borderTopWidth: 0.5,
-    borderTopColor: T.glassBorder,
-  },
-  footerText: { fontFamily: T.bodyMed, fontSize: 11.5, color: T.muted },
-  footerBold: { fontFamily: T.bodySemi, color: T.white },
-  footerLink: { fontFamily: T.bodySemi, fontSize: 11.5, color: T.accent },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    card: {
+      borderRadius: 22,
+      padding: 20,
+    },
+    top: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 18,
+      zIndex: 1,
+    },
+    macros: { flex: 1 },
+    footer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: 16,
+      paddingTop: 14,
+      borderTopWidth: 0.5,
+      borderTopColor: T.glassBorder,
+      zIndex: 1,
+    },
+    footerText: { fontFamily: T.bodyMed, fontSize: 11.5, color: T.muted },
+    footerBold: { fontFamily: T.bodySemi, color: T.white },
+    footerLink: { fontFamily: T.bodySemi, fontSize: 11.5, color: T.accent },
+  });
+}

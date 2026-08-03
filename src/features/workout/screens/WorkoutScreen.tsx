@@ -6,52 +6,74 @@ import {
   StatusBar,
   StyleSheet,
   Animated,
-  Easing,
   ActivityIndicator,
   Pressable,
   StyleProp,
   ViewStyle,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import {
-  ChevronLeft,
-  ArrowRight,
-  AlertCircle,
-  Dumbbell as DumbbellIcon,
-} from "lucide-react-native";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
+import { topInset } from "@/src/lib/safe-area";
 import { WorkoutTabHeader } from "../components/WorkoutTabHeader";
 import { WorkoutPlanCard } from "../components/WorkoutPlanCard";
 import { WorkoutDetailScreen } from "../components/WorkoutDetailScreen";
 import { ContinueWorkoutCard } from "../components/ContinueWorkoutCard";
+import { InProgressStatsRow } from "../components/InProgressStatsRow";
 import {
   ActiveWorkoutScreen,
   type SetLog,
 } from "../components/ActiveWorkoutScreen";
 import { ExerciseLibrarySection } from "../components/ExerciseLibrarySection";
 import { ExerciseDetailCard } from "../components/ExerciseDetailCard";
-import type { LibraryExercise } from "../hooks/useExerciseLibrary";
+import {
+  useExerciseLibrary,
+  type LibraryExercise,
+} from "../hooks/useExerciseLibrary";
 import { useWorkoutPlan } from "../hooks/useWorkoutPlan";
 import { useLastPerformance } from "../hooks/useLastPerformance";
 import { useInProgressSession } from "../hooks/useInProgressSession";
+import { useWorkoutStreak } from "../hooks/useWorkoutStreak";
+import { useTodayExtras } from "../hooks/useTodayExtras";
+import { usePersonalRecords } from "@/src/features/progress/hooks/useProgress";
 import {
   adaptPlanDay,
   adaptLibraryExercise,
   imageForMuscleGroup,
 } from "@/src/lib/workout-plan-adapter";
-import { getTodaysPlanDayIndex } from "@/src/lib/plan-day-selection";
+import {
+  getTodaysPlanDayIndex,
+  getWeeklySlots,
+  WEEKDAY_LABELS_SHORT,
+} from "@/src/lib/plan-day-selection";
+import { Moon } from "lucide-react-native";
 import {
   useStartWorkoutSession,
   useCompleteWorkoutSession,
-  useAddExerciseToSession,
 } from "../hooks/useWorkoutSession";
-import type { WorkoutPlan } from "../data/workouts";
+import { useAddToLiveSession } from "../hooks/useAddToLiveSession";
+import type { Exercise, WorkoutPlan } from "../data/workouts";
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 
 type ViewState = "today" | "fullPlan" | "detail" | "active" | "libraryDetail";
 
-// Standard entrance used everywhere in this app: fade + rise,
-// Easing.out(Easing.cubic), 380–480ms, staggered per-section by delay.
+/** Resolve a plan exercise to LibraryExercise shape for ExerciseDetailCard. */
+function toLibraryExercise(
+  exercise: { id: string; name: string; muscleGroup?: string },
+  library: LibraryExercise[] | undefined,
+): LibraryExercise {
+  const match = library?.find((l) => l.name === exercise.name);
+  if (match) return match;
+  return {
+    id: exercise.id,
+    name: exercise.name,
+    muscleGroup: exercise.muscleGroup ?? "core",
+    movementPattern: "carry",
+    minEquipment: "bodyweight",
+  };
+}
+
 const Reveal = ({
   children,
   delay = 0,
@@ -62,22 +84,20 @@ const Reveal = ({
   style?: StyleProp<ViewStyle>;
 }) => {
   const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(14)).current;
+  const translateY = useRef(new Animated.Value(18)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 440,
+        duration: 420,
         delay,
-        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(translateY, {
         toValue: 0,
-        duration: 440,
+        duration: 420,
         delay,
-        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start();
@@ -110,70 +130,139 @@ function muscleSummary(plan: WorkoutPlan): string {
 }
 
 export default function WorkoutScreen() {
+  const { T, styles: s, resolved } = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
+  const safeTop = topInset(insets.top);
   const [view, setView] = useState<ViewState>("today");
   const [selectedDay, setSelectedDay] = useState<WorkoutPlan | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  // Live exercise list for the active session — seeded on start/resume,
+  // appendable mid-workout via ActiveWorkoutScreen's library modal.
+  const [activeExercises, setActiveExercises] = useState<Exercise[]>([]);
+  // Fresh start (handleStart) drops straight into auto-play; resuming
+  // (handleResume) shows the list first. See ActiveWorkoutScreen's
+  // initialMode prop.
+  const [entryMode, setEntryMode] = useState<"list" | "auto">("list");
 
   const { user } = useAuth();
   const { data: apiPlan, isLoading, error } = useWorkoutPlan();
   const { data: lastPerformance } = useLastPerformance();
+  const { data: exerciseLibrary } = useExerciseLibrary();
   const { inProgress } = useInProgressSession();
+  const { streakDays } = useWorkoutStreak(!!inProgress);
+  const { data: personalRecords } = usePersonalRecords();
   const startSession = useStartWorkoutSession();
-  const addExercise = useAddExerciseToSession();
   const completeSession = useCompleteWorkoutSession();
+
+  // Streak card only when there's a real multi-day streak (≥2).
+  const visibleStreak =
+    inProgress && streakDays >= 2 ? streakDays : null;
+  // Same shared add path as ActiveWorkoutScreen's modal — sessionId from
+  // the live in-progress session (confirmed field on useInProgressSession).
+  const {
+    addExercise: addToLiveSession,
+    isPending: liveAddPending,
+  } = useAddToLiveSession(inProgress?.sessionId);
   const [starting, setStarting] = useState(false);
+
+  // Backend-persisted "added for today" exercises — survives reload,
+  // resets naturally at the next calendar day via logDate. Replaces the
+  // old local-only extraExercises state.
+  const {
+    extras,
+    addExtra,
+    removeExtra,
+    clearAllExtras,
+    isAddingExtra,
+  } = useTodayExtras();
+
+  // Checkmark destination matches the active add path: live session names
+  // while a workout is in progress, PlannedExtraExercise names otherwise.
+  const addedNames = useMemo(() => {
+    if (inProgress) {
+      return new Set(inProgress.plan.exercises.map((e) => e.name));
+    }
+    return new Set(extras.map((e) => e.exerciseName));
+  }, [inProgress, extras]);
 
   const uiDays: WorkoutPlan[] = useMemo(() => {
     if (!apiPlan) return [];
     return apiPlan.days.map((day) => adaptPlanDay(day, apiPlan.goalId));
   }, [apiPlan]);
 
-  const todaysIndex = useMemo(
-    () => getTodaysPlanDayIndex(uiDays.length),
-    [uiDays.length],
-  );
-  const baseTodaysWorkout = uiDays[todaysIndex] ?? null;
+  const daysPerWeek = apiPlan?.daysPerWeek ?? uiDays.length;
 
-  const [extraExercises, setExtraExercises] = useState<
-    { id: string; name: string; muscleGroup: string; movementPattern: string }[]
-  >([]);
-  const addedIds = useMemo(
-    () => new Set(extraExercises.map((e) => e.id)),
-    [extraExercises],
+  const todaysIndex = useMemo(
+    () => getTodaysPlanDayIndex(daysPerWeek),
+    [daysPerWeek],
+  );
+  const isRestDay = !!apiPlan && todaysIndex === null;
+  const baseTodaysWorkout =
+    todaysIndex !== null ? (uiDays[todaysIndex] ?? null) : null;
+
+  const weekSlots = useMemo(
+    () => (apiPlan ? getWeeklySlots(daysPerWeek) : []),
+    [apiPlan, daysPerWeek],
   );
 
   const todaysWorkout = useMemo(() => {
     if (!baseTodaysWorkout) return null;
-    if (extraExercises.length === 0) return baseTodaysWorkout;
+    if (extras.length === 0) return baseTodaysWorkout;
     return {
       ...baseTodaysWorkout,
       exercises: [
         ...baseTodaysWorkout.exercises,
-        ...extraExercises.map((e) =>
-          adaptLibraryExercise(e, apiPlan?.goalId ?? "health"),
+        ...extras.map((e) =>
+          adaptLibraryExercise(
+            {
+              id: e.id,
+              name: e.exerciseName,
+              muscleGroup: e.muscleGroup,
+              movementPattern: e.movementPattern,
+            },
+            apiPlan?.goalId ?? "health",
+          ),
         ),
       ],
     };
-  }, [baseTodaysWorkout, extraExercises, apiPlan?.goalId]);
+  }, [baseTodaysWorkout, extras, apiPlan?.goalId]);
 
   const [cameFrom, setCameFrom] = useState<"today" | "fullPlan">("today");
   const [viewingExercise, setViewingExercise] =
     useState<LibraryExercise | null>(null);
-  const [libraryDetailAdded, setLibraryDetailAdded] = useState(false);
+  // Where to return when closing ExerciseDetailCard opened from a plan list.
+  const [libraryDetailFrom, setLibraryDetailFrom] = useState<
+    "today" | "detail"
+  >("today");
 
   const handleCardPress = (plan: WorkoutPlan, from: "today" | "fullPlan") => {
+    // Today's card is an entry point, not a preview — skip WorkoutDetailScreen
+    // and start immediately (same path as detail's onStart). Full-plan days
+    // still open the detail/preview screen for browsing.
+    if (from === "today") {
+      setCameFrom("today");
+      void handleStart(plan);
+      return;
+    }
     setSelectedDay(plan);
     setCameFrom(from);
     setView("detail");
   };
 
+  const openExerciseDetail = (
+    exercise: { id: string; name: string; muscleGroup?: string },
+    from: "today" | "detail",
+  ) => {
+    setViewingExercise(toLibraryExercise(exercise, exerciseLibrary));
+    setLibraryDetailFrom(from);
+    setView("libraryDetail");
+  };
+
   const handleResume = () => {
     if (!inProgress) return;
-    // Reopens the SAME session (no new session created, no exercises
-    // re-added) — just restarts the exercise sequence from the top.
-    // See useInProgressSession's note on why a true mid-set resume
-    // isn't possible with what's currently persisted.
+    setEntryMode("list");
     setSelectedDay(inProgress.plan);
+    setActiveExercises(inProgress.plan.exercises);
     setActiveSessionId(inProgress.sessionId);
     setView("active");
   };
@@ -181,24 +270,27 @@ export default function WorkoutScreen() {
   const handleStart = async (plan: WorkoutPlan) => {
     if (starting) return; // guards against rapid double-taps
     setStarting(true);
+    setEntryMode("auto");
     setSelectedDay(plan);
+    setActiveExercises(plan.exercises);
 
     try {
       const session = await startSession.mutateAsync({
         notes: `${apiPlan?.splitLabel ?? "Workout"} — ${plan.title}`,
+        exercises: plan.exercises.map((ex) => ({ exerciseName: ex.name })),
       });
 
-      // Parallelized — was a sequential awaited loop before, which meant
-      // N exercises = N back-to-back round-trips before the active screen
-      // ever appeared. All independent, so no reason not to fire together.
-      await Promise.all(
-        plan.exercises.map((ex) =>
-          addExercise.mutateAsync({
-            sessionId: session.id,
-            exerciseName: ex.name,
-          }),
-        ),
-      );
+      // If this was today's composed workout (base plan + any added
+      // extras), the extras are now folded into the real session above —
+      // clear them from the "planned for today" table so they don't
+      // linger as if still unstarted. Standalone single-exercise starts
+      // (from the library detail screen) never touch extras, so this is
+      // skipped for those.
+      if (todaysWorkout && plan.id === todaysWorkout.id) {
+        await clearAllExtras().catch((e) =>
+          console.log("Failed to clear today's extras after start:", e),
+        );
+      }
 
       setActiveSessionId(session.id);
       setView("active");
@@ -245,7 +337,8 @@ export default function WorkoutScreen() {
     setView("today");
     setSelectedDay(null);
     setActiveSessionId(null);
-    setExtraExercises([]);
+    setActiveExercises([]);
+    setViewingExercise(null);
   };
 
   // ── Detail screen ─────────────────────────────────────────────────────────
@@ -259,16 +352,31 @@ export default function WorkoutScreen() {
         }}
         onStart={() => selectedDay && handleStart(selectedDay)}
         starting={starting}
+        onExercisePress={(ex: Exercise) => openExerciseDetail(ex, "detail")}
       />
     );
   }
 
   // ── Active workout screen ────────────────────────────────────────────────
-  if (view === "active" && selectedDay) {
+  if (view === "active" && selectedDay && activeSessionId) {
     return (
       <ActiveWorkoutScreen
         plan={selectedDay}
-        onClose={() => setView("detail")}
+        sessionId={activeSessionId}
+        initialMode={entryMode}
+        exercises={activeExercises}
+        onExercisesChange={setActiveExercises}
+        onAppendExercise={(ex) =>
+          setActiveExercises((prev) =>
+            prev.some((e) => e.name === ex.name) ? prev : [...prev, ex],
+          )
+        }
+        onClose={() =>
+          // Only return to WorkoutDetailScreen when the session was started
+          // from a full-plan browse. Today's card / resume / library starts
+          // should never dump into the detail preview.
+          setView(cameFrom === "fullPlan" ? "detail" : "today")
+        }
         onFinish={handleFinish}
         lastPerformance={lastPerformance}
       />
@@ -284,20 +392,20 @@ export default function WorkoutScreen() {
           style={s.topWash}
           pointerEvents="none"
         />
-        <StatusBar barStyle="dark-content" backgroundColor={T.bg} />
+        <StatusBar
+          barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+        />
         <ScrollView
           style={s.scroll}
-          contentContainerStyle={s.scrollContent}
+          contentContainerStyle={[
+            s.scrollContent,
+            { paddingTop: safeTop + 8 },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           <Reveal delay={0} style={s.fullPlanHeader}>
-            <Pressable
-              onPress={() => setView("today")}
-              hitSlop={8}
-              style={s.backRow}
-            >
-              <ChevronLeft size={16} color={T.faint} strokeWidth={2.4} />
-              <Text style={s.backLink}>Today</Text>
+            <Pressable onPress={() => setView("today")} hitSlop={8}>
+              <Text style={s.backLink}>← Today</Text>
             </Pressable>
             <Text style={s.sectionTitle}>Full plan</Text>
             {apiPlan && (
@@ -307,19 +415,39 @@ export default function WorkoutScreen() {
             )}
           </Reveal>
 
-          {uiDays.map((plan, i) => (
-            <WorkoutPlanCard
-              key={plan.id}
-              title={plan.title}
-              tag={plan.tag}
-              minutes={estimateMinutes(plan)}
-              exerciseCount={plan.exercises.length}
-              muscles={muscleSummary(plan)}
-              imageUrl={plan.coverImage}
-              entranceDelay={i * 60}
-              onPress={() => handleCardPress(plan, "fullPlan")}
-            />
-          ))}
+          {weekSlots.map((slot, i) => {
+            const weekday = WEEKDAY_LABELS_SHORT[slot.weekdayIndex];
+            if (slot.kind === "rest") {
+              return (
+                <Reveal key={`rest-${slot.weekdayIndex}`} delay={i * 50}>
+                  <View style={s.restRow}>
+                    <Text style={s.restRowWeekday}>{weekday}</Text>
+                    <View style={s.restRowBody}>
+                      <Moon size={14} color={T.faint} strokeWidth={2} />
+                      <Text style={s.restRowTitle}>Rest day</Text>
+                    </View>
+                  </View>
+                </Reveal>
+              );
+            }
+            const plan = uiDays[slot.planDayIndex];
+            if (!plan) return null;
+            return (
+              <View key={plan.id} style={s.trainSlot}>
+                <Text style={s.trainSlotWeekday}>{weekday}</Text>
+                <WorkoutPlanCard
+                  title={plan.title}
+                  tag={plan.tag}
+                  minutes={estimateMinutes(plan)}
+                  exerciseCount={plan.exercises.length}
+                  muscles={muscleSummary(plan)}
+                  imageUrl={plan.coverImage}
+                  entranceDelay={i * 60}
+                  onPress={() => handleCardPress(plan, "fullPlan")}
+                />
+              </View>
+            );
+          })}
         </ScrollView>
       </View>
     );
@@ -331,15 +459,24 @@ export default function WorkoutScreen() {
       <ExerciseDetailCard
         exercise={viewingExercise}
         imageUrl={imageForMuscleGroup(viewingExercise.muscleGroup)}
-        addedToToday={addedIds.has(viewingExercise.id) || libraryDetailAdded}
+        addedToToday={addedNames.has(viewingExercise.name)}
+        starting={starting}
         onBack={() => {
-          setView("today");
+          setView(libraryDetailFrom);
           setViewingExercise(null);
-          setLibraryDetailAdded(false);
         }}
         onAddToToday={() => {
-          setExtraExercises((prev) => [...prev, viewingExercise]);
-          setLibraryDetailAdded(true);
+          addExtra({
+            exerciseName: viewingExercise.name,
+            muscleGroup: viewingExercise.muscleGroup,
+            movementPattern: viewingExercise.movementPattern,
+          });
+        }}
+        onRemoveFromToday={() => {
+          const extra = extras.find(
+            (e) => e.exerciseName === viewingExercise.name,
+          );
+          if (extra) removeExtra(extra.id);
         }}
         onStart={() => {
           const standalonePlan: WorkoutPlan = {
@@ -354,8 +491,6 @@ export default function WorkoutScreen() {
               ),
             ],
           };
-          setViewingExercise(null);
-          setLibraryDetailAdded(false);
           handleStart(standalonePlan);
         }}
       />
@@ -365,12 +500,9 @@ export default function WorkoutScreen() {
   // ── Today screen ─────────────────────────────────────────────────────────
   return (
     <View style={s.screen}>
-      <LinearGradient
-        colors={["rgba(28,63,46,0.06)", "rgba(28,63,46,0)"]}
-        style={s.topWash}
-        pointerEvents="none"
+      <StatusBar
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
       />
-      <StatusBar barStyle="dark-content" backgroundColor={T.bg} />
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.scrollContent}
@@ -387,12 +519,7 @@ export default function WorkoutScreen() {
         <Reveal delay={80} style={s.splitHeader}>
           {apiPlan && (
             <>
-              <View style={s.splitLabelRow}>
-                <View style={s.splitDot} />
-                <Text style={s.splitLabel}>
-                  {apiPlan.splitLabel.toUpperCase()}
-                </Text>
-              </View>
+              <Text style={s.splitLabel}>{apiPlan.splitLabel}</Text>
               <Text style={s.splitSub}>{apiPlan.daysPerWeek} days / week</Text>
             </>
           )}
@@ -405,79 +532,125 @@ export default function WorkoutScreen() {
         )}
 
         {!isLoading && error && (
-          <Reveal delay={0} style={s.centerState}>
-            <View style={s.centerIcon}>
-              <AlertCircle size={20} color={T.accent} strokeWidth={1.8} />
-            </View>
+          <View style={s.centerState}>
             <Text style={s.emptyTitle}>Couldn't load your plan</Text>
             <Text style={s.emptySubtitle}>
               Pull to refresh, or check your connection.
             </Text>
-          </Reveal>
+          </View>
         )}
 
-        {!isLoading && !error && !todaysWorkout && (
-          <Reveal delay={0} style={s.centerState}>
-            <View style={s.centerIcon}>
-              <DumbbellIcon size={20} color={T.accent} strokeWidth={1.8} />
-            </View>
+        {!isLoading && !error && !apiPlan && (
+          <View style={s.centerState}>
             <Text style={s.emptyTitle}>No plan yet</Text>
             <Text style={s.emptySubtitle}>
               Finish onboarding to get a personalized training split.
             </Text>
-          </Reveal>
+          </View>
         )}
 
         {inProgress && (
-          <Reveal delay={100} style={{ marginBottom: T.space.lg }}>
-            <ContinueWorkoutCard
-              title={inProgress.plan.title}
-              tag={inProgress.plan.tag}
-              minutes={inProgress.minutesLeft}
-              calories={inProgress.estCalories}
-              percent={inProgress.percent}
-              onPress={handleResume}
-            />
-          </Reveal>
-        )}
-
-        {todaysWorkout && (
           <>
-            <Reveal delay={140}>
-              <Text style={s.sectionTitle}>Today's workout</Text>
-            </Reveal>
-
-            <Reveal delay={180}>
-              <WorkoutPlanCard
-                title={todaysWorkout.title}
-                tag={todaysWorkout.tag}
-                minutes={estimateMinutes(todaysWorkout)}
-                exerciseCount={todaysWorkout.exercises.length}
-                muscles={muscleSummary(todaysWorkout)}
-                imageUrl={todaysWorkout.coverImage}
-                entranceDelay={0}
-                onPress={() => handleCardPress(todaysWorkout, "today")}
+            <Reveal delay={100} style={{ marginBottom: 12 }}>
+              <ContinueWorkoutCard
+                title={inProgress.plan.title}
+                tag={inProgress.plan.tag}
+                minutes={inProgress.minutesLeft}
+                calories={inProgress.estCalories}
+                percent={inProgress.percent}
+                exercises={inProgress.plan.exercises}
+                personalRecords={personalRecords}
+                onPress={handleResume}
+                onExercisePress={(ex) => openExerciseDetail(ex, "today")}
               />
             </Reveal>
+            {visibleStreak != null && (
+              <Reveal delay={160} style={{ marginBottom: 16 }}>
+                <InProgressStatsRow streakDays={visibleStreak} />
+              </Reveal>
+            )}
+          </>
+        )}
+
+        {apiPlan && (
+          <>
+            {!inProgress && isRestDay && (
+              <>
+                <Reveal delay={140}>
+                  <Text style={s.sectionTitle}>Today</Text>
+                </Reveal>
+                <Reveal delay={180}>
+                  <View style={s.restCard}>
+                    <View style={s.restIconWrap}>
+                      <Moon size={20} color={T.accent} strokeWidth={2} />
+                    </View>
+                    <Text style={s.restTitle}>Rest day</Text>
+                    <Text style={s.restBody}>
+                      No session on the schedule — let the work from earlier in
+                      the week settle. Browse the library if you still want to
+                      move.
+                    </Text>
+                  </View>
+                </Reveal>
+              </>
+            )}
+
+            {!inProgress && todaysWorkout && (
+              <>
+                <Reveal delay={140}>
+                  <Text style={s.sectionTitle}>Today's workout</Text>
+                </Reveal>
+
+                <Reveal delay={180}>
+                  <WorkoutPlanCard
+                    title={todaysWorkout.title}
+                    tag={todaysWorkout.tag}
+                    minutes={estimateMinutes(todaysWorkout)}
+                    exerciseCount={todaysWorkout.exercises.length}
+                    muscles={muscleSummary(todaysWorkout)}
+                    imageUrl={todaysWorkout.coverImage}
+                    entranceDelay={0}
+                    onPress={() => handleCardPress(todaysWorkout, "today")}
+                  />
+                </Reveal>
+              </>
+            )}
 
             <Reveal delay={240} style={s.seeFullPlanWrap}>
-              <Pressable
-                onPress={() => setView("fullPlan")}
-                hitSlop={8}
-                style={s.seeFullPlanRow}
-              >
-                <Text style={s.seeFullPlanText}>See full plan</Text>
-                <ArrowRight size={14} color={T.accent} strokeWidth={2.4} />
+              <Pressable onPress={() => setView("fullPlan")} hitSlop={8}>
+                <Text style={s.seeFullPlanText}>See full plan →</Text>
               </Pressable>
             </Reveal>
 
             <ExerciseLibrarySection
-              addedIds={addedIds}
-              onAdd={(ex) => setExtraExercises((prev) => [...prev, ex])}
-              onView={(ex) => {
-                setViewingExercise(ex);
-                setView("libraryDetail");
+              addedIds={addedNames}
+              // Live session: no remove-from-session from browse — badge only.
+              // Planned extras: toggle remove still applies.
+              addedDisabled={!!inProgress}
+              // Same pending gate for both destinations (live session or
+              // today-extras) — ExerciseLibrarySection is shared.
+              addPending={inProgress ? liveAddPending : isAddingExtra}
+              onAdd={(ex) => {
+                if (inProgress) {
+                  void addToLiveSession(ex, {
+                    alreadyAdded: addedNames,
+                  });
+                  return;
+                }
+                addExtra({
+                  exerciseName: ex.name,
+                  muscleGroup: ex.muscleGroup,
+                  movementPattern: ex.movementPattern,
+                });
               }}
+              onRemove={(exerciseName) => {
+                if (inProgress) return;
+                const extra = extras.find(
+                  (e) => e.exerciseName === exerciseName,
+                );
+                if (extra) removeExtra(extra.id);
+              }}
+              onView={(ex) => openExerciseDetail(ex, "today")}
             />
           </>
         )}
@@ -486,84 +659,44 @@ export default function WorkoutScreen() {
   );
 }
 
-const s = StyleSheet.create({
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
   screen: { flex: 1, backgroundColor: T.bg },
   scroll: { flex: 1 },
-  scrollContent: {
-    paddingHorizontal: T.space.xl,
-    paddingTop: T.space.lg,
-    paddingBottom: 128, // tab-bar clearance, screen-specific
-  },
-  splitHeader: { marginBottom: T.space.xl },
-  splitLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  splitDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: T.accent,
-  },
+  // Top inset is handled by WorkoutTabHeader (and full-plan back link
+  // uses its own insets). Keep a small gap under the status-bar padding.
+  scrollContent: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 128 },
+  splitHeader: { marginBottom: 20 },
   splitLabel: {
     color: T.accent,
-    fontFamily: T.bodyBold,
-    fontSize: 10.5,
-    letterSpacing: 1,
+    fontFamily: T.display,
+    fontSize: 15,
+    letterSpacing: -0.2,
   },
-  splitSub: {
-    color: T.faint,
-    fontFamily: T.bodyMed,
-    fontSize: 12,
-    marginTop: 4,
-  },
+  splitSub: { color: T.faint, fontSize: 12, marginTop: 2 },
   sectionTitle: {
     color: T.text,
-    fontFamily: T.displaySemi,
+    fontFamily: T.display,
     fontSize: 21,
     letterSpacing: -0.4,
-    marginBottom: T.space.md + 2,
+    marginBottom: 14,
   },
-  centerState: {
-    alignItems: "center",
-    paddingVertical: T.space.xxxl + 8,
-    gap: 6,
-  },
-  centerIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: T.radius.md,
-    backgroundColor: T.ringGlass,
-    borderWidth: 0.5,
-    borderColor: T.ringBorder,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: T.space.xs,
-  },
+  centerState: { alignItems: "center", paddingVertical: 48, gap: 6 },
   emptyTitle: { color: T.text, fontFamily: T.bodyBold, fontSize: 15 },
-  emptySubtitle: {
-    color: T.faint,
-    fontFamily: T.bodyMed,
-    fontSize: 12,
-    textAlign: "center",
-  },
-  seeFullPlanWrap: { alignItems: "center", marginTop: T.space.xl },
-  seeFullPlanRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  emptySubtitle: { color: T.faint, fontSize: 12, textAlign: "center" },
+  seeFullPlanWrap: { alignItems: "center", marginTop: 20 },
   seeFullPlanText: {
     color: T.accent,
-    fontFamily: T.bodyBold,
+    fontFamily: T.display,
     fontSize: 13,
     letterSpacing: -0.1,
   },
-  fullPlanHeader: { marginBottom: T.space.lg + 2 },
-  backRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    marginBottom: T.space.lg,
-    alignSelf: "flex-start",
-  },
+  fullPlanHeader: { marginBottom: 18 },
   backLink: {
     color: T.faint,
     fontSize: 13,
-    fontFamily: T.bodySemi,
+    fontFamily: T.display,
+    marginBottom: 16,
   },
   topWash: {
     position: "absolute",
@@ -572,4 +705,79 @@ const s = StyleSheet.create({
     right: 0,
     height: 260,
   },
-});
+  restCard: {
+    backgroundColor: T.bgElevated,
+    borderWidth: 1,
+    borderColor: T.glassBorder,
+    borderRadius: T.radius.md,
+    paddingVertical: 28,
+    paddingHorizontal: 22,
+    alignItems: "center",
+    gap: 8,
+    ...T.shadow.card,
+  },
+  restIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: T.radius.sm,
+    backgroundColor: T.ringGlass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: T.ringBorder,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  restTitle: {
+    fontFamily: T.displaySemi,
+    fontSize: 18,
+    color: T.white,
+    letterSpacing: -0.3,
+  },
+  restBody: {
+    fontFamily: T.bodyMed,
+    fontSize: 13,
+    color: T.muted,
+    textAlign: "center",
+    lineHeight: 19,
+    maxWidth: 280,
+  },
+  restRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    backgroundColor: T.bgElevated,
+    borderRadius: T.radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: T.glassBorder,
+  },
+  restRowWeekday: {
+    width: 36,
+    fontFamily: T.bodyBold,
+    fontSize: 12,
+    color: T.faint,
+    letterSpacing: 0.2,
+  },
+  restRowBody: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  restRowTitle: {
+    fontFamily: T.bodySemi,
+    fontSize: 14,
+    color: T.muted,
+  },
+  trainSlot: { marginBottom: 4 },
+  trainSlotWeekday: {
+    fontFamily: T.bodyBold,
+    fontSize: 11,
+    color: T.faint,
+    letterSpacing: 0.3,
+    marginBottom: 6,
+    marginLeft: 2,
+  },
+  });
+}

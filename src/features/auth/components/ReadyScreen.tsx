@@ -11,11 +11,11 @@ import { useEffect, useRef } from "react";
 import {
   Animated,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const C = {
   bg: "#121212",
@@ -83,11 +83,17 @@ export function ReadyScreen() {
     ]).start();
   }, []);
 
+  const insets = useSafeAreaInsets();
   const goalId = params.goalId as GoalIconName | undefined;
   const experience = params.experience as ExperienceLevel | undefined;
 
   return (
-    <SafeAreaView style={s.safe}>
+    <View
+      style={[
+        s.safe,
+        { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 },
+      ]}
+    >
       <View style={s.content}>
         <View style={{ flex: 1 }} />
 
@@ -178,13 +184,13 @@ export function ReadyScreen() {
           <Text style={s.primaryBtnText}>START TRAINING →</Text>
         </Pressable>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  content: { flex: 1, paddingHorizontal: 24, paddingBottom: 24 },
+  content: { flex: 1, paddingHorizontal: 24 },
   kicker: {
     fontFamily: FONTS.bold,
     fontSize: 12,

@@ -13,6 +13,16 @@ const SESSION_TOKEN_KEY = `${AUTH_STORAGE_PREFIX}_session_token`;
 
 let handlingUnauthorized = false;
 
+// ── Auth header cache ──────────────────────────────────────────────────────
+// Every request used to independently read SecureStore up to 3 times
+// (cookie, direct token, cookie-again-as-fallback). On cold start, with
+// 6+ queries firing in parallel off the dashboard mount, that meant
+// 15-20 sequential Keystore round-trips before requests even went out.
+// Cache the result in memory, and dedupe concurrent callers into a
+// single in-flight read.
+let cachedAuthHeaders: Record<string, string> | null = null;
+let authHeadersPromise: Promise<Record<string, string>> | null = null;
+
 function parseSessionToken(cookieHeader: string): string | null {
   const match = cookieHeader.match(
     /(?:^|;\s*)(?:__Secure-)?better-auth\.session_token=([^;]+)/,
@@ -20,39 +30,46 @@ function parseSessionToken(cookieHeader: string): string | null {
   return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
-async function readStoredCookie(): Promise<string | null> {
+async function computeAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {};
+
   const fromClient = authClient.getCookie?.();
-  if (typeof fromClient === "string" && fromClient.length > 0) {
-    return fromClient;
+  const cookie =
+    typeof fromClient === "string" && fromClient.length > 0
+      ? fromClient
+      : await SecureStore.getItemAsync(SESSION_COOKIE_KEY);
+
+  let token = await SecureStore.getItemAsync(SESSION_TOKEN_KEY);
+  if (!token && cookie) {
+    token = parseSessionToken(cookie);
   }
 
-  return SecureStore.getItemAsync(SESSION_COOKIE_KEY);
-}
+  if (cookie) headers.Cookie = cookie;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
-async function readStoredBearerToken(): Promise<string | null> {
-  const direct = await SecureStore.getItemAsync(SESSION_TOKEN_KEY);
-  if (direct) return direct;
-
-  const cookie = await readStoredCookie();
-  if (!cookie) return null;
-
-  return parseSessionToken(cookie);
+  return headers;
 }
 
 async function buildAuthHeaders(): Promise<Record<string, string>> {
-  const headers: Record<string, string> = {};
-  const cookie = await readStoredCookie();
-  const token = await readStoredBearerToken();
+  if (cachedAuthHeaders) return cachedAuthHeaders;
 
-  if (cookie) {
-    headers.Cookie = cookie;
+  if (!authHeadersPromise) {
+    authHeadersPromise = computeAuthHeaders().then((headers) => {
+      cachedAuthHeaders = headers;
+      authHeadersPromise = null;
+      return headers;
+    });
   }
+  return authHeadersPromise;
+}
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  return headers;
+/**
+ * Call after sign-in, sign-out, or any session refresh so stale
+ * cookies/tokens are never served from the in-memory cache.
+ */
+export function invalidateAuthHeaderCache(): void {
+  cachedAuthHeaders = null;
+  authHeadersPromise = null;
 }
 
 async function clearSessionStorage(): Promise<void> {
@@ -68,6 +85,7 @@ async function handleUnauthorized(): Promise<void> {
   handlingUnauthorized = true;
 
   try {
+    invalidateAuthHeaderCache();
     await clearSessionStorage();
     router.replace("/(auth)/welcome");
   } finally {

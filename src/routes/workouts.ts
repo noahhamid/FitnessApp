@@ -16,6 +16,33 @@ interface PersonalRecord {
 }
  
 
+const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+const plannedExtraSchema = z.object({
+  exerciseName: z.string().min(1),
+  muscleGroup: z.enum([
+    "chest",
+    "back",
+    "shoulders",
+    "quads",
+    "hamstrings",
+    "glutes",
+    "calves",
+    "biceps",
+    "triceps",
+    "core",
+  ]),
+  movementPattern: z.enum(["push", "pull", "hinge", "squat", "carry"]),
+  // Client-local calendar date (YYYY-MM-DD). The server must not guess
+  // "today" from UTC — a user in UTC+3 at 10:30pm would otherwise be
+  // filed under tomorrow.
+  date: dateOnly,
+});
+
+const todayExtrasQuerySchema = z.object({
+  date: dateOnly,
+});
+
 const setSchema = z.object({
   reps: z.number().int().nonnegative().optional(),
   weight: z.number().nonnegative().optional(),
@@ -36,9 +63,12 @@ const exerciseCreateBodySchema = z.object({
 
 const startSessionSchema = z.object({
   notes: z.string().optional(),
-  exercises: z.array(exerciseInputSchema).optional(),
+  // Exercises at session-start have no sets yet — sets get logged when
+  // the workout is finished (POST /:id/complete). Reuses
+  // exerciseCreateBodySchema (sets defaults to []) rather than
+  // exerciseInputSchema (which requires sets.min(1)) for that reason.
+  exercises: z.array(exerciseCreateBodySchema).optional(),
 });
-
 const updateSessionSchema = z.object({
   notes: z.string().nullable().optional(),
   completedAt: z.string().datetime().nullable().optional(),
@@ -223,12 +253,6 @@ const listSessions = async (c: Context<AppEnv>) => {
 workoutsRouter.post("/", createSession);
 workoutsRouter.get("/", listSessions);
 
-// ============================================================
-// Everything below until /:id must stay ABOVE the dynamic /:id
-// route further down — Hono matches /:id greedily, so specific
-// paths like /plan, /last-performance, /exercises would otherwise
-// get swallowed by it and 404 as "session not found".
-// ============================================================
 
 
 workoutsRouter.get("/progression", async (c) => {
@@ -450,6 +474,69 @@ workoutsRouter.get("/personal-records", async (c) => {
   );
  
   return ok(c, sorted);
+});
+
+workoutsRouter.get("/today-extras", async (c) => {
+  const query = parseQuery(c, todayExtrasQuerySchema);
+  if (!query.success) return query.response;
+
+  const user = getUser(c);
+  const logDate = new Date(query.data.date);
+
+  const extras = await prisma.plannedExtraExercise.findMany({
+    where: { userId: user.id, logDate },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return ok(c, extras);
+});
+
+workoutsRouter.post("/today-extras", async (c) => {
+  const parsed = await parseJson(c, plannedExtraSchema);
+  if (!parsed.success) return parsed.response;
+
+  const user = getUser(c);
+  const logDate = new Date(parsed.data.date);
+
+  try {
+    const extra = await prisma.plannedExtraExercise.create({
+      data: {
+        userId: user.id,
+        logDate,
+        exerciseName: parsed.data.exerciseName,
+        muscleGroup: parsed.data.muscleGroup,
+        movementPattern: parsed.data.movementPattern,
+      },
+    });
+    return ok(c, extra, 201);
+  } catch (e: any) {
+    // Unique constraint (userId, logDate, exerciseName) — already added
+    // today, not a real error, just treat it as already-successful.
+    if (e?.code === "P2002") {
+      const existing = await prisma.plannedExtraExercise.findFirst({
+        where: {
+          userId: user.id,
+          logDate,
+          exerciseName: parsed.data.exerciseName,
+        },
+      });
+      if (existing) return ok(c, existing, 200);
+    }
+    throw e;
+  }
+});
+
+workoutsRouter.delete("/today-extras/:extraId", async (c) => {
+  const user = getUser(c);
+  const extraId = c.req.param("extraId");
+
+  const existing = await prisma.plannedExtraExercise.findFirst({
+    where: { id: extraId, userId: user.id },
+  });
+  if (!existing) return err(c, "Planned exercise not found", 404);
+
+  await prisma.plannedExtraExercise.delete({ where: { id: extraId } });
+  return ok(c, { deleted: true });
 });
 
 workoutsRouter.get("/:id", async (c) => {

@@ -12,7 +12,8 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Dumbbell } from "lucide-react-native";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 
 type Props = {
   title: string;
@@ -47,6 +48,7 @@ function WorkoutPlanCardBase({
   style,
   testID,
 }: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
   const scale = useRef(new Animated.Value(1)).current;
   const pressOpacity = useRef(new Animated.Value(1)).current;
 
@@ -242,14 +244,15 @@ function WorkoutPlanCardBase({
 
 export const WorkoutPlanCard = memo(WorkoutPlanCardBase);
 
-const s = StyleSheet.create({
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
   pressableReset: { borderRadius: 24 },
   card: {
     height: 188,
     borderRadius: 24,
     overflow: "hidden",
     marginBottom: 14,
-    backgroundColor: T.glass,
+    backgroundColor: T.bgElevated,
     shadowColor: "#0A0A0A",
     shadowOffset: { width: 0, height: 4 }, // was height: 6
     shadowOpacity: 0.07, // was 0.08
@@ -266,7 +269,7 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: T.glass,
+    backgroundColor: T.bgElevated,
   },
 
   tagPill: {
@@ -356,4 +359,5 @@ const s = StyleSheet.create({
     letterSpacing: 0.2,
     color: T.onImage,
   },
-});
+  });
+}

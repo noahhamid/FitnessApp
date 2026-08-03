@@ -12,18 +12,20 @@ import Svg, {
   Polygon,
   Circle,
   Defs,
-  LinearGradient,
+  LinearGradient as SvgLinearGradient,
   Stop,
 } from "react-native-svg";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
+import { GlassSurface } from "./GlassSurface";
 
 const AnimatedPolyline = RNAnimated.createAnimatedComponent(Polyline);
 const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
 
 type Props = {
-  progressLabel: string; // "Weight this month"
-  progressValue: string; // "-1.2 kg"
-  sparklinePoints: number[]; // e.g. [19,17,21,13,15,7,9,3] — raw y-values, lower = higher on chart
+  progressLabel: string;
+  progressValue: string;
+  sparklinePoints: number[];
   coachHeadline: string;
   coachBody: string;
 };
@@ -45,6 +47,8 @@ export function ProgressCoachCard({
   coachHeadline,
   coachBody,
 }: Props) {
+  const { T, styles } = useThemedStyles(makeStyles);
+
   const width = 220;
   const height = 26;
   const step = width / (sparklinePoints.length - 1);
@@ -72,14 +76,12 @@ export function ProgressCoachCard({
       useNativeDriver: true,
     }).start();
 
-    // the line draws itself left to right, like the trend is being
-    // plotted live rather than handed to you pre-finished
     RNAnimated.timing(draw, {
       toValue: 1,
       duration: 900,
       delay: 200,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: false, // strokeDashoffset isn't a native-driver prop
+      useNativeDriver: false,
     }).start();
 
     const loop = RNAnimated.loop(
@@ -117,154 +119,160 @@ export function ProgressCoachCard({
 
   return (
     <RNAnimated.View
-      style={[
-        styles.card,
-        {
-          opacity: entrance,
-          transform: [
-            {
-              translateY: entrance.interpolate({
-                inputRange: [0, 1],
-                outputRange: [10, 0],
-              }),
-            },
-          ],
-        },
-      ]}
+      style={{
+        opacity: entrance,
+        transform: [
+          {
+            translateY: entrance.interpolate({
+              inputRange: [0, 1],
+              outputRange: [10, 0],
+            }),
+          },
+        ],
+      }}
     >
-      <View style={styles.top}>
-        <View style={styles.icon}>
-          <Scale size={16} color={T.accent} strokeWidth={2} />
-        </View>
-        <View style={styles.body}>
-          <View style={styles.topRow}>
-            <Text style={styles.label}>{progressLabel}</Text>
-            <Text style={styles.value}>{progressValue}</Text>
+      <GlassSurface style={styles.card}>
+        <View style={styles.top}>
+          <View style={styles.icon}>
+            <Scale size={16} color={T.accent} strokeWidth={2} />
           </View>
-          <Svg
-            width="100%"
-            height={height}
-            viewBox={`0 0 ${width} ${height}`}
-            style={styles.spark}
-          >
-            <Defs>
-              <LinearGradient id="sparkFade" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={T.accent} stopOpacity={0.28} />
-                <Stop offset="1" stopColor={T.accent} stopOpacity={0} />
-              </LinearGradient>
-            </Defs>
-            <Polygon points={areaPoints} fill="url(#sparkFade)" />
-            <AnimatedPolyline
-              points={points}
-              fill="none"
-              stroke={T.accent}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray={lineLength}
-              strokeDashoffset={dashOffset}
-            />
-            {/* soft breathing halo marks this as the current, live value */}
-            <AnimatedCircle
-              cx={lastX}
-              cy={lastY}
-              r={haloRadius}
-              fill="none"
-              stroke={T.accent}
-              strokeWidth={1}
-              strokeOpacity={haloOpacity}
-            />
-            <Circle cx={lastX} cy={lastY} r={3} fill={T.accent} />
-          </Svg>
-        </View>
-      </View>
-
-      <View style={styles.divider} />
-
-      <View style={styles.bottom}>
-        <View style={styles.eyebrowRow}>
-          <Sparkles size={11} color={T.accent} strokeWidth={2.2} />
-          <Text style={styles.eyebrow}>COACH'S NOTE</Text>
-        </View>
-
-        <View style={styles.noteRow}>
-          <View style={styles.quoteBar} />
-          <View style={styles.noteText}>
-            <Text style={styles.headline}>{coachHeadline}</Text>
-            <Text style={styles.coachBody}>{coachBody}</Text>
+          <View style={styles.body}>
+            <View style={styles.topRow}>
+              <Text style={styles.label}>{progressLabel}</Text>
+              <Text style={styles.value}>{progressValue}</Text>
+            </View>
+            <Svg
+              width="100%"
+              height={height}
+              viewBox={`0 0 ${width} ${height}`}
+              style={styles.spark}
+            >
+              <Defs>
+                <SvgLinearGradient id="sparkFade" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={T.accent} stopOpacity={0.28} />
+                  <Stop offset="1" stopColor={T.accent} stopOpacity={0} />
+                </SvgLinearGradient>
+              </Defs>
+              <Polygon points={areaPoints} fill="url(#sparkFade)" />
+              <AnimatedPolyline
+                points={points}
+                fill="none"
+                stroke={T.accent}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray={lineLength}
+                strokeDashoffset={dashOffset}
+              />
+              <AnimatedCircle
+                cx={lastX}
+                cy={lastY}
+                r={haloRadius}
+                fill="none"
+                stroke={T.accent}
+                strokeWidth={1}
+                strokeOpacity={haloOpacity}
+              />
+              <Circle cx={lastX} cy={lastY} r={3} fill={T.accent} />
+            </Svg>
           </View>
         </View>
-      </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.bottom}>
+          <View style={styles.eyebrowRow}>
+            <Sparkles size={11} color={T.accent} strokeWidth={2.2} />
+            <Text style={styles.eyebrow}>COACH'S NOTE</Text>
+          </View>
+
+          <View style={styles.noteRow}>
+            <View style={styles.quoteBar} />
+            <View style={styles.noteText}>
+              <Text style={styles.headline}>{coachHeadline}</Text>
+              <Text style={styles.coachBody}>{coachBody}</Text>
+            </View>
+          </View>
+        </View>
+      </GlassSurface>
     </RNAnimated.View>
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: T.glass,
-    borderWidth: 0.5,
-    borderColor: T.glassBorder,
-    borderRadius: T.radius.md,
-    overflow: "hidden",
-    ...T.shadow.card,
-  },
-  top: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16 },
-  icon: {
-    width: 38,
-    height: 38,
-    borderRadius: T.radius.sm,
-    backgroundColor: T.ringGlass,
-    borderWidth: 0.5,
-    borderColor: T.ringBorder,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  body: { flex: 1 },
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-  },
-  label: { fontFamily: T.bodySemi, fontSize: 11, color: T.muted },
-  value: {
-    fontFamily: T.displaySemi,
-    fontSize: 14.5,
-    color: T.accent,
-    letterSpacing: -0.1,
-  },
-  spark: { marginTop: 8 },
-  divider: { height: 1, backgroundColor: T.glassBorder, marginHorizontal: 18 },
-  bottom: { padding: 16, paddingTop: 14 },
-  eyebrowRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 10,
-  },
-  eyebrow: {
-    fontFamily: T.bodyBold,
-    fontSize: 10,
-    letterSpacing: 0.6,
-    color: T.accent,
-  },
-  noteRow: { flexDirection: "row", gap: 10 },
-  quoteBar: {
-    width: 2.5,
-    borderRadius: 2,
-    backgroundColor: T.accentLine,
-  },
-  noteText: { flex: 1 },
-  headline: {
-    fontFamily: T.displaySemi,
-    fontSize: 14,
-    color: T.white,
-    letterSpacing: -0.2,
-    marginBottom: 4,
-  },
-  coachBody: {
-    fontFamily: T.bodyMed,
-    fontSize: 11.5,
-    color: T.muted,
-    lineHeight: 17,
-  },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    card: {
+      borderRadius: T.radius.md,
+    },
+    top: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      padding: 16,
+      zIndex: 1,
+    },
+    icon: {
+      width: 38,
+      height: 38,
+      borderRadius: T.radius.sm,
+      backgroundColor: T.ringGlass,
+      borderWidth: 0.5,
+      borderColor: T.ringBorder,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    body: { flex: 1 },
+    topRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "baseline",
+    },
+    label: { fontFamily: T.bodySemi, fontSize: 11, color: T.muted },
+    value: {
+      fontFamily: T.displaySemi,
+      fontSize: 14.5,
+      color: T.accent,
+      letterSpacing: -0.1,
+    },
+    spark: { marginTop: 8 },
+    divider: {
+      height: 1,
+      backgroundColor: T.glassBorder,
+      marginHorizontal: 18,
+      zIndex: 1,
+    },
+    bottom: { padding: 16, paddingTop: 14, zIndex: 1 },
+    eyebrowRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 10,
+    },
+    eyebrow: {
+      fontFamily: T.bodyBold,
+      fontSize: 10,
+      letterSpacing: 0.6,
+      color: T.accent,
+    },
+    noteRow: { flexDirection: "row", gap: 10 },
+    quoteBar: {
+      width: 2.5,
+      borderRadius: 2,
+      backgroundColor: T.accentLine,
+    },
+    noteText: { flex: 1 },
+    headline: {
+      fontFamily: T.displaySemi,
+      fontSize: 14,
+      color: T.white,
+      letterSpacing: -0.2,
+      marginBottom: 4,
+    },
+    coachBody: {
+      fontFamily: T.bodyMed,
+      fontSize: 11.5,
+      color: T.muted,
+      lineHeight: 17,
+    },
+  });
+}

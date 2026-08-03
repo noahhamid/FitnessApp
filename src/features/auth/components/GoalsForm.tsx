@@ -3,7 +3,8 @@ import { GoalIcon, GoalIconName } from "@/src/ui/components/GoalIcon";
 import { FONTS } from "@/src/ui/tokens";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const C = {
   bg: "#121212",
@@ -43,10 +44,16 @@ const GOALS: { id: string; icon: GoalIconName; title: string; desc: string }[] =
   ];
 
 export function GoalsForm() {
+  const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<string | null>(null);
 
   return (
-    <SafeAreaView style={s.safe}>
+    <View
+      style={[
+        s.safe,
+        { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 },
+      ]}
+    >
       <View style={s.header}>
         <Text style={s.counter}>STEP 1 OF 3</Text>
         <ProgressDots total={3} current={0} />
@@ -90,7 +97,7 @@ export function GoalsForm() {
       >
         <Text style={s.primaryBtnText}>CONTINUE →</Text>
       </Pressable>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -99,8 +106,6 @@ const s = StyleSheet.create({
     flex: 1,
     backgroundColor: C.bg,
     paddingHorizontal: 24,
-    paddingTop: 52,
-    paddingBottom: 24,
   },
   header: { marginBottom: 28 },
   counter: {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,9 +8,15 @@ import {
   Animated,
   Easing,
   TextInput,
+  ScrollView,
+  Modal,
+  Pressable,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import Svg, {
   Circle,
   Defs,
@@ -25,12 +31,21 @@ import {
   Check,
   Minus,
   Plus,
+  Flag,
+  ChevronLeft,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import { WorkoutPlan } from "../data/workouts";
+import { WorkoutPlan, type Exercise } from "../data/workouts";
 import { T } from "@/src/theme";
+import { ExerciseLibrarySection } from "./ExerciseLibrarySection";
+import { useAddToLiveSession } from "../hooks/useAddToLiveSession";
+import { topInset } from "@/src/lib/safe-area";
+import type { LibraryExercise } from "../hooks/useExerciseLibrary";
 
 type Phase = "exercise" | "rest" | "done";
+/** list = home base; focus = logging one exercise (manual tap or auto-play). */
+type ScreenMode = "list" | "focus";
+type PlayMode = "manual" | "auto";
 
 export interface SetLog {
   exerciseName: string;
@@ -45,6 +60,20 @@ type Props = {
   onClose: () => void;
   onFinish: (logs: SetLog[]) => void;
   lastPerformance?: Record<string, { weight?: number; reps?: number }>;
+  sessionId: string;
+  exercises?: Exercise[];
+  onExercisesChange?: (exercises: Exercise[]) => void;
+  onAppendExercise?: (exercise: Exercise) => void;
+  /**
+   * "auto" = skip the list and drop straight into auto-sequential play
+   * from the first exercise (fresh start from the plan/detail screen —
+   * the person already tapped "Start", a second tap into the list would
+   * be a redundant double-start).
+   * "list" = show the exercise list first (resuming an in-progress
+   * session — the person may want to see what's done before deciding
+   * what to do next). Defaults to "list".
+   */
+  initialMode?: "list" | "auto";
 };
 
 const fmt = (s: number) =>
@@ -127,21 +156,61 @@ const CountdownRing = ({
   );
 };
 
-const DotsStrip = ({ total, current }: { total: number; current: number }) => (
-  <View style={s.dotsRow}>
-    {Array.from({ length: total }).map((_, i) => (
-      <View
-        key={i}
-        style={[
-          s.dot,
-          i < current ? s.dotDone : i === current ? s.dotActive : s.dotPending,
-        ]}
-      />
-    ))}
-  </View>
-);
+function LibraryModalBody({
+  onClose,
+  sessionExerciseNames,
+  onAdd,
+  addingName,
+  addError,
+}: {
+  onClose: () => void;
+  sessionExerciseNames: Set<string>;
+  onAdd: (ex: LibraryExercise) => void;
+  addingName: string | null;
+  addError: string | null;
+}) {
+  const insets = useSafeAreaInsets();
+  const safeTop = topInset(insets.top);
 
-// ─── weight/reps stepper — compact inline number adjuster ───────────────────
+  return (
+    <View style={[s.libraryModal, { paddingTop: safeTop + 8 }]}>
+      <View style={s.libraryModalHeader}>
+        <Text style={s.libraryModalTitle}>Add to workout</Text>
+        <Pressable
+          onPress={onClose}
+          hitSlop={8}
+          style={s.libraryCloseBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Close library"
+        >
+          <X size={18} color={T.white} strokeWidth={2.2} />
+        </Pressable>
+      </View>
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingBottom: insets.bottom + 40,
+        }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <ExerciseLibrarySection
+          addedIds={sessionExerciseNames}
+          onAdd={onAdd}
+          onRemove={() => {}}
+          onView={onAdd}
+          addedDisabled
+          addPending={!!addingName}
+        />
+        {addingName && (
+          <Text style={s.addingHint}>Adding {addingName}…</Text>
+        )}
+        {addError && <Text style={s.addErrorText}>{addError}</Text>}
+      </ScrollView>
+    </View>
+  );
+}
+
 const Stepper = ({
   label,
   value,
@@ -194,41 +263,133 @@ export function ActiveWorkoutScreen({
   onClose,
   onFinish,
   lastPerformance,
+  sessionId,
+  exercises: exercisesProp,
+  onExercisesChange,
+  onAppendExercise,
+  initialMode = "list",
 }: Props) {
   const insets = useSafeAreaInsets();
-  const exs = plan.exercises;
+  const safeTop = topInset(insets.top);
+  const {
+    addExercise: addToLiveSession,
+    addingName,
+    addError,
+  } = useAddToLiveSession(sessionId);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
-  const [exIdx, setExIdx] = useState(0);
-  const [setNum, setSetNum] = useState(1);
+  const [localExercises, setLocalExercises] = useState<Exercise[]>(
+    () => plan.exercises,
+  );
+  const exercises = exercisesProp ?? localExercises;
+  const exercisesRef = useRef(exercises);
+  exercisesRef.current = exercises;
+
+  const appendExercise = (ex: Exercise) => {
+    if (onAppendExercise) {
+      onAppendExercise(ex);
+      return;
+    }
+    if (onExercisesChange) {
+      onExercisesChange([...exercisesRef.current, ex]);
+      return;
+    }
+    setLocalExercises((prev) => [...prev, ex]);
+  };
+
+  const removeExerciseById = (id: string) => {
+    const next = exercisesRef.current.filter((e) => e.id !== id);
+    if (onExercisesChange) onExercisesChange(next);
+    else setLocalExercises(next);
+  };
+
+  const sessionExerciseNames = useMemo(
+    () => new Set(exercises.map((e) => e.name)),
+    [exercises],
+  );
+
+  const handleAddFromLibrary = (libEx: LibraryExercise) => {
+    void addToLiveSession(libEx, {
+      alreadyAdded: sessionExerciseNames,
+      onOptimistic: appendExercise,
+      onRollback: removeExerciseById,
+      onAfterOptimistic: () => setLibraryOpen(false),
+      onAfterError: () => setLibraryOpen(true),
+    });
+  };
+
+  // ── Interaction model ────────────────────────────────────────────────────
+  // list  = home base (nothing auto-starts)
+  // focus = logging one exercise; playMode manual (tapped) or auto (Start workout)
+  // initialMode="auto" (fresh start) drops straight into auto-play on the
+  // first exercise instead of requiring a redundant second "Start" tap.
+  const [screenMode, setScreenMode] = useState<ScreenMode>(
+    initialMode === "auto" && exercises.length > 0 ? "focus" : "list",
+  );
+  const [playMode, setPlayMode] = useState<PlayMode>(
+    initialMode === "auto" ? "auto" : "manual",
+  );
+  const [selectedId, setSelectedId] = useState<string | null>(() =>
+    initialMode === "auto" ? (exercises[0]?.id ?? null) : null,
+  );
+  const [setsDone, setSetsDone] = useState<Record<string, number>>({});
   const [phase, setPhase] = useState<Phase>("exercise");
   const [paused, setPaused] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [secsLeft, setSecsLeft] = useState<number | null>(null);
 
-  const ex = exs[exIdx];
-  const nextEx = exIdx < exs.length - 1 ? exs[exIdx + 1] : null;
+  const selected =
+    exercises.find((e) => e.id === selectedId) ?? null;
+  const doneForSelected = selected ? (setsDone[selected.id] ?? 0) : 0;
+  const setNum = doneForSelected + 1;
+  const selectedComplete = selected
+    ? doneForSelected >= selected.sets
+    : false;
 
-  const totalSets = exs.reduce((a, e) => a + e.sets, 0);
-  const doneSets =
-    exs.slice(0, exIdx).reduce((a, e) => a + e.sets, 0) + (setNum - 1);
+  const setsDoneRef = useRef(setsDone);
+  setsDoneRef.current = setsDone;
 
-  // ── real performance tracking ──────────────────────────────────────────
+  const isExComplete = (ex: Exercise, doneMap = setsDoneRef.current) =>
+    (doneMap[ex.id] ?? 0) >= ex.sets;
+
+  const firstIncompleteId = () => {
+    const doneMap = setsDoneRef.current;
+    const hit = exercisesRef.current.find((e) => !isExComplete(e, doneMap));
+    return hit?.id ?? null;
+  };
+
+  const nextIncompleteIdAfter = (afterId: string, doneMap = setsDoneRef.current) => {
+    const list = exercisesRef.current;
+    const idx = list.findIndex((e) => e.id === afterId);
+    for (let i = idx + 1; i < list.length; i++) {
+      if (!isExComplete(list[i], doneMap)) return list[i].id;
+    }
+    return null;
+  };
+
+  const totalSets = useMemo(
+    () => exercises.reduce((a, e) => a + e.sets, 0),
+    [exercises],
+  );
+  const doneSets = useMemo(
+    () =>
+      exercises.reduce(
+        (a, e) => a + Math.min(setsDone[e.id] ?? 0, e.sets),
+        0,
+      ),
+    [exercises, setsDone],
+  );
+
   const logsRef = useRef<SetLog[]>([]);
-  const lastForCurrent = lastPerformance?.[ex.name];
-  const [currentReps, setCurrentReps] = useState(
-    ex.reps ?? lastForCurrent?.reps ?? 8,
-  );
-  const [currentWeight, setCurrentWeight] = useState(
-    lastForCurrent?.weight ?? 0,
-  );
+  const [currentReps, setCurrentReps] = useState(8);
+  const [currentWeight, setCurrentWeight] = useState(0);
 
-  // reset the input fields whenever the exercise changes, seeded from
-  // target reps + last time this exercise was performed (0 if never)
   useEffect(() => {
-    const last = lastPerformance?.[ex.name];
-    setCurrentReps(ex.reps ?? last?.reps ?? 8);
+    if (!selected) return;
+    const last = lastPerformance?.[selected.name];
+    setCurrentReps(selected.reps ?? last?.reps ?? 8);
     setCurrentWeight(last?.weight ?? 0);
-  }, [exIdx]);
+  }, [selectedId]);
 
   // ── animated values ────────────────────────────────────────────────────────
   const panelY = useRef(new Animated.Value(60)).current;
@@ -241,7 +402,6 @@ export function ActiveWorkoutScreen({
   const restContentOpacity = useRef(new Animated.Value(0)).current;
   const exContentOpacity = useRef(new Animated.Value(1)).current;
   const barWidth = useRef(new Animated.Value(0)).current;
-  const panelExpand = useRef(new Animated.Value(0)).current;
   const doneOpacity = useRef(new Animated.Value(0)).current;
   const doneScale = useRef(new Animated.Value(0.6)).current;
 
@@ -256,12 +416,12 @@ export function ActiveWorkoutScreen({
 
   useEffect(() => {
     Animated.timing(barWidth, {
-      toValue: doneSets / totalSets,
+      toValue: totalSets > 0 ? doneSets / totalSets : 0,
       duration: 550,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
-  }, [doneSets]);
+  }, [doneSets, totalSets]);
 
   useEffect(() => {
     if (paused || phase === "done") return;
@@ -270,45 +430,58 @@ export function ActiveWorkoutScreen({
   }, [paused, phase]);
 
   useEffect(() => {
-    if (phase === "rest") setSecsLeft(ex.restSec);
-    else if (phase === "exercise" && ex.type === "duration")
-      setSecsLeft(ex.durationSec ?? 0);
+    if (screenMode !== "focus" || !selected) {
+      setSecsLeft(null);
+      return;
+    }
+    // Rest must keep ticking even after the just-finished set made
+    // selectedComplete true (auto-play rests before jumping ahead).
+    if (phase === "rest") {
+      setSecsLeft(selected.restSec);
+      return;
+    }
+    if (selectedComplete) {
+      setSecsLeft(null);
+      return;
+    }
+    if (phase === "exercise" && selected.type === "duration")
+      setSecsLeft(selected.durationSec ?? 0);
     else setSecsLeft(null);
-  }, [phase, exIdx, setNum]);
+  }, [phase, selectedId, doneForSelected, screenMode, selectedComplete]);
+
+  const completeCurrentSetRef = useRef<() => void>(() => {});
+  const advanceFromRestRef = useRef<() => void>(() => {});
 
   useEffect(() => {
-    if (paused || secsLeft === null) return;
+    if (paused || secsLeft === null || screenMode !== "focus" || !selected)
+      return;
     if (secsLeft <= 0) {
-      advance();
+      if (phase === "rest") {
+        advanceFromRestRef.current();
+      } else if (phase === "exercise" && selected.type === "duration") {
+        completeCurrentSetRef.current();
+      }
       return;
     }
     const t = setTimeout(() => setSecsLeft((n) => (n ?? 1) - 1), 1000);
     return () => clearTimeout(t);
-  }, [secsLeft, paused]);
+  }, [secsLeft, paused, phase, selected, screenMode]);
 
   useEffect(() => {
-    const toRest = phase === "rest";
-
-    Animated.timing(panelExpand, {
-      toValue: toRest ? 1 : 0,
-      duration: 420,
-      easing: Easing.inOut(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-
+    const toRest = phase === "rest" && screenMode === "focus";
     Animated.parallel([
       Animated.timing(restContentOpacity, {
         toValue: toRest ? 1 : 0,
         duration: 320,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(exContentOpacity, {
         toValue: toRest ? 0 : 1,
         duration: 320,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
     ]).start();
-  }, [phase]);
+  }, [phase, screenMode]);
 
   useEffect(() => {
     exFade.setValue(0);
@@ -333,7 +506,7 @@ export function ActiveWorkoutScreen({
         useNativeDriver: true,
       }),
     ]).start();
-  }, [exIdx]);
+  }, [selectedId, screenMode]);
 
   useEffect(() => {
     Animated.sequence([
@@ -373,32 +546,102 @@ export function ActiveWorkoutScreen({
   }, [phase]);
 
   const logCurrentSet = (completed: boolean) => {
+    if (!selected) return;
     logsRef.current.push({
-      exerciseName: ex.name,
-      reps: ex.type === "reps" ? currentReps : undefined,
-      weight: ex.type === "reps" ? currentWeight : undefined,
-      durationSec: ex.type === "duration" ? (ex.durationSec ?? 0) : undefined,
+      exerciseName: selected.name,
+      reps: selected.type === "reps" ? currentReps : undefined,
+      weight: selected.type === "reps" ? currentWeight : undefined,
+      durationSec:
+        selected.type === "duration"
+          ? (selected.durationSec ?? 0)
+          : undefined,
       completed,
     });
   };
 
-  const advance = () => {
-    if (phase === "exercise") {
-      logCurrentSet(true);
-      const lastSet = setNum >= ex.sets;
-      const lastEx = exIdx >= exs.length - 1;
-      if (lastSet && lastEx) {
-        setPhase("done");
+  const returnToList = () => {
+    setScreenMode("list");
+    setSelectedId(null);
+    setPhase("exercise");
+    setPaused(false);
+    setSecsLeft(null);
+  };
+
+  const enterFocus = (exId: string, mode: PlayMode) => {
+    setSelectedId(exId);
+    setPlayMode(mode);
+    setScreenMode("focus");
+    setPhase("exercise");
+    setPaused(false);
+  };
+
+  /** After rest ends: next set of same exercise, or (auto) next incomplete. */
+  const advanceFromRest = () => {
+    if (!selected) {
+      returnToList();
+      return;
+    }
+    if (doneForSelected < selected.sets) {
+      // More sets on this exercise
+      setPhase("exercise");
+      return;
+    }
+    // Exercise finished during the set that preceded this rest
+    if (playMode === "auto") {
+      const nextId = nextIncompleteIdAfter(selected.id);
+      if (nextId) {
+        setSelectedId(nextId);
+        setPhase("exercise");
+      } else {
+        returnToList();
+      }
+    } else {
+      returnToList();
+    }
+  };
+  advanceFromRestRef.current = advanceFromRest;
+
+  const completeCurrentSet = () => {
+    if (!selected || selectedComplete || screenMode !== "focus") return;
+    logCurrentSet(true);
+    const newDone = doneForSelected + 1;
+    const nextDoneMap = { ...setsDoneRef.current, [selected.id]: newDone };
+    setSetsDone(nextDoneMap);
+
+    if (newDone >= selected.sets) {
+      haptic(Haptics.ImpactFeedbackStyle.Medium);
+      if (playMode === "manual") {
+        // All sets done via tap-one → back to list (no trailing rest)
+        returnToList();
+        return;
+      }
+      // Auto: rest, then skip ahead to next incomplete on rest end
+      const nextId = nextIncompleteIdAfter(selected.id, nextDoneMap);
+      if (!nextId) {
+        returnToList();
         return;
       }
       setPhase("rest");
-    } else {
-      if (setNum >= ex.sets) {
-        setExIdx((i) => i + 1);
-        setSetNum(1);
-      } else setSetNum((n) => n + 1);
-      setPhase("exercise");
+      return;
     }
+    setPhase("rest");
+  };
+  completeCurrentSetRef.current = completeCurrentSet;
+
+  const openExerciseManual = (ex: Exercise) => {
+    if (isExComplete(ex)) return;
+    haptic(Haptics.ImpactFeedbackStyle.Light);
+    enterFocus(ex.id, "manual");
+  };
+
+  const startAutoWorkout = () => {
+    const id = firstIncompleteId();
+    if (!id) {
+      haptic(Haptics.ImpactFeedbackStyle.Light);
+      return;
+    }
+    haptic(Haptics.ImpactFeedbackStyle.Medium);
+    enterFocus(id, "auto");
   };
 
   const onCompletePress = () => {
@@ -414,7 +657,7 @@ export function ActiveWorkoutScreen({
         friction: 4,
         useNativeDriver: true,
       }),
-    ]).start(advance);
+    ]).start(completeCurrentSet);
   };
 
   const onHoldTogglePress = () => {
@@ -451,22 +694,30 @@ export function ActiveWorkoutScreen({
 
   const onSkipRest = () => {
     haptic(Haptics.ImpactFeedbackStyle.Light);
-    advance();
+    advanceFromRest();
   };
 
-  const panelHeight = panelExpand.interpolate({
-    inputRange: [0, 1],
-    outputRange: [300, 440], // slightly taller now to fit the steppers
-  });
+  const onFinishPress = () => {
+    haptic(Haptics.ImpactFeedbackStyle.Medium);
+    setPhase("done");
+  };
+
   const barPct = barWidth.interpolate({
     inputRange: [0, 1],
     outputRange: ["0%", "100%"],
   });
 
+  const heroImage =
+    (screenMode === "focus" && selected?.imageUrl) ||
+    exercises[0]?.imageUrl ||
+    plan.coverImage;
+
+  const incompleteCount = exercises.filter((e) => !isExComplete(e)).length;
+
   return (
     <View style={s.screen}>
       <Animated.Image
-        source={{ uri: ex.imageUrl }}
+        source={{ uri: heroImage }}
         style={[s.bgImage, { transform: [{ scale: imgScale }] }]}
         resizeMode="cover"
       />
@@ -484,19 +735,27 @@ export function ActiveWorkoutScreen({
       />
 
       <View
-        style={[s.topContent, { paddingTop: insets.top + 8 }]}
+        style={[s.topContent, { paddingTop: safeTop + 8 }]}
         pointerEvents="box-none"
       >
         <View style={s.topBar}>
           <TouchableOpacity
             style={s.iconBtn}
-            onPress={onClose}
+            onPress={
+              screenMode === "focus" ? returnToList : onClose
+            }
             activeOpacity={0.85}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="button"
-            accessibilityLabel="Close workout"
+            accessibilityLabel={
+              screenMode === "focus" ? "Back to exercise list" : "Close workout"
+            }
           >
-            <X size={18} color={T.onDark} strokeWidth={2.2} />
+            {screenMode === "focus" ? (
+              <ChevronLeft size={20} color={T.onDark} strokeWidth={2.2} />
+            ) : (
+              <X size={18} color={T.onDark} strokeWidth={2.2} />
+            )}
           </TouchableOpacity>
 
           <View style={s.titleBlock}>
@@ -538,11 +797,18 @@ export function ActiveWorkoutScreen({
           ]}
         >
           <Text style={s.heroTitle} numberOfLines={2}>
-            {ex.name}
+            {screenMode === "focus" && selected
+              ? selected.name
+              : "Your workout"}
           </Text>
           <Text style={s.heroSub} numberOfLines={1}>
-            {ex.sets} sets ·{" "}
-            {ex.type === "reps" ? `${ex.reps} reps` : `${ex.durationSec}s hold`}
+            {screenMode === "focus" && selected
+              ? `${selected.sets} sets · ${
+                  selected.type === "reps"
+                    ? `${selected.reps} reps`
+                    : `${selected.durationSec}s hold`
+                } · ${doneForSelected}/${selected.sets} done`
+              : `${doneSets}/${totalSets} sets · ${incompleteCount} left`}
           </Text>
         </Animated.View>
       </View>
@@ -550,175 +816,279 @@ export function ActiveWorkoutScreen({
       <Animated.View
         style={[s.panelOuter, { transform: [{ translateY: panelY }] }]}
       >
-        <Animated.View
-          style={[
-            s.panel,
-            { height: panelHeight, paddingBottom: insets.bottom + 18 },
-          ]}
-        >
-          <DotsStrip total={exs.length} current={exIdx} />
-
-          <View style={s.panelBody}>
-            <Animated.View
-              style={[s.contentLayer, { opacity: exContentOpacity }]}
-              pointerEvents={phase === "exercise" ? "auto" : "none"}
-            >
-              <Animated.View
-                style={{
-                  opacity: exFade,
-                  transform: [{ translateY: exSlide }],
-                }}
-              >
-                <Text style={s.cueLabel}>Form cue</Text>
-                <Text style={s.exInstr} numberOfLines={2}>
-                  {ex.instructions}
-                </Text>
-              </Animated.View>
-
-              <View style={s.statRow}>
-                <View style={s.statChip}>
-                  <Text style={s.statLabel}>Set</Text>
-                  <Animated.Text
-                    style={[
-                      s.statValue,
-                      { transform: [{ scale: setNumScale }] },
-                    ]}
-                  >
-                    {setNum}
-                    <Text style={s.statDim}>/{ex.sets}</Text>
-                  </Animated.Text>
-                </View>
-
-                <View style={s.centerDisplay}>
-                  {ex.type === "duration" && (
-                    <>
-                      <Text style={s.bigNumber}>{fmt(secsLeft ?? 0)}</Text>
-                      <Text style={s.bigLabel}>Hold</Text>
-                    </>
-                  )}
-                </View>
-
-                <View style={s.statChip}>
-                  <Text style={s.statLabel}>Exercise</Text>
-                  <Text style={s.statValue}>
-                    {exIdx + 1}
-                    <Text style={s.statDim}>/{exs.length}</Text>
-                  </Text>
-                </View>
-              </View>
-
-              {/* weight/reps steppers — only for rep-based exercises,
-                  pre-filled from last time this exercise was logged */}
-              {ex.type === "reps" && (
-                <View style={s.stepperGrid}>
-                  <Stepper
-                    label="WEIGHT"
-                    value={currentWeight}
-                    onChange={setCurrentWeight}
-                    step={2.5}
-                    unit="kg"
-                  />
-                  <Stepper
-                    label="REPS"
-                    value={currentReps}
-                    onChange={setCurrentReps}
-                    step={1}
-                  />
-                </View>
-              )}
-
-              {ex.type === "reps" ? (
-                <Animated.View style={{ transform: [{ scale: btnScale }] }}>
-                  <TouchableOpacity
-                    style={s.cta}
-                    onPress={onCompletePress}
-                    activeOpacity={0.92}
+        <View style={[s.panel, { paddingBottom: insets.bottom + 18 }]}>
+          <ScrollView
+            style={s.panelScroll}
+            contentContainerStyle={s.panelScrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* ── LIST (home base) ─────────────────────────────────────── */}
+            {screenMode === "list" && (
+              <>
+                <View style={s.listHeaderRow}>
+                  <Text style={s.listLabel}>Exercises</Text>
+                  <Pressable
+                    onPress={() => setLibraryOpen(true)}
+                    hitSlop={8}
+                    style={s.addExBtn}
                     accessibilityRole="button"
-                    accessibilityLabel="Mark set complete"
+                    accessibilityLabel="Add exercise"
                   >
-                    <Check
-                      size={16}
-                      color={T.accentOnDarkText}
-                      strokeWidth={3}
+                    <Plus
+                      size={14}
+                      color={T.accentOnDark}
+                      strokeWidth={2.6}
                     />
-                    <Text style={s.ctaText}>Done — next set</Text>
-                  </TouchableOpacity>
-                </Animated.View>
-              ) : (
-                <Animated.View style={{ transform: [{ scale: btnScale }] }}>
+                    <Text style={s.addExBtnText}>Add</Text>
+                  </Pressable>
+                </View>
+
+                <View style={s.exList}>
+                  {exercises.map((ex) => {
+                    const done = setsDone[ex.id] ?? 0;
+                    const complete = done >= ex.sets;
+                    return (
+                      <TouchableOpacity
+                        key={ex.id}
+                        style={[
+                          s.exListRow,
+                          complete && s.exListRowDone,
+                        ]}
+                        activeOpacity={complete ? 1 : 0.85}
+                        onPress={() => openExerciseManual(ex)}
+                        disabled={complete}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${ex.name}, ${done} of ${ex.sets} sets`}
+                      >
+                        <View
+                          style={[
+                            s.exStatusDot,
+                            complete && s.exStatusDotDone,
+                          ]}
+                        >
+                          {complete && (
+                            <Check
+                              size={11}
+                              color={T.accentOnDarkText}
+                              strokeWidth={3}
+                            />
+                          )}
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[
+                              s.exListName,
+                              complete && s.exListNameDone,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {ex.name}
+                          </Text>
+                          <Text style={s.exListMeta}>
+                            {done}/{ex.sets} sets
+                            {ex.type === "reps"
+                              ? ` · ${ex.reps} reps`
+                              : ` · ${ex.durationSec}s`}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {incompleteCount > 0 && (
                   <TouchableOpacity
-                    style={s.ctaOutline}
-                    onPress={onHoldTogglePress}
-                    activeOpacity={0.88}
+                    style={s.startBtn}
+                    onPress={startAutoWorkout}
+                    activeOpacity={0.9}
                     accessibilityRole="button"
+                    accessibilityLabel="Start workout auto advance"
                   >
-                    <Text style={s.ctaOutlineText}>
-                      {paused ? "Resume" : "Pause hold"}
+                    <Play
+                      size={15}
+                      color={T.accentOnDarkText}
+                      strokeWidth={2.4}
+                      fill={T.accentOnDarkText}
+                    />
+                    <Text style={s.startBtnText}>Start workout</Text>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity
+                  style={s.finishBtn}
+                  onPress={onFinishPress}
+                  activeOpacity={0.9}
+                  accessibilityRole="button"
+                  accessibilityLabel="Finish workout"
+                >
+                  <Flag
+                    size={15}
+                    color={T.accentOnDarkText}
+                    strokeWidth={2.4}
+                  />
+                  <Text style={s.finishBtnText}>Finish workout</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* ── FOCUS (manual or auto logging) ───────────────────────── */}
+            {screenMode === "focus" && selected && phase === "rest" && (
+              <Animated.View
+                style={[s.restBlock, { opacity: restContentOpacity }]}
+              >
+                <Text style={s.restEyebrow}>Rest</Text>
+                <CountdownRing
+                  left={secsLeft ?? 0}
+                  total={selected.restSec}
+                  size={120}
+                />
+                <Text style={s.restHint}>
+                  {doneForSelected < selected.sets
+                    ? `Next: set ${setNum} of ${selected.sets}`
+                    : playMode === "auto"
+                      ? "Up next"
+                      : "Back to list"}
+                </Text>
+                <TouchableOpacity
+                  style={s.skipBtn}
+                  onPress={onSkipRest}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel="Skip rest"
+                >
+                  <SkipForward
+                    size={13}
+                    color={T.onDark}
+                    strokeWidth={2.4}
+                  />
+                  <Text style={s.skipText}>Skip rest</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            )}
+
+            {screenMode === "focus" &&
+              selected &&
+              phase === "exercise" &&
+              !selectedComplete && (
+                <Animated.View
+                  style={[s.activeBlock, { opacity: exContentOpacity }]}
+                >
+                  {playMode === "auto" && (
+                    <Text style={s.autoBadge}>AUTO</Text>
+                  )}
+                  <Text style={s.cueLabel}>Form cue</Text>
+                  <Text style={s.exInstr} numberOfLines={3}>
+                    {selected.instructions}
+                  </Text>
+
+                  <View style={s.statRow}>
+                    <View style={s.statChip}>
+                      <Text style={s.statLabel}>Set</Text>
+                      <Animated.Text
+                        style={[
+                          s.statValue,
+                          { transform: [{ scale: setNumScale }] },
+                        ]}
+                      >
+                        {setNum}
+                        <Text style={s.statDim}>/{selected.sets}</Text>
+                      </Animated.Text>
+                    </View>
+
+                    <View style={s.centerDisplay}>
+                      {selected.type === "duration" && (
+                        <>
+                          <Text style={s.bigNumber}>
+                            {fmt(secsLeft ?? 0)}
+                          </Text>
+                          <Text style={s.bigLabel}>Hold</Text>
+                        </>
+                      )}
+                    </View>
+
+                    <View style={s.statChip}>
+                      <Text style={s.statLabel}>Logged</Text>
+                      <Text style={s.statValue}>
+                        {doneForSelected}
+                        <Text style={s.statDim}>/{selected.sets}</Text>
+                      </Text>
+                    </View>
+                  </View>
+
+                  {selected.type === "reps" && (
+                    <View style={s.stepperGrid}>
+                      <Stepper
+                        label="WEIGHT"
+                        value={currentWeight}
+                        onChange={setCurrentWeight}
+                        step={2.5}
+                        unit="kg"
+                      />
+                      <Stepper
+                        label="REPS"
+                        value={currentReps}
+                        onChange={setCurrentReps}
+                        step={1}
+                      />
+                    </View>
+                  )}
+
+                  {selected.type === "reps" ? (
+                    <Animated.View
+                      style={{ transform: [{ scale: btnScale }] }}
+                    >
+                      <TouchableOpacity
+                        style={s.cta}
+                        onPress={onCompletePress}
+                        activeOpacity={0.92}
+                        accessibilityRole="button"
+                        accessibilityLabel="Mark set complete"
+                      >
+                        <Check
+                          size={16}
+                          color={T.accentOnDarkText}
+                          strokeWidth={3}
+                        />
+                        <Text style={s.ctaText}>
+                          {setNum >= selected.sets
+                            ? playMode === "auto"
+                              ? "Done — next exercise"
+                              : "Done — back to list"
+                            : "Done — next set"}
+                        </Text>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  ) : (
+                    <Animated.View
+                      style={{ transform: [{ scale: btnScale }] }}
+                    >
+                      <TouchableOpacity
+                        style={s.ctaOutline}
+                        onPress={onHoldTogglePress}
+                        activeOpacity={0.88}
+                        accessibilityRole="button"
+                      >
+                        <Text style={s.ctaOutlineText}>
+                          {paused ? "Resume" : "Pause hold"}
+                        </Text>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  )}
+
+                  <TouchableOpacity
+                    style={s.secondaryLink}
+                    onPress={returnToList}
+                    hitSlop={8}
+                  >
+                    <Text style={s.secondaryLinkText}>
+                      Back to exercise list
                     </Text>
                   </TouchableOpacity>
                 </Animated.View>
               )}
-            </Animated.View>
-
-            <Animated.View
-              style={[s.contentLayer, { opacity: restContentOpacity }]}
-              pointerEvents={phase === "rest" ? "auto" : "none"}
-            >
-              <View style={s.restRow}>
-                <View style={s.restLeft}>
-                  <Text style={s.restEyebrow}>Rest</Text>
-                  <CountdownRing
-                    left={secsLeft ?? 0}
-                    total={ex.restSec}
-                    size={128}
-                  />
-                </View>
-
-                <View style={s.restRight}>
-                  {nextEx ? (
-                    <View style={s.nextCard}>
-                      <Text style={s.nextLabel}>Up next</Text>
-                      <Image
-                        source={{ uri: nextEx.imageUrl }}
-                        style={s.nextThumb}
-                        resizeMode="cover"
-                      />
-                      <Text style={s.nextName} numberOfLines={2}>
-                        {nextEx.name}
-                      </Text>
-                      <Text style={s.nextMeta}>
-                        {nextEx.sets} sets ·{" "}
-                        {nextEx.type === "reps"
-                          ? `${nextEx.reps} reps`
-                          : `${nextEx.durationSec}s`}
-                      </Text>
-                    </View>
-                  ) : (
-                    <View style={s.lastExBlock}>
-                      <Text style={s.nextLabel}>Last one</Text>
-                      <Text style={s.nextName}>Finish strong 💪</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-
-              <TouchableOpacity
-                style={s.skipBtn}
-                onPress={onSkipRest}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityLabel="Skip rest"
-              >
-                <SkipForward
-                  size={13}
-                  color={T.onDarkMuted}
-                  strokeWidth={2.4}
-                />
-                <Text style={s.skipText}>Skip rest</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
-        </Animated.View>
+          </ScrollView>
+        </View>
       </Animated.View>
 
       <Animated.View
@@ -732,9 +1102,28 @@ export function ActiveWorkoutScreen({
         </Animated.View>
         <Text style={s.doneTitle}>Workout complete</Text>
         <Text style={s.doneSub}>
-          {fmt(elapsed)} elapsed · {totalSets} sets
+          {fmt(elapsed)} elapsed · {doneSets}/{totalSets} sets logged
         </Text>
       </Animated.View>
+
+      <Modal
+        visible={libraryOpen}
+        animationType="slide"
+        onRequestClose={() => setLibraryOpen(false)}
+        statusBarTranslucent
+      >
+        <SafeAreaProvider>
+          <LibraryModalBody
+            onClose={() => setLibraryOpen(false)}
+            sessionExerciseNames={sessionExerciseNames}
+            onAdd={(ex) => {
+              void handleAddFromLibrary(ex);
+            }}
+            addingName={addingName}
+            addError={addError}
+          />
+        </SafeAreaProvider>
+      </Modal>
     </View>
   );
 }
@@ -811,8 +1200,15 @@ const s = StyleSheet.create({
     textShadowRadius: 6,
   },
 
-  panelOuter: { position: "absolute", bottom: 0, left: 0, right: 0 },
+  panelOuter: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    top: "38%",
+  },
   panel: {
+    flex: 1,
     backgroundColor: T.darkPanel,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
@@ -827,19 +1223,143 @@ const s = StyleSheet.create({
     shadowRadius: 26,
     elevation: 20,
   },
-  panelBody: { flex: 1 },
+  panelScroll: { flex: 1 },
+  panelScrollContent: { paddingBottom: 12, gap: 12 },
 
-  dotsRow: { flexDirection: "row", gap: 4, marginBottom: 16 },
-  dot: { height: 4, borderRadius: 2, flex: 1 },
-  dotDone: { backgroundColor: T.accentOnDark, opacity: 0.4 },
-  dotActive: { backgroundColor: T.accentOnDark },
-  dotPending: { backgroundColor: "rgba(255,255,255,0.08)" },
-
-  contentLayer: {
-    ...StyleSheet.absoluteFillObject,
+  listHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  listLabel: {
+    color: T.onDarkMuted,
+    fontFamily: T.bodySemi,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+  },
+  addExBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(127,217,174,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(127,217,174,0.35)",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  addExBtnText: {
+    color: T.accentOnDark,
+    fontFamily: T.bodyBold,
+    fontSize: 12,
+  },
+  exList: { gap: 8 },
+  libraryModal: { flex: 1, backgroundColor: T.bg },
+  libraryModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingTop: 12,
-    gap: 14,
+    paddingBottom: 8,
+  },
+  libraryModalTitle: {
+    fontFamily: T.displayBold,
+    fontSize: 20,
+    color: T.white,
+    letterSpacing: -0.3,
+  },
+  libraryCloseBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: T.glass,
+    borderWidth: 0.5,
+    borderColor: T.glassBorder,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addingHint: {
+    fontFamily: T.bodyMed,
+    fontSize: 12,
+    color: T.faint,
+    textAlign: "center",
+    marginTop: 12,
+  },
+  addErrorText: {
+    fontFamily: T.bodyMed,
+    fontSize: 12,
+    color: T.badge,
+    textAlign: "center",
+    marginTop: 8,
+  },
+  exListRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: T.darkGlass,
+    borderWidth: 1,
+    borderColor: T.darkGlassBorder,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  exListRowDone: { opacity: 0.72 },
+  exStatusDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  exStatusDotDone: {
+    borderColor: T.accentOnDark,
+    backgroundColor: T.accentOnDark,
+  },
+  exListName: {
+    color: T.onDark,
+    fontFamily: T.bodySemi,
+    fontSize: 14,
+  },
+  exListNameDone: { color: T.onDarkMuted },
+  exListMeta: {
+    color: T.onDarkMuted,
+    fontFamily: T.bodyMed,
+    fontSize: 11.5,
+    marginTop: 2,
+  },
+
+  startBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: T.accentOnDark,
+    borderRadius: 999,
+    paddingVertical: 15,
+    marginTop: 4,
+  },
+  startBtnText: {
+    color: T.accentOnDarkText,
+    fontFamily: T.bodyBold,
+    fontSize: 14.5,
+  },
+
+  activeBlock: { gap: 14, marginTop: 4 },
+  restBlock: { alignItems: "center", gap: 10, marginTop: 4 },
+  restHint: {
+    color: T.onDarkMuted,
+    fontFamily: T.bodyMed,
+    fontSize: 12.5,
+  },
+  autoBadge: {
+    alignSelf: "flex-start",
+    color: T.accentOnDark,
+    fontFamily: T.bodyBold,
+    fontSize: 10,
+    letterSpacing: 1.6,
   },
 
   cueLabel: {
@@ -880,13 +1400,13 @@ const s = StyleSheet.create({
   },
   statDim: { color: T.onDarkMuted, fontFamily: T.bodySemi, fontSize: 13 },
 
-  centerDisplay: { alignItems: "center" },
+  centerDisplay: { alignItems: "center", minWidth: 90 },
   bigNumber: {
     color: T.onDark,
     fontFamily: T.displayExtraBold,
-    fontSize: 54,
-    letterSpacing: -2.5,
-    lineHeight: 58,
+    fontSize: 42,
+    letterSpacing: -2,
+    lineHeight: 46,
     fontVariant: ["tabular-nums"],
   },
   bigLabel: {
@@ -898,7 +1418,6 @@ const s = StyleSheet.create({
     marginTop: -2,
   },
 
-  // steppers
   stepperGrid: { flexDirection: "row", gap: 12 },
   stepperWrap: { flex: 1 },
   stepperLabel: {
@@ -963,7 +1482,6 @@ const s = StyleSheet.create({
     fontSize: 14.5,
     letterSpacing: 0.1,
   },
-
   ctaOutline: {
     borderWidth: 1.5,
     borderColor: T.darkGlassBorder,
@@ -977,9 +1495,13 @@ const s = StyleSheet.create({
     fontSize: 14,
     letterSpacing: 0.1,
   },
+  secondaryLink: { alignItems: "center", paddingVertical: 8 },
+  secondaryLinkText: {
+    color: T.onDarkMuted,
+    fontFamily: T.bodySemi,
+    fontSize: 13,
+  },
 
-  restRow: { flexDirection: "row", gap: 16, alignItems: "center", flex: 1 },
-  restLeft: { alignItems: "center", gap: 8 },
   restEyebrow: {
     color: T.accentOnDark,
     fontFamily: T.bodyBold,
@@ -987,7 +1509,6 @@ const s = StyleSheet.create({
     letterSpacing: 2.5,
     textTransform: "uppercase",
   },
-
   ringTime: {
     color: T.onDark,
     fontFamily: T.displayBold,
@@ -996,39 +1517,6 @@ const s = StyleSheet.create({
     marginTop: 2,
     fontVariant: ["tabular-nums"],
   },
-
-  restRight: { flex: 1 },
-  nextCard: {
-    backgroundColor: T.darkGlass,
-    borderWidth: 1,
-    borderColor: T.darkGlassBorder,
-    borderRadius: 18,
-    padding: 12,
-    gap: 6,
-  },
-  nextLabel: {
-    color: T.onDarkMuted,
-    fontFamily: T.bodyBold,
-    fontSize: 10,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-  },
-  nextThumb: {
-    width: "100%",
-    height: 66,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.04)",
-  },
-  nextName: {
-    color: T.onDark,
-    fontFamily: T.displayMed,
-    fontSize: 14.5,
-    lineHeight: 19,
-  },
-  nextMeta: { color: T.onDarkMuted, fontFamily: T.bodyMed, fontSize: 11.5 },
-
-  lastExBlock: { flex: 1, justifyContent: "center", gap: 6 },
-
   skipBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1041,9 +1529,25 @@ const s = StyleSheet.create({
     borderRadius: 999,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    marginTop: 6,
   },
-  skipText: { color: T.onDarkMuted, fontFamily: T.bodySemi, fontSize: 12.5 },
+  skipText: { color: T.onDark, fontFamily: T.bodySemi, fontSize: 12.5 },
+
+  finishBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: T.darkGlassBorder,
+    borderRadius: 999,
+    paddingVertical: 15,
+  },
+  finishBtnText: {
+    color: T.onDark,
+    fontFamily: T.bodyBold,
+    fontSize: 14.5,
+  },
 
   doneOverlay: {
     ...StyleSheet.absoluteFillObject,

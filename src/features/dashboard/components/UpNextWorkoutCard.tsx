@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState, memo } from "react";
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   Animated,
   Easing,
@@ -10,11 +9,17 @@ import {
   ViewStyle,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Dumbbell, ArrowRight, Clock, Flame } from "lucide-react-native";
-import { T } from "@/src/theme";
+import { Dumbbell, ArrowRight, Clock, Flame, Moon } from "lucide-react-native";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
-type Props = {
+/** Calm stretch / recovery — same Unsplash URL pattern as plan covers. */
+export const REST_DAY_IMAGE_URL =
+  "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80";
+
+type WorkoutProps = {
+  variant?: "workout";
   title: string; // "Chest & Triceps" — split onto two lines around " & " / " and " if present
   tag: string; // "Push Day"
   minutes: number;
@@ -25,6 +30,15 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
+type RestProps = {
+  variant: "rest";
+  /** Optional — e.g. open Train tab / library for an extra session. */
+  onPress?: () => void;
+  style?: StyleProp<ViewStyle>;
+};
+
+type Props = WorkoutProps | RestProps;
+
 function splitHeadline(title: string): [string, string] {
   const match = title.match(/^(.+?)\s*(&|and)\s*(.+)$/i);
   if (match) return [match[1].trim(), match[3].trim()];
@@ -33,17 +47,21 @@ function splitHeadline(title: string): [string, string] {
   return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
 }
 
-function UpNextWorkoutCardBase({
-  title,
-  tag,
-  minutes,
-  exerciseCount,
-  imageUrl,
-  onPress,
-  onStartPress,
-  style,
-}: Props) {
-  const [line1, line2] = splitHeadline(title);
+function UpNextWorkoutCardBase(props: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
+  const isRest = props.variant === "rest";
+
+  const title = isRest ? "Rest day" : props.title;
+  const tag = isRest ? "Recovery" : props.tag;
+  const imageUrl = isRest ? REST_DAY_IMAGE_URL : props.imageUrl;
+  const onPress = props.onPress;
+  const onStartPress = isRest ? undefined : props.onStartPress;
+  const minutes = isRest ? 0 : props.minutes;
+  const exerciseCount = isRest ? 0 : props.exerciseCount;
+
+  const [line1, line2] = isRest
+    ? (["Rest day", ""] as [string, string])
+    : splitHeadline(title);
 
   const entrance = useRef(new Animated.Value(0)).current;
   const arrowNudge = useRef(new Animated.Value(0)).current;
@@ -56,6 +74,12 @@ function UpNextWorkoutCardBase({
       useNativeDriver: true,
     });
     anim.start();
+
+    if (isRest) {
+      return () => {
+        anim.stop();
+      };
+    }
 
     // A quiet, slow nudge on the CTA arrow — the one place motion is
     // allowed to idle, so it reads as an invitation rather than noise.
@@ -82,7 +106,7 @@ function UpNextWorkoutCardBase({
       anim.stop();
       loop.stop();
     };
-  }, []);
+  }, [isRest]);
 
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">(
     "loading",
@@ -113,7 +137,7 @@ function UpNextWorkoutCardBase({
             },
           ],
         },
-        style,
+        props.style,
       ]}
     >
       <PressableScale
@@ -133,7 +157,11 @@ function UpNextWorkoutCardBase({
               />
             ) : (
               <View style={s.imageFallback}>
-                <Dumbbell size={26} color={T.muted} strokeWidth={1.6} />
+                {isRest ? (
+                  <Moon size={26} color={T.muted} strokeWidth={1.6} />
+                ) : (
+                  <Dumbbell size={26} color={T.muted} strokeWidth={1.6} />
+                )}
               </View>
             )}
           </View>
@@ -156,40 +184,48 @@ function UpNextWorkoutCardBase({
             <Text style={s.eyebrow}>UP NEXT · {tag.toUpperCase()}</Text>
           </View>
 
-          {/* floating duration chip — glances the one number people
-              check first, before they've committed to reading the card */}
-          <View style={s.durationChip}>
-            <Clock size={11} color={T.onImage} strokeWidth={2.4} />
-            <Text style={s.durationChipText}>{minutes}′</Text>
-          </View>
+          {!isRest && (
+            <View style={s.durationChip}>
+              <Clock size={11} color={T.onImage} strokeWidth={2.4} />
+              <Text style={s.durationChipText}>{minutes}′</Text>
+            </View>
+          )}
 
           <View style={s.bottom}>
-            {/* two-line headline, mixed weight: the first line carries
-                the full extra-bold display weight, the second sits one
-                step down — a quiet hierarchy inside a single title
-                instead of two lines shouting at the same volume */}
             <Text style={s.headlineStrong}>{line1}</Text>
-            <Text style={s.headlineLight}>{line2}</Text>
+            {isRest ? (
+              <Text style={s.headlineLight}>Recovery is part of the plan.</Text>
+            ) : (
+              <>
+                {!!line2 && <Text style={s.headlineLight}>{line2}</Text>}
+                <View style={s.metaRow}>
+                  <Flame size={12} color={T.muted} strokeWidth={2.2} />
+                  <Text style={s.metaText}>
+                    {exerciseCount}{" "}
+                    {exerciseCount === 1 ? "exercise" : "exercises"}
+                  </Text>
+                </View>
 
-            <View style={s.metaRow}>
-              <Flame size={12} color={T.muted} strokeWidth={2.2} />
-              <Text style={s.metaText}>
-                {exerciseCount} {exerciseCount === 1 ? "exercise" : "exercises"}
-              </Text>
-            </View>
-
-            <PressableScale
-              onPress={onStartPress ?? onPress}
-              scaleTo={0.96}
-              style={s.ctaPressable}
-            >
-              <View style={s.cta}>
-                <Text style={s.ctaText}>Start workout</Text>
-                <Animated.View style={{ transform: [{ translateX: arrowX }] }}>
-                  <ArrowRight size={15} color={T.bg} strokeWidth={2.4} />
-                </Animated.View>
-              </View>
-            </PressableScale>
+                <PressableScale
+                  onPress={onStartPress ?? onPress}
+                  scaleTo={0.96}
+                  style={s.ctaPressable}
+                >
+                  <View style={s.cta}>
+                    <Text style={s.ctaText}>Start workout</Text>
+                    <Animated.View
+                      style={{ transform: [{ translateX: arrowX }] }}
+                    >
+                      <ArrowRight
+                        size={15}
+                        color={T.onAccent}
+                        strokeWidth={2.4}
+                      />
+                    </Animated.View>
+                  </View>
+                </PressableScale>
+              </>
+            )}
           </View>
         </View>
       </PressableScale>
@@ -199,109 +235,111 @@ function UpNextWorkoutCardBase({
 
 export const UpNextWorkoutCard = memo(UpNextWorkoutCardBase);
 
-const s = StyleSheet.create({
-  pressableReset: { borderRadius: T.radius.xl },
-  card: {
-    height: 224,
-    borderRadius: T.radius.xl,
-    overflow: "hidden",
-    backgroundColor: T.bg,
-    shadowColor: "#0A0A0A",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 2,
-  },
-  imageClip: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
-  image: { ...StyleSheet.absoluteFillObject },
-  imageFallback: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: T.glass,
-  },
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    pressableReset: { borderRadius: T.radius.xl },
+    card: {
+      height: 224,
+      borderRadius: T.radius.xl,
+      overflow: "hidden",
+      backgroundColor: T.bg,
+      shadowColor: "#0A0A0A",
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.08,
+      shadowRadius: 14,
+      elevation: 2,
+    },
+    imageClip: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
+    image: { ...StyleSheet.absoluteFillObject },
+    imageFallback: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: T.bgElevated,
+    },
 
-  eyebrowRow: {
-    position: "absolute",
-    top: 16,
-    left: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  eyebrowDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: T.accent,
-  },
-  eyebrow: {
-    fontFamily: T.bodyBold,
-    fontSize: 10.5,
-    letterSpacing: 1,
-    color: T.onImage,
-  },
+    eyebrowRow: {
+      position: "absolute",
+      top: 16,
+      left: 18,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    eyebrowDot: {
+      width: 5,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: T.accent,
+    },
+    eyebrow: {
+      fontFamily: T.bodyBold,
+      fontSize: 10.5,
+      letterSpacing: 1,
+      color: T.onImage,
+    },
 
-  durationChip: {
-    position: "absolute",
-    top: 14,
-    right: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: T.onImageGlass,
-    borderWidth: 1,
-    borderColor: T.onImageBorder,
-    borderRadius: T.radius.pill,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-  },
-  durationChipText: {
-    fontFamily: T.bodyBold,
-    fontSize: 11.5,
-    color: T.onImage,
-    fontVariant: ["tabular-nums"],
-  },
+    durationChip: {
+      position: "absolute",
+      top: 14,
+      right: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      backgroundColor: T.onImageGlass,
+      borderWidth: 1,
+      borderColor: T.onImageBorder,
+      borderRadius: T.radius.pill,
+      paddingVertical: 5,
+      paddingHorizontal: 10,
+    },
+    durationChipText: {
+      fontFamily: T.bodyBold,
+      fontSize: 11.5,
+      color: T.onImage,
+      fontVariant: ["tabular-nums"],
+    },
 
-  bottom: { position: "absolute", left: 18, right: 18, bottom: 16 },
-  headlineStrong: {
-    fontFamily: T.displayExtraBold,
-    fontSize: 25,
-    lineHeight: 27,
-    color: T.onImage,
-    letterSpacing: -0.5,
-    textShadowColor: "rgba(0,0,0,0.35)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
-  },
-  headlineLight: {
-    fontFamily: T.display,
-    fontSize: 21,
-    lineHeight: 24,
-    color: "rgba(255,255,255,0.82)",
-    letterSpacing: -0.3,
-    marginBottom: 10,
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
-  },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 14,
-  },
-  metaText: { fontFamily: T.bodyMed, fontSize: 11.5, color: T.onImageMuted },
+    bottom: { position: "absolute", left: 18, right: 18, bottom: 16 },
+    headlineStrong: {
+      fontFamily: T.displayExtraBold,
+      fontSize: 25,
+      lineHeight: 27,
+      color: T.onImage,
+      letterSpacing: -0.5,
+      textShadowColor: "rgba(0,0,0,0.35)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 6,
+    },
+    headlineLight: {
+      fontFamily: T.display,
+      fontSize: 21,
+      lineHeight: 24,
+      color: "rgba(255,255,255,0.82)",
+      letterSpacing: -0.3,
+      marginBottom: 10,
+      textShadowColor: "rgba(0,0,0,0.3)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 6,
+    },
+    metaRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 14,
+    },
+    metaText: { fontFamily: T.bodyMed, fontSize: 11.5, color: T.onImageMuted },
 
-  ctaPressable: { alignSelf: "flex-start", borderRadius: T.radius.pill },
-  cta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    backgroundColor: T.accent,
-    borderRadius: T.radius.pill,
-    paddingVertical: 11,
-    paddingHorizontal: 18,
-  },
-  ctaText: { fontFamily: T.bodyBold, fontSize: 13, color: T.onImage },
-});
+    ctaPressable: { alignSelf: "flex-start", borderRadius: T.radius.pill },
+    cta: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+      backgroundColor: T.accent,
+      borderRadius: T.radius.pill,
+      paddingVertical: 11,
+      paddingHorizontal: 18,
+    },
+    ctaText: { fontFamily: T.bodyBold, fontSize: 13, color: T.onAccent },
+  });
+}

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { api } from "@/src/lib/api";
 
 export interface LibraryExercise {
@@ -16,5 +16,11 @@ export function useExerciseLibrary(muscleGroup?: string) {
       api.get<LibraryExercise[]>(
         `/api/workouts/exercises${muscleGroup ? `?muscleGroup=${muscleGroup}` : ""}`,
       ),
+    // Keeps showing the previous category's list while the new one loads,
+    // instead of blanking to a spinner on every tap.
+    placeholderData: keepPreviousData,
+    // Exercise library is static-ish data — no need to refetch on every
+    // mount/focus. Once a category's been fetched, reuse it from cache.
+    staleTime: 1000 * 60 * 30, // 30 min
   });
 }

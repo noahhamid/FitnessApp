@@ -1,6 +1,7 @@
 import { Flame, User } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { T } from "../theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 
 type Props = {
   greeting: string; // "Good afternoon"
@@ -9,6 +10,8 @@ type Props = {
 };
 
 export function DashboardHeader({ greeting, name, streakDays }: Props) {
+  const { T, styles } = useThemedStyles(makeStyles);
+
   return (
     <View style={styles.header}>
       <View>
@@ -29,44 +32,46 @@ export function DashboardHeader({ greeting, name, streakDays }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 6,
-  },
-  greeting: { fontFamily: T.bodyMed, fontSize: 12, color: T.muted },
-  name: {
-    fontFamily: T.displayBold,
-    fontSize: 24,
-    color: T.white,
-    marginTop: 2,
-    letterSpacing: -0.3,
-  },
-  right: { flexDirection: "row", alignItems: "center", gap: 10 },
-  streakBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: T.ringGlass,
-    borderWidth: 0.5,
-    borderColor: T.glassBorder,
-    borderRadius: 999,
-    paddingVertical: 7,
-    paddingHorizontal: 11,
-  },
-  streakText: { fontFamily: T.bodyBold, fontSize: 11, color: T.accent },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
-    backgroundColor: T.ringGlass,
-    borderWidth: 0.5,
-    borderColor: T.ringBorder,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 20,
+      paddingTop: 10,
+      paddingBottom: 6,
+    },
+    greeting: { fontFamily: T.bodyMed, fontSize: 12, color: T.muted },
+    name: {
+      fontFamily: T.displayBold,
+      fontSize: 24,
+      color: T.white,
+      marginTop: 2,
+      letterSpacing: -0.3,
+    },
+    right: { flexDirection: "row", alignItems: "center", gap: 10 },
+    streakBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      backgroundColor: T.ringGlass,
+      borderWidth: 0.5,
+      borderColor: T.glassBorder,
+      borderRadius: 999,
+      paddingVertical: 7,
+      paddingHorizontal: 11,
+    },
+    streakText: { fontFamily: T.bodyBold, fontSize: 11, color: T.accent },
+    avatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 13,
+      backgroundColor: T.ringGlass,
+      borderWidth: 0.5,
+      borderColor: T.ringBorder,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });
+}

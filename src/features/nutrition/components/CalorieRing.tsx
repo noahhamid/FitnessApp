@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View, Animated, Easing } from "react-native";
 import Svg, { Circle, Line } from "react-native-svg";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 
 type Props = {
   consumed: number;
@@ -27,6 +28,7 @@ export function CalorieRing({
   size = 118,
   strokeWidth = 8,
 }: Props) {
+  const { T, styles } = useThemedStyles(makeStyles);
   const cx = size / 2;
   const cy = size / 2;
   const arcRadius = (size - strokeWidth) / 2 - TICK_LENGTH - TICK_INSET;
@@ -139,21 +141,23 @@ export function CalorieRing({
   );
 }
 
-const styles = StyleSheet.create({
-  center: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  num: {
-    fontFamily: T.display,
-    fontSize: 22,
-    color: T.white,
-    fontVariant: ["tabular-nums"],
-  },
-  lbl: { fontFamily: T.bodyMed, fontSize: 9.5, color: T.muted, marginTop: 3 },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    center: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    num: {
+      fontFamily: T.display,
+      fontSize: 22,
+      color: T.white,
+      fontVariant: ["tabular-nums"],
+    },
+    lbl: { fontFamily: T.bodyMed, fontSize: 9.5, color: T.muted, marginTop: 3 },
+  });
+}

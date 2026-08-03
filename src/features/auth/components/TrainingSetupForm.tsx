@@ -13,12 +13,12 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSaveProfile } from "../hooks/useProfile";
 
 const C = {
@@ -57,6 +57,7 @@ const EQUIPMENT: { id: EquipmentAccess; label: string }[] = [
 ];
 
 export function TrainingSetupForm() {
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const [days, setDays] = useState<number | null>(null);
   const [experience, setExperience] = useState<ExperienceLevel | null>(null);
@@ -92,9 +93,9 @@ export function TrainingSetupForm() {
   }
 
   return (
-    <SafeAreaView style={s.safe}>
+    <View style={s.safe}>
       <ScrollView
-        contentContainerStyle={s.scroll}
+        contentContainerStyle={[s.scroll, { paddingTop: insets.top + 8 }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={s.header}>
@@ -174,7 +175,7 @@ export function TrainingSetupForm() {
         </View>
       </ScrollView>
 
-      <View style={s.footer}>
+      <View style={[s.footer, { paddingBottom: insets.bottom + 24 }]}>
         <Pressable
           disabled={!canContinue || loading}
           style={[
@@ -190,13 +191,13 @@ export function TrainingSetupForm() {
           )}
         </Pressable>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  scroll: { paddingHorizontal: 24, paddingTop: 52, paddingBottom: 24 },
+  scroll: { paddingHorizontal: 24, paddingBottom: 24 },
   header: { marginBottom: 20 },
   counter: {
     color: C.muted,
@@ -301,7 +302,7 @@ const s = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: C.accent,
   },
-  footer: { paddingHorizontal: 24, paddingBottom: 24, paddingTop: 8 },
+  footer: { paddingHorizontal: 24, paddingTop: 8 },
   primaryBtn: {
     backgroundColor: C.accent,
     borderRadius: 16,

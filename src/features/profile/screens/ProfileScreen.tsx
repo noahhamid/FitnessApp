@@ -21,6 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { ThemeModeTestToggle } from "@/src/context/ThemeModeTestToggle";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -520,6 +521,9 @@ export default function ProfileScreen() {
               5. SETTINGS CARD (unified dark surface)
           ══════════════════════════════════════════════════════════════ */}
           <Text style={s.sectionLabel}>APP SETTINGS</Text>
+          {/* TEMPORARY Stage 2B test point — provider/persistence only;
+              Profile chrome stays on local hardcoded T until a later stage. */}
+          <ThemeModeTestToggle />
           <View style={s.settingsCard}>
             {SETTINGS.map((setting, i) => {
               const isLast = i === SETTINGS.length - 1;

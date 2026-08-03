@@ -2,24 +2,15 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { TrendingUp } from "lucide-react-native";
 import type { ProgressionSuggestion } from "../hooks/useProgress";
-
-const T = {
-  panel: "#15161C",
-  panelBorder: "rgba(255,255,255,0.08)",
-  accent: "#FFC700",
-  accentGlass: "rgba(255,199,0,0.10)",
-  white: "#FFFFFF",
-  muted: "rgba(255,255,255,0.55)",
-  display: "SpaceGrotesk_700Bold",
-  bodyMed: "Inter_500Medium",
-  bodySemi: "Inter_600SemiBold",
-};
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 
 interface Props {
   suggestions: ProgressionSuggestion[];
 }
 
 export function LevelUpSection({ suggestions }: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
   const readyToLevelUp = suggestions.filter((s) => s.direction === "increase");
 
   if (readyToLevelUp.length === 0) {
@@ -57,41 +48,44 @@ export function LevelUpSection({ suggestions }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: T.panel,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: T.panelBorder,
-    padding: 14,
-    gap: 12,
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: T.accentGlass,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  exerciseName: { fontFamily: T.bodySemi, fontSize: 14, color: T.white },
-  subtext: {
-    fontFamily: T.bodyMed,
-    fontSize: 11.5,
-    color: T.muted,
-    marginTop: 2,
-  },
-  weightWrap: { flexDirection: "row", alignItems: "center", gap: 4 },
-  oldWeight: { fontFamily: T.bodyMed, fontSize: 12, color: T.muted },
-  arrow: { color: T.muted, fontSize: 12 },
-  newWeight: { fontFamily: T.display, fontSize: 14, color: T.accent },
-  emptyText: {
-    fontFamily: T.bodyMed,
-    fontSize: 12.5,
-    color: T.muted,
-    lineHeight: 18,
-    textAlign: "center",
-  },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: T.glass,
+      borderRadius: T.radius.md,
+      borderWidth: 0.5,
+      borderColor: T.glassBorder,
+      padding: 14,
+      gap: T.space.md,
+      ...T.shadow.card,
+    },
+    iconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: T.accentTint,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    exerciseName: { fontFamily: T.bodySemi, fontSize: 14, color: T.white },
+    subtext: {
+      fontFamily: T.bodyMed,
+      fontSize: 11.5,
+      color: T.muted,
+      marginTop: 2,
+    },
+    weightWrap: { flexDirection: "row", alignItems: "center", gap: 4 },
+    oldWeight: { fontFamily: T.bodyMed, fontSize: 12, color: T.muted },
+    arrow: { color: T.muted, fontSize: 12 },
+    newWeight: { fontFamily: T.displaySemi, fontSize: 14, color: T.accent },
+    emptyText: {
+      fontFamily: T.bodyMed,
+      fontSize: 12.5,
+      color: T.muted,
+      lineHeight: 18,
+      textAlign: "center",
+    },
+  });
+}

@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
 type Props = {
@@ -12,6 +13,8 @@ type Props = {
 // 88px height — empty and logged slots line up in the scroll list via
 // consistent vertical rhythm, not matching height with MealPhotoCard directly.
 export function EmptyMealSlot({ slot, recommendedRange, onAdd }: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
+
   return (
     <PressableScale onPress={onAdd} scaleTo={0.98} style={s.pressableReset}>
       <View style={s.card}>
@@ -27,30 +30,32 @@ export function EmptyMealSlot({ slot, recommendedRange, onAdd }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  pressableReset: { borderRadius: 24 },
-  card: {
-    height: 88,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderStyle: "dashed",
-    borderColor: T.glassBorder,
-    backgroundColor: T.glass,
-    paddingHorizontal: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  slot: { fontFamily: T.bodyBold, fontSize: 14, color: T.white },
-  range: { fontFamily: T.bodyMed, fontSize: 11, color: T.muted, marginTop: 3 },
-  addRing: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: T.ringBorder,
-    backgroundColor: T.ringGlass,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    pressableReset: { borderRadius: 24 },
+    card: {
+      height: 88,
+      borderRadius: 24,
+      borderWidth: 1.5,
+      borderStyle: "dashed",
+      borderColor: T.glassBorder,
+      backgroundColor: T.glass,
+      paddingHorizontal: 18,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    slot: { fontFamily: T.bodyBold, fontSize: 14, color: T.white },
+    range: { fontFamily: T.bodyMed, fontSize: 11, color: T.muted, marginTop: 3 },
+    addRing: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      borderWidth: 1.5,
+      borderColor: T.ringBorder,
+      backgroundColor: T.ringGlass,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });
+}

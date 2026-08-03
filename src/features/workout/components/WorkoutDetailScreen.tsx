@@ -8,15 +8,19 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, Clock, Flame, Repeat } from "lucide-react-native";
 import { WorkoutPlan, Exercise } from "../data/workouts";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
+import { topInset } from "@/src/lib/safe-area";
 
 type Props = {
   plan: WorkoutPlan;
   onBack: () => void;
   onStart: () => void;
   starting?: boolean;
+  onExercisePress?: (exercise: Exercise) => void;
 };
 
 const totalMinutesEstimate = (plan: WorkoutPlan) => {
@@ -30,11 +34,23 @@ const totalMinutesEstimate = (plan: WorkoutPlan) => {
 const ExerciseRow = ({
   exercise,
   index,
+  onPress,
 }: {
   exercise: Exercise;
   index: number;
-}) => (
-  <View style={s.exRow}>
+  onPress?: () => void;
+}) => {
+  const { styles: s } = useThemedStyles(makeStyles);
+
+  return (
+  <TouchableOpacity
+    style={s.exRow}
+    activeOpacity={onPress ? 0.75 : 1}
+    disabled={!onPress}
+    onPress={onPress}
+    accessibilityRole={onPress ? "button" : undefined}
+    accessibilityLabel={`View ${exercise.name}`}
+  >
     <Text style={s.exIndex}>{String(index + 1).padStart(2, "0")}</Text>
     <Image
       source={{ uri: exercise.imageUrl }}
@@ -50,15 +66,19 @@ const ExerciseRow = ({
           : `${exercise.durationSec}s hold`}
       </Text>
     </View>
-  </View>
-);
+  </TouchableOpacity>
+  );
+};
 
 export function WorkoutDetailScreen({
   plan,
   onBack,
   onStart,
   starting,
+  onExercisePress,
 }: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const minutes = totalMinutesEstimate(plan);
   const estCalories = Math.round(minutes * 8.5);
 
@@ -76,7 +96,7 @@ export function WorkoutDetailScreen({
           />
           <View style={s.heroOverlay} />
           <TouchableOpacity
-            style={s.backBtn}
+            style={[s.backBtn, { top: topInset(insets.top) + 8 }]}
             activeOpacity={0.8}
             onPress={onBack}
           >
@@ -108,12 +128,19 @@ export function WorkoutDetailScreen({
         <Text style={s.sectionTitle}>Exercises</Text>
         <View style={s.exList}>
           {plan.exercises.map((ex, i) => (
-            <ExerciseRow key={ex.id} exercise={ex} index={i} />
+            <ExerciseRow
+              key={ex.id}
+              exercise={ex}
+              index={i}
+              onPress={
+                onExercisePress ? () => onExercisePress(ex) : undefined
+              }
+            />
           ))}
         </View>
       </ScrollView>
 
-      <View style={s.startBar}>
+      <View style={[s.startBar, { bottom: Math.max(insets.bottom, 8) + 16 }]}>
         <TouchableOpacity
           style={[s.startBtn, starting && s.startBtnDisabled]}
           activeOpacity={0.9}
@@ -122,7 +149,7 @@ export function WorkoutDetailScreen({
         >
           {starting ? (
             <View style={s.startingRow}>
-              <ActivityIndicator color={T.onImage} size="small" />
+              <ActivityIndicator color={T.onAccent} size="small" />
               <Text style={s.startBtnText}>Starting...</Text>
             </View>
           ) : (
@@ -134,7 +161,8 @@ export function WorkoutDetailScreen({
   );
 }
 
-const s = StyleSheet.create({
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
   screen: { flex: 1, backgroundColor: T.bg },
   scrollContent: { paddingBottom: 120 },
 
@@ -146,7 +174,6 @@ const s = StyleSheet.create({
   },
   backBtn: {
     position: "absolute",
-    top: 54,
     left: 20,
     width: 40,
     height: 40,
@@ -171,7 +198,7 @@ const s = StyleSheet.create({
   },
   tagText: {
     fontFamily: T.bodyBold,
-    color: T.onImage,
+    color: T.onAccent,
     fontSize: 11,
     letterSpacing: 0.4,
   },
@@ -198,7 +225,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: T.glass,
+    backgroundColor: T.bgElevated,
     borderWidth: 0.5,
     borderColor: T.glassBorder,
     borderRadius: 16,
@@ -218,7 +245,7 @@ const s = StyleSheet.create({
   exRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: T.glass,
+    backgroundColor: T.bgElevated,
     borderWidth: 0.5,
     borderColor: T.glassBorder,
     borderRadius: 16,
@@ -243,7 +270,6 @@ const s = StyleSheet.create({
 
   startBar: {
     position: "absolute",
-    bottom: 24,
     left: 20,
     right: 20,
   },
@@ -260,5 +286,6 @@ const s = StyleSheet.create({
   },
   startBtnDisabled: { opacity: 0.75 },
   startingRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  startBtnText: { fontFamily: T.bodyBold, color: T.onImage, fontSize: 15 },
-});
+  startBtnText: { fontFamily: T.bodyBold, color: T.onAccent, fontSize: 15 },
+  });
+}

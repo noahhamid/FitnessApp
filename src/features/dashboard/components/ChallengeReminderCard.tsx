@@ -1,17 +1,13 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import {
-  Dumbbell,
-  Coffee,
-  UtensilsCrossed,
-  Moon,
+  AlarmClock,
   CheckCircle2,
-  Lock,
-  Sparkles,
+  MinusCircle,
   ChevronRight,
 } from "lucide-react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { T } from "../theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
 export type ChallengeDayKind = "today" | "past" | "future";
@@ -23,17 +19,11 @@ type Props = {
   breakfastDone: boolean;
   lunchDone: boolean;
   dinnerDone: boolean;
+  isLoading?: boolean;
   onPress?: () => void;
 };
 
-const STEP_ORDER: { key: StepKey; Icon: any }[] = [
-  { key: "workout", Icon: Dumbbell },
-  { key: "breakfast", Icon: Coffee },
-  { key: "lunch", Icon: UtensilsCrossed },
-  { key: "dinner", Icon: Moon },
-];
-
-const STEP_COPY: Record<StepKey, string> = {
+const STEP_MESSAGE: Record<StepKey, string> = {
   workout: "Get today's workout in",
   breakfast: "Log your breakfast",
   lunch: "Log your lunch",
@@ -46,8 +36,11 @@ export function ChallengeReminderCard({
   breakfastDone,
   lunchDone,
   dinnerDone,
+  isLoading,
   onPress,
 }: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
+
   const doneMap: Record<StepKey, boolean> = {
     workout: workoutDone,
     breakfast: breakfastDone,
@@ -56,9 +49,11 @@ export function ChallengeReminderCard({
   };
   const complete = workoutDone && breakfastDone && lunchDone && dinnerDone;
   const currentStep: StepKey | null =
-    STEP_ORDER.find((s) => !doneMap[s.key])?.key ?? null;
+    (["workout", "breakfast", "lunch", "dinner"] as StepKey[]).find(
+      (s) => !doneMap[s],
+    ) ?? null;
 
-  const isActionable = dayKind === "today" && !complete;
+  const isActionable = dayKind === "today" && !complete && !isLoading;
 
   const pulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -69,14 +64,14 @@ export function ChallengeReminderCard({
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
-          toValue: 1.12,
-          duration: 900,
+          toValue: 1.08,
+          duration: 1000,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(pulse, {
           toValue: 1,
-          duration: 900,
+          duration: 1000,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
@@ -89,7 +84,9 @@ export function ChallengeReminderCard({
   let message: string;
   let subLabel: string | undefined;
 
-  if (complete) {
+  if (isLoading) {
+    message = "Checking today's progress…";
+  } else if (complete) {
     message = "Challenge completed!";
     subLabel = dayKind === "today" ? "Nice work today" : undefined;
   } else if (dayKind === "future") {
@@ -99,158 +96,104 @@ export function ChallengeReminderCard({
     message = "Challenge not completed";
     subLabel = "New day, new start";
   } else {
-    message = STEP_COPY[currentStep as StepKey];
+    message = STEP_MESSAGE[currentStep as StepKey];
   }
+
+  const iconBadgeStyle = isLoading
+    ? [s.iconBadge]
+    : complete
+      ? [s.iconBadge, s.iconBadgeComplete]
+      : dayKind === "past"
+        ? [s.iconBadge, s.iconBadgeMissed]
+        : [s.iconBadge];
+
+  const icon = isLoading ? (
+    <AlarmClock size={16} color={T.faint} strokeWidth={2} />
+  ) : complete ? (
+    <CheckCircle2 size={16} color={T.accent} strokeWidth={2} />
+  ) : dayKind === "past" ? (
+    <MinusCircle size={16} color={T.faint} strokeWidth={2} />
+  ) : (
+    <AlarmClock size={16} color={T.accent} strokeWidth={2} />
+  );
 
   return (
     <PressableScale
       onPress={onPress}
-      disabled={!onPress}
+      disabled={!onPress || isLoading}
       scaleTo={0.98}
       style={s.pressableReset}
     >
-      <View
-        style={[
-          s.card,
-          complete && s.cardComplete,
-          dayKind === "future" && s.cardFuture,
-        ]}
-      >
-        {complete && (
-          <LinearGradient
-            colors={[T.accentSoft, "transparent"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFillObject}
-          />
+      <View style={s.card}>
+        <Animated.View
+          style={[...iconBadgeStyle, { transform: [{ scale: pulse }] }]}
+        >
+          {icon}
+        </Animated.View>
+
+        <View style={s.textBlock}>
+          <Text style={s.message}>{message}</Text>
+          {subLabel ? (
+            <Text style={s.deadline}>{subLabel.toUpperCase()}</Text>
+          ) : null}
+        </View>
+
+        {onPress && !isLoading && (
+          <View style={s.cta}>
+            <ChevronRight size={16} color={T.faint} strokeWidth={2} />
+          </View>
         )}
-
-        <View style={s.progressRow}>
-          {STEP_ORDER.map(({ key, Icon }, i) => {
-            const done = doneMap[key];
-            const isCurrent =
-              dayKind === "today" && !complete && key === currentStep;
-            return (
-              <React.Fragment key={key}>
-                <Animated.View
-                  style={[
-                    s.stepDot,
-                    done && s.stepDotDone,
-                    isCurrent && s.stepDotCurrent,
-                    isCurrent && { transform: [{ scale: pulse }] },
-                  ]}
-                >
-                  <Icon
-                    size={13}
-                    color={done ? T.onImage : isCurrent ? T.accent : T.faint}
-                    strokeWidth={2}
-                  />
-                </Animated.View>
-                {i < STEP_ORDER.length - 1 && (
-                  <View style={[s.stepLine, done && s.stepLineDone]} />
-                )}
-              </React.Fragment>
-            );
-          })}
-        </View>
-
-        <View style={s.mainRow}>
-          <View style={s.iconBadge}>
-            {complete ? (
-              <CheckCircle2 size={18} color={T.accent} strokeWidth={2} />
-            ) : dayKind === "future" ? (
-              <Lock size={16} color={T.faint} strokeWidth={2} />
-            ) : (
-              <Sparkles size={16} color={T.accent} strokeWidth={2} />
-            )}
-          </View>
-
-          <View style={s.textBlock}>
-            <Text style={[s.message, complete && s.messageComplete]}>
-              {message}
-            </Text>
-            {subLabel ? (
-              <Text style={s.deadline}>{subLabel.toUpperCase()}</Text>
-            ) : null}
-          </View>
-
-          {onPress && (
-            <View style={s.cta}>
-              <ChevronRight size={16} color={T.faint} strokeWidth={2} />
-            </View>
-          )}
-        </View>
       </View>
     </PressableScale>
   );
 }
 
-const s = StyleSheet.create({
-  pressableReset: { borderRadius: 16 },
-  card: {
-    borderRadius: 16,
-    backgroundColor: T.bgElevated,
-    borderWidth: 0.5,
-    borderColor: T.border,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    overflow: "hidden",
-    shadowColor: "#0A0A0A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
-    elevation: 1,
-  },
-  cardComplete: { borderColor: T.accent },
-  cardFuture: { opacity: 0.6 },
-
-  progressRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  stepDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: T.border,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: T.bg,
-  },
-  stepDotDone: { backgroundColor: T.accent, borderColor: T.accent },
-  stepDotCurrent: { borderColor: T.accent },
-  stepLine: {
-    flex: 1,
-    height: 1.5,
-    backgroundColor: T.border,
-    marginHorizontal: 4,
-  },
-  stepLineDone: { backgroundColor: T.accent },
-
-  mainRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  iconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: T.accentSoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  textBlock: { flex: 1 },
-  message: {
-    fontFamily: T.bodySemi,
-    fontSize: 13.5,
-    color: T.white,
-    marginBottom: 2,
-  },
-  messageComplete: { color: T.accent },
-  deadline: { fontFamily: T.bodyMed, fontSize: 11, color: T.faint },
-  cta: {
-    width: 24,
-    height: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    pressableReset: { borderRadius: 16 },
+    card: {
+      borderRadius: 16,
+      backgroundColor: T.bgElevated,
+      borderWidth: 0.5,
+      borderColor: T.border,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 14,
+      paddingVertical: 13,
+      gap: 10,
+      shadowColor: "#0A0A0A",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.03,
+      shadowRadius: 10,
+      elevation: 1,
+    },
+    iconBadge: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: T.accentSoft,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    iconBadgeComplete: { backgroundColor: T.accentSoft },
+    iconBadgeMissed: { backgroundColor: T.border },
+    textBlock: { flex: 1 },
+    message: {
+      fontFamily: T.bodySemi,
+      fontSize: 13.5,
+      color: T.white,
+      marginBottom: 2,
+    },
+    deadline: {
+      fontFamily: T.bodyMed,
+      fontSize: 11,
+      color: T.faint,
+    },
+    cta: {
+      width: 24,
+      height: 24,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });
+}

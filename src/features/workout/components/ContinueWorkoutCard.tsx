@@ -1,4 +1,11 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+} from "react";
 import {
   View,
   Text,
@@ -9,9 +16,31 @@ import {
   StyleProp,
   ViewStyle,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle } from "react-native-svg";
-import { Play } from "lucide-react-native";
-import { T } from "@/src/theme";
+import {
+  Play,
+  Dumbbell,
+  Timer,
+  PersonStanding,
+  CircleDot,
+  Layers,
+  Trophy,
+  type LucideProps,
+} from "lucide-react-native";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
+import type { PersonalRecord } from "@/src/features/progress/hooks/useProgress";
+
+type ExerciseItem = {
+  id: string;
+  name: string;
+  type: "reps" | "duration";
+  sets: number;
+  reps?: number;
+  durationSec?: number;
+  muscleGroup?: string;
+};
 
 type Props = {
   title: string;
@@ -19,12 +48,71 @@ type Props = {
   minutes: number;
   calories: number;
   percent: number;
+  exercises?: ExerciseItem[];
+  /** From usePersonalRecords — used to highlight a PR for this workout. */
+  personalRecords?: PersonalRecord[];
   onPress?: () => void;
+  onExercisePress?: (exercise: ExerciseItem) => void;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
 
+/** ~3–4 compact rows. */
+const COLLAPSED_LIST_H = 148;
+const COLLAPSE_AFTER = 3;
+
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+/** Same dedup idea as WorkoutScreen.muscleSummary — unique groups, order preserved. */
+function uniqueMuscleGroups(exercises: ExerciseItem[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const ex of exercises) {
+    const g = ex.muscleGroup?.toLowerCase();
+    if (!g || seen.has(g)) continue;
+    seen.add(g);
+    out.push(g);
+  }
+  return out;
+}
+
+const MUSCLE_ICON: Record<string, ComponentType<LucideProps>> = {
+  chest: Dumbbell,
+  back: Layers,
+  shoulders: CircleDot,
+  quads: PersonStanding,
+  hamstrings: PersonStanding,
+  glutes: PersonStanding,
+  calves: PersonStanding,
+  biceps: Dumbbell,
+  triceps: Dumbbell,
+  core: CircleDot,
+};
+
+function capitalize(g: string): string {
+  return g.charAt(0).toUpperCase() + g.slice(1);
+}
+
+function formatTarget(ex: ExerciseItem): string {
+  if (ex.type === "duration") {
+    return `${ex.sets}×${ex.durationSec ?? 0}s`;
+  }
+  return `${ex.sets}×${ex.reps ?? "—"}`;
+}
+
+/**
+ * Prefer a PR for an exercise in this workout; else most recent overall
+ * (API already sorts by achievedAt desc). Null if none.
+ */
+function pickHighlightedPr(
+  exercises: ExerciseItem[] | undefined,
+  records: PersonalRecord[] | undefined,
+): PersonalRecord | null {
+  if (!records || records.length === 0) return null;
+  const names = new Set((exercises ?? []).map((e) => e.name));
+  const inWorkout = records.find((r) => names.has(r.exerciseName));
+  return inWorkout ?? records[0] ?? null;
+}
 
 function ProgressRing({
   percent,
@@ -33,6 +121,7 @@ function ProgressRing({
   percent: number;
   size?: number;
 }) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
   const sw = 7;
   const r = (size - sw) / 2;
   const circ = 2 * Math.PI * r;
@@ -93,35 +182,139 @@ function ProgressRing({
   );
 }
 
+function ExerciseRow({
+  exercise,
+  animateEntrance,
+  onPress,
+}: {
+  exercise: ExerciseItem;
+  animateEntrance: boolean;
+  onPress?: () => void;
+}) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
+  const opacity = useRef(new Animated.Value(animateEntrance ? 0 : 1)).current;
+  const translateY = useRef(new Animated.Value(animateEntrance ? 12 : 0))
+    .current;
+  const TypeIcon = exercise.type === "duration" ? Timer : Dumbbell;
+
+  useEffect(() => {
+    if (!animateEntrance) return;
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 420,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 420,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [animateEntrance, opacity, translateY]);
+
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+      <Pressable
+        style={s.exerciseRow}
+        disabled={!onPress}
+        onPress={(e) => {
+          e.stopPropagation();
+          onPress?.();
+        }}
+        hitSlop={4}
+        accessibilityRole={onPress ? "button" : undefined}
+        accessibilityLabel={`View ${exercise.name}`}
+      >
+        <View style={s.exIconWrap}>
+          <TypeIcon size={14} color={T.accent} strokeWidth={2.2} />
+        </View>
+        <Text style={s.exerciseName} numberOfLines={1} ellipsizeMode="tail">
+          {exercise.name}
+        </Text>
+        <Text style={s.exerciseTarget}>{formatTarget(exercise)}</Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 export function ContinueWorkoutCard({
   title,
   tag,
   minutes,
   calories,
   percent,
+  exercises,
+  personalRecords,
   onPress,
+  onExercisePress,
   style,
   testID,
 }: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
   const scale = useRef(new Animated.Value(1)).current;
+  const [expanded, setExpanded] = useState(false);
+  const [contentH, setContentH] = useState(0);
+  const listHeight = useRef(new Animated.Value(COLLAPSED_LIST_H)).current;
+  const seenIdsRef = useRef<Set<string> | null>(null);
+  const [enteringIds, setEnteringIds] = useState<Set<string>>(new Set());
+
+  const exerciseCount = exercises?.length ?? 0;
+  const needsBound = exerciseCount > COLLAPSE_AFTER;
+  const hiddenCount = Math.max(0, exerciseCount - COLLAPSE_AFTER);
+
+  const muscleGroups = useMemo(
+    () => uniqueMuscleGroups(exercises ?? []),
+    [exercises],
+  );
+
+  const highlightedPr = useMemo(
+    () => pickHighlightedPr(exercises, personalRecords),
+    [exercises, personalRecords],
+  );
+
+  useEffect(() => {
+    if (!exercises) return;
+    if (seenIdsRef.current === null) {
+      seenIdsRef.current = new Set(exercises.map((e) => e.id));
+      return;
+    }
+    const fresh = exercises.filter((e) => !seenIdsRef.current!.has(e.id));
+    if (fresh.length === 0) return;
+    for (const e of fresh) seenIdsRef.current.add(e.id);
+    setEnteringIds((prev) => {
+      const next = new Set(prev);
+      for (const e of fresh) next.add(e.id);
+      return next;
+    });
+  }, [exercises]);
+
+  useEffect(() => {
+    if (!needsBound) {
+      listHeight.setValue(contentH > 0 ? contentH : COLLAPSED_LIST_H);
+      return;
+    }
+    const target = expanded
+      ? Math.max(contentH, COLLAPSED_LIST_H)
+      : COLLAPSED_LIST_H;
+    Animated.spring(listHeight, {
+      toValue: target,
+      ...T.motion.settle,
+      useNativeDriver: false,
+    }).start();
+  }, [expanded, contentH, needsBound, listHeight, T]);
 
   const onPressIn = useCallback(() => {
-    Animated.spring(scale, {
-      toValue: 0.98,
-      useNativeDriver: true,
-      friction: 7,
-      tension: 140,
-    }).start();
-  }, [scale]);
+    Animated.spring(scale, { toValue: 0.98, ...T.motion.settle }).start();
+  }, [scale, T]);
 
   const onPressOut = useCallback(() => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      friction: 6,
-      tension: 140,
-    }).start();
-  }, [scale]);
+    Animated.spring(scale, { toValue: 1, ...T.motion.settle }).start();
+  }, [scale, T]);
+
+  const toggleExpanded = useCallback(() => {
+    setExpanded((v) => !v);
+  }, []);
 
   return (
     <Animated.View style={[{ transform: [{ scale }] }, style]}>
@@ -132,63 +325,190 @@ export function ContinueWorkoutCard({
         disabled={!onPress}
         testID={testID}
         accessibilityRole={onPress ? "button" : undefined}
-        accessibilityLabel={`Continue ${title}, ${tag}, ${Math.round(percent)} percent complete, ${minutes} minutes left, ${calories} calories`}
+        accessibilityLabel={`Continue ${title}, ${tag}, ${Math.round(percent)} percent complete, ${minutes} minutes left, ${calories} calories${
+          exerciseCount > 0
+            ? `, ${exerciseCount} ${exerciseCount === 1 ? "exercise" : "exercises"}`
+            : ""
+        }`}
         android_ripple={{ color: "rgba(10,10,10,0.06)", borderless: false }}
         hitSlop={4}
         style={s.pressableReset}
       >
         <View style={s.card}>
-          <View style={s.left}>
-            <Text style={s.eyebrow}>Continue workout</Text>
-            <Text style={s.title} numberOfLines={1} ellipsizeMode="tail">
-              {title}
-            </Text>
+          <View style={s.headerRow}>
+            <View style={s.left}>
+              <Text style={s.eyebrow}>Continue workout</Text>
+              <Text style={s.title} numberOfLines={1} ellipsizeMode="tail">
+                {title}
+              </Text>
 
-            <View style={s.tagPill}>
-              <Text style={s.tagText}>{tag}</Text>
+              <View style={s.tagPill}>
+                <Text style={s.tagText}>{tag}</Text>
+              </View>
+
+              {muscleGroups.length > 0 && (
+                <View style={s.chipRow}>
+                  {muscleGroups.map((g, i) => {
+                    const Icon = MUSCLE_ICON[g] ?? Dumbbell;
+                    const primary = i === 0;
+                    return (
+                      <View
+                        key={g}
+                        style={[s.chip, primary && s.chipPrimary]}
+                      >
+                        <Icon
+                          size={11}
+                          color={primary ? T.accent : T.muted}
+                          strokeWidth={2.2}
+                        />
+                        <Text
+                          style={[s.chipText, primary && s.chipTextPrimary]}
+                        >
+                          {capitalize(g)}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              <View style={s.statRow}>
+                <View style={s.statItem}>
+                  <Text style={s.statValue}>{minutes}</Text>
+                  <Text style={s.statLabel}>min left</Text>
+                </View>
+                <View style={s.hairline} />
+                <View style={s.statItem}>
+                  <Text style={s.statValue}>{calories}</Text>
+                  <Text style={s.statLabel}>cal</Text>
+                </View>
+              </View>
             </View>
 
-            <View style={s.statRow}>
-              <View style={s.statItem}>
-                <Text style={s.statValue}>{minutes}</Text>
-                <Text style={s.statLabel}>min left</Text>
-              </View>
-              <View style={s.hairline} />
-              <View style={s.statItem}>
-                <Text style={s.statValue}>{calories}</Text>
-                <Text style={s.statLabel}>cal</Text>
+            <View style={s.right}>
+              <ProgressRing percent={percent} />
+              <View style={s.playBadge}>
+                <Play
+                  size={14}
+                  color={T.onAccent}
+                  strokeWidth={2.5}
+                  fill={T.onAccent}
+                />
               </View>
             </View>
           </View>
 
-          <View style={s.right}>
-            <ProgressRing percent={percent} />
-            <View style={s.playBadge}>
-              <Play
-                size={14}
-                color={T.onImage}
-                strokeWidth={2.5}
-                fill={T.onImage}
-              />
-            </View>
-          </View>
+          {exerciseCount > 0 && (
+            <>
+              <View style={s.divider} />
+              <View style={s.exerciseList}>
+                <Text style={s.exerciseListLabel}>
+                  {exerciseCount}{" "}
+                  {exerciseCount === 1 ? "exercise" : "exercises"}
+                </Text>
+
+                <Animated.View
+                  style={[
+                    s.listClip,
+                    needsBound ? { height: listHeight } : null,
+                  ]}
+                >
+                  <View
+                    onLayout={(e) => {
+                      const h = e.nativeEvent.layout.height;
+                      if (h > 0 && h !== contentH) setContentH(h);
+                    }}
+                  >
+                    {exercises!.map((ex) => (
+                      <ExerciseRow
+                        key={ex.id}
+                        exercise={ex}
+                        animateEntrance={enteringIds.has(ex.id)}
+                        onPress={
+                          onExercisePress
+                            ? () => onExercisePress(ex)
+                            : undefined
+                        }
+                      />
+                    ))}
+                  </View>
+
+                  {needsBound && !expanded && (
+                    <LinearGradient
+                      pointerEvents="none"
+                      colors={["rgba(255,255,255,0)", T.bgElevated]}
+                      style={s.fadeGradient}
+                    />
+                  )}
+                </Animated.View>
+
+                {needsBound && (
+                  <Pressable
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      toggleExpanded();
+                    }}
+                    hitSlop={6}
+                    style={s.expandRow}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      expanded
+                        ? "Show fewer exercises"
+                        : `Show ${hiddenCount} more exercises`
+                    }
+                  >
+                    <Text style={s.expandText}>
+                      {expanded
+                        ? "Show less"
+                        : `+${hiddenCount} more · tap to expand`}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            </>
+          )}
+
+          {highlightedPr && (
+            <>
+              <View style={s.divider} />
+              <View style={s.prRow}>
+                <View style={s.prIconWrap}>
+                  <Trophy size={13} color={T.accent} strokeWidth={2.2} />
+                </View>
+                <View style={s.prTextWrap}>
+                  <Text style={s.prEyebrow}>Personal record</Text>
+                  <Text style={s.prTitle} numberOfLines={1}>
+                    {highlightedPr.exerciseName}
+                  </Text>
+                </View>
+                <Text style={s.prValue}>
+                  {highlightedPr.heaviestWeight} kg
+                  <Text style={s.prValueMuted}>
+                    {" "}
+                    · {highlightedPr.repsAtHeaviest}
+                  </Text>
+                </Text>
+              </View>
+            </>
+          )}
         </View>
       </Pressable>
     </Animated.View>
   );
 }
 
-const s = StyleSheet.create({
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
   pressableReset: { borderRadius: 24 },
   card: {
     borderRadius: 24,
-    backgroundColor: T.glass,
+    // Solid elevated surface — T.glass is translucent in darkTheme and
+    // Android elevation paints a white plate under translucent fills.
+    backgroundColor: T.bgElevated,
     borderWidth: 0.5,
     borderColor: T.glassBorder,
     paddingVertical: 20,
     paddingHorizontal: 20,
-    flexDirection: "row",
-    alignItems: "center",
     overflow: "hidden",
     shadowColor: "#0A0A0A",
     shadowOffset: { width: 0, height: 6 },
@@ -197,6 +517,10 @@ const s = StyleSheet.create({
     elevation: 2,
   },
 
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   left: { flex: 1, gap: 6, paddingRight: 14 },
   eyebrow: {
     fontFamily: T.bodyBold,
@@ -224,6 +548,36 @@ const s = StyleSheet.create({
     fontSize: 9.5,
     letterSpacing: 0.6,
     textTransform: "uppercase",
+    color: T.accent,
+  },
+
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 4,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: T.accentTint,
+    borderWidth: 0.5,
+    borderColor: T.border,
+  },
+  chipPrimary: {
+    backgroundColor: T.accentTint,
+    borderColor: T.accentLine,
+  },
+  chipText: {
+    fontFamily: T.bodySemi,
+    fontSize: 10.5,
+    color: T.muted,
+  },
+  chipTextPrimary: {
     color: T.accent,
   },
 
@@ -260,7 +614,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 3,
-    borderColor: T.glass,
+    borderColor: T.bgElevated,
   },
   ringPercent: {
     fontFamily: T.displaySemi,
@@ -269,4 +623,110 @@ const s = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   ringPercentSign: { fontFamily: T.bodySemi, fontSize: 11, color: T.muted },
-});
+
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: T.border,
+    marginTop: 18,
+    marginBottom: 14,
+  },
+  exerciseList: { gap: 10 },
+  exerciseListLabel: {
+    fontFamily: T.bodyBold,
+    fontSize: 10,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    color: T.muted,
+    marginBottom: 2,
+  },
+  listClip: {
+    overflow: "hidden",
+  },
+  fadeGradient: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 36,
+  },
+  expandRow: {
+    alignSelf: "flex-start",
+    paddingVertical: 4,
+  },
+  expandText: {
+    fontFamily: T.bodySemi,
+    fontSize: 12,
+    color: T.accent,
+  },
+  exerciseRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 10,
+  },
+  exIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: T.accentTint,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  exerciseName: {
+    flex: 1,
+    fontFamily: T.bodySemi,
+    fontSize: 14,
+    color: T.white,
+  },
+  exerciseTarget: {
+    fontFamily: T.displaySemi,
+    fontSize: 13,
+    color: T.muted,
+    fontVariant: ["tabular-nums"],
+  },
+
+  prRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: T.accentTint,
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderColor: T.accentLine,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  prIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: T.bgElevated,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  prTextWrap: { flex: 1, gap: 1 },
+  prEyebrow: {
+    fontFamily: T.bodyBold,
+    fontSize: 9,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+    color: T.accent,
+  },
+  prTitle: {
+    fontFamily: T.bodySemi,
+    fontSize: 13,
+    color: T.white,
+  },
+  prValue: {
+    fontFamily: T.displaySemi,
+    fontSize: 13,
+    color: T.accent,
+    fontVariant: ["tabular-nums"],
+  },
+  prValueMuted: {
+    fontFamily: T.bodyMed,
+    fontSize: 11,
+    color: T.muted,
+  },
+  });
+}

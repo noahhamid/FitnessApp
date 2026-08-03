@@ -106,6 +106,7 @@ model User {
   nutritionGoal   NutritionGoal?
   mealLogs        MealLog[]
   weightLogs      WeightLog[]
+  plannedExtraExercises PlannedExtraExercise[]
   weightGoal      WeightGoal?
   waterLogs WaterLog[]
   workoutPlan WorkoutPlan?
@@ -306,3 +307,17 @@ enum EquipmentAccess {
   bodyweight
 }
 
+model PlannedExtraExercise {
+  id              String          @id @default(cuid())
+  logDate         DateTime        @db.Date
+  exerciseName    String
+  muscleGroup     MuscleGroup
+  movementPattern MovementPattern
+  createdAt       DateTime        @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, logDate, exerciseName])
+  @@map("planned_extra_exercise")
+}

@@ -6,7 +6,8 @@ import { router } from "expo-router";
 import { useMealLog } from "@/src/features/nutrition/hooks/useNutrition";
 import { ChallengeReminderCard } from "../components/ChallengeReminderCard";
 
-import { T } from "../theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 import { DashboardHeader } from "../components/DashboardHeader";
 import { LinearGradient } from "expo-linear-gradient";
 import { DashboardCalendar } from "../components/DashboardCalendar";
@@ -42,12 +43,38 @@ function todayStr(): string {
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
 }
 
+function shiftDateStr(iso: string, deltaDays: number): string {
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + deltaDays);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatWeekLabel(
+  weekStart: string,
+  weekEnd: string,
+  weekOffset: number,
+): string {
+  if (weekOffset === 0) return "This week";
+  const start = new Date(`${weekStart}T00:00:00`);
+  const end = new Date(`${weekEnd}T00:00:00`);
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  return `${start.toLocaleDateString(undefined, opts)} – ${end.toLocaleDateString(undefined, opts)}`;
+}
+
 export default function DashboardScreen() {
+  const { T, styles, resolved } = useThemedStyles(makeStyles);
   const today = todayStr();
   const [selectedDate, setSelectedDate] = useState(today);
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const { user } = useAuth();
-  const { days } = useWeekOverview();
+  const { days, weekStart, weekEnd } = useWeekOverview(weekOffset);
+
+  const shiftWeek = (delta: number) => {
+    setWeekOffset((o) => o + delta);
+    // Keep the same weekday selected in the newly visible week.
+    setSelectedDate((prev) => shiftDateStr(prev, delta * 7));
+  };
 
   const isToday = selectedDate === today;
 
@@ -94,7 +121,8 @@ export default function DashboardScreen() {
     coachBody,
   } = useCoachCard();
 
-  const { summary: todaysWorkout } = useTodaysWorkoutSummary(selectedDate);
+  const { day: todaysWorkoutDay, summary: todaysWorkout } =
+    useTodaysWorkoutSummary(selectedDate);
 
   const caloriesConsumed = totals ? totals.cal : null;
 
@@ -106,7 +134,7 @@ export default function DashboardScreen() {
         pointerEvents="none"
       />
       <StatusBar
-        barStyle="dark-content"
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
         backgroundColor={T.bg}
         translucent={false}
       />
@@ -122,6 +150,9 @@ export default function DashboardScreen() {
           days={days}
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
+          onPrevWeek={() => shiftWeek(-1)}
+          onNextWeek={() => shiftWeek(1)}
+          weekLabel={formatWeekLabel(weekStart, weekEnd, weekOffset)}
         />
       </View>
 
@@ -169,7 +200,7 @@ export default function DashboardScreen() {
           ]}
         />
 
-        {todaysWorkout && (
+        {todaysWorkoutDay && (
           <>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
@@ -184,15 +215,22 @@ export default function DashboardScreen() {
             </View>
 
             <FadeInUp>
-              <UpNextWorkoutCard
-                title={todaysWorkout.title}
-                tag={todaysWorkout.tag}
-                minutes={todaysWorkout.minutes}
-                exerciseCount={todaysWorkout.exerciseCount}
-                imageUrl={todaysWorkout.imageUrl}
-                onPress={() => router.push("/(app)/(tabs)/train")}
-                onStartPress={() => router.push("/(app)/(tabs)/train")}
-              />
+              {todaysWorkoutDay.kind === "rest" ? (
+                <UpNextWorkoutCard
+                  variant="rest"
+                  onPress={() => router.push("/(app)/(tabs)/train")}
+                />
+              ) : (
+                <UpNextWorkoutCard
+                  title={todaysWorkoutDay.title}
+                  tag={todaysWorkoutDay.tag}
+                  minutes={todaysWorkoutDay.minutes}
+                  exerciseCount={todaysWorkoutDay.exerciseCount}
+                  imageUrl={todaysWorkoutDay.imageUrl}
+                  onPress={() => router.push("/(app)/(tabs)/train")}
+                  onStartPress={() => router.push("/(app)/(tabs)/train")}
+                />
+              )}
             </FadeInUp>
           </>
         )}
@@ -213,28 +251,31 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: T.bg },
-  calendarWrap: { paddingHorizontal: 20, paddingBottom: 4 },
-  scroll: { flex: 1 },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 60,
-    gap: 16,
-  },
-  topWash: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 260,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-  },
-  sectionTitle: { fontFamily: T.displaySemi, fontSize: 17, color: T.white },
-  sectionLink: { fontFamily: T.bodySemi, fontSize: 11, color: T.accent },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: T.bg },
+    calendarWrap: { paddingHorizontal: 20, paddingBottom: 4 },
+    scroll: { flex: 1 },
+    content: {
+      paddingHorizontal: 20,
+      paddingTop: 14,
+      // Clears the absolute floating tab pill (~64 + safe-area + gap).
+      paddingBottom: 110,
+      gap: 16,
+    },
+    topWash: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 260,
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "baseline",
+    },
+    sectionTitle: { fontFamily: T.displaySemi, fontSize: 17, color: T.white },
+    sectionLink: { fontFamily: T.bodySemi, fontSize: 11, color: T.accent },
+  });
+}

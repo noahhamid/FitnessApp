@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Easing,
   LayoutChangeEvent,
-  ScrollView,
+  Pressable,
   StyleSheet,
   Text,
-  Easing,
   View,
 } from "react-native";
-import { T } from "@/src/theme";
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
 type Day = { label: string; num: number; hasLog?: boolean; date: string };
@@ -17,30 +19,35 @@ type Props = {
   days: Day[];
   activeIndex: number;
   onSelect: (index: number) => void;
+  onPrevWeek: () => void;
+  onNextWeek: () => void;
+  weekLabel: string;
 };
 
-type ItemLayout = { x: number; width: number };
+const INDICATOR_INSET = 2;
 
-export function DaySelector({ days, activeIndex, onSelect }: Props) {
-  const [layouts, setLayouts] = useState<Record<number, ItemLayout>>({});
-  // Measured explicitly instead of using height:"100%" on the indicator.
-  // The indicator is absolutely positioned, so it doesn't contribute to
-  // `wrap`'s auto size — its height depends entirely on `row`, the only
-  // in-flow sibling. Under Fabric that percentage can resolve to 0 before
-  // (or without ever) picking up row's real height, which silently makes
-  // the pill invisible — the animation was firing the whole time, there
-  // was just a zero-height bar to show for it.
+export function DaySelector({
+  days,
+  activeIndex,
+  onSelect,
+  onPrevWeek,
+  onNextWeek,
+  weekLabel,
+}: Props) {
+  const { T, styles } = useThemedStyles(makeStyles);
+  const [rowWidth, setRowWidth] = useState(0);
   const [rowHeight, setRowHeight] = useState(0);
+  // Always divide by 7 so a short/empty days array can't inflate cell width.
+  const itemWidth = rowWidth > 0 ? rowWidth / 7 : 0;
+
+  const hasSelectionInWeek = activeIndex >= 0 && activeIndex < days.length;
 
   const indicatorX = useRef(new Animated.Value(0)).current;
   const indicatorWidth = useRef(new Animated.Value(0)).current;
   const indicatorScale = useRef(new Animated.Value(1)).current;
   // Keyed by date, created lazily — NOT a fixed-length array. If DaySelector
-  // first mounts before `weekly` has loaded (days = []), an array sized off
-  // that first render would stay frozen at length 0 forever, leaving every
-  // numberScales[i] undefined once real days arrive — exactly what threw
-  // "Cannot read property 'getValue' of undefined" from the Animated.Text
-  // transform below.
+  // first mounts before days load, an array sized off that first render would
+  // stay frozen at length 0 forever.
   const numberScalesRef = useRef<Map<string, Animated.Value>>(new Map());
   const getNumberScale = (dateKey: string) => {
     let v = numberScalesRef.current.get(dateKey);
@@ -52,40 +59,43 @@ export function DaySelector({ days, activeIndex, onSelect }: Props) {
   };
   const hasMounted = useRef(false);
 
-  const target = layouts[activeIndex];
-  const ready = !!target && rowHeight > 0;
-
   useEffect(() => {
-    if (!target) return;
+    if (itemWidth === 0 || !hasSelectionInWeek) return;
+
+    const targetX = activeIndex * itemWidth + INDICATOR_INSET;
+    const targetW = Math.max(0, itemWidth - INDICATOR_INSET * 2);
 
     if (!hasMounted.current) {
-      // snap into place on first measure, no glide from x=0
-      indicatorX.setValue(target.x);
-      indicatorWidth.setValue(target.width);
+      indicatorX.setValue(targetX);
+      indicatorWidth.setValue(targetW);
       hasMounted.current = true;
       return;
     }
 
-    // translateX, scale, and width all live on the same indicator's style
-    // array, and width can't ride the native driver — so none of the three
-    // can, since RN refuses to split one animated node into partly-native,
-    // partly-JS.
     Animated.parallel([
       Animated.timing(indicatorX, {
-        toValue: target.x,
+        toValue: targetX,
         duration: 280,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: false,
       }),
       Animated.timing(indicatorWidth, {
-        toValue: target.width,
+        toValue: targetW,
         duration: 280,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: false,
       }),
     ]).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeIndex, target?.x, target?.width]);
+  }, [activeIndex, itemWidth, hasSelectionInWeek]);
+
+  // When the visible week changes, re-snap indicator if selection is in-week.
+  useEffect(() => {
+    if (itemWidth === 0 || !hasSelectionInWeek) return;
+    indicatorX.setValue(activeIndex * itemWidth + INDICATOR_INSET);
+    indicatorWidth.setValue(Math.max(0, itemWidth - INDICATOR_INSET * 2));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [days[0]?.date]);
 
   const pulse = (dateKey: string) => {
     const scale = getNumberScale(dateKey);
@@ -112,17 +122,9 @@ export function DaySelector({ days, activeIndex, onSelect }: Props) {
     ]).start();
   };
 
-  const handleItemLayout = (index: number) => (e: LayoutChangeEvent) => {
-    const { x, width } = e.nativeEvent.layout;
-    setLayouts((prev) =>
-      prev[index]?.x === x && prev[index]?.width === width
-        ? prev
-        : { ...prev, [index]: { x, width } },
-    );
-  };
-
   const handleRowLayout = (e: LayoutChangeEvent) => {
-    const { height } = e.nativeEvent.layout;
+    const { width, height } = e.nativeEvent.layout;
+    setRowWidth((prev) => (prev === width ? prev : width));
     setRowHeight((prev) => (prev === height ? prev : height));
   };
 
@@ -131,12 +133,22 @@ export function DaySelector({ days, activeIndex, onSelect }: Props) {
     pulse(dateKey);
   };
 
+  const ready = itemWidth > 0 && rowHeight > 0 && hasSelectionInWeek;
+
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}
-    >
+    <View style={styles.root}>
+      <View style={styles.headerRow}>
+        <Pressable onPress={onPrevWeek} hitSlop={8} style={styles.navBtn}>
+          <ChevronLeft size={18} color={T.white} strokeWidth={2.2} />
+        </Pressable>
+        <Text style={styles.weekLabel} numberOfLines={1}>
+          {weekLabel}
+        </Text>
+        <Pressable onPress={onNextWeek} hitSlop={8} style={styles.navBtn}>
+          <ChevronRight size={18} color={T.white} strokeWidth={2.2} />
+        </Pressable>
+      </View>
+
       <View style={styles.wrap}>
         {ready && (
           <Animated.View
@@ -159,14 +171,19 @@ export function DaySelector({ days, activeIndex, onSelect }: Props) {
           {days.map((d, i) => {
             const active = i === activeIndex;
             return (
-              <View key={d.date} onLayout={handleItemLayout(i)}>
+              <View key={d.date} style={styles.item}>
                 <PressableScale
                   onPress={() => handleSelect(i, d.date)}
                   scaleTo={0.94}
                   style={styles.pressableReset}
                 >
                   <View style={styles.day}>
-                    <Text style={[styles.dname, active && styles.dnameActive]}>
+                    <Text
+                      style={[styles.dname, active && styles.dnameActive]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.85}
+                    >
                       {d.label}
                     </Text>
                     <Animated.Text
@@ -186,42 +203,88 @@ export function DaySelector({ days, activeIndex, onSelect }: Props) {
           })}
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  scrollContent: { paddingVertical: 4 },
-  wrap: { position: "relative" },
-  row: { flexDirection: "row", gap: 8 },
-  pressableReset: { borderRadius: 15 },
-  indicator: {
-    position: "absolute",
-    top: 0,
-    borderRadius: 15,
-    backgroundColor: T.accent,
-    ...T.shadow.lifted,
-  },
-  day: {
-    minWidth: 46,
-    alignItems: "center",
-    paddingVertical: 9,
-    paddingBottom: 10,
-  },
-  dname: {
-    fontFamily: T.bodyBold,
-    fontSize: 9.5,
-    color: T.muted,
-    letterSpacing: 0.5,
-  },
-  dnameActive: { color: T.onImage },
-  dnum: { fontFamily: T.display, fontSize: 16, color: T.white, marginTop: 3 },
-  dnumActive: { color: T.onImage },
-  logDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: T.accent,
-    marginTop: 4,
-  },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    root: {
+      width: "100%",
+      alignSelf: "stretch",
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 8,
+    },
+    navBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: T.accentTint,
+      borderWidth: 0.5,
+      borderColor: T.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    weekLabel: {
+      flex: 1,
+      textAlign: "center",
+      fontFamily: T.displaySemi,
+      fontSize: 14,
+      color: T.white,
+      letterSpacing: -0.2,
+      marginHorizontal: 8,
+    },
+    wrap: {
+      position: "relative",
+      width: "100%",
+      overflow: "hidden",
+    },
+    row: {
+      flexDirection: "row",
+      width: "100%",
+    },
+    // minWidth: 0 lets flex children shrink so 7× content can't force
+    // the row wider than the container (and no horizontal ScrollView).
+    item: {
+      flex: 1,
+      minWidth: 0,
+    },
+    pressableReset: { borderRadius: 15, width: "100%" },
+    indicator: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      borderRadius: 15,
+      backgroundColor: T.accent,
+      ...T.shadow.lifted,
+    },
+    day: {
+      width: "100%",
+      alignItems: "center",
+      paddingVertical: 9,
+      paddingBottom: 10,
+    },
+    dname: {
+      fontFamily: T.bodyBold,
+      fontSize: 9.5,
+      color: T.muted,
+      letterSpacing: 0.3,
+      textAlign: "center",
+      width: "100%",
+    },
+    dnameActive: { color: T.onAccent },
+    dnum: { fontFamily: T.display, fontSize: 16, color: T.white, marginTop: 3 },
+    dnumActive: { color: T.onAccent },
+    logDot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: T.accent,
+      marginTop: 4,
+    },
+  });
+}

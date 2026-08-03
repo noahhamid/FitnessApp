@@ -8,6 +8,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus } from "lucide-react-native";
 import {
   useWeightLog,
@@ -26,21 +27,21 @@ import { WeightLogSheet } from "../components/WeightLogSheet";
 import { WorkoutCalendar } from "../components/WorkoutCalendar";
 import { DayDetailSheet } from "../components/DayDetailSheet";
 import { PersonalRecordsSection } from "../components/PersonalRecordsSection";
-
-const T = {
-  bg: "#000000",
-  text: "#FFFFFF",
-  faint: "#9AA0AE",
-  accent: "#FFC700",
-  accentText: "#1A1300",
-  display: "SpaceGrotesk_700Bold",
-  bodyMed: "Inter_500Medium",
-};
+import { VolumeTrendCard } from "../components/VolumeTrendCard";
+import { MuscleBalanceCard } from "../components/MuscleBalanceCard";
+import { StreakHeroCard } from "../components/StreakHeroCard";
+import { AdherenceCard } from "../components/AdherenceCard";
+import { localDateOnly, parseLocalDateKey } from "../lib/localDate";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
+import { topInset } from "@/src/lib/safe-area";
+import { useExerciseLibrary } from "@/src/features/workout/hooks/useExerciseLibrary";
+import { useWorkoutStreak } from "@/src/features/workout/hooks/useWorkoutStreak";
 
 function eightWeeksAgo(): string {
   const d = new Date();
   d.setDate(d.getDate() - 56);
-  return d.toISOString().slice(0, 10);
+  return localDateOnly(d);
 }
 
 function startOfThisWeekMonday(): Date {
@@ -53,29 +54,51 @@ function startOfThisWeekMonday(): Date {
 }
 
 export default function ProgressScreen() {
+  const { T, styles: s, resolved } = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const [sheetVisible, setSheetVisible] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const monthStart = useMemo(() => {
-    const d = new Date(
-      calendarMonth.getFullYear(),
-      calendarMonth.getMonth(),
-      1,
-    );
-    return d.toISOString().slice(0, 10);
-  }, [calendarMonth]);
-  const monthEnd = useMemo(() => {
-    const d = new Date(
-      calendarMonth.getFullYear(),
-      calendarMonth.getMonth() + 1,
-      0,
-    );
-    return d.toISOString().slice(0, 10);
-  }, [calendarMonth]);
+  const monthStart = useMemo(
+    () =>
+      localDateOnly(
+        new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1),
+      ),
+    [calendarMonth],
+  );
+  const monthEnd = useMemo(
+    () =>
+      localDateOnly(
+        new Date(
+          calendarMonth.getFullYear(),
+          calendarMonth.getMonth() + 1,
+          0,
+        ),
+      ),
+    [calendarMonth],
+  );
 
   const { data: monthSessions } = useWorkoutHistory(monthStart, monthEnd);
+  // Widened range for volume / balance / streak grid / adherence —
+  // calendar month fetch above stays as-is for month navigation.
+  const analyticsFrom = eightWeeksAgo();
+  const analyticsTo = localDateOnly();
+  const { data: analyticsSessions } = useWorkoutHistory(
+    analyticsFrom,
+    analyticsTo,
+  );
   const { data: personalRecords } = usePersonalRecords();
+  const { data: exerciseLibrary } = useExerciseLibrary();
+  const { streakDays } = useWorkoutStreak(true);
+
+  const nameToGroup = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const ex of exerciseLibrary ?? []) {
+      map.set(ex.name, ex.muscleGroup);
+    }
+    return map;
+  }, [exerciseLibrary]);
 
   const { data: weightEntries, isLoading: weightLoading } =
     useWeightLog(eightWeeksAgo());
@@ -103,18 +126,22 @@ export default function ProgressScreen() {
     ).length;
   }, [recentSessions]);
 
+  // null when the user has never logged — WeightLogSheet starts blank
+  // instead of inventing a fake 70kg default.
   const lastLoggedWeight =
-    weightEntries?.[weightEntries.length - 1]?.weight ?? 70;
+    weightEntries?.[weightEntries.length - 1]?.weight ?? null;
 
   const selectedDaySessions = useMemo(() => {
     if (!selectedDate || !monthSessions) return [];
     return monthSessions.filter(
-      (s) => s.completedAt?.slice(0, 10) === selectedDate,
+      (s) =>
+        !!s.completedAt &&
+        localDateOnly(new Date(s.completedAt)) === selectedDate,
     );
   }, [selectedDate, monthSessions]);
 
   const selectedDateLabel = selectedDate
-    ? new Date(selectedDate).toLocaleDateString(undefined, {
+    ? parseLocalDateKey(selectedDate).toLocaleDateString(undefined, {
         weekday: "long",
         month: "long",
         day: "numeric",
@@ -132,9 +159,15 @@ export default function ProgressScreen() {
 
   return (
     <View style={s.screen}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={T.bg}
+      />
       <ScrollView
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={[
+          s.scrollContent,
+          { paddingTop: topInset(insets.top) + T.space.sm },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={s.pageTitle}>Progress</Text>
@@ -157,7 +190,7 @@ export default function ProgressScreen() {
           )}
 
           <Pressable style={s.logBtn} onPress={() => setSheetVisible(true)}>
-            <Plus size={16} color={T.accentText} strokeWidth={2.4} />
+            <Plus size={16} color={T.onAccent} strokeWidth={2.4} />
             <Text style={s.logBtnText}>Log weight</Text>
           </Pressable>
         </View>
@@ -170,6 +203,27 @@ export default function ProgressScreen() {
             />
           </View>
         )}
+
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Training</Text>
+          <View style={s.cardStack}>
+            <StreakHeroCard
+              streakDays={streakDays}
+              sessions={analyticsSessions ?? []}
+            />
+            <VolumeTrendCard sessions={analyticsSessions ?? []} />
+            <MuscleBalanceCard
+              sessions={analyticsSessions ?? []}
+              nameToGroup={nameToGroup}
+            />
+            {apiPlan && (
+              <AdherenceCard
+                sessions={analyticsSessions ?? []}
+                daysPerWeek={apiPlan.daysPerWeek}
+              />
+            )}
+          </View>
+        </View>
 
         <View style={s.section}>
           <Text style={s.sectionTitle}>Personal records</Text>
@@ -206,39 +260,44 @@ export default function ProgressScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: T.bg },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 128 },
-  pageTitle: {
-    fontFamily: T.display,
-    fontSize: 28,
-    color: T.text,
-    letterSpacing: -0.5,
-    marginBottom: 20,
-  },
-  logBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: T.accent,
-    borderRadius: 999,
-    paddingVertical: 12,
-    marginTop: 12,
-  },
-  logBtnText: {
-    fontFamily: T.bodyMed,
-    fontWeight: "700",
-    fontSize: 13,
-    color: T.accentText,
-  },
-  section: { marginTop: 28 },
-  sectionTitle: {
-    fontFamily: T.display,
-    fontSize: 18,
-    color: T.text,
-    letterSpacing: -0.3,
-    marginBottom: 12,
-  },
-  centerState: { alignItems: "center", paddingVertical: 24 },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: T.bg },
+    scrollContent: {
+      paddingHorizontal: T.space.xl,
+      paddingBottom: 128,
+    },
+    pageTitle: {
+      fontFamily: T.displayBold,
+      fontSize: 28,
+      color: T.white,
+      letterSpacing: -0.5,
+      marginBottom: T.space.xl,
+    },
+    logBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: T.space.sm,
+      backgroundColor: T.accent,
+      borderRadius: T.radius.pill,
+      paddingVertical: T.space.md,
+      marginTop: T.space.md,
+    },
+    logBtnText: {
+      fontFamily: T.bodyBold,
+      fontSize: 13,
+      color: T.onAccent,
+    },
+    section: { marginTop: 28 },
+    sectionTitle: {
+      fontFamily: T.displaySemi,
+      fontSize: 18,
+      color: T.white,
+      letterSpacing: -0.3,
+      marginBottom: T.space.md,
+    },
+    cardStack: { gap: 12 },
+    centerState: { alignItems: "center", paddingVertical: T.space.xl },
+  });
+}

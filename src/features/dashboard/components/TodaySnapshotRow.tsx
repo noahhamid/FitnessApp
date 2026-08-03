@@ -1,7 +1,9 @@
 import { ComponentType, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { Flame, Dumbbell, GlassWater, LucideProps } from "lucide-react-native";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
+import { GlassSurface } from "./GlassSurface";
 
 type Snapshot = {
   icon: ComponentType<LucideProps>;
@@ -45,14 +47,22 @@ function useCountUp(target: number | null, delay: number) {
   return display;
 }
 
-function AnimatedValue({ value, delay }: { value: string; delay: number }) {
+function AnimatedValue({
+  value,
+  delay,
+  valueStyle,
+}: {
+  value: string;
+  delay: number;
+  valueStyle: ReturnType<typeof makeStyles>["value"];
+}) {
   const [num, suffix] = useMemo(() => splitLeadingNumber(value), [value]);
   const count = useCountUp(num, delay);
   if (num === null) {
-    return <Text style={styles.value}>{value}</Text>;
+    return <Text style={valueStyle}>{value}</Text>;
   }
   return (
-    <Text style={styles.value}>
+    <Text style={valueStyle}>
       {count}
       {suffix}
     </Text>
@@ -89,7 +99,6 @@ function IconMotion({
 
     let loop: Animated.CompositeAnimation | undefined;
     if (isFlame) {
-      // a slow, low-amplitude flicker — never fully stops, never distracts
       loop = Animated.loop(
         Animated.sequence([
           Animated.timing(flicker, {
@@ -118,14 +127,12 @@ function IconMotion({
   let transform: any[] = [{ scale: anim }];
 
   if (isDumbbell) {
-    // tilts up into place, like it's just been picked up
     const rotate = anim.interpolate({
       inputRange: [0, 1],
       outputRange: ["-22deg", "0deg"],
     });
     transform = [{ scale: anim }, { rotate }];
   } else if (isWater) {
-    // settles down into place, like a drop landing
     const translateY = anim.interpolate({
       inputRange: [0, 1],
       outputRange: [-6, 0],
@@ -154,58 +161,65 @@ function IconMotion({
 }
 
 export function TodaySnapshotRow({ items }: { items: Snapshot[] }) {
+  const { T, styles } = useThemedStyles(makeStyles);
+
   return (
     <View style={styles.row}>
       {items.map((item, i) => {
         const delay = i * 90;
         return (
-          <View key={i} style={styles.card}>
+          <GlassSurface key={i} style={styles.card}>
             <View style={styles.iconBadge}>
               <IconMotion Icon={item.icon} color={T.accent} delay={delay} />
             </View>
-            <AnimatedValue value={item.value} delay={delay + 120} />
+            <AnimatedValue
+              value={item.value}
+              delay={delay + 120}
+              valueStyle={styles.value}
+            />
             <Text style={styles.label}>{item.label.toUpperCase()}</Text>
-          </View>
+          </GlassSurface>
         );
       })}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: "row", gap: 9 },
-  card: {
-    flex: 1,
-    backgroundColor: T.glass,
-    borderWidth: 0.5,
-    borderColor: T.glassBorder,
-    borderRadius: T.radius.md,
-    paddingVertical: 16,
-    alignItems: "center",
-    gap: 8,
-    ...T.shadow.card,
-  },
-  iconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: T.radius.sm,
-    backgroundColor: T.ringGlass,
-    borderWidth: 0.5,
-    borderColor: T.ringBorder,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  value: {
-    fontFamily: T.displaySemi,
-    fontSize: 16,
-    color: T.white,
-    letterSpacing: -0.2,
-    fontVariant: ["tabular-nums"],
-  },
-  label: {
-    fontFamily: T.bodySemi,
-    fontSize: 8.5,
-    letterSpacing: 0.6,
-    color: T.muted,
-  },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    row: { flexDirection: "row", gap: 9 },
+    card: {
+      flex: 1,
+      borderRadius: T.radius.md,
+      paddingVertical: 16,
+      alignItems: "center",
+      gap: 8,
+    },
+    iconBadge: {
+      width: 32,
+      height: 32,
+      borderRadius: T.radius.sm,
+      backgroundColor: T.ringGlass,
+      borderWidth: 0.5,
+      borderColor: T.ringBorder,
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1,
+    },
+    value: {
+      fontFamily: T.displaySemi,
+      fontSize: 16,
+      color: T.white,
+      letterSpacing: -0.2,
+      fontVariant: ["tabular-nums"],
+      zIndex: 1,
+    },
+    label: {
+      fontFamily: T.bodySemi,
+      fontSize: 8.5,
+      letterSpacing: 0.6,
+      color: T.muted,
+      zIndex: 1,
+    },
+  });
+}

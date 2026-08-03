@@ -15,7 +15,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { ChevronLeft, Camera, RotateCcw } from "lucide-react-native";
 
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "../components/PressableScale";
 import { useAddMeal } from "../hooks/useNutrition";
 import { scanFoodImage } from "../services/nutrition.service";
@@ -31,6 +32,7 @@ function todayStr(): string {
 type Status = "idle" | "capturing" | "analyzing" | "reviewing" | "error";
 
 export default function ScanMealScreen() {
+  const { T, styles, resolved } = useThemedStyles(makeStyles);
   const router = useRouter();
   const params = useLocalSearchParams<{ slot?: string; date?: string }>();
   const logDate = params.date ?? todayStr();
@@ -135,7 +137,7 @@ export default function ScanMealScreen() {
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
       <StatusBar
-        barStyle="dark-content"
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
         backgroundColor={T.bg}
         translucent={false}
       />
@@ -310,7 +312,8 @@ export default function ScanMealScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
   root: { flex: 1, backgroundColor: T.bg },
   header: {
     flexDirection: "row",
@@ -368,7 +371,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 28,
   },
-  captureBtnText: { fontFamily: T.bodyBold, fontSize: 14, color: T.onImage },
+  captureBtnText: { fontFamily: T.bodyBold, fontSize: 14, color: T.onAccent },
   previewSmall: { width: 120, height: 120, borderRadius: 18 },
   error: {
     fontFamily: T.bodyMed,
@@ -414,7 +417,7 @@ const styles = StyleSheet.create({
   },
   slotChipActive: { backgroundColor: T.accent, borderColor: T.accent },
   slotText: { fontFamily: T.bodySemi, fontSize: 11.5, color: T.white },
-  slotTextActive: { color: T.onImage },
+  slotTextActive: { color: T.onAccent },
   input: {
     backgroundColor: T.glass,
     borderWidth: 0.5,
@@ -436,5 +439,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: "center",
   },
-  submitText: { fontFamily: T.bodyBold, fontSize: 14, color: T.onImage },
-});
+  submitText: { fontFamily: T.bodyBold, fontSize: 14, color: T.onAccent },
+  });
+}

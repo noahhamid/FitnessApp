@@ -11,13 +11,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSaveProfile } from "../hooks/useProfile";
 
 // --- Muscle Monster theme tokens ---
@@ -117,6 +117,7 @@ function MetricInput({
 }
 
 export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
+  const insets = useSafeAreaInsets();
   // weightKg is the source of truth; lbs is a display-only conversion.
   // The ruler itself always scrolls in kg increments.
   const [weightKg, setWeightKg] = useState(70);
@@ -188,13 +189,19 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
   const weightDisplay = unit === "kg" ? weightKg : kgToLb(weightKg);
 
   return (
-    <SafeAreaView style={s.safe}>
+    <View style={s.safe}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
-          contentContainerStyle={s.scroll}
+          contentContainerStyle={[
+            s.scroll,
+            {
+              paddingTop: insets.top + 8,
+              paddingBottom: insets.bottom + 48,
+            },
+          ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -351,7 +358,7 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -359,8 +366,6 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   scroll: {
     paddingHorizontal: 24,
-    paddingTop: 52,
-    paddingBottom: 48,
     flexGrow: 1,
   },
   header: { marginBottom: 28 },

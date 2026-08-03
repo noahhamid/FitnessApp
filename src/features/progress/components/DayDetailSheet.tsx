@@ -10,20 +10,13 @@ import {
   ScrollView,
 } from "react-native";
 import { X } from "lucide-react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import type { WorkoutSessionSummary } from "../hooks/useProgress";
-
-const T = {
-  panel: "#15161C",
-  panelBorder: "rgba(255,255,255,0.10)",
-  glass: "rgba(255,255,255,0.06)",
-  accent: "#FFC700",
-  white: "#FFFFFF",
-  muted: "rgba(255,255,255,0.55)",
-  display: "SpaceGrotesk_700Bold",
-  bodyMed: "Inter_500Medium",
-  bodySemi: "Inter_600SemiBold",
-};
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 
 interface Props {
   visible: boolean;
@@ -32,12 +25,13 @@ interface Props {
   onClose: () => void;
 }
 
-export function DayDetailSheet({
+function DayDetailSheetBody({
   visible,
   dateLabel,
   sessions,
   onClose,
 }: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(400)).current;
 
@@ -64,12 +58,7 @@ export function DayDetailSheet({
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
-    >
+    <>
       <Pressable style={s.backdrop} onPress={handleClose} />
       <Animated.View
         style={[
@@ -94,7 +83,7 @@ export function DayDetailSheet({
               {session.notes && (
                 <Text style={s.sessionNotes}>{session.notes}</Text>
               )}
-              {session.exercises.map((ex, i) => {
+              {session.exercises.map((ex) => {
                 const sets =
                   (ex.sets as Array<{
                     weight?: number;
@@ -103,7 +92,7 @@ export function DayDetailSheet({
                   }>) ?? [];
                 const completedSets = sets.filter((st) => st.completed);
                 return (
-                  <View key={i} style={s.exRow}>
+                  <View key={ex.id} style={s.exRow}>
                     <Text style={s.exName}>{ex.exerciseName}</Text>
                     <Text style={s.exMeta}>
                       {completedSets.length}{" "}
@@ -124,70 +113,92 @@ export function DayDetailSheet({
           )}
         </ScrollView>
       </Animated.View>
+    </>
+  );
+}
+
+export function DayDetailSheet(props: Props) {
+  return (
+    <Modal
+      visible={props.visible}
+      transparent
+      animationType="fade"
+      onRequestClose={props.onClose}
+      statusBarTranslucent
+    >
+      <SafeAreaProvider>
+        <DayDetailSheetBody {...props} />
+      </SafeAreaProvider>
     </Modal>
   );
 }
 
-const s = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" },
-  sheet: {
-    backgroundColor: T.panel,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderWidth: 1,
-    borderColor: T.panelBorder,
-    paddingHorizontal: 24,
-    paddingTop: 12,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignSelf: "center",
-    marginBottom: 20,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  title: {
-    fontFamily: T.display,
-    fontSize: 18,
-    color: T.white,
-    letterSpacing: -0.3,
-  },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: T.glass,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sessionBlock: { marginBottom: 16 },
-  sessionNotes: {
-    fontFamily: T.bodySemi,
-    fontSize: 13,
-    color: T.accent,
-    marginBottom: 10,
-  },
-  exRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.06)",
-  },
-  exName: { fontFamily: T.bodyMed, fontSize: 13, color: T.white },
-  exMeta: { fontFamily: T.bodyMed, fontSize: 12, color: T.muted },
-  emptyText: {
-    fontFamily: T.bodyMed,
-    fontSize: 13,
-    color: T.muted,
-    textAlign: "center",
-    paddingVertical: 20,
-  },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    backdrop: { flex: 1, backgroundColor: "rgba(10,10,10,0.45)" },
+    sheet: {
+      backgroundColor: T.glass,
+      borderTopLeftRadius: T.radius.xl,
+      borderTopRightRadius: T.radius.xl,
+      borderWidth: 0.5,
+      borderColor: T.glassBorder,
+      paddingHorizontal: T.space.xl,
+      paddingTop: T.space.md,
+    },
+    handle: {
+      width: 36,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: T.border,
+      alignSelf: "center",
+      marginBottom: T.space.xl,
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: T.space.xl,
+    },
+    title: {
+      fontFamily: T.displaySemi,
+      fontSize: 18,
+      color: T.white,
+      letterSpacing: -0.3,
+      flex: 1,
+      paddingRight: T.space.sm,
+    },
+    closeBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: T.accentTint,
+      borderWidth: 0.5,
+      borderColor: T.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    sessionBlock: { marginBottom: T.space.lg },
+    sessionNotes: {
+      fontFamily: T.bodySemi,
+      fontSize: 13,
+      color: T.accent,
+      marginBottom: 10,
+    },
+    exRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingVertical: T.space.sm,
+      borderBottomWidth: 0.5,
+      borderBottomColor: T.glassBorder,
+    },
+    exName: { fontFamily: T.bodyMed, fontSize: 13, color: T.white },
+    exMeta: { fontFamily: T.bodyMed, fontSize: 12, color: T.muted },
+    emptyText: {
+      fontFamily: T.bodyMed,
+      fontSize: 13,
+      color: T.muted,
+      textAlign: "center",
+      paddingVertical: T.space.xl,
+    },
+  });
+}

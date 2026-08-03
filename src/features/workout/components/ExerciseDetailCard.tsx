@@ -6,11 +6,14 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
-import { ChevronLeft } from "lucide-react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ChevronLeft, Check } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { LibraryExercise } from "../hooks/useExerciseLibrary";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
+import { topInset } from "@/src/lib/safe-area";
 
 type Props = {
   exercise: LibraryExercise;
@@ -18,7 +21,9 @@ type Props = {
   onBack: () => void;
   onStart: () => void;
   onAddToToday: () => void;
+  onRemoveFromToday: () => void;
   addedToToday?: boolean;
+  starting?: boolean;
 };
 
 export function ExerciseDetailCard({
@@ -27,13 +32,18 @@ export function ExerciseDetailCard({
   onBack,
   onStart,
   onAddToToday,
+  onRemoveFromToday,
   addedToToday,
+  starting,
 }: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={s.screen}>
+    <View style={s.screen}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 32 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
       >
         <View style={s.heroWrap}>
           <Image
@@ -42,7 +52,11 @@ export function ExerciseDetailCard({
             resizeMode="cover"
           />
           <View style={s.heroOverlay} />
-          <Pressable style={s.backBtn} onPress={onBack} hitSlop={8}>
+          <Pressable
+            style={[s.backBtn, { top: topInset(insets.top) + 8 }]}
+            onPress={onBack}
+            hitSlop={8}
+          >
             <ChevronLeft size={20} color={T.onImage} />
           </Pressable>
         </View>
@@ -66,33 +80,48 @@ export function ExerciseDetailCard({
             </View>
           </View>
 
-          <Pressable style={s.primaryBtn} onPress={onStart}>
-            <Text style={s.primaryBtnText}>Start this exercise</Text>
+          <Pressable
+            style={[s.primaryBtn, starting && s.primaryBtnDisabled]}
+            onPress={onStart}
+            disabled={starting}
+          >
+            {starting ? (
+              <ActivityIndicator color={T.onAccent} size="small" />
+            ) : (
+              <Text style={s.primaryBtnText}>Start this exercise</Text>
+            )}
           </Pressable>
 
           <Pressable
             style={[s.secondaryBtn, addedToToday && s.secondaryBtnDone]}
-            onPress={onAddToToday}
-            disabled={addedToToday}
+            // Now a real toggle — tapping while added removes it instead
+            // of doing nothing, so an accidental tap is reversible.
+            onPress={addedToToday ? onRemoveFromToday : onAddToToday}
           >
-            <Text
-              style={[
-                s.secondaryBtnText,
-                addedToToday && s.secondaryBtnTextDone,
-              ]}
-            >
-              {addedToToday
-                ? "Added to today's session ✓"
-                : "Add to today's session"}
-            </Text>
+            <View style={s.secondaryBtnContent}>
+              {addedToToday && (
+                <Check size={15} color={T.accent} strokeWidth={2.6} />
+              )}
+              <Text
+                style={[
+                  s.secondaryBtnText,
+                  addedToToday && s.secondaryBtnTextDone,
+                ]}
+              >
+                {addedToToday
+                  ? "Added — tap to remove"
+                  : "Add to today's session"}
+              </Text>
+            </View>
           </Pressable>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
-const s = StyleSheet.create({
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
   screen: { flex: 1, backgroundColor: T.bg },
   heroWrap: { height: 220, position: "relative" },
   heroImage: { width: "100%", height: "100%" },
@@ -102,7 +131,6 @@ const s = StyleSheet.create({
   },
   backBtn: {
     position: "absolute",
-    top: 12,
     left: 20,
     width: 40,
     height: 40,
@@ -136,7 +164,7 @@ const s = StyleSheet.create({
   metaRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
   metaChip: {
     flex: 1,
-    backgroundColor: T.glass,
+    backgroundColor: T.bgElevated,
     borderWidth: 0.5,
     borderColor: T.glassBorder,
     borderRadius: 14,
@@ -163,10 +191,13 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
+  primaryBtnDisabled: {
+    opacity: 0.7,
+  },
   primaryBtnText: {
     fontFamily: T.bodyBold,
     fontSize: 14.5,
-    color: T.onImage,
+    color: T.onAccent,
   },
   secondaryBtn: {
     borderWidth: 1,
@@ -179,6 +210,12 @@ const s = StyleSheet.create({
     borderColor: T.accent,
     backgroundColor: T.accentTint,
   },
+  secondaryBtnContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   secondaryBtnText: { fontFamily: T.bodyBold, fontSize: 14, color: T.white },
   secondaryBtnTextDone: { color: T.accent },
-});
+  });
+}

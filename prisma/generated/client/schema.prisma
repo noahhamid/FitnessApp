@@ -96,16 +96,17 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  sessions        Session[]
-  accounts        Account[]
-  workoutSessions WorkoutSession[]
-  profile         UserProfile?
-  nutritionGoal   NutritionGoal?
-  mealLogs        MealLog[]
-  weightLogs      WeightLog[]
-  weightGoal      WeightGoal?
-  waterLogs       WaterLog[]
-  workoutPlan     WorkoutPlan?
+  sessions              Session[]
+  accounts              Account[]
+  workoutSessions       WorkoutSession[]
+  profile               UserProfile?
+  nutritionGoal         NutritionGoal?
+  mealLogs              MealLog[]
+  weightLogs            WeightLog[]
+  plannedExtraExercises PlannedExtraExercise[]
+  weightGoal            WeightGoal?
+  waterLogs             WaterLog[]
+  workoutPlan           WorkoutPlan?
 
   @@map("user")
 }
@@ -302,4 +303,19 @@ enum EquipmentAccess {
   full_gym
   home_dumbbells
   bodyweight
+}
+
+model PlannedExtraExercise {
+  id              String          @id @default(cuid())
+  logDate         DateTime        @db.Date
+  exerciseName    String
+  muscleGroup     MuscleGroup
+  movementPattern MovementPattern
+  createdAt       DateTime        @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, logDate, exerciseName])
+  @@map("planned_extra_exercise")
 }

@@ -279,6 +279,16 @@ exports.Prisma.WeightGoalScalarFieldEnum = {
   userId: 'userId'
 };
 
+exports.Prisma.PlannedExtraExerciseScalarFieldEnum = {
+  id: 'id',
+  logDate: 'logDate',
+  exerciseName: 'exerciseName',
+  muscleGroup: 'muscleGroup',
+  movementPattern: 'movementPattern',
+  createdAt: 'createdAt',
+  userId: 'userId'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -369,7 +379,8 @@ exports.Prisma.ModelName = {
   MealLog: 'MealLog',
   WaterLog: 'WaterLog',
   WeightLog: 'WeightLog',
-  WeightGoal: 'WeightGoal'
+  WeightGoal: 'WeightGoal',
+  PlannedExtraExercise: 'PlannedExtraExercise'
 };
 
 /**

@@ -11,7 +11,8 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { UtensilsCrossed } from "lucide-react-native";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
 export type MealMacros = { carbs: number; protein: number; fat: number };
@@ -41,6 +42,7 @@ function MealPhotoCardBase({
   style,
   testID,
 }: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
   const entrance = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     const anim = Animated.timing(entrance, {
@@ -182,7 +184,8 @@ function MealPhotoCardBase({
 
 export const MealPhotoCard = memo(MealPhotoCardBase);
 
-const s = StyleSheet.create({
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
   pressableReset: { borderRadius: 24 },
   card: {
     height: 168,
@@ -287,4 +290,5 @@ const s = StyleSheet.create({
     letterSpacing: 0.2,
     color: T.onImage,
   },
-});
+  });
+}

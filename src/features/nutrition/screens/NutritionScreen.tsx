@@ -6,7 +6,8 @@ import { useRouter } from "expo-router";
 
 import { useCallback } from "react";
 import { useWaterResync } from "@/src/features/nutrition/hooks/useNutrition";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 import { MealHeader } from "../components/MealHeader";
 import { DaySelector } from "../components/DaySelector";
 import { DailySummaryCard } from "../components/DailySummaryCard";
@@ -43,6 +44,36 @@ function todayStr(): string {
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
 }
 
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function shiftDateStr(iso: string, deltaDays: number): string {
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + deltaDays);
+  return toDateStr(d);
+}
+
+function mondayOfWeek(weekOffset: number): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  const diff = (d.getDay() + 6) % 7; // days since Monday
+  d.setDate(d.getDate() - diff + weekOffset * 7);
+  return d;
+}
+
+function formatWeekLabel(
+  weekStart: string,
+  weekEnd: string,
+  weekOffset: number,
+): string {
+  if (weekOffset === 0) return "This week";
+  const start = new Date(`${weekStart}T00:00:00`);
+  const end = new Date(`${weekEnd}T00:00:00`);
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  return `${start.toLocaleDateString(undefined, opts)} – ${end.toLocaleDateString(undefined, opts)}`;
+}
+
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -61,8 +92,30 @@ function dayLabel(dateStr: string): string {
 }
 
 export default function MealScreen() {
+  const { T, styles, resolved } = useThemedStyles(makeStyles);
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const { weekStart, weekEnd, weekDates } = useMemo(() => {
+    const monday = mondayOfWeek(weekOffset);
+    const dates = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(d.getDate() + i);
+      return d;
+    });
+    return {
+      weekStart: toDateStr(dates[0]),
+      weekEnd: toDateStr(dates[6]), // Sunday inclusive
+      weekDates: dates,
+    };
+  }, [weekOffset]);
+
+  const shiftWeek = (delta: number) => {
+    setWeekOffset((o) => o + delta);
+    // Keep the same weekday selected in the newly visible week.
+    setSelectedDate((prev) => shiftDateStr(prev, delta * 7));
+  };
 
   const { data: goals } = useNutritionGoals();
   const { data: meals = [] } = useMealLog(selectedDate);
@@ -70,7 +123,11 @@ export default function MealScreen() {
   const { data: water } = useWater(selectedDate);
   const adjustWater = useAdjustWater(selectedDate);
   useWaterResync(selectedDate);
+  // Rolling / current-week trend for the chart at the bottom of the screen.
   const { data: weekly } = useWeeklyTrend();
+  // Mon–Sun window ending on Sunday — feeds DaySelector hasLog dots.
+  // API returns end-6…end inclusive (7 days), so Sunday is included.
+  const { data: weekDots } = useWeeklyTrend(weekEnd);
   const { data: suggestion } = useSuggestion(selectedDate);
 
   const mealsBySlot = useMemo(() => {
@@ -81,15 +138,31 @@ export default function MealScreen() {
     return map;
   }, [meals]);
 
-  const days = useMemo(() => {
-    if (!weekly) return [];
-    return weekly.days.map((d) => ({
-      label: dayLabel(d.date),
-      num: dayNum(d.date),
-      hasLog: d.pct > 0,
-      date: d.date,
-    }));
-  }, [weekly]);
+  const loggedByDate = useMemo(() => {
+    const set = new Set<string>();
+    for (const d of weekDots?.days ?? []) {
+      if (d.pct > 0) set.add(d.date);
+    }
+    return set;
+  }, [weekDots]);
+
+  const days = useMemo(
+    () =>
+      weekDates.map((d, i) => {
+        const date = toDateStr(d);
+        // Prefer date-key match; fall back to index in the Mon–Sun window
+        // (API builds end-6…end, so Sunday is always the last slot).
+        const hasLog =
+          loggedByDate.has(date) || (weekDots?.days[i]?.pct ?? 0) > 0;
+        return {
+          label: dayLabel(date),
+          num: d.getDate(),
+          hasLog,
+          date,
+        };
+      }),
+    [weekDates, loggedByDate, weekDots],
+  );
 
   const activeDayIndex = days.findIndex((d) => d.date === selectedDate);
 
@@ -105,7 +178,7 @@ export default function MealScreen() {
         pointerEvents="none"
       />
       <StatusBar
-        barStyle="dark-content"
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
         backgroundColor={T.bg}
         translucent={false}
       />
@@ -125,6 +198,9 @@ export default function MealScreen() {
             const picked = days[i];
             if (picked) setSelectedDate(picked.date);
           }}
+          onPrevWeek={() => shiftWeek(-1)}
+          onNextWeek={() => shiftWeek(1)}
+          weekLabel={formatWeekLabel(weekStart, weekEnd, weekOffset)}
         />
       </View>
 
@@ -245,7 +321,8 @@ export default function MealScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
   root: { flex: 1, backgroundColor: T.bg },
   topWash: {
     position: "absolute",
@@ -270,4 +347,5 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontFamily: T.display, fontSize: 18, color: T.white },
   sectionLink: { fontFamily: T.bodySemi, fontSize: 11, color: T.accent },
-});
+  });
+}

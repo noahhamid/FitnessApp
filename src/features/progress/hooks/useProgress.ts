@@ -56,7 +56,8 @@ export interface WorkoutSessionSummary {
   startedAt: string;
   completedAt: string | null;
   notes: string | null;
-  exercises: { exerciseName: string; sets: unknown }[];
+  /** `id` is WorkoutExercise row id from the API serializeSession payload. */
+  exercises: { id: string; exerciseName: string; sets: unknown }[];
 }
 
 export function useWorkoutHistory(from: string, to: string) {

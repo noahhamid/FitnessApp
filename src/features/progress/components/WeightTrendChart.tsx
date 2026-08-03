@@ -9,16 +9,8 @@ import Svg, {
   Stop,
 } from "react-native-svg";
 import type { WeightLogEntry } from "../hooks/useProgress";
-
-const T = {
-  panel: "#15161C",
-  panelBorder: "rgba(255,255,255,0.08)",
-  accent: "#FFC700",
-  white: "#FFFFFF",
-  muted: "rgba(255,255,255,0.5)",
-  display: "SpaceGrotesk_700Bold",
-  bodyMed: "Inter_500Medium",
-};
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 
 interface Props {
   entries: WeightLogEntry[]; // ascending by date, last 8 weeks worth
@@ -26,6 +18,7 @@ interface Props {
 }
 
 export function WeightTrendChart({ entries, height = 140 }: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
   const width = 320; // logical width, SVG scales via viewBox anyway
 
   const { points, minW, maxW } = useMemo(() => {
@@ -105,7 +98,7 @@ export function WeightTrendChart({ entries, height = 140 }: Props) {
           y1={height - 16}
           x2={width}
           y2={height - 16}
-          stroke="rgba(255,255,255,0.08)"
+          stroke={T.border}
           strokeWidth={1}
         />
 
@@ -138,32 +131,35 @@ export function WeightTrendChart({ entries, height = 140 }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  card: {
-    backgroundColor: T.panel,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: T.panelBorder,
-    padding: 16,
-  },
-  headerRow: { marginBottom: 8 },
-  currentWeight: {
-    fontFamily: T.display,
-    fontSize: 24,
-    color: T.white,
-    letterSpacing: -0.5,
-  },
-  deltaText: {
-    fontFamily: T.bodyMed,
-    fontSize: 12,
-    color: T.muted,
-    marginTop: 2,
-  },
-  rangeRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 4,
-  },
-  rangeText: { fontFamily: T.bodyMed, fontSize: 10, color: T.muted },
-  emptyText: { fontFamily: T.bodyMed, fontSize: 13, color: T.muted },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: T.glass,
+      borderRadius: T.radius.lg,
+      borderWidth: 0.5,
+      borderColor: T.glassBorder,
+      padding: T.space.lg,
+      ...T.shadow.card,
+    },
+    headerRow: { marginBottom: T.space.sm },
+    currentWeight: {
+      fontFamily: T.displayBold,
+      fontSize: 24,
+      color: T.white,
+      letterSpacing: -0.5,
+    },
+    deltaText: {
+      fontFamily: T.bodyMed,
+      fontSize: 12,
+      color: T.muted,
+      marginTop: 2,
+    },
+    rangeRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 4,
+    },
+    rangeText: { fontFamily: T.bodyMed, fontSize: 10, color: T.muted },
+    emptyText: { fontFamily: T.bodyMed, fontSize: 13, color: T.muted },
+  });
+}

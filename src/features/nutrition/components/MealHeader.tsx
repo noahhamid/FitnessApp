@@ -1,6 +1,7 @@
 import { Flame } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 
 type Props = {
   eyebrow: string;
@@ -15,6 +16,8 @@ export function MealHeader({
   caloriesLeft,
   streakDays,
 }: Props) {
+  const { T, styles } = useThemedStyles(makeStyles);
+
   return (
     <View style={styles.header}>
       <View style={styles.topRow}>
@@ -41,54 +44,56 @@ export function MealHeader({
   );
 }
 
-const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 },
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  eyebrowRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: T.accent },
-  eyebrow: {
-    fontFamily: T.bodyBold,
-    fontSize: 10.5,
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    color: T.muted,
-  },
-  streakBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: T.glass,
-    borderWidth: 0.5,
-    borderColor: T.glassBorder,
-    borderRadius: 999,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-  },
-  streakText: { fontFamily: T.bodyBold, fontSize: 10.5, color: T.white },
-  titleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  title: {
-    fontFamily: T.display,
-    fontSize: 30,
-    color: T.white,
-    letterSpacing: -0.3,
-  },
-  calChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: T.accent,
-    borderRadius: 999,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-  },
-  calChipText: { fontFamily: T.bodyBold, fontSize: 11, color: T.onImage },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14 },
+    topRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 10,
+    },
+    eyebrowRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+    dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: T.accent },
+    eyebrow: {
+      fontFamily: T.bodyBold,
+      fontSize: 10.5,
+      letterSpacing: 2,
+      textTransform: "uppercase",
+      color: T.muted,
+    },
+    streakBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      backgroundColor: T.glass,
+      borderWidth: 0.5,
+      borderColor: T.glassBorder,
+      borderRadius: 999,
+      paddingVertical: 5,
+      paddingHorizontal: 10,
+    },
+    streakText: { fontFamily: T.bodyBold, fontSize: 10.5, color: T.white },
+    titleRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    title: {
+      fontFamily: T.display,
+      fontSize: 30,
+      color: T.white,
+      letterSpacing: -0.3,
+    },
+    calChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      backgroundColor: T.accent,
+      borderRadius: 999,
+      paddingVertical: 7,
+      paddingHorizontal: 12,
+    },
+    calChipText: { fontFamily: T.bodyBold, fontSize: 11, color: T.onAccent },
+  });
+}

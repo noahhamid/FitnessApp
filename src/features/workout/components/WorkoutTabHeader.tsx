@@ -8,8 +8,11 @@ import {
   Animated,
   Easing,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Bell } from "lucide-react-native";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
+import { topInset } from "@/src/lib/safe-area";
 
 type Props = {
   name: string;
@@ -26,6 +29,8 @@ export function WorkoutTabHeader({
   hasNotification = true,
   onPressBell,
 }: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const bellScale = useRef(new Animated.Value(1)).current;
   const onBellPressIn = useCallback(() => {
     Animated.spring(bellScale, {
@@ -76,7 +81,7 @@ export function WorkoutTabHeader({
   });
 
   return (
-    <View style={s.row}>
+    <View style={[s.row, { paddingTop: topInset(insets.top) + 8 }]}>
       <View style={s.left}>
         <View style={s.avatarRing}>
           <Image source={{ uri: avatarUrl }} style={s.avatar} />
@@ -122,7 +127,8 @@ export function WorkoutTabHeader({
   );
 }
 
-const s = StyleSheet.create({
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -162,7 +168,7 @@ const s = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: T.glass,
+    backgroundColor: T.bgElevated,
     borderWidth: 0.5,
     borderColor: T.glassBorder,
     alignItems: "center",
@@ -193,4 +199,5 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: T.bg,
   },
-});
+  });
+}

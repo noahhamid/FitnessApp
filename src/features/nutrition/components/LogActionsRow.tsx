@@ -1,7 +1,9 @@
 import { ComponentType } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Camera, Search, PenLine, LucideProps } from "lucide-react-native";
-import { T } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
+import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
 import { PressableScale } from "./PressableScale";
 
 type Action = {
@@ -19,10 +21,29 @@ export const LOG_ACTION_ICONS = {
 };
 
 export function LogActionsRow({ actions }: { actions: Action[] }) {
+  const { T, styles } = useThemedStyles(makeStyles);
+
   return (
     <View style={styles.row}>
       {actions.map((a) => {
         const Icon = a.icon;
+        const content = (
+          <>
+            <View
+              style={[styles.iconWrap, a.primary && styles.iconWrapPrimary]}
+            >
+              <Icon
+                size={16}
+                color={a.primary ? T.onAccent : T.accent}
+                strokeWidth={2.2}
+              />
+            </View>
+            <Text style={[styles.label, a.primary && styles.labelPrimary]}>
+              {a.label}
+            </Text>
+          </>
+        );
+
         return (
           <PressableScale
             key={a.key}
@@ -30,20 +51,11 @@ export function LogActionsRow({ actions }: { actions: Action[] }) {
             scaleTo={0.96}
             style={styles.pressableReset}
           >
-            <View style={[styles.btn, a.primary && styles.btnPrimary]}>
-              <View
-                style={[styles.iconWrap, a.primary && styles.iconWrapPrimary]}
-              >
-                <Icon
-                  size={16}
-                  color={a.primary ? T.onImage : T.accent}
-                  strokeWidth={2.2}
-                />
-              </View>
-              <Text style={[styles.label, a.primary && styles.labelPrimary]}>
-                {a.label}
-              </Text>
-            </View>
+            {a.primary ? (
+              <View style={[styles.btn, styles.btnPrimary]}>{content}</View>
+            ) : (
+              <GlassSurface style={styles.btnGlass}>{content}</GlassSurface>
+            )}
           </PressableScale>
         );
       })}
@@ -51,44 +63,52 @@ export function LogActionsRow({ actions }: { actions: Action[] }) {
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: "row", gap: 10 },
-  pressableReset: { flex: 1, borderRadius: 17 },
-  btn: {
-    backgroundColor: T.glass,
-    borderWidth: 0.5,
-    borderColor: T.glassBorder,
-    borderRadius: 17,
-    paddingVertical: 14,
-    alignItems: "center",
-    shadowColor: "#0A0A0A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
-    elevation: 1,
-  },
-  btnPrimary: {
-    backgroundColor: T.accent,
-    borderColor: T.accent,
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
-    elevation: 3,
-  },
-  iconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
-    backgroundColor: T.ringGlass,
-    borderWidth: 0.5,
-    borderColor: T.ringBorder,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  iconWrapPrimary: {
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderColor: "rgba(255,255,255,0.2)",
-  },
-  label: { fontFamily: T.bodySemi, fontSize: 11, color: T.white },
-  labelPrimary: { color: T.onImage },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    row: { flexDirection: "row", gap: 10 },
+    pressableReset: { flex: 1, borderRadius: 17 },
+    btnGlass: {
+      borderRadius: 17,
+      paddingVertical: 14,
+      alignItems: "center",
+    },
+    btn: {
+      borderRadius: 17,
+      paddingVertical: 14,
+      alignItems: "center",
+    },
+    btnPrimary: {
+      backgroundColor: T.accent,
+      borderWidth: 0.5,
+      borderColor: T.accent,
+      shadowColor: "#0A0A0A",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      elevation: 3,
+    },
+    iconWrap: {
+      width: 34,
+      height: 34,
+      borderRadius: 11,
+      backgroundColor: T.ringGlass,
+      borderWidth: 0.5,
+      borderColor: T.ringBorder,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 8,
+      zIndex: 1,
+    },
+    iconWrapPrimary: {
+      backgroundColor: T.accentLine,
+      borderColor: T.accentLine,
+    },
+    label: {
+      fontFamily: T.bodySemi,
+      fontSize: 11,
+      color: T.white,
+      zIndex: 1,
+    },
+    labelPrimary: { color: T.onAccent },
+  });
+}

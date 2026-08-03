@@ -11,7 +11,8 @@ interface RawSession {
   startedAt: string;
   completedAt: string | null;
   notes: string | null;
-  exercises: { exerciseName: string }[];
+  /** `id` is WorkoutExercise row id — unique per session row, even if names repeat. */
+  exercises: { id: string; exerciseName: string }[];
 }
 
 function estimateMinutes(plan: WorkoutPlan): number {
@@ -41,17 +42,21 @@ export function useInProgressSession() {
     // exercise names, using library metadata where the name matches
     // (which it always should, since exercises only ever come from the
     // seeded pool) — falls back to a generic default otherwise.
+    // Always stamp WorkoutExercise.id onto the result: adaptLibraryExercise
+    // would otherwise use the catalog Exercise.id, so two session rows with
+    // the same name (e.g. after a double-add) share one React key.
     const exercises = session.exercises.map((se) => {
       const libEx = libraryByName.get(se.exerciseName);
-      return adaptLibraryExercise(
+      const adapted = adaptLibraryExercise(
         libEx ?? {
-          id: se.exerciseName,
+          id: se.id,
           name: se.exerciseName,
           muscleGroup: "core",
           movementPattern: "carry",
         },
         apiPlan?.goalId ?? "health",
       );
+      return { ...adapted, id: se.id };
     });
 
     const plan: WorkoutPlan = {

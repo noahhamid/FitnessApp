@@ -2,18 +2,8 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Award } from "lucide-react-native";
 import type { PersonalRecord } from "../hooks/useProgress";
-
-const T = {
-  panel: "#15161C",
-  panelBorder: "rgba(255,255,255,0.08)",
-  accent: "#FFC700",
-  accentGlass: "rgba(255,199,0,0.10)",
-  white: "#FFFFFF",
-  muted: "rgba(255,255,255,0.55)",
-  display: "SpaceGrotesk_700Bold",
-  bodyMed: "Inter_500Medium",
-  bodySemi: "Inter_600SemiBold",
-};
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 
 interface Props {
   records: PersonalRecord[];
@@ -27,6 +17,8 @@ function formatDate(iso: string): string {
 }
 
 export function PersonalRecordsSection({ records }: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
+
   if (records.length === 0) {
     return (
       <View style={s.card}>
@@ -59,38 +51,41 @@ export function PersonalRecordsSection({ records }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: T.panel,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: T.panelBorder,
-    padding: 14,
-    gap: 12,
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: T.accentGlass,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  exerciseName: { fontFamily: T.bodySemi, fontSize: 14, color: T.white },
-  subtext: {
-    fontFamily: T.bodyMed,
-    fontSize: 11.5,
-    color: T.muted,
-    marginTop: 2,
-  },
-  dateText: { fontFamily: T.bodyMed, fontSize: 11, color: T.muted },
-  emptyText: {
-    fontFamily: T.bodyMed,
-    fontSize: 12.5,
-    color: T.muted,
-    lineHeight: 18,
-    textAlign: "center",
-  },
-});
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: T.glass,
+      borderRadius: T.radius.md,
+      borderWidth: 0.5,
+      borderColor: T.glassBorder,
+      padding: 14,
+      gap: T.space.md,
+      ...T.shadow.card,
+    },
+    iconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: T.accentTint,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    exerciseName: { fontFamily: T.bodySemi, fontSize: 14, color: T.white },
+    subtext: {
+      fontFamily: T.bodyMed,
+      fontSize: 11.5,
+      color: T.muted,
+      marginTop: 2,
+    },
+    dateText: { fontFamily: T.bodyMed, fontSize: 11, color: T.muted },
+    emptyText: {
+      fontFamily: T.bodyMed,
+      fontSize: 12.5,
+      color: T.muted,
+      lineHeight: 18,
+      textAlign: "center",
+    },
+  });
+}
