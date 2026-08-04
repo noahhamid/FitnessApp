@@ -56,6 +56,7 @@ function WorkoutPlanCardBase({
   const pressOpacity = useRef(new Animated.Value(1)).current;
 
   const onPressIn = useCallback(() => {
+    if (!onPress) return;
     Animated.parallel([
       Animated.spring(scale, {
         toValue: 0.97,
@@ -69,7 +70,7 @@ function WorkoutPlanCardBase({
         useNativeDriver: true,
       }),
     ]).start();
-  }, [scale, pressOpacity]);
+  }, [scale, pressOpacity, onPress]);
 
   const onPressOut = useCallback(() => {
     Animated.parallel([

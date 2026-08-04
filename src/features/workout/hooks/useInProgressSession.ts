@@ -9,7 +9,9 @@ import {
   imageForMuscleGroup,
 } from "@/src/lib/workout-plan-adapter";
 import { getTodaysPlanDayIndex } from "@/src/lib/plan-day-selection";
-import type { WorkoutPlan } from "../data/workouts";
+import type { ExerciseLoggedSet, WorkoutPlan } from "../data/workouts";
+
+type RawSet = ExerciseLoggedSet;
 
 interface RawSession {
   id: string;
@@ -17,7 +19,27 @@ interface RawSession {
   completedAt: string | null;
   notes: string | null;
   /** `id` is WorkoutExercise row id — unique per session row, even if names repeat. */
-  exercises: { id: string; exerciseName: string }[];
+  exercises: { id: string; exerciseName: string; sets?: unknown }[];
+}
+
+function normalizeSets(raw: unknown): RawSet[] {
+  if (!Array.isArray(raw)) return [];
+  const out: RawSet[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const s = item as Record<string, unknown>;
+    const next: RawSet = {};
+    if (typeof s.reps === "number") next.reps = s.reps;
+    if (typeof s.weight === "number") next.weight = s.weight;
+    if (typeof s.durationSec === "number") next.durationSec = s.durationSec;
+    if (typeof s.completed === "boolean") next.completed = s.completed;
+    out.push(next);
+  }
+  return out;
+}
+
+function countCompletedSets(sets: RawSet[]): number {
+  return sets.filter((s) => s.completed !== false).length;
 }
 
 function estimateMinutes(plan: WorkoutPlan): number {
@@ -63,7 +85,12 @@ export function useInProgressSession() {
         },
         apiPlan?.goalId ?? "health",
       );
-      return { ...adapted, id: se.id };
+      const loggedSets = normalizeSets(se.sets);
+      return {
+        ...adapted,
+        id: se.id,
+        ...(loggedSets.length > 0 ? { loggedSets } : {}),
+      };
     });
 
     // Prefer today's plan-day cover for the continue-card hero; else muscle image.
@@ -94,11 +121,14 @@ export function useInProgressSession() {
       (Date.now() - new Date(session.startedAt).getTime()) / 60000,
     );
 
-    // Time-based estimate, NOT real set-completion data — see note above
-    // on why actual per-set progress isn't available for an abandoned session.
+    // Real set completion (Stage 1 PATCH / resume hydration) — not wall-clock.
+    const totalTargetSets = plan.exercises.reduce((a, e) => a + e.sets, 0);
+    const completedSets = session.exercises.reduce((a, se) => {
+      return a + countCompletedSets(normalizeSets(se.sets));
+    }, 0);
     const percent =
-      totalMinutes > 0
-        ? Math.min(100, Math.round((elapsedMinutes / totalMinutes) * 100))
+      totalTargetSets > 0
+        ? Math.min(100, Math.round((completedSets / totalTargetSets) * 100))
         : 0;
     const minutesLeft = Math.max(0, totalMinutes - elapsedMinutes);
     const estCalories = Math.round(totalMinutes * 8.5);

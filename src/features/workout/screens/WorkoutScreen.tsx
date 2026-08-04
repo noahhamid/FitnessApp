@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -10,12 +10,17 @@ import {
   Pressable,
   StyleProp,
   ViewStyle,
+  Image,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { useFocusEffect } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
+import { api } from "@/src/lib/api";
 import { WorkoutTabHeader } from "../components/WorkoutTabHeader";
 import { WorkoutPlanCard } from "../components/WorkoutPlanCard";
 import { WorkoutDetailScreen } from "../components/WorkoutDetailScreen";
@@ -31,7 +36,11 @@ import {
   useExerciseLibrary,
   type LibraryExercise,
 } from "../hooks/useExerciseLibrary";
-import { useWorkoutPlan } from "../hooks/useWorkoutPlan";
+import {
+  useWorkoutPlan,
+  workoutPlanQueryKey,
+  fetchWorkoutPlan,
+} from "../hooks/useWorkoutPlan";
 import { useLastPerformance } from "../hooks/useLastPerformance";
 import { useInProgressSession } from "../hooks/useInProgressSession";
 import { useWorkoutStreak } from "../hooks/useWorkoutStreak";
@@ -57,6 +66,9 @@ import type { Exercise, WorkoutPlan } from "../data/workouts";
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 
 type ViewState = "today" | "fullPlan" | "detail" | "active" | "libraryDetail";
+
+/** Flip to `true` in __DEV__ to verify failed background session UX (banner + Alert). */
+const FORCE_SESSION_CREATE_FAIL = false;
 
 /** Resolve a plan exercise to LibraryExercise shape for ExerciseDetailCard. */
 function toLibraryExercise(
@@ -133,16 +145,24 @@ export default function WorkoutScreen() {
   const { T, styles: s, resolved } = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const safeTop = topInset(insets.top);
+  const queryClient = useQueryClient();
   const [view, setView] = useState<ViewState>("today");
   const [selectedDay, setSelectedDay] = useState<WorkoutPlan | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   // Live exercise list for the active session — seeded on start/resume,
   // appendable mid-workout via ActiveWorkoutScreen's library modal.
   const [activeExercises, setActiveExercises] = useState<Exercise[]>([]);
-  // Fresh start (handleStart) drops straight into auto-play; resuming
-  // (handleResume) shows the list first. See ActiveWorkoutScreen's
-  // initialMode prop.
+  // Fresh start and resume both land on the list/home-base first.
+  // Auto-sequential play is still available inside ActiveWorkoutScreen
+  // via the in-screen "Start workout" control — just not as the default entry.
   const [entryMode, setEntryMode] = useState<"list" | "auto">("list");
+  const [sessionCreating, setSessionCreating] = useState(false);
+  const [sessionCreateError, setSessionCreateError] = useState<string | null>(
+    null,
+  );
+  /** Invalidates in-flight creates when the user cancels mid-setup. */
+  const startGenRef = useRef(0);
+  const pendingStartPlanRef = useRef<WorkoutPlan | null>(null);
 
   const { user } = useAuth();
   const { data: apiPlan, isLoading, error } = useWorkoutPlan();
@@ -163,7 +183,6 @@ export default function WorkoutScreen() {
     addExercise: addToLiveSession,
     isPending: liveAddPending,
   } = useAddToLiveSession(inProgress?.sessionId);
-  const [starting, setStarting] = useState(false);
 
   // Backend-persisted "added for today" exercises — survives reload,
   // resets naturally at the next calendar day via logDate. Replaces the
@@ -227,6 +246,23 @@ export default function WorkoutScreen() {
     };
   }, [baseTodaysWorkout, extras, apiPlan?.goalId]);
 
+  // Prefetch plan + today's cover while the Workout tab is focused so Start
+  // doesn't wait on a cold plan fetch / image decode.
+  useFocusEffect(
+    useCallback(() => {
+      void queryClient.prefetchQuery({
+        queryKey: workoutPlanQueryKey,
+        queryFn: fetchWorkoutPlan,
+      });
+    }, [queryClient]),
+  );
+
+  useEffect(() => {
+    const uri = todaysWorkout?.coverImage;
+    if (!uri) return;
+    Image.prefetch(uri).catch(() => {});
+  }, [todaysWorkout?.coverImage]);
+
   const [cameFrom, setCameFrom] = useState<"today" | "fullPlan">("today");
   const [viewingExercise, setViewingExercise] =
     useState<LibraryExercise | null>(null);
@@ -241,7 +277,7 @@ export default function WorkoutScreen() {
     // still open the detail/preview screen for browsing.
     if (from === "today") {
       setCameFrom("today");
-      void handleStart(plan);
+      handleStart(plan);
       return;
     }
     setSelectedDay(plan);
@@ -260,6 +296,10 @@ export default function WorkoutScreen() {
 
   const handleResume = () => {
     if (!inProgress) return;
+    startGenRef.current += 1;
+    pendingStartPlanRef.current = null;
+    setSessionCreating(false);
+    setSessionCreateError(null);
     setEntryMode("list");
     setSelectedDay(inProgress.plan);
     setActiveExercises(inProgress.plan.exercises);
@@ -267,38 +307,98 @@ export default function WorkoutScreen() {
     setView("active");
   };
 
-  const handleStart = async (plan: WorkoutPlan) => {
-    if (starting) return; // guards against rapid double-taps
-    setStarting(true);
-    setEntryMode("auto");
-    setSelectedDay(plan);
-    setActiveExercises(plan.exercises);
+  const createSessionInBackground = (plan: WorkoutPlan, gen: number) => {
+    setSessionCreating(true);
+    setSessionCreateError(null);
 
-    try {
-      const session = await startSession.mutateAsync({
-        notes: `${apiPlan?.splitLabel ?? "Workout"} — ${plan.title}`,
-        exercises: plan.exercises.map((ex) => ({ exerciseName: ex.name })),
-      });
+    void (async () => {
+      try {
+        if (FORCE_SESSION_CREATE_FAIL) {
+          throw new Error("Forced start failure (dev test)");
+        }
+        const session = await startSession.mutateAsync({
+          notes: `${apiPlan?.splitLabel ?? "Workout"} — ${plan.title}`,
+          exercises: plan.exercises.map((ex) => ({ exerciseName: ex.name })),
+        });
 
-      // If this was today's composed workout (base plan + any added
-      // extras), the extras are now folded into the real session above —
-      // clear them from the "planned for today" table so they don't
-      // linger as if still unstarted. Standalone single-exercise starts
-      // (from the library detail screen) never touch extras, so this is
-      // skipped for those.
-      if (todaysWorkout && plan.id === todaysWorkout.id) {
-        await clearAllExtras().catch((e) =>
-          console.log("Failed to clear today's extras after start:", e),
+        if (gen !== startGenRef.current) {
+          // User cancelled (or restarted) while this create was in flight —
+          // delete the orphan so it doesn't become a phantom Continue card.
+          void api.delete(`/api/workouts/${session.id}`).catch(() => {});
+          return;
+        }
+        setActiveSessionId(session.id);
+        // Remap catalog/plan exercise ids → real WorkoutExercise row ids
+        // so incremental set PATCH can target the correct rows.
+        const serverRows = [...(session.exercises ?? [])];
+        setActiveExercises((prev) =>
+          prev.map((ex) => {
+            const idx = serverRows.findIndex(
+              (se) => se.exerciseName === ex.name,
+            );
+            if (idx === -1) return ex;
+            const [matched] = serverRows.splice(idx, 1);
+            return { ...ex, id: matched.id };
+          }),
+        );
+        setSessionCreating(false);
+        setSessionCreateError(null);
+
+        if (todaysWorkout && plan.id === todaysWorkout.id) {
+          void clearAllExtras().catch((e) =>
+            console.log("Failed to clear today's extras after start:", e),
+          );
+        }
+      } catch (e) {
+        if (gen !== startGenRef.current) return;
+        const message =
+          e instanceof Error
+            ? e.message
+            : "Couldn't save this workout to your account.";
+        console.log("Failed to start workout session:", e);
+        setSessionCreating(false);
+        setSessionCreateError(message);
+        Alert.alert(
+          "Couldn't save workout",
+          `${message}\n\nYou can retry from the banner, or cancel and try again.`,
         );
       }
+    })();
+  };
 
-      setActiveSessionId(session.id);
-      setView("active");
-    } catch (e) {
-      console.log("Failed to start workout session:", e);
-    } finally {
-      setStarting(false);
-    }
+  /** Instant UI entry — session POST runs in the background. */
+  const handleStart = (plan: WorkoutPlan) => {
+    if (view === "active" && sessionCreating) return;
+
+    const gen = ++startGenRef.current;
+    pendingStartPlanRef.current = plan;
+    setEntryMode("list");
+    setSelectedDay(plan);
+    setActiveExercises(plan.exercises);
+    setActiveSessionId(null);
+    setView("active");
+    createSessionInBackground(plan, gen);
+  };
+
+  const handleRetryCreateSession = () => {
+    const plan = pendingStartPlanRef.current ?? selectedDay;
+    if (!plan) return;
+    const gen = ++startGenRef.current;
+    pendingStartPlanRef.current = plan;
+    setActiveSessionId(null);
+    createSessionInBackground(plan, gen);
+  };
+
+  const leaveActiveWorkout = () => {
+    startGenRef.current += 1;
+    pendingStartPlanRef.current = null;
+    setSessionCreating(false);
+    setSessionCreateError(null);
+    setActiveSessionId(null);
+    setActiveExercises([]);
+    // Ensure Resume / Continue card pick up Stage-1 set PATCH data.
+    void queryClient.invalidateQueries({ queryKey: ["in-progress-session"] });
+    setView(cameFrom === "fullPlan" ? "detail" : "today");
   };
 
   const handleFinish = async (logs: SetLog[]) => {
@@ -351,18 +451,21 @@ export default function WorkoutScreen() {
           setSelectedDay(null);
         }}
         onStart={() => selectedDay && handleStart(selectedDay)}
-        starting={starting}
         onExercisePress={(ex: Exercise) => openExerciseDetail(ex, "detail")}
       />
     );
   }
 
   // ── Active workout screen ────────────────────────────────────────────────
-  if (view === "active" && selectedDay && activeSessionId) {
+  // Render as soon as view flips — sessionId may still be null while creating.
+  if (view === "active" && selectedDay) {
     return (
       <ActiveWorkoutScreen
         plan={selectedDay}
         sessionId={activeSessionId}
+        sessionCreating={sessionCreating}
+        sessionCreateError={sessionCreateError}
+        onRetryCreateSession={handleRetryCreateSession}
         initialMode={entryMode}
         exercises={activeExercises}
         onExercisesChange={setActiveExercises}
@@ -371,16 +474,7 @@ export default function WorkoutScreen() {
             prev.some((e) => e.name === ex.name) ? prev : [...prev, ex],
           )
         }
-        onClose={() => {
-          // Cancel deletes the session row first (ActiveWorkoutScreen);
-          // clear local active state so we don't re-enter a ghost session.
-          setActiveSessionId(null);
-          setActiveExercises([]);
-          // Only return to WorkoutDetailScreen when the session was started
-          // from a full-plan browse. Today's card / resume / library starts
-          // should never dump into the detail preview.
-          setView(cameFrom === "fullPlan" ? "detail" : "today");
-        }}
+        onClose={leaveActiveWorkout}
         onFinish={handleFinish}
         lastPerformance={lastPerformance}
       />
@@ -464,7 +558,6 @@ export default function WorkoutScreen() {
         exercise={viewingExercise}
         imageUrl={imageForMuscleGroup(viewingExercise.muscleGroup)}
         addedToToday={addedNames.has(viewingExercise.name)}
-        starting={starting}
         allowRemove={!inProgress}
         showStart={!inProgress}
         addLabel={
@@ -529,7 +622,6 @@ export default function WorkoutScreen() {
           <WorkoutTabHeader
             name={user?.name ?? "there"}
             avatarUrl="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=200&q=80"
-            onPressBell={() => {}}
           />
         </Reveal>
 

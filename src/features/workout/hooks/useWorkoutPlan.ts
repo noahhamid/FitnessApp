@@ -1,10 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/src/lib/api";
-import type { ApiWorkoutPlan } from "./workout-plan-adapter";
+import type { ApiWorkoutPlan } from "@/src/lib/workout-plan-adapter";
+
+export const workoutPlanQueryKey = ["workout-plan"] as const;
+
+export function fetchWorkoutPlan() {
+  return api.get<ApiWorkoutPlan | null>("/api/workouts/plan");
+}
 
 export function useWorkoutPlan() {
   return useQuery({
-    queryKey: ["workout-plan"],
-    queryFn: () => api.get<ApiWorkoutPlan | null>("/api/workouts/plan"),
+    queryKey: workoutPlanQueryKey,
+    queryFn: fetchWorkoutPlan,
   });
 }

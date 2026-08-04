@@ -42,7 +42,10 @@ import { T } from "@/src/theme";
 import { ExerciseLibrarySection } from "./ExerciseLibrarySection";
 import { ExerciseDetailCard } from "./ExerciseDetailCard";
 import { useAddToLiveSession } from "../hooks/useAddToLiveSession";
-import { useDeleteWorkoutSession } from "../hooks/useWorkoutSession";
+import {
+  useDeleteWorkoutSession,
+  useUpdateSessionExercise,
+} from "../hooks/useWorkoutSession";
 import { topInset } from "@/src/lib/safe-area";
 import { imageForMuscleGroup } from "@/src/lib/workout-plan-adapter";
 import type { LibraryExercise } from "../hooks/useExerciseLibrary";
@@ -65,7 +68,13 @@ type Props = {
   onClose: () => void;
   onFinish: (logs: SetLog[]) => void;
   lastPerformance?: Record<string, { weight?: number; reps?: number }>;
-  sessionId: string;
+  /** Null while background session create is still in flight. */
+  sessionId: string | null;
+  /** True until POST /api/workouts resolves (or fails). */
+  sessionCreating?: boolean;
+  /** Set when background create fails — shows retry banner. */
+  sessionCreateError?: string | null;
+  onRetryCreateSession?: () => void;
   exercises?: Exercise[];
   onExercisesChange?: (exercises: Exercise[]) => void;
   onAppendExercise?: (exercise: Exercise) => void;
@@ -87,6 +96,38 @@ const fmt = (s: number) =>
 const haptic = (style: Haptics.ImpactFeedbackStyle) => {
   Haptics.impactAsync(style).catch(() => {});
 };
+
+/** Resume hydration: target set counts come from Exercise.sets; progress from loggedSets. */
+function initialSetsDoneFromExercises(
+  exercises: Exercise[],
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const ex of exercises) {
+    const logged = ex.loggedSets;
+    if (!logged?.length) continue;
+    const completed = logged.filter((s) => s.completed !== false).length;
+    if (completed > 0) {
+      out[ex.id] = Math.min(completed, ex.sets);
+    }
+  }
+  return out;
+}
+
+function initialLogsFromExercises(exercises: Exercise[]): SetLog[] {
+  const logs: SetLog[] = [];
+  for (const ex of exercises) {
+    for (const s of ex.loggedSets ?? []) {
+      logs.push({
+        exerciseName: ex.name,
+        reps: s.reps,
+        weight: s.weight,
+        durationSec: s.durationSec,
+        completed: s.completed !== false,
+      });
+    }
+  }
+  return logs;
+}
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -282,6 +323,9 @@ export function ActiveWorkoutScreen({
   onFinish,
   lastPerformance,
   sessionId,
+  sessionCreating = false,
+  sessionCreateError = null,
+  onRetryCreateSession,
   exercises: exercisesProp,
   onExercisesChange,
   onAppendExercise,
@@ -295,34 +339,54 @@ export function ActiveWorkoutScreen({
     addError,
   } = useAddToLiveSession(sessionId);
   const deleteSession = useDeleteWorkoutSession();
+  const updateSessionExercise = useUpdateSessionExercise();
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const sessionReady = !!sessionId && !sessionCreating && !sessionCreateError;
 
-  const requestCancelWorkout = () => {
-    if (deleteSession.isPending) return;
+  const guardSessionReady = (actionLabel: string): boolean => {
+    if (sessionReady) return true;
+    if (sessionCreateError) {
+      Alert.alert(
+        "Workout not saved yet",
+        sessionCreateError,
+        onRetryCreateSession
+          ? [
+              { text: "Dismiss", style: "cancel" },
+              { text: "Retry", onPress: onRetryCreateSession },
+            ]
+          : [{ text: "OK" }],
+      );
+      return false;
+    }
     Alert.alert(
-      "Cancel this workout?",
-      "Your progress won't be saved.",
-      [
-        { text: "Keep going", style: "cancel" },
-        {
-          text: "Cancel workout",
-          style: "destructive",
-          onPress: () => {
-            deleteSession.mutate(sessionId, {
-              onSuccess: () => onClose(),
-              onError: (err) => {
-                Alert.alert(
-                  "Couldn't cancel workout",
-                  err instanceof Error
-                    ? err.message
-                    : "Check your connection and try again.",
-                );
-              },
-            });
-          },
-        },
-      ],
+      "Still setting up",
+      `Hang on a moment — ${actionLabel} will be available once your workout is saved.`,
     );
+    return false;
+  };
+
+  const dismissCancelConfirm = () => setCancelConfirmOpen(false);
+
+  const confirmCancelWorkout = () => {
+    if (deleteSession.isPending) return;
+    setCancelConfirmOpen(false);
+    // No server row yet — just leave.
+    if (!sessionId) {
+      onClose();
+      return;
+    }
+    deleteSession.mutate(sessionId, {
+      onSuccess: () => onClose(),
+      onError: (err) => {
+        Alert.alert(
+          "Couldn't cancel workout",
+          err instanceof Error
+            ? err.message
+            : "Check your connection and try again.",
+        );
+      },
+    });
   };
 
   const [localExercises, setLocalExercises] = useState<Exercise[]>(
@@ -350,6 +414,21 @@ export function ActiveWorkoutScreen({
     else setLocalExercises(next);
   };
 
+  const remapExerciseId = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const next = exercisesRef.current.map((e) =>
+      e.id === fromId ? { ...e, id: toId } : e,
+    );
+    if (onExercisesChange) onExercisesChange(next);
+    else setLocalExercises(next);
+    setSetsDone((prev) => {
+      if (!(fromId in prev)) return prev;
+      const { [fromId]: count, ...rest } = prev;
+      return { ...rest, [toId]: count };
+    });
+    setSelectedId((cur) => (cur === fromId ? toId : cur));
+  };
+
   const sessionExerciseNames = useMemo(
     () => new Set(exercises.map((e) => e.name)),
     [exercises],
@@ -360,6 +439,7 @@ export function ActiveWorkoutScreen({
       alreadyAdded: sessionExerciseNames,
       onOptimistic: appendExercise,
       onRollback: removeExerciseById,
+      onCommitted: remapExerciseId,
       onAfterOptimistic: () => setLibraryOpen(false),
       onAfterError: () => setLibraryOpen(true),
     });
@@ -379,7 +459,10 @@ export function ActiveWorkoutScreen({
   const [selectedId, setSelectedId] = useState<string | null>(() =>
     initialMode === "auto" ? (exercises[0]?.id ?? null) : null,
   );
-  const [setsDone, setSetsDone] = useState<Record<string, number>>({});
+  // Fresh start: no loggedSets → {}. Resume: hydrate from Stage-1 PATCH data.
+  const [setsDone, setSetsDone] = useState<Record<string, number>>(() =>
+    initialSetsDoneFromExercises(exercises),
+  );
   const [phase, setPhase] = useState<Phase>("exercise");
   const [paused, setPaused] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -427,9 +510,24 @@ export function ActiveWorkoutScreen({
     [exercises, setsDone],
   );
 
-  const logsRef = useRef<SetLog[]>([]);
+  const logsRef = useRef<SetLog[]>(initialLogsFromExercises(exercises));
   const [currentReps, setCurrentReps] = useState(8);
   const [currentWeight, setCurrentWeight] = useState(0);
+
+  const requestCancelWorkout = () => {
+    if (deleteSession.isPending) return;
+    // Stage 1 persists sets mid-workout — leave the session for Resume /
+    // ContinueWorkoutCard instead of deleting whenever anything is logged.
+    const hasLocalProgress =
+      Object.values(setsDoneRef.current).some((n) => n > 0) ||
+      logsRef.current.length > 0 ||
+      exercisesRef.current.some((e) => (e.loggedSets?.length ?? 0) > 0);
+    if (hasLocalProgress) {
+      onClose();
+      return;
+    }
+    setCancelConfirmOpen(true);
+  };
 
   useEffect(() => {
     if (!selected) return;
@@ -606,6 +704,53 @@ export function ActiveWorkoutScreen({
     });
   };
 
+  /**
+   * Background-sync this exercise's logged sets so far. Uses WorkoutExercise
+   * row id (remapped after session create / live-add). Failures are quiet —
+   * Finish's POST /complete remains the authoritative write.
+   */
+  const syncExerciseSets = (ex: Exercise) => {
+    if (!sessionId) return;
+    // Guard against catalog / optimistic ids that predate remapping.
+    if (
+      ex.id.startsWith("pending-") ||
+      ex.id.startsWith("live-") ||
+      ex.id.startsWith("standalone-")
+    ) {
+      console.log(
+        `[set-sync] skip "${ex.name}" — id ${ex.id} is not a WorkoutExercise row yet`,
+      );
+      return;
+    }
+
+    const sets = logsRef.current
+      .filter((l) => l.exerciseName === ex.name)
+      .map((l) => ({
+        reps: l.reps,
+        weight: l.weight,
+        durationSec: l.durationSec,
+        completed: l.completed,
+      }));
+    if (sets.length === 0) return;
+
+    console.log(
+      `[set-sync] PATCH /api/workouts/${sessionId}/exercises/${ex.id} (${sets.length} set(s) for "${ex.name}")`,
+    );
+    void updateSessionExercise
+      .mutateAsync({ sessionId, exerciseId: ex.id, sets })
+      .then(() => {
+        console.log(
+          `[set-sync] ok — "${ex.name}" (${ex.id}) now has ${sets.length} set(s)`,
+        );
+      })
+      .catch((e) => {
+        console.log(
+          `[set-sync] failed for "${ex.name}" (${ex.id}):`,
+          e instanceof Error ? e.message : e,
+        );
+      });
+  };
+
   const returnToList = () => {
     setScreenMode("list");
     setSelectedId(null);
@@ -654,6 +799,8 @@ export function ActiveWorkoutScreen({
     const newDone = doneForSelected + 1;
     const nextDoneMap = { ...setsDoneRef.current, [selected.id]: newDone };
     setSetsDone(nextDoneMap);
+    // Persist incrementally — does not block UI / Finish.
+    syncExerciseSets(selected);
 
     if (newDone >= selected.sets) {
       haptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -677,11 +824,13 @@ export function ActiveWorkoutScreen({
 
   const openExerciseManual = (ex: Exercise) => {
     if (isExComplete(ex)) return;
+    if (!guardSessionReady("logging sets")) return;
     haptic(Haptics.ImpactFeedbackStyle.Light);
     enterFocus(ex.id, "manual");
   };
 
   const startAutoWorkout = () => {
+    if (!guardSessionReady("starting the workout")) return;
     const id = firstIncompleteId();
     if (!id) {
       haptic(Haptics.ImpactFeedbackStyle.Light);
@@ -745,6 +894,7 @@ export function ActiveWorkoutScreen({
   };
 
   const onFinishPress = () => {
+    if (!guardSessionReady("finishing")) return;
     haptic(Haptics.ImpactFeedbackStyle.Medium);
     setPhase("done");
   };
@@ -835,6 +985,19 @@ export function ActiveWorkoutScreen({
           </Animated.View>
         </View>
 
+        {!!sessionCreateError && (
+          <Pressable
+            style={s.setupErrorBanner}
+            onPress={onRetryCreateSession}
+            accessibilityRole="button"
+            accessibilityLabel="Retry saving workout"
+          >
+            <Text style={s.setupErrorText}>
+              Couldn't save this workout. Tap to retry.
+            </Text>
+          </Pressable>
+        )}
+
         <View style={s.progressTrack}>
           <Animated.View style={[s.progressFill, { width: barPct }]} />
         </View>
@@ -879,9 +1042,12 @@ export function ActiveWorkoutScreen({
                 <View style={s.listHeaderRow}>
                   <Text style={s.listLabel}>Exercises</Text>
                   <Pressable
-                    onPress={() => setLibraryOpen(true)}
+                    onPress={() => {
+                      if (!guardSessionReady("adding exercises")) return;
+                      setLibraryOpen(true);
+                    }}
                     hitSlop={8}
-                    style={s.addExBtn}
+                    style={[s.addExBtn, !sessionReady && s.actionDisabled]}
                     accessibilityRole="button"
                     accessibilityLabel="Add exercise"
                   >
@@ -904,6 +1070,7 @@ export function ActiveWorkoutScreen({
                         style={[
                           s.exListRow,
                           complete && s.exListRowDone,
+                          !sessionReady && !complete && s.actionDisabled,
                         ]}
                         activeOpacity={complete ? 1 : 0.85}
                         onPress={() => openExerciseManual(ex)}
@@ -949,7 +1116,7 @@ export function ActiveWorkoutScreen({
 
                 {incompleteCount > 0 && (
                   <TouchableOpacity
-                    style={s.startBtn}
+                    style={[s.startBtn, !sessionReady && s.actionDisabled]}
                     onPress={startAutoWorkout}
                     activeOpacity={0.9}
                     accessibilityRole="button"
@@ -961,12 +1128,18 @@ export function ActiveWorkoutScreen({
                       strokeWidth={2.4}
                       fill={T.accentOnDarkText}
                     />
-                    <Text style={s.startBtnText}>Start workout</Text>
+                    <Text style={s.startBtnText}>
+                      {sessionCreating
+                        ? "Setting up…"
+                        : sessionCreateError
+                          ? "Retry save to start"
+                          : "Start workout"}
+                    </Text>
                   </TouchableOpacity>
                 )}
 
                 <TouchableOpacity
-                  style={s.finishBtn}
+                  style={[s.finishBtn, !sessionReady && s.actionDisabled]}
                   onPress={onFinishPress}
                   activeOpacity={0.9}
                   accessibilityRole="button"
@@ -1174,6 +1347,54 @@ export function ActiveWorkoutScreen({
           />
         </SafeAreaProvider>
       </Modal>
+
+      {/* Same Modal + dimmed-backdrop pattern as WeightLogSheet; panel uses
+          ActiveWorkout immersive dark tokens (T.darkGlass / darkGlassBorder). */}
+      <Modal
+        visible={cancelConfirmOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={dismissCancelConfirm}
+        statusBarTranslucent
+      >
+        <View style={s.cancelModalRoot}>
+          <Pressable
+            style={s.cancelBackdrop}
+            onPress={dismissCancelConfirm}
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss"
+          />
+          <View style={s.cancelCard} accessibilityViewIsModal>
+            <Text style={s.cancelTitle}>Cancel this workout?</Text>
+            <Text style={s.cancelBody}>Your progress won't be saved.</Text>
+            <View style={s.cancelActions}>
+              <TouchableOpacity
+                style={s.cancelKeepBtn}
+                onPress={dismissCancelConfirm}
+                activeOpacity={0.9}
+                accessibilityRole="button"
+                accessibilityLabel="Keep going"
+              >
+                <Text style={s.cancelKeepText}>Keep going</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.cancelDestroyBtn}
+                onPress={confirmCancelWorkout}
+                disabled={deleteSession.isPending}
+                activeOpacity={0.9}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel workout"
+              >
+                {deleteSession.isPending ? (
+                  <ActivityIndicator size="small" color="#FFB4B4" />
+                ) : (
+                  <Text style={s.cancelDestroyText}>Cancel workout</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1184,6 +1405,86 @@ const s = StyleSheet.create({
 
   topContent: { paddingHorizontal: 18, gap: 12 },
   topBar: { flexDirection: "row", alignItems: "center", gap: 10 },
+  setupErrorBanner: {
+    backgroundColor: "rgba(180,60,60,0.35)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,120,120,0.35)",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  setupErrorText: {
+    color: T.onDark,
+    fontFamily: T.bodySemi,
+    fontSize: 12.5,
+  },
+  actionDisabled: { opacity: 0.45 },
+  cancelModalRoot: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 28,
+  },
+  cancelBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(10,10,10,0.72)",
+  },
+  cancelCard: {
+    backgroundColor: T.darkPanel,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: T.darkGlassBorder,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 18,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 12,
+  },
+  cancelTitle: {
+    color: T.onDark,
+    fontFamily: T.displaySemi,
+    fontSize: 18,
+    letterSpacing: -0.3,
+  },
+  cancelBody: {
+    color: T.onDarkMuted,
+    fontFamily: T.bodyMed,
+    fontSize: 13.5,
+    lineHeight: 19,
+    marginBottom: 10,
+  },
+  cancelActions: { gap: 10 },
+  cancelKeepBtn: {
+    height: 48,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: T.darkGlass,
+    borderWidth: 1,
+    borderColor: T.darkGlassBorder,
+  },
+  cancelKeepText: {
+    color: T.onDark,
+    fontFamily: T.bodyBold,
+    fontSize: 14.5,
+  },
+  cancelDestroyBtn: {
+    height: 48,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(180,60,60,0.28)",
+    borderWidth: 1,
+    borderColor: "rgba(255,120,120,0.4)",
+  },
+  cancelDestroyText: {
+    color: "#FFB4B4",
+    fontFamily: T.bodyBold,
+    fontSize: 14.5,
+  },
   iconBtn: {
     width: 42,
     height: 42,

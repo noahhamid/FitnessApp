@@ -24,6 +24,11 @@ type AddOptions = {
   onOptimistic?: (exercise: Exercise) => void;
   /** Undo onOptimistic if the POST fails. */
   onRollback?: (optimisticId: string) => void;
+  /**
+   * Swap the optimistic client id for the real WorkoutExercise row id
+   * so mid-workout set PATCH can target the correct row.
+   */
+  onCommitted?: (optimisticId: string, realExerciseId: string) => void;
   /** Extra side effects after a successful optimistic append (e.g. close modal). */
   onAfterOptimistic?: () => void;
   /** Extra side effects when the POST fails after a rollback (e.g. reopen modal). */
@@ -78,11 +83,14 @@ export function useAddToLiveSession(sessionId: string | null | undefined) {
 
     try {
       console.log(`Adding "${libEx.name}" to live session ${sessionId}…`);
-      await addToSession.mutateAsync({
+      const created = await addToSession.mutateAsync({
         sessionId,
         exerciseName: libEx.name,
       });
-      console.log(`Added "${libEx.name}" to live session ${sessionId}.`);
+      opts.onCommitted?.(optimistic.id, created.id);
+      console.log(
+        `Added "${libEx.name}" to live session ${sessionId} (exercise ${created.id}).`,
+      );
       return true;
     } catch (e) {
       console.log("Failed to add exercise to session:", e);
