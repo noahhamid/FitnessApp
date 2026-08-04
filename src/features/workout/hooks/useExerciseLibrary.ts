@@ -7,6 +7,7 @@ export interface LibraryExercise {
   muscleGroup: string;
   movementPattern: string;
   minEquipment: string;
+  instructions?: string | null;
 }
 
 export function useExerciseLibrary(muscleGroup?: string) {

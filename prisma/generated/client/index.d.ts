@@ -2750,6 +2750,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup | null
     movementPattern: $Enums.MovementPattern | null
     minEquipment: $Enums.EquipmentAccess | null
+    instructions: string | null
   }
 
   export type ExerciseMaxAggregateOutputType = {
@@ -2758,6 +2759,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup | null
     movementPattern: $Enums.MovementPattern | null
     minEquipment: $Enums.EquipmentAccess | null
+    instructions: string | null
   }
 
   export type ExerciseCountAggregateOutputType = {
@@ -2766,6 +2768,7 @@ export namespace Prisma {
     muscleGroup: number
     movementPattern: number
     minEquipment: number
+    instructions: number
     _all: number
   }
 
@@ -2776,6 +2779,7 @@ export namespace Prisma {
     muscleGroup?: true
     movementPattern?: true
     minEquipment?: true
+    instructions?: true
   }
 
   export type ExerciseMaxAggregateInputType = {
@@ -2784,6 +2788,7 @@ export namespace Prisma {
     muscleGroup?: true
     movementPattern?: true
     minEquipment?: true
+    instructions?: true
   }
 
   export type ExerciseCountAggregateInputType = {
@@ -2792,6 +2797,7 @@ export namespace Prisma {
     muscleGroup?: true
     movementPattern?: true
     minEquipment?: true
+    instructions?: true
     _all?: true
   }
 
@@ -2873,6 +2879,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup
     movementPattern: $Enums.MovementPattern
     minEquipment: $Enums.EquipmentAccess
+    instructions: string | null
     _count: ExerciseCountAggregateOutputType | null
     _min: ExerciseMinAggregateOutputType | null
     _max: ExerciseMaxAggregateOutputType | null
@@ -2898,6 +2905,7 @@ export namespace Prisma {
     muscleGroup?: boolean
     movementPattern?: boolean
     minEquipment?: boolean
+    instructions?: boolean
     planExercises?: boolean | Exercise$planExercisesArgs<ExtArgs>
     _count?: boolean | ExerciseCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["exercise"]>
@@ -2908,6 +2916,7 @@ export namespace Prisma {
     muscleGroup?: boolean
     movementPattern?: boolean
     minEquipment?: boolean
+    instructions?: boolean
   }, ExtArgs["result"]["exercise"]>
 
   export type ExerciseSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -2916,6 +2925,7 @@ export namespace Prisma {
     muscleGroup?: boolean
     movementPattern?: boolean
     minEquipment?: boolean
+    instructions?: boolean
   }, ExtArgs["result"]["exercise"]>
 
   export type ExerciseSelectScalar = {
@@ -2924,9 +2934,10 @@ export namespace Prisma {
     muscleGroup?: boolean
     movementPattern?: boolean
     minEquipment?: boolean
+    instructions?: boolean
   }
 
-  export type ExerciseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "muscleGroup" | "movementPattern" | "minEquipment", ExtArgs["result"]["exercise"]>
+  export type ExerciseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "muscleGroup" | "movementPattern" | "minEquipment" | "instructions", ExtArgs["result"]["exercise"]>
   export type ExerciseInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     planExercises?: boolean | Exercise$planExercisesArgs<ExtArgs>
     _count?: boolean | ExerciseCountOutputTypeDefaultArgs<ExtArgs>
@@ -2945,6 +2956,7 @@ export namespace Prisma {
       muscleGroup: $Enums.MuscleGroup
       movementPattern: $Enums.MovementPattern
       minEquipment: $Enums.EquipmentAccess
+      instructions: string | null
     }, ExtArgs["result"]["exercise"]>
     composites: {}
   }
@@ -3374,6 +3386,7 @@ export namespace Prisma {
     readonly muscleGroup: FieldRef<"Exercise", 'MuscleGroup'>
     readonly movementPattern: FieldRef<"Exercise", 'MovementPattern'>
     readonly minEquipment: FieldRef<"Exercise", 'EquipmentAccess'>
+    readonly instructions: FieldRef<"Exercise", 'String'>
   }
     
 
@@ -23102,7 +23115,8 @@ export namespace Prisma {
     name: 'name',
     muscleGroup: 'muscleGroup',
     movementPattern: 'movementPattern',
-    minEquipment: 'minEquipment'
+    minEquipment: 'minEquipment',
+    instructions: 'instructions'
   };
 
   export type ExerciseScalarFieldEnum = (typeof ExerciseScalarFieldEnum)[keyof typeof ExerciseScalarFieldEnum]
@@ -23577,6 +23591,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFilter<"Exercise"> | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFilter<"Exercise"> | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFilter<"Exercise"> | $Enums.EquipmentAccess
+    instructions?: StringNullableFilter<"Exercise"> | string | null
     planExercises?: WorkoutPlanExerciseListRelationFilter
   }
 
@@ -23586,6 +23601,7 @@ export namespace Prisma {
     muscleGroup?: SortOrder
     movementPattern?: SortOrder
     minEquipment?: SortOrder
+    instructions?: SortOrderInput | SortOrder
     planExercises?: WorkoutPlanExerciseOrderByRelationAggregateInput
   }
 
@@ -23598,6 +23614,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFilter<"Exercise"> | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFilter<"Exercise"> | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFilter<"Exercise"> | $Enums.EquipmentAccess
+    instructions?: StringNullableFilter<"Exercise"> | string | null
     planExercises?: WorkoutPlanExerciseListRelationFilter
   }, "id" | "name">
 
@@ -23607,6 +23624,7 @@ export namespace Prisma {
     muscleGroup?: SortOrder
     movementPattern?: SortOrder
     minEquipment?: SortOrder
+    instructions?: SortOrderInput | SortOrder
     _count?: ExerciseCountOrderByAggregateInput
     _max?: ExerciseMaxOrderByAggregateInput
     _min?: ExerciseMinOrderByAggregateInput
@@ -23621,6 +23639,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupWithAggregatesFilter<"Exercise"> | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternWithAggregatesFilter<"Exercise"> | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessWithAggregatesFilter<"Exercise"> | $Enums.EquipmentAccess
+    instructions?: StringNullableWithAggregatesFilter<"Exercise"> | string | null
   }
 
   export type WorkoutPlanWhereInput = {
@@ -24808,6 +24827,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup
     movementPattern: $Enums.MovementPattern
     minEquipment: $Enums.EquipmentAccess
+    instructions?: string | null
     planExercises?: WorkoutPlanExerciseCreateNestedManyWithoutExerciseInput
   }
 
@@ -24817,6 +24837,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup
     movementPattern: $Enums.MovementPattern
     minEquipment: $Enums.EquipmentAccess
+    instructions?: string | null
     planExercises?: WorkoutPlanExerciseUncheckedCreateNestedManyWithoutExerciseInput
   }
 
@@ -24826,6 +24847,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFieldUpdateOperationsInput | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFieldUpdateOperationsInput | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess
+    instructions?: NullableStringFieldUpdateOperationsInput | string | null
     planExercises?: WorkoutPlanExerciseUpdateManyWithoutExerciseNestedInput
   }
 
@@ -24835,6 +24857,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFieldUpdateOperationsInput | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFieldUpdateOperationsInput | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess
+    instructions?: NullableStringFieldUpdateOperationsInput | string | null
     planExercises?: WorkoutPlanExerciseUncheckedUpdateManyWithoutExerciseNestedInput
   }
 
@@ -24844,6 +24867,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup
     movementPattern: $Enums.MovementPattern
     minEquipment: $Enums.EquipmentAccess
+    instructions?: string | null
   }
 
   export type ExerciseUpdateManyMutationInput = {
@@ -24852,6 +24876,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFieldUpdateOperationsInput | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFieldUpdateOperationsInput | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess
+    instructions?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ExerciseUncheckedUpdateManyInput = {
@@ -24860,6 +24885,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFieldUpdateOperationsInput | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFieldUpdateOperationsInput | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess
+    instructions?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type WorkoutPlanCreateInput = {
@@ -26146,10 +26172,30 @@ export namespace Prisma {
     not?: NestedEnumEquipmentAccessFilter<$PrismaModel> | $Enums.EquipmentAccess
   }
 
+  export type StringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
   export type WorkoutPlanExerciseListRelationFilter = {
     every?: WorkoutPlanExerciseWhereInput
     some?: WorkoutPlanExerciseWhereInput
     none?: WorkoutPlanExerciseWhereInput
+  }
+
+  export type SortOrderInput = {
+    sort: SortOrder
+    nulls?: NullsOrder
   }
 
   export type WorkoutPlanExerciseOrderByRelationAggregateInput = {
@@ -26162,6 +26208,7 @@ export namespace Prisma {
     muscleGroup?: SortOrder
     movementPattern?: SortOrder
     minEquipment?: SortOrder
+    instructions?: SortOrder
   }
 
   export type ExerciseMaxOrderByAggregateInput = {
@@ -26170,6 +26217,7 @@ export namespace Prisma {
     muscleGroup?: SortOrder
     movementPattern?: SortOrder
     minEquipment?: SortOrder
+    instructions?: SortOrder
   }
 
   export type ExerciseMinOrderByAggregateInput = {
@@ -26178,6 +26226,7 @@ export namespace Prisma {
     muscleGroup?: SortOrder
     movementPattern?: SortOrder
     minEquipment?: SortOrder
+    instructions?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -26226,6 +26275,24 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumEquipmentAccessFilter<$PrismaModel>
     _max?: NestedEnumEquipmentAccessFilter<$PrismaModel>
+  }
+
+  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
   export type IntFilter<$PrismaModel = never> = {
@@ -26449,21 +26516,6 @@ export namespace Prisma {
     not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
-  export type StringNullableFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    mode?: QueryMode
-    not?: NestedStringNullableFilter<$PrismaModel> | string | null
-  }
-
   export type SessionListRelationFilter = {
     every?: SessionWhereInput
     some?: SessionWhereInput
@@ -26530,11 +26582,6 @@ export namespace Prisma {
     every?: NutritionAdjustmentLogWhereInput
     some?: NutritionAdjustmentLogWhereInput
     none?: NutritionAdjustmentLogWhereInput
-  }
-
-  export type SortOrderInput = {
-    sort: SortOrder
-    nulls?: NullsOrder
   }
 
   export type SessionOrderByRelationAggregateInput = {
@@ -26605,24 +26652,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedBoolFilter<$PrismaModel>
     _max?: NestedBoolFilter<$PrismaModel>
-  }
-
-  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    mode?: QueryMode
-    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedStringNullableFilter<$PrismaModel>
-    _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
   export type DecimalNullableFilter<$PrismaModel = never> = {
@@ -27400,6 +27429,10 @@ export namespace Prisma {
     set?: $Enums.EquipmentAccess
   }
 
+  export type NullableStringFieldUpdateOperationsInput = {
+    set?: string | null
+  }
+
   export type WorkoutPlanExerciseUpdateManyWithoutExerciseNestedInput = {
     create?: XOR<WorkoutPlanExerciseCreateWithoutExerciseInput, WorkoutPlanExerciseUncheckedCreateWithoutExerciseInput> | WorkoutPlanExerciseCreateWithoutExerciseInput[] | WorkoutPlanExerciseUncheckedCreateWithoutExerciseInput[]
     connectOrCreate?: WorkoutPlanExerciseCreateOrConnectWithoutExerciseInput | WorkoutPlanExerciseCreateOrConnectWithoutExerciseInput[]
@@ -27746,10 +27779,6 @@ export namespace Prisma {
 
   export type BoolFieldUpdateOperationsInput = {
     set?: boolean
-  }
-
-  export type NullableStringFieldUpdateOperationsInput = {
-    set?: string | null
   }
 
   export type SessionUpdateManyWithoutUserNestedInput = {
@@ -28349,6 +28378,20 @@ export namespace Prisma {
     not?: NestedEnumEquipmentAccessFilter<$PrismaModel> | $Enums.EquipmentAccess
   }
 
+  export type NestedStringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
   export type NestedStringWithAggregatesFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -28405,6 +28448,34 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumEquipmentAccessFilter<$PrismaModel>
     _max?: NestedEnumEquipmentAccessFilter<$PrismaModel>
+  }
+
+  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type NestedIntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type NestedEnumExperienceLevelFilter<$PrismaModel = never> = {
@@ -28481,54 +28552,12 @@ export namespace Prisma {
     not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
-  export type NestedStringNullableFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringNullableFilter<$PrismaModel> | string | null
-  }
-
   export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
     equals?: boolean | BooleanFieldRefInput<$PrismaModel>
     not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedBoolFilter<$PrismaModel>
     _max?: NestedBoolFilter<$PrismaModel>
-  }
-
-  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedStringNullableFilter<$PrismaModel>
-    _max?: NestedStringNullableFilter<$PrismaModel>
-  }
-
-  export type NestedIntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type NestedDecimalNullableFilter<$PrismaModel = never> = {
@@ -29085,6 +29114,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup
     movementPattern: $Enums.MovementPattern
     minEquipment: $Enums.EquipmentAccess
+    instructions?: string | null
   }
 
   export type ExerciseUncheckedCreateWithoutPlanExercisesInput = {
@@ -29093,6 +29123,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup
     movementPattern: $Enums.MovementPattern
     minEquipment: $Enums.EquipmentAccess
+    instructions?: string | null
   }
 
   export type ExerciseCreateOrConnectWithoutPlanExercisesInput = {
@@ -29142,6 +29173,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFieldUpdateOperationsInput | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFieldUpdateOperationsInput | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess
+    instructions?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ExerciseUncheckedUpdateWithoutPlanExercisesInput = {
@@ -29150,6 +29182,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFieldUpdateOperationsInput | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFieldUpdateOperationsInput | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess
+    instructions?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SessionCreateWithoutUserInput = {

@@ -1,4 +1,5 @@
 import type { WorkoutPlan, Exercise, ExerciseType } from "@/src/features/workout/data/workouts";
+import { Image } from "react-native";
 
 // ── Types matching the real backend response (GET /api/workouts/plan) ──
 export interface ApiPlanExercise {
@@ -42,22 +43,12 @@ const REST_SEC_BY_GOAL: Record<string, number> = {
   health: 60,
 };
 
-// Generic per-muscle-group images, reusing the same Unsplash convention
-// already used elsewhere in this app (see data/workouts.ts PLANS array).
-// These are placeholders shared across exercises in the same muscle group
-// until/unless real per-exercise photos exist.
-const IMAGE_BY_MUSCLE_GROUP: Record<string, string> = {
-  chest: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80",
-  back: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&q=80",
-  shoulders: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80",
-  biceps: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=600&q=80",
-  triceps: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=600&q=80",
-  quads: "https://images.unsplash.com/photo-1566241142559-40e1dab266c6?w=600&q=80",
-  hamstrings: "https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=600&q=80",
-  glutes: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80",
-  calves: "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=600&q=80",
-  core: "https://images.unsplash.com/photo-1566241142248-38d0b3527c8e?w=600&q=80",
-};
+// Shared local placeholder — do not use dataset GIFs/images (copyrighted).
+// Resolved to a packager URI so existing `{ uri: imageUrl }` call sites work.
+const EXERCISE_PLACEHOLDER_URI = Image.resolveAssetSource(
+  // User-provided asset (assets/images/icon.jfif).
+  require("../../assets/images/icon.jfif"),
+).uri;
 
 const COVER_BY_LABEL_HINT: { match: RegExp; url: string }[] = [
   { match: /push/i, url: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=80" },
@@ -69,8 +60,9 @@ const COVER_BY_LABEL_HINT: { match: RegExp; url: string }[] = [
 ];
 const DEFAULT_COVER = "https://muscleevo.net/wp-content/uploads/2020/08/full-body-workout.jpg";
 
-export function imageForMuscleGroup(muscleGroup: string): string {
-  return IMAGE_BY_MUSCLE_GROUP[muscleGroup] ?? DEFAULT_COVER;
+/** Single shared local placeholder for every exercise / muscle-group tile. */
+export function imageForMuscleGroup(_muscleGroup?: string): string {
+  return EXERCISE_PLACEHOLDER_URI;
 }
 
 function coverImageForDay(label: string): string {
@@ -78,9 +70,7 @@ function coverImageForDay(label: string): string {
   return hit?.url ?? DEFAULT_COVER;
 }
 
-// Generic form cues by movement pattern — placeholders until/unless real
-// per-exercise instructions get added (e.g. via an admin-editable Exercise
-// table field, or AI-generated copy per exercise name).
+// Generic form cues by movement pattern — used when Exercise.instructions is null.
 const CUE_BY_PATTERN: Record<string, string> = {
   push: "Control the lowering phase, drive through full range of motion on the way up.",
   pull: "Squeeze the target muscle at the top, avoid using momentum to move the weight.",
@@ -111,7 +101,7 @@ function adaptExercise(ex: ApiPlanExercise, goalId: string): Exercise {
       ? { reps: midReps }
       : { durationSec: 40 }), // generic hold duration for inferred isometric moves
     restSec: REST_SEC_BY_GOAL[goalId] ?? 60,
-    imageUrl: IMAGE_BY_MUSCLE_GROUP[ex.muscleGroup] ?? DEFAULT_COVER,
+    imageUrl: imageForMuscleGroup(ex.muscleGroup),
     instructions:
       CUE_BY_PATTERN[ex.movementPattern] ??
       "Focus on controlled form and full range of motion.",
@@ -137,6 +127,7 @@ export interface LibraryExerciseInput {
   name: string;
   muscleGroup: string;
   movementPattern: string;
+  instructions?: string | null;
 }
 
 // Default sets/reps for a manually-added exercise, since there's no
@@ -157,9 +148,10 @@ export function adaptLibraryExercise(
     sets: DEFAULT_SETS,
     ...(type === "reps" ? { reps: DEFAULT_REPS } : { durationSec: 40 }),
     restSec: REST_SEC_BY_GOAL[goalId] ?? 60,
-    imageUrl: IMAGE_BY_MUSCLE_GROUP[ex.muscleGroup] ?? DEFAULT_COVER,
+    imageUrl: imageForMuscleGroup(ex.muscleGroup),
     instructions:
-      CUE_BY_PATTERN[ex.movementPattern] ??
+      ex.instructions?.trim() ||
+      CUE_BY_PATTERN[ex.movementPattern] ||
       "Focus on controlled form and full range of motion.",
     muscleGroup: ex.muscleGroup,
   };

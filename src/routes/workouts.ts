@@ -421,6 +421,7 @@ workoutsRouter.get("/exercises", async (c) => {
       muscleGroup: ex.muscleGroup,
       movementPattern: ex.movementPattern,
       minEquipment: ex.minEquipment,
+      instructions: ex.instructions,
     })),
   );
 });

@@ -100,5 +100,8 @@
   "bugs": {
     "url": "https://github.com/Menna-ai-apps/potentialpeak-app/issues"
   },
-  "homepage": "https://github.com/Menna-ai-apps/potentialpeak-app#readme"
+  "homepage": "https://github.com/Menna-ai-apps/potentialpeak-app#readme",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
 }

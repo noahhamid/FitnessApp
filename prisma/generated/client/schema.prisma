@@ -15,6 +15,7 @@ model Exercise {
   muscleGroup     MuscleGroup
   movementPattern MovementPattern
   minEquipment    EquipmentAccess // minimum tier required — see EQUIPMENT_RANK in code
+  instructions    String? // English form guidance (optional until curated seed lands)
   planExercises   WorkoutPlanExercise[]
 
   @@map("exercise")

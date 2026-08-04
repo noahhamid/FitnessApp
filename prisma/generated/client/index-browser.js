@@ -125,7 +125,8 @@ exports.Prisma.ExerciseScalarFieldEnum = {
   name: 'name',
   muscleGroup: 'muscleGroup',
   movementPattern: 'movementPattern',
-  minEquipment: 'minEquipment'
+  minEquipment: 'minEquipment',
+  instructions: 'instructions'
 };
 
 exports.Prisma.WorkoutPlanScalarFieldEnum = {

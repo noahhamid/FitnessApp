@@ -1,7 +1,6 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import { api } from "@/src/lib/api";
-import { fetchMealLogRange } from "@/src/features/nutrition/services/nutrition.service";
 
 const WEEKDAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
@@ -29,16 +28,8 @@ function toDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/**
- * @param weekOffset 0 = current week (Mon–Sun), -1 = previous, +1 = next, etc.
- */
-export function useWeekOverview(weekOffset = 0) {
-  const monday = useMemo(() => {
-    const d = mondayOfThisWeek();
-    d.setDate(d.getDate() + weekOffset * 7);
-    return d;
-  }, [weekOffset]);
-
+export function useWeekOverview() {
+  const monday = mondayOfThisWeek();
   const weekDates = useMemo(
     () =>
       Array.from({ length: 7 }, (_, i) => {
@@ -50,7 +41,7 @@ export function useWeekOverview(weekOffset = 0) {
   );
 
   const weekStart = toDateStr(weekDates[0]);
-  const weekEnd = toDateStr(weekDates[6]); // Sunday inclusive
+  const weekEnd = toDateStr(weekDates[5]);
 
   // One query for the whole week's workout sessions.
   const workoutQuery = useQuery({
@@ -61,31 +52,23 @@ export function useWeekOverview(weekOffset = 0) {
       ),
   });
 
-  // One range fetch for meal presence (was 7 parallel single-day calls).
-  const mealQuery = useQuery({
-    queryKey: ["week-overview", "meals", weekStart, weekEnd],
-    queryFn: () => fetchMealLogRange(weekStart, weekEnd),
+  // One lightweight query per day for meal presence — nutrition's API
+  // only supports a single-date lookup, not a range, so this fans out
+  // 6 parallel requests rather than one bulk call.
+  const mealQueries = useQueries({
+    queries: weekDates.map((d) => ({
+      queryKey: ["week-overview", "meals", toDateStr(d)],
+      queryFn: () => api.get<{ id: string }[]>(`/api/nutrition/log?date=${toDateStr(d)}`),
+    })),
   });
 
-  const isLoading = workoutQuery.isLoading || mealQuery.isLoading;
+  const isLoading = workoutQuery.isLoading || mealQueries.some((q) => q.isLoading);
 
-  const workoutDatesWithSession = useMemo(
-    () =>
-      new Set(
-        (workoutQuery.data ?? [])
-          .filter((s) => s.completedAt)
-          .map((s) => s.completedAt!.slice(0, 10)),
-      ),
-    [workoutQuery.data],
+  const workoutDatesWithSession = new Set(
+    (workoutQuery.data ?? [])
+      .filter((s) => s.completedAt)
+      .map((s) => s.completedAt!.slice(0, 10)),
   );
-
-  const mealDatesWithLog = useMemo(() => {
-    const set = new Set<string>();
-    for (const entry of mealQuery.data ?? []) {
-      set.add(entry.log_date);
-    }
-    return set;
-  }, [mealQuery.data]);
 
   const days: WeekDay[] = weekDates.map((d, i) => {
     const fullDate = toDateStr(d);
@@ -94,9 +77,9 @@ export function useWeekOverview(weekOffset = 0) {
       date: d.getDate(),
       fullDate,
       hasWorkout: workoutDatesWithSession.has(fullDate),
-      hasMeal: mealDatesWithLog.has(fullDate),
+      hasMeal: (mealQueries[i]?.data?.length ?? 0) > 0,
     };
   });
 
-  return { days, isLoading, weekStart, weekEnd };
+  return { days, isLoading };
 }
