@@ -24,6 +24,13 @@ type Props = {
   onRemoveFromToday: () => void;
   addedToToday?: boolean;
   starting?: boolean;
+  /** When false, already-added state is inert (no remove). Default true. */
+  allowRemove?: boolean;
+  addLabel?: string;
+  addedLabel?: string;
+  addPending?: boolean;
+  /** Hide primary "Start this exercise" (mid-workout add flow). */
+  showStart?: boolean;
 };
 
 export function ExerciseDetailCard({
@@ -35,9 +42,26 @@ export function ExerciseDetailCard({
   onRemoveFromToday,
   addedToToday,
   starting,
+  allowRemove = true,
+  addLabel = "Add to today's session",
+  addedLabel = "Added — tap to remove",
+  addPending = false,
+  showStart = true,
 }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
+
+  const secondaryDisabled =
+    addPending || (addedToToday && !allowRemove);
+
+  const onSecondaryPress = () => {
+    if (secondaryDisabled) return;
+    if (addedToToday) {
+      onRemoveFromToday();
+      return;
+    }
+    onAddToToday();
+  };
 
   return (
     <View style={s.screen}>
@@ -80,38 +104,56 @@ export function ExerciseDetailCard({
             </View>
           </View>
 
-          <Pressable
-            style={[s.primaryBtn, starting && s.primaryBtnDisabled]}
-            onPress={onStart}
-            disabled={starting}
-          >
-            {starting ? (
-              <ActivityIndicator color={T.onAccent} size="small" />
-            ) : (
-              <Text style={s.primaryBtnText}>Start this exercise</Text>
-            )}
-          </Pressable>
+          {showStart && (
+            <Pressable
+              style={[s.primaryBtn, starting && s.primaryBtnDisabled]}
+              onPress={onStart}
+              disabled={starting}
+            >
+              {starting ? (
+                <ActivityIndicator color={T.onAccent} size="small" />
+              ) : (
+                <Text style={s.primaryBtnText}>Start this exercise</Text>
+              )}
+            </Pressable>
+          )}
 
           <Pressable
-            style={[s.secondaryBtn, addedToToday && s.secondaryBtnDone]}
-            // Now a real toggle — tapping while added removes it instead
-            // of doing nothing, so an accidental tap is reversible.
-            onPress={addedToToday ? onRemoveFromToday : onAddToToday}
+            style={[
+              s.secondaryBtn,
+              !showStart && s.secondaryBtnAsPrimary,
+              addedToToday && s.secondaryBtnDone,
+              secondaryDisabled && s.secondaryBtnDisabled,
+            ]}
+            onPress={onSecondaryPress}
+            disabled={secondaryDisabled}
           >
             <View style={s.secondaryBtnContent}>
-              {addedToToday && (
-                <Check size={15} color={T.accent} strokeWidth={2.6} />
+              {addPending ? (
+                <ActivityIndicator
+                  color={!showStart && !addedToToday ? T.onAccent : T.accent}
+                  size="small"
+                />
+              ) : (
+                <>
+                  {addedToToday && (
+                    <Check size={15} color={T.accent} strokeWidth={2.6} />
+                  )}
+                  <Text
+                    style={[
+                      s.secondaryBtnText,
+                      !showStart && !addedToToday && s.secondaryBtnTextPrimary,
+                      addedToToday && s.secondaryBtnTextDone,
+                    ]}
+                  >
+                    {addedToToday
+                      ? allowRemove
+                        ? addedLabel
+                        : "Already in this workout"
+                      : addLabel}
+                  </Text>
+                </>
               )}
-              <Text
-                style={[
-                  s.secondaryBtnText,
-                  addedToToday && s.secondaryBtnTextDone,
-                ]}
-              >
-                {addedToToday
-                  ? "Added — tap to remove"
-                  : "Add to today's session"}
-              </Text>
             </View>
           </Pressable>
         </View>
@@ -206,9 +248,16 @@ function makeStyles(T: AppTheme) {
     paddingVertical: 15,
     alignItems: "center",
   },
+  secondaryBtnAsPrimary: {
+    backgroundColor: T.accent,
+    borderColor: T.accent,
+  },
   secondaryBtnDone: {
     borderColor: T.accent,
     backgroundColor: T.accentTint,
+  },
+  secondaryBtnDisabled: {
+    opacity: 0.7,
   },
   secondaryBtnContent: {
     flexDirection: "row",
@@ -216,6 +265,7 @@ function makeStyles(T: AppTheme) {
     gap: 6,
   },
   secondaryBtnText: { fontFamily: T.bodyBold, fontSize: 14, color: T.white },
+  secondaryBtnTextPrimary: { color: T.onAccent },
   secondaryBtnTextDone: { color: T.accent },
   });
 }

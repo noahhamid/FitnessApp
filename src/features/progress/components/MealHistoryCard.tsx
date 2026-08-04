@@ -1,6 +1,12 @@
-import React, { useMemo } from "react";
-import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
-import { Utensils } from "lucide-react-native";
+import React, { useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Pressable,
+} from "react-native";
+import { Utensils, ChevronDown } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
@@ -17,6 +23,9 @@ type Props = {
   meals: MealLogEntry[];
   isLoading?: boolean;
 };
+
+/** Same reveal cadence as ExerciseLibrarySection. */
+const PAGE_SIZE = 5;
 
 function formatDayHeader(dateKey: string): string {
   const d = parseLocalDateKey(dateKey);
@@ -55,8 +64,12 @@ function groupByDay(meals: MealLogEntry[]): DayGroup[] {
 
 export function MealHistoryCard({ meals, isLoading }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const groups = useMemo(() => groupByDay(meals), [meals]);
+  const visibleGroups = groups.slice(0, visibleCount);
+  const hasMore = groups.length > visibleCount;
+  const remaining = groups.length - visibleCount;
 
   if (isLoading) {
     return (
@@ -90,7 +103,7 @@ export function MealHistoryCard({ meals, isLoading }: Props) {
       <Text style={s.eyebrow}>MEAL HISTORY · 30 DAYS</Text>
 
       <View style={s.list}>
-        {groups.map((group) => (
+        {visibleGroups.map((group) => (
           <View key={group.date} style={s.dayBlock}>
             <View style={s.dayHeader}>
               <Text style={s.dayLabel}>{formatDayHeader(group.date)}</Text>
@@ -111,6 +124,19 @@ export function MealHistoryCard({ meals, isLoading }: Props) {
           </View>
         ))}
       </View>
+
+      {hasMore && (
+        <Pressable
+          style={s.seeMoreBtn}
+          onPress={() => setVisibleCount((c) => c + PAGE_SIZE)}
+          hitSlop={8}
+        >
+          <Text style={s.seeMoreText}>
+            See {Math.min(remaining, PAGE_SIZE)} more
+          </Text>
+          <ChevronDown size={14} color={T.accent} strokeWidth={2.4} />
+        </Pressable>
+      )}
     </GlassSurface>
   );
 }
@@ -201,6 +227,21 @@ function makeStyles(T: AppTheme) {
       fontSize: 13,
       color: T.accent,
       fontVariant: ["tabular-nums"],
+    },
+    seeMoreBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+      paddingVertical: 14,
+      marginTop: 4,
+      zIndex: 1,
+    },
+    seeMoreText: {
+      fontFamily: T.display,
+      color: T.accent,
+      fontSize: 13,
+      letterSpacing: -0.1,
     },
   });
 }

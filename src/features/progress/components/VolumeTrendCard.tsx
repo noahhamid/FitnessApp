@@ -1,13 +1,6 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
-import Svg, {
-  Path,
-  Circle,
-  Line,
-  Defs,
-  LinearGradient,
-  Stop,
-} from "react-native-svg";
+import Svg, { Rect, Line } from "react-native-svg";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
@@ -31,33 +24,37 @@ export function VolumeTrendCard({ sessions }: Props) {
   const series = useMemo(() => weeklyVolumeSeries(sessions, 8), [sessions]);
   const hasData = series.some((p) => p.volumeKg > 0);
 
-  const { points, last, first } = useMemo(() => {
+  const { bars, last, first } = useMemo(() => {
     const max = Math.max(...series.map((p) => p.volumeKg), 1);
-    const padX = 8;
-    const padY = 12;
+    const padX = 6;
+    const padTop = 8;
+    const baselineY = height - 8;
     const usableW = width - padX * 2;
-    const usableH = height - padY * 2;
-    const pts = series.map((p, i) => ({
-      x:
-        padX +
-        (series.length === 1 ? usableW / 2 : (i / (series.length - 1)) * usableW),
-      y: padY + usableH - (p.volumeKg / max) * usableH,
-    }));
+    const usableH = baselineY - padTop;
+    const gap = 4;
+    const barW =
+      series.length > 0
+        ? Math.max(6, (usableW - gap * (series.length - 1)) / series.length)
+        : 0;
+
+    const next = series.map((p, i) => {
+      const barH =
+        p.volumeKg > 0 ? Math.max(3, (p.volumeKg / max) * usableH) : 0;
+      return {
+        x: padX + i * (barW + gap),
+        y: baselineY - barH,
+        width: barW,
+        height: barH,
+        isLast: i === series.length - 1,
+      };
+    });
+
     return {
-      points: pts,
+      bars: next,
       last: series[series.length - 1]?.volumeKg ?? 0,
       first: series[0]?.volumeKg ?? 0,
     };
   }, [series]);
-
-  const linePath = points.reduce(
-    (acc, p, i) => acc + (i === 0 ? `M${p.x},${p.y}` : ` L${p.x},${p.y}`),
-    "",
-  );
-  const fillPath =
-    points.length > 0
-      ? `${linePath} L${points[points.length - 1].x},${height - 8} L${points[0].x},${height - 8} Z`
-      : "";
 
   const delta = last - first;
 
@@ -77,12 +74,6 @@ export function VolumeTrendCard({ sessions }: Props) {
 
       {hasData ? (
         <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
-          <Defs>
-            <LinearGradient id="volFill" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={T.accent} stopOpacity="0.28" />
-              <Stop offset="1" stopColor={T.accent} stopOpacity="0" />
-            </LinearGradient>
-          </Defs>
           <Line
             x1={0}
             y1={height - 8}
@@ -91,22 +82,19 @@ export function VolumeTrendCard({ sessions }: Props) {
             stroke={T.border}
             strokeWidth={1}
           />
-          <Path d={fillPath} fill="url(#volFill)" />
-          <Path
-            d={linePath}
-            stroke={T.accent}
-            strokeWidth={2}
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {points.length > 0 && (
-            <Circle
-              cx={points[points.length - 1].x}
-              cy={points[points.length - 1].y}
-              r={3.5}
-              fill={T.accent}
-            />
+          {bars.map((bar, i) =>
+            bar.height > 0 ? (
+              <Rect
+                key={i}
+                x={bar.x}
+                y={bar.y}
+                width={bar.width}
+                height={bar.height}
+                rx={3}
+                fill={bar.isLast ? T.accent : T.accent}
+                opacity={bar.isLast ? 1 : 0.45}
+              />
+            ) : null,
           )}
         </Svg>
       ) : (

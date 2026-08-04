@@ -2,48 +2,79 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
+import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
+import { localDateOnly } from "../lib/localDate";
 
-interface Props {
+const WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
+
+type WeekDay = {
+  date: string;
+  filled: boolean;
+};
+
+type Props = {
+  /** Completed session count this calendar week (Mon→today window). */
   completedThisWeek: number;
   targetPerWeek: number;
-}
+  /** Mon→Sun cells for the current week (from contributionGrid). */
+  weekDays: WeekDay[];
+};
 
-export function ConsistencyCard({ completedThisWeek, targetPerWeek }: Props) {
-  const { styles: s } = useThemedStyles(makeStyles);
-  const pct =
-    targetPerWeek > 0 ? Math.min(1, completedThisWeek / targetPerWeek) : 0;
+export function ConsistencyCard({
+  completedThisWeek,
+  targetPerWeek,
+  weekDays,
+}: Props) {
+  const { T, styles: s } = useThemedStyles(makeStyles);
+  const todayKey = localDateOnly();
 
   return (
-    <View style={s.card}>
-      <View style={s.row}>
+    <GlassSurface style={s.card}>
+      <View style={s.headerRow}>
         <Text style={s.label}>THIS WEEK</Text>
         <Text style={s.count}>
           {completedThisWeek}
           <Text style={s.countDim}> / {targetPerWeek} sessions</Text>
         </Text>
       </View>
-      <View style={s.track}>
-        <View style={[s.fill, { width: `${pct * 100}%` }]} />
+
+      <View style={s.dotsRow}>
+        {WEEKDAY_LABELS.map((label, i) => {
+          const day = weekDays[i];
+          const filled = day?.filled ?? false;
+          const isToday = day?.date === todayKey;
+          return (
+            <View key={`${label}-${i}`} style={s.dotCol}>
+              <View
+                style={[
+                  s.dot,
+                  filled && s.dotFilled,
+                  isToday && s.dotToday,
+                ]}
+              />
+              <Text style={[s.dayLabel, isToday && s.dayLabelToday]}>
+                {label}
+              </Text>
+            </View>
+          );
+        })}
       </View>
-    </View>
+    </GlassSurface>
   );
 }
 
 function makeStyles(T: AppTheme) {
   return StyleSheet.create({
     card: {
-      backgroundColor: T.glass,
       borderRadius: T.radius.lg,
-      borderWidth: 0.5,
-      borderColor: T.glassBorder,
       padding: T.space.lg,
-      ...T.shadow.card,
     },
-    row: {
+    headerRow: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      marginBottom: 10,
+      marginBottom: 14,
+      zIndex: 1,
     },
     label: {
       fontFamily: T.bodyBold,
@@ -54,12 +85,39 @@ function makeStyles(T: AppTheme) {
     },
     count: { fontFamily: T.displaySemi, fontSize: 15, color: T.white },
     countDim: { fontFamily: T.bodyMed, fontSize: 12, color: T.muted },
-    track: {
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: T.accentTint,
-      overflow: "hidden",
+    dotsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      gap: 6,
+      zIndex: 1,
     },
-    fill: { height: "100%", backgroundColor: T.accent, borderRadius: 3 },
+    dotCol: {
+      flex: 1,
+      alignItems: "center",
+      gap: 6,
+    },
+    dot: {
+      width: "100%",
+      aspectRatio: 1,
+      maxWidth: 28,
+      maxHeight: 28,
+      borderRadius: 8,
+      backgroundColor: T.accentTint,
+    },
+    dotFilled: {
+      backgroundColor: T.accent,
+    },
+    dotToday: {
+      borderWidth: 1.5,
+      borderColor: T.white,
+    },
+    dayLabel: {
+      fontFamily: T.bodySemi,
+      fontSize: 10,
+      color: T.faint,
+    },
+    dayLabelToday: {
+      color: T.white,
+    },
   });
 }

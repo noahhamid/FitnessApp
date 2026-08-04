@@ -11,6 +11,8 @@ import {
   ScrollView,
   Modal,
   Pressable,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -38,8 +40,11 @@ import * as Haptics from "expo-haptics";
 import { WorkoutPlan, type Exercise } from "../data/workouts";
 import { T } from "@/src/theme";
 import { ExerciseLibrarySection } from "./ExerciseLibrarySection";
+import { ExerciseDetailCard } from "./ExerciseDetailCard";
 import { useAddToLiveSession } from "../hooks/useAddToLiveSession";
+import { useDeleteWorkoutSession } from "../hooks/useWorkoutSession";
 import { topInset } from "@/src/lib/safe-area";
+import { imageForMuscleGroup } from "@/src/lib/workout-plan-adapter";
 import type { LibraryExercise } from "../hooks/useExerciseLibrary";
 
 type Phase = "exercise" | "rest" | "done";
@@ -171,6 +176,26 @@ function LibraryModalBody({
 }) {
   const insets = useSafeAreaInsets();
   const safeTop = topInset(insets.top);
+  const [viewing, setViewing] = useState<LibraryExercise | null>(null);
+
+  if (viewing) {
+    const alreadyIn = sessionExerciseNames.has(viewing.name);
+    return (
+      <ExerciseDetailCard
+        exercise={viewing}
+        imageUrl={imageForMuscleGroup(viewing.muscleGroup)}
+        addedToToday={alreadyIn}
+        allowRemove={false}
+        showStart={false}
+        addLabel="Add to this workout"
+        addPending={!!addingName}
+        onBack={() => setViewing(null)}
+        onStart={() => {}}
+        onAddToToday={() => onAdd(viewing)}
+        onRemoveFromToday={() => {}}
+      />
+    );
+  }
 
   return (
     <View style={[s.libraryModal, { paddingTop: safeTop + 8 }]}>
@@ -194,14 +219,7 @@ function LibraryModalBody({
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <ExerciseLibrarySection
-          addedIds={sessionExerciseNames}
-          onAdd={onAdd}
-          onRemove={() => {}}
-          onView={onAdd}
-          addedDisabled
-          addPending={!!addingName}
-        />
+        <ExerciseLibrarySection onView={(ex) => setViewing(ex)} />
         {addingName && (
           <Text style={s.addingHint}>Adding {addingName}…</Text>
         )}
@@ -276,7 +294,36 @@ export function ActiveWorkoutScreen({
     addingName,
     addError,
   } = useAddToLiveSession(sessionId);
+  const deleteSession = useDeleteWorkoutSession();
   const [libraryOpen, setLibraryOpen] = useState(false);
+
+  const requestCancelWorkout = () => {
+    if (deleteSession.isPending) return;
+    Alert.alert(
+      "Cancel this workout?",
+      "Your progress won't be saved.",
+      [
+        { text: "Keep going", style: "cancel" },
+        {
+          text: "Cancel workout",
+          style: "destructive",
+          onPress: () => {
+            deleteSession.mutate(sessionId, {
+              onSuccess: () => onClose(),
+              onError: (err) => {
+                Alert.alert(
+                  "Couldn't cancel workout",
+                  err instanceof Error
+                    ? err.message
+                    : "Check your connection and try again.",
+                );
+              },
+            });
+          },
+        },
+      ],
+    );
+  };
 
   const [localExercises, setLocalExercises] = useState<Exercise[]>(
     () => plan.exercises,
@@ -742,8 +789,9 @@ export function ActiveWorkoutScreen({
           <TouchableOpacity
             style={s.iconBtn}
             onPress={
-              screenMode === "focus" ? returnToList : onClose
+              screenMode === "focus" ? returnToList : requestCancelWorkout
             }
+            disabled={screenMode !== "focus" && deleteSession.isPending}
             activeOpacity={0.85}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="button"
@@ -753,6 +801,8 @@ export function ActiveWorkoutScreen({
           >
             {screenMode === "focus" ? (
               <ChevronLeft size={20} color={T.onDark} strokeWidth={2.2} />
+            ) : deleteSession.isPending ? (
+              <ActivityIndicator size="small" color={T.onDark} />
             ) : (
               <X size={18} color={T.onDark} strokeWidth={2.2} />
             )}

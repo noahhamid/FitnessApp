@@ -33,13 +33,19 @@ import { MuscleBalanceCard } from "../components/MuscleBalanceCard";
 import { StreakHeroCard } from "../components/StreakHeroCard";
 import { AdherenceCard } from "../components/AdherenceCard";
 import { MealHistoryCard } from "../components/MealHistoryCard";
+import { ProgressSnapshotStrip } from "../components/ProgressSnapshotStrip";
+import { CategoryFilter } from "@/src/features/workout/components/CategoryFilter";
 import { localDateOnly, parseLocalDateKey } from "../lib/localDate";
+import { completedDayKeys, contributionGrid } from "../lib/analytics";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
 import { useExerciseLibrary } from "@/src/features/workout/hooks/useExerciseLibrary";
 import { useWorkoutStreak } from "@/src/features/workout/hooks/useWorkoutStreak";
 import { useMealLogRange } from "@/src/features/nutrition/hooks/useNutrition";
+
+const PROGRESS_TABS = ["Body", "Training", "Nutrition", "Records"] as const;
+type ProgressTab = (typeof PROGRESS_TABS)[number];
 
 function eightWeeksAgo(): string {
   const d = new Date();
@@ -67,10 +73,10 @@ export default function ProgressScreen() {
   const insets = useSafeAreaInsets();
   const { section } = useLocalSearchParams<{ section?: string }>();
   const scrollRef = useRef<ScrollView>(null);
-  const mealSectionY = useRef(0);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ProgressTab>("Body");
 
   const monthStart = useMemo(
     () =>
@@ -145,6 +151,20 @@ export default function ProgressScreen() {
     ).length;
   }, [recentSessions]);
 
+  // Mon→Sun filled cells for ConsistencyCard's week dots.
+  const thisWeekDays = useMemo(() => {
+    const days = completedDayKeys(analyticsSessions ?? []);
+    return contributionGrid(days, 1)[0] ?? [];
+  }, [analyticsSessions]);
+
+  // Same first→last delta WeightTrendChart shows — null until ≥2 logs.
+  const weightDeltaKg = useMemo(() => {
+    if (!weightEntries || weightEntries.length < 2) return null;
+    const first = weightEntries[0].weight;
+    const last = weightEntries[weightEntries.length - 1].weight;
+    return last - first;
+  }, [weightEntries]);
+
   // null when the user has never logged — WeightLogSheet starts blank
   // instead of inventing a fake 70kg default.
   const lastLoggedWeight =
@@ -167,17 +187,16 @@ export default function ProgressScreen() {
       })
     : "";
 
-  // Deep-link from Nutrition "See all" / "Full report" → scroll to meals.
+  // Deep-link from Nutrition "See all" / "Full report" → Nutrition tab.
   useEffect(() => {
     if (section !== "meals") return;
-    const timer = setTimeout(() => {
-      scrollRef.current?.scrollTo({
-        y: Math.max(0, mealSectionY.current - 12),
-        animated: true,
-      });
-    }, 120);
-    return () => clearTimeout(timer);
-  }, [section, mealHistoryLoading]);
+    setActiveTab("Nutrition");
+  }, [section]);
+
+  const handleTabChange = (tab: ProgressTab) => {
+    setActiveTab(tab);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  };
 
   const handleSaveWeight = async (weight: number) => {
     try {
@@ -204,87 +223,103 @@ export default function ProgressScreen() {
       >
         <Text style={s.pageTitle}>Progress</Text>
 
-        <WorkoutCalendar
-          sessions={monthSessions ?? []}
-          monthDate={calendarMonth}
-          onMonthChange={setCalendarMonth}
-          onSelectDay={setSelectedDate}
-          selectedDate={selectedDate}
+        <ProgressSnapshotStrip
+          streakDays={streakDays}
+          sessionsThisWeek={completedThisWeek}
+          weightDeltaKg={weightDeltaKg}
         />
 
-        <View style={s.section}>
-          {weightLoading ? (
-            <View style={s.centerState}>
-              <ActivityIndicator color={T.accent} />
-            </View>
-          ) : (
-            <WeightTrendChart entries={weightEntries ?? []} />
-          )}
-
-          <Pressable style={s.logBtn} onPress={() => setSheetVisible(true)}>
-            <Plus size={16} color={T.onAccent} strokeWidth={2.4} />
-            <Text style={s.logBtnText}>Log weight</Text>
-          </Pressable>
+        <View style={s.tabsWrap}>
+          <CategoryFilter
+            categories={[...PROGRESS_TABS]}
+            active={activeTab}
+            onChange={handleTabChange}
+          />
         </View>
 
-        {apiPlan && (
-          <View style={s.section}>
-            <ConsistencyCard
-              completedThisWeek={completedThisWeek}
-              targetPerWeek={apiPlan.daysPerWeek}
+        {activeTab === "Body" && (
+          <View style={s.tabPanel}>
+            {weightLoading ? (
+              <View style={s.centerState}>
+                <ActivityIndicator color={T.accent} />
+              </View>
+            ) : (
+              <WeightTrendChart entries={weightEntries ?? []} />
+            )}
+
+            <Pressable style={s.logBtn} onPress={() => setSheetVisible(true)}>
+              <Plus size={16} color={T.onAccent} strokeWidth={2.4} />
+              <Text style={s.logBtnText}>Log weight</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {activeTab === "Training" && (
+          <View style={s.tabPanel}>
+            <WorkoutCalendar
+              sessions={monthSessions ?? []}
+              monthDate={calendarMonth}
+              onMonthChange={setCalendarMonth}
+              onSelectDay={setSelectedDate}
+              selectedDate={selectedDate}
+            />
+
+            {apiPlan && (
+              <ConsistencyCard
+                completedThisWeek={completedThisWeek}
+                targetPerWeek={apiPlan.daysPerWeek}
+                weekDays={thisWeekDays}
+              />
+            )}
+
+            <View style={s.cardStack}>
+              <StreakHeroCard
+                streakDays={streakDays}
+                sessions={analyticsSessions ?? []}
+              />
+              <VolumeTrendCard sessions={analyticsSessions ?? []} />
+              <MuscleBalanceCard
+                sessions={analyticsSessions ?? []}
+                nameToGroup={nameToGroup}
+              />
+              {apiPlan && (
+                <AdherenceCard
+                  sessions={analyticsSessions ?? []}
+                  daysPerWeek={apiPlan.daysPerWeek}
+                />
+              )}
+            </View>
+          </View>
+        )}
+
+        {activeTab === "Nutrition" && (
+          <View style={s.tabPanel}>
+            <MealHistoryCard
+              meals={mealHistory ?? []}
+              isLoading={mealHistoryLoading}
             />
           </View>
         )}
 
-        <View
-          style={s.section}
-          onLayout={(e) => {
-            mealSectionY.current = e.nativeEvent.layout.y;
-          }}
-        >
-          <Text style={s.sectionTitle}>Nutrition</Text>
-          <MealHistoryCard
-            meals={mealHistory ?? []}
-            isLoading={mealHistoryLoading}
-          />
-        </View>
-
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Training</Text>
-          <View style={s.cardStack}>
-            <StreakHeroCard
-              streakDays={streakDays}
-              sessions={analyticsSessions ?? []}
-            />
-            <VolumeTrendCard sessions={analyticsSessions ?? []} />
-            <MuscleBalanceCard
-              sessions={analyticsSessions ?? []}
-              nameToGroup={nameToGroup}
-            />
-            {apiPlan && (
-              <AdherenceCard
-                sessions={analyticsSessions ?? []}
-                daysPerWeek={apiPlan.daysPerWeek}
-              />
-            )}
-          </View>
-        </View>
-
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Personal records</Text>
-          <PersonalRecordsSection records={personalRecords ?? []} />
-        </View>
-
-        <View style={s.section}>
-          <Text style={s.sectionTitle}>Ready to level up</Text>
-          {suggestionsLoading ? (
-            <View style={s.centerState}>
-              <ActivityIndicator color={T.accent} />
+        {activeTab === "Records" && (
+          <View style={s.tabPanel}>
+            <View>
+              <Text style={s.sectionTitle}>Personal records</Text>
+              <PersonalRecordsSection records={personalRecords ?? []} />
             </View>
-          ) : (
-            <LevelUpSection suggestions={suggestions ?? []} />
-          )}
-        </View>
+
+            <View>
+              <Text style={s.sectionTitle}>Ready to level up</Text>
+              {suggestionsLoading ? (
+                <View style={s.centerState}>
+                  <ActivityIndicator color={T.accent} />
+                </View>
+              ) : (
+                <LevelUpSection suggestions={suggestions ?? []} />
+              )}
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       <WeightLogSheet
@@ -317,6 +352,9 @@ function makeStyles(T: AppTheme) {
       fontSize: 28,
       color: T.white,
       letterSpacing: -0.5,
+      marginBottom: T.space.md,
+    },
+    tabsWrap: {
       marginBottom: T.space.xl,
     },
     logBtn: {
@@ -334,7 +372,7 @@ function makeStyles(T: AppTheme) {
       fontSize: 13,
       color: T.onAccent,
     },
-    section: { marginTop: 28 },
+    tabPanel: { gap: 16 },
     sectionTitle: {
       fontFamily: T.displaySemi,
       fontSize: 18,

@@ -74,3 +74,12 @@ export function useCompleteWorkoutSession() {
     onSuccess: () => invalidateSessionQueries(qc),
   });
 }
+
+export function useDeleteWorkoutSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (sessionId: string) =>
+      api.delete<{ deleted: boolean }>(`/api/workouts/${sessionId}`),
+    onSuccess: () => invalidateSessionQueries(qc),
+  });
+}

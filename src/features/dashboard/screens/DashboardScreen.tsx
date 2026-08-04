@@ -30,13 +30,7 @@ import {
   useWater,
 } from "@/src/features/nutrition/hooks/useNutrition";
 import { useWeeklyTrend } from "@/src/features/nutrition/hooks/useNutrition";
-
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-}
+import { getGreeting } from "@/src/lib/greeting";
 
 function todayStr(): string {
   const n = new Date();

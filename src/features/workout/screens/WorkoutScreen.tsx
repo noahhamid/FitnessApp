@@ -371,12 +371,16 @@ export default function WorkoutScreen() {
             prev.some((e) => e.name === ex.name) ? prev : [...prev, ex],
           )
         }
-        onClose={() =>
+        onClose={() => {
+          // Cancel deletes the session row first (ActiveWorkoutScreen);
+          // clear local active state so we don't re-enter a ghost session.
+          setActiveSessionId(null);
+          setActiveExercises([]);
           // Only return to WorkoutDetailScreen when the session was started
           // from a full-plan browse. Today's card / resume / library starts
           // should never dump into the detail preview.
-          setView(cameFrom === "fullPlan" ? "detail" : "today")
-        }
+          setView(cameFrom === "fullPlan" ? "detail" : "today");
+        }}
         onFinish={handleFinish}
         lastPerformance={lastPerformance}
       />
@@ -461,11 +465,23 @@ export default function WorkoutScreen() {
         imageUrl={imageForMuscleGroup(viewingExercise.muscleGroup)}
         addedToToday={addedNames.has(viewingExercise.name)}
         starting={starting}
+        allowRemove={!inProgress}
+        showStart={!inProgress}
+        addLabel={
+          inProgress ? "Add to this workout" : "Add to today's session"
+        }
+        addPending={inProgress ? liveAddPending : isAddingExtra}
         onBack={() => {
           setView(libraryDetailFrom);
           setViewingExercise(null);
         }}
         onAddToToday={() => {
+          if (inProgress) {
+            void addToLiveSession(viewingExercise, {
+              alreadyAdded: addedNames,
+            });
+            return;
+          }
           addExtra({
             exerciseName: viewingExercise.name,
             muscleGroup: viewingExercise.muscleGroup,
@@ -473,6 +489,7 @@ export default function WorkoutScreen() {
           });
         }}
         onRemoveFromToday={() => {
+          if (inProgress) return;
           const extra = extras.find(
             (e) => e.exerciseName === viewingExercise.name,
           );
@@ -564,7 +581,6 @@ export default function WorkoutScreen() {
                 exercises={inProgress.plan.exercises}
                 personalRecords={personalRecords}
                 onPress={handleResume}
-                onExercisePress={(ex) => openExerciseDetail(ex, "today")}
               />
             </Reveal>
             {visibleStreak != null && (
@@ -627,33 +643,6 @@ export default function WorkoutScreen() {
             </Reveal>
 
             <ExerciseLibrarySection
-              addedIds={addedNames}
-              // Live session: no remove-from-session from browse — badge only.
-              // Planned extras: toggle remove still applies.
-              addedDisabled={!!inProgress}
-              // Same pending gate for both destinations (live session or
-              // today-extras) — ExerciseLibrarySection is shared.
-              addPending={inProgress ? liveAddPending : isAddingExtra}
-              onAdd={(ex) => {
-                if (inProgress) {
-                  void addToLiveSession(ex, {
-                    alreadyAdded: addedNames,
-                  });
-                  return;
-                }
-                addExtra({
-                  exerciseName: ex.name,
-                  muscleGroup: ex.muscleGroup,
-                  movementPattern: ex.movementPattern,
-                });
-              }}
-              onRemove={(exerciseName) => {
-                if (inProgress) return;
-                const extra = extras.find(
-                  (e) => e.exerciseName === exerciseName,
-                );
-                if (extra) removeExtra(extra.id);
-              }}
               onView={(ex) => openExerciseDetail(ex, "today")}
             />
           </>

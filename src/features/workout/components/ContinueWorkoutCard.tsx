@@ -4,7 +4,6 @@ import React, {
   useMemo,
   useRef,
   useState,
-  type ComponentType,
 } from "react";
 import {
   View,
@@ -19,19 +18,14 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle } from "react-native-svg";
-import {
-  Play,
-  Dumbbell,
-  Timer,
-  PersonStanding,
-  CircleDot,
-  Layers,
-  Trophy,
-  type LucideProps,
-} from "lucide-react-native";
+import { Play, Dumbbell, Trophy } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import type { PersonalRecord } from "@/src/features/progress/hooks/useProgress";
+import {
+  MUSCLE_ICON,
+  formatMuscleGroup,
+} from "../lib/muscle-icons";
 
 type ExerciseItem = {
   id: string;
@@ -51,18 +45,14 @@ type Props = {
   percent: number;
   /** Cover photo for the hero — same source as WorkoutPlanCard. */
   imageUrl?: string;
+  /** Used for muscle chips + PR highlight; list is not rendered. */
   exercises?: ExerciseItem[];
   /** From usePersonalRecords — used to highlight a PR for this workout. */
   personalRecords?: PersonalRecord[];
   onPress?: () => void;
-  onExercisePress?: (exercise: ExerciseItem) => void;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
-
-/** ~3–4 compact rows. */
-const COLLAPSED_LIST_H = 148;
-const COLLAPSE_AFTER = 3;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -77,30 +67,6 @@ function uniqueMuscleGroups(exercises: ExerciseItem[]): string[] {
     out.push(g);
   }
   return out;
-}
-
-const MUSCLE_ICON: Record<string, ComponentType<LucideProps>> = {
-  chest: Dumbbell,
-  back: Layers,
-  shoulders: CircleDot,
-  quads: PersonStanding,
-  hamstrings: PersonStanding,
-  glutes: PersonStanding,
-  calves: PersonStanding,
-  biceps: Dumbbell,
-  triceps: Dumbbell,
-  core: CircleDot,
-};
-
-function capitalize(g: string): string {
-  return g.charAt(0).toUpperCase() + g.slice(1);
-}
-
-function formatTarget(ex: ExerciseItem): string {
-  if (ex.type === "duration") {
-    return `${ex.sets}×${ex.durationSec ?? 0}s`;
-  }
-  return `${ex.sets}×${ex.reps ?? "—"}`;
 }
 
 /**
@@ -185,62 +151,6 @@ function ProgressRing({
   );
 }
 
-function ExerciseRow({
-  exercise,
-  animateEntrance,
-  onPress,
-}: {
-  exercise: ExerciseItem;
-  animateEntrance: boolean;
-  onPress?: () => void;
-}) {
-  const { T, styles: s } = useThemedStyles(makeStyles);
-  const opacity = useRef(new Animated.Value(animateEntrance ? 0 : 1)).current;
-  const translateY = useRef(new Animated.Value(animateEntrance ? 12 : 0))
-    .current;
-  const TypeIcon = exercise.type === "duration" ? Timer : Dumbbell;
-
-  useEffect(() => {
-    if (!animateEntrance) return;
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 420,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 420,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [animateEntrance, opacity, translateY]);
-
-  return (
-    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
-      <Pressable
-        style={s.exerciseRow}
-        disabled={!onPress}
-        onPress={(e) => {
-          e.stopPropagation();
-          onPress?.();
-        }}
-        hitSlop={4}
-        accessibilityRole={onPress ? "button" : undefined}
-        accessibilityLabel={`View ${exercise.name}`}
-      >
-        <View style={s.exIconWrap}>
-          <TypeIcon size={14} color={T.accent} strokeWidth={2.2} />
-        </View>
-        <Text style={s.exerciseName} numberOfLines={1} ellipsizeMode="tail">
-          {exercise.name}
-        </Text>
-        <Text style={s.exerciseTarget}>{formatTarget(exercise)}</Text>
-      </Pressable>
-    </Animated.View>
-  );
-}
-
 export function ContinueWorkoutCard({
   title,
   tag,
@@ -251,24 +161,15 @@ export function ContinueWorkoutCard({
   exercises,
   personalRecords,
   onPress,
-  onExercisePress,
   style,
   testID,
 }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
   const scale = useRef(new Animated.Value(1)).current;
-  const [expanded, setExpanded] = useState(false);
-  const [contentH, setContentH] = useState(0);
-  const listHeight = useRef(new Animated.Value(COLLAPSED_LIST_H)).current;
-  const seenIdsRef = useRef<Set<string> | null>(null);
-  const [enteringIds, setEnteringIds] = useState<Set<string>>(new Set());
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">(
     imageUrl ? "loading" : "error",
   );
-
-  const exerciseCount = exercises?.length ?? 0;
-  const needsBound = exerciseCount > COLLAPSE_AFTER;
-  const hiddenCount = Math.max(0, exerciseCount - COLLAPSE_AFTER);
+  const shimmer = useRef(new Animated.Value(0.3)).current;
 
   const muscleGroups = useMemo(
     () => uniqueMuscleGroups(exercises ?? []),
@@ -281,35 +182,26 @@ export function ContinueWorkoutCard({
   );
 
   useEffect(() => {
-    if (!exercises) return;
-    if (seenIdsRef.current === null) {
-      seenIdsRef.current = new Set(exercises.map((e) => e.id));
-      return;
-    }
-    const fresh = exercises.filter((e) => !seenIdsRef.current!.has(e.id));
-    if (fresh.length === 0) return;
-    for (const e of fresh) seenIdsRef.current.add(e.id);
-    setEnteringIds((prev) => {
-      const next = new Set(prev);
-      for (const e of fresh) next.add(e.id);
-      return next;
-    });
-  }, [exercises]);
-
-  useEffect(() => {
-    if (!needsBound) {
-      listHeight.setValue(contentH > 0 ? contentH : COLLAPSED_LIST_H);
-      return;
-    }
-    const target = expanded
-      ? Math.max(contentH, COLLAPSED_LIST_H)
-      : COLLAPSED_LIST_H;
-    Animated.spring(listHeight, {
-      toValue: target,
-      ...T.motion.settle,
-      useNativeDriver: false,
-    }).start();
-  }, [expanded, contentH, needsBound, listHeight, T]);
+    if (imgStatus !== "loading") return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, {
+          toValue: 0.55,
+          duration: 650,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmer, {
+          toValue: 0.3,
+          duration: 650,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [imgStatus, shimmer]);
 
   const onPressIn = useCallback(() => {
     Animated.spring(scale, { toValue: 0.98, ...T.motion.settle }).start();
@@ -319,16 +211,12 @@ export function ContinueWorkoutCard({
     Animated.spring(scale, { toValue: 1, ...T.motion.settle }).start();
   }, [scale, T]);
 
-  const toggleExpanded = useCallback(() => {
-    setExpanded((v) => !v);
-  }, []);
-
   const meta = `${minutes} min left · ${calories} cal · ${Math.round(percent)}% done`;
 
   return (
     <Animated.View style={[{ transform: [{ scale }] }, style]}>
       <View style={s.card} testID={testID}>
-        {/* Photo hero — resume via play or CTA; list/PR stay below */}
+        {/* Photo hero — same treatment as WorkoutPlanCard */}
         <Pressable
           onPress={onPress}
           onPressIn={onPressIn}
@@ -340,15 +228,22 @@ export function ContinueWorkoutCard({
         >
           <View style={s.hero}>
             {imgStatus !== "error" && imageUrl ? (
-              <Image
-                source={{ uri: imageUrl }}
-                style={s.heroImage}
-                resizeMode="cover"
-                onLoad={() => setImgStatus("loaded")}
-                onError={() => setImgStatus("error")}
-                accessible
-                accessibilityLabel={`${title} workout preview`}
-              />
+              <>
+                <Image
+                  source={{ uri: imageUrl }}
+                  style={s.heroImage}
+                  resizeMode="cover"
+                  onLoad={() => setImgStatus("loaded")}
+                  onError={() => setImgStatus("error")}
+                  accessible
+                  accessibilityLabel={`${title} workout preview`}
+                />
+                {imgStatus === "loading" && (
+                  <Animated.View
+                    style={[s.shimmerOverlay, { opacity: shimmer }]}
+                  />
+                )}
+              </>
             ) : (
               <View style={s.imageFallback}>
                 <Dumbbell size={30} color={T.faint} strokeWidth={1.6} />
@@ -408,7 +303,7 @@ export function ContinueWorkoutCard({
                         <Text
                           style={[s.chipText, primary && s.chipTextPrimary]}
                         >
-                          {capitalize(g)}
+                          {formatMuscleGroup(g)}
                         </Text>
                       </View>
                     );
@@ -434,95 +329,6 @@ export function ContinueWorkoutCard({
             </View>
           </View>
 
-          <Pressable
-            onPress={onPress}
-            disabled={!onPress}
-            accessibilityRole="button"
-            accessibilityLabel={`Continue workout, ${title}`}
-            style={({ pressed }) => [
-              s.cta,
-              pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
-            ]}
-          >
-            <Play
-              size={14}
-              color={T.onAccent}
-              strokeWidth={2.5}
-              fill={T.onAccent}
-            />
-            <Text style={s.ctaText}>Continue workout</Text>
-          </Pressable>
-
-          {exerciseCount > 0 && (
-            <>
-              <View style={s.divider} />
-              <View style={s.exerciseList}>
-                <Text style={s.exerciseListLabel}>
-                  {exerciseCount}{" "}
-                  {exerciseCount === 1 ? "exercise" : "exercises"}
-                </Text>
-
-                <Animated.View
-                  style={[
-                    s.listClip,
-                    needsBound ? { height: listHeight } : null,
-                  ]}
-                >
-                  <View
-                    onLayout={(e) => {
-                      const h = e.nativeEvent.layout.height;
-                      if (h > 0 && h !== contentH) setContentH(h);
-                    }}
-                  >
-                    {exercises!.map((ex) => (
-                      <ExerciseRow
-                        key={ex.id}
-                        exercise={ex}
-                        animateEntrance={enteringIds.has(ex.id)}
-                        onPress={
-                          onExercisePress
-                            ? () => onExercisePress(ex)
-                            : undefined
-                        }
-                      />
-                    ))}
-                  </View>
-
-                  {needsBound && !expanded && (
-                    <LinearGradient
-                      pointerEvents="none"
-                      colors={["rgba(255,255,255,0)", T.bgElevated]}
-                      style={s.fadeGradient}
-                    />
-                  )}
-                </Animated.View>
-
-                {needsBound && (
-                  <Pressable
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      toggleExpanded();
-                    }}
-                    hitSlop={6}
-                    style={s.expandRow}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      expanded
-                        ? "Show fewer exercises"
-                        : `Show ${hiddenCount} more exercises`
-                    }
-                  >
-                    <Text style={s.expandText}>
-                      {expanded
-                        ? "Show less"
-                        : `+${hiddenCount} more · tap to expand`}
-                    </Text>
-                  </Pressable>
-                )}
-              </View>
-            </>
-          )}
-
           {highlightedPr && (
             <>
               <View style={s.divider} />
@@ -546,6 +352,25 @@ export function ContinueWorkoutCard({
               </View>
             </>
           )}
+
+          <Pressable
+            onPress={onPress}
+            disabled={!onPress}
+            accessibilityRole="button"
+            accessibilityLabel={`Continue workout, ${title}`}
+            style={({ pressed }) => [
+              s.cta,
+              pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+            ]}
+          >
+            <Play
+              size={14}
+              color={T.onAccent}
+              strokeWidth={2.5}
+              fill={T.onAccent}
+            />
+            <Text style={s.ctaText}>Continue workout</Text>
+          </Pressable>
         </View>
       </View>
     </Animated.View>
@@ -573,6 +398,10 @@ function makeStyles(T: AppTheme) {
       alignItems: "center",
     },
     heroImage: { ...StyleSheet.absoluteFillObject },
+    shimmerOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: T.bgElevated,
+    },
     imageFallback: {
       ...StyleSheet.absoluteFillObject,
       alignItems: "center",
@@ -707,81 +536,11 @@ function makeStyles(T: AppTheme) {
     },
     ringPercentSign: { fontFamily: T.bodySemi, fontSize: 11, color: T.muted },
 
-    cta: {
-      marginTop: 14,
-      height: 40,
-      borderRadius: T.radius.sm,
-      backgroundColor: T.accent,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-    },
-    ctaText: {
-      fontFamily: T.bodySemi,
-      fontSize: 14,
-      color: T.onAccent,
-    },
-
     divider: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: T.border,
       marginTop: 18,
       marginBottom: 14,
-    },
-    exerciseList: { gap: 10 },
-    exerciseListLabel: {
-      fontFamily: T.bodyBold,
-      fontSize: 10,
-      letterSpacing: 1.2,
-      textTransform: "uppercase",
-      color: T.muted,
-      marginBottom: 2,
-    },
-    listClip: {
-      overflow: "hidden",
-    },
-    fadeGradient: {
-      position: "absolute",
-      left: 0,
-      right: 0,
-      bottom: 0,
-      height: 36,
-    },
-    expandRow: {
-      alignSelf: "flex-start",
-      paddingVertical: 4,
-    },
-    expandText: {
-      fontFamily: T.bodySemi,
-      fontSize: 12,
-      color: T.accent,
-    },
-    exerciseRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      marginBottom: 10,
-    },
-    exIconWrap: {
-      width: 28,
-      height: 28,
-      borderRadius: 8,
-      backgroundColor: T.accentTint,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    exerciseName: {
-      flex: 1,
-      fontFamily: T.bodySemi,
-      fontSize: 14,
-      color: T.white,
-    },
-    exerciseTarget: {
-      fontFamily: T.displaySemi,
-      fontSize: 13,
-      color: T.muted,
-      fontVariant: ["tabular-nums"],
     },
 
     prRow: {
@@ -826,6 +585,22 @@ function makeStyles(T: AppTheme) {
       fontFamily: T.bodyMed,
       fontSize: 11,
       color: T.muted,
+    },
+
+    cta: {
+      marginTop: 14,
+      height: 40,
+      borderRadius: T.radius.sm,
+      backgroundColor: T.accent,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    ctaText: {
+      fontFamily: T.bodySemi,
+      fontSize: 14,
+      color: T.onAccent,
     },
   });
 }
