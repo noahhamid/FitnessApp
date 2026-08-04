@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react";
-import { ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 
-import { useCallback } from "react";
 import { useWaterResync } from "@/src/features/nutrition/hooks/useNutrition";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
@@ -18,6 +17,9 @@ import { EmptyMealSlot } from "../components/EmptyMealSlot";
 import { FadeInUp } from "../components/FadeInUp";
 import { AiSuggestionCard } from "../components/AiSuggestionCard";
 import { WeeklyTrendCard } from "../components/WeeklyTrendCard";
+import { NutritionTargetsModal } from "../components/NutritionTargetsModal";
+import { useProfile } from "@/src/features/auth/hooks/useProfile";
+import { goalLabel } from "@/src/features/auth/services/goals.service";
 
 import {
   useMealLog,
@@ -38,6 +40,8 @@ const RECOMMENDED_RANGE: Record<MealType, string> = {
   Dinner: "Recommended 550–700 Cal",
   Snack: "Recommended 150–250 Cal",
 };
+/** Display-only fallback when NutritionGoal row is missing (see STEP 4 note). */
+const FALLBACK_CALORIE_GOAL = 2400;
 
 function todayStr(): string {
   const n = new Date();
@@ -96,6 +100,7 @@ export default function MealScreen() {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [weekOffset, setWeekOffset] = useState(0);
+  const [targetsOpen, setTargetsOpen] = useState(false);
 
   const { weekStart, weekEnd, weekDates } = useMemo(() => {
     const monday = mondayOfWeek(weekOffset);
@@ -118,6 +123,7 @@ export default function MealScreen() {
   };
 
   const { data: goals } = useNutritionGoals();
+  const { data: profile } = useProfile();
   const { data: meals = [] } = useMealLog(selectedDate);
   const { data: totals } = useDailyTotals(selectedDate);
   const { data: water } = useWater(selectedDate);
@@ -166,7 +172,9 @@ export default function MealScreen() {
 
   const activeDayIndex = days.findIndex((d) => d.date === selectedDate);
 
-  const calorieGoal = goals?.calories ?? 2400;
+  // Prefer server NutritionGoal. Fallback is for loading/gap only — after
+  // completed onboarding, PUT /api/profile always upserts a goal row.
+  const calorieGoal = goals?.calories ?? FALLBACK_CALORIE_GOAL;
   const consumed = totals?.cal ?? 0;
   const caloriesLeft = Math.max(0, calorieGoal - consumed);
 
@@ -215,8 +223,8 @@ export default function MealScreen() {
           carbs={{ value: totals?.carbs ?? 0, goal: goals?.carbs ?? 0 }}
           protein={{ value: totals?.protein ?? 0, goal: goals?.protein ?? 0 }}
           fat={{ value: totals?.fat ?? 0, goal: goals?.fat ?? 0 }}
-          goalLabel="Lean muscle gain"
-          onEditGoal={() => {}}
+          goalLabel={goalLabel(profile?.goalId)}
+          onEditGoal={() => setTargetsOpen(true)}
         />
 
         <WaterTracker
@@ -253,7 +261,17 @@ export default function MealScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's meals</Text>
-          <Text style={styles.sectionLink}>See all →</Text>
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: "/(app)/(tabs)/progress",
+                params: { section: "meals" },
+              })
+            }
+            hitSlop={8}
+          >
+            <Text style={styles.sectionLink}>See all →</Text>
+          </Pressable>
         </View>
 
         {MEAL_SLOTS.map((slot, i) => {
@@ -303,7 +321,17 @@ export default function MealScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>This week</Text>
-          <Text style={styles.sectionLink}>Full report →</Text>
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: "/(app)/(tabs)/progress",
+                params: { section: "meals" },
+              })
+            }
+            hitSlop={8}
+          >
+            <Text style={styles.sectionLink}>Full report →</Text>
+          </Pressable>
         </View>
 
         {weekly && (
@@ -317,6 +345,14 @@ export default function MealScreen() {
           />
         )}
       </ScrollView>
+
+      <NutritionTargetsModal
+        visible={targetsOpen}
+        onClose={() => setTargetsOpen(false)}
+        goals={goals ?? null}
+        goalId={profile?.goalId}
+        daysPerWeek={profile?.daysPerWeek}
+      />
     </SafeAreaView>
   );
 }

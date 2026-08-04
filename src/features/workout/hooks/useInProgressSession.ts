@@ -3,7 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/src/lib/api";
 import { useExerciseLibrary } from "./useExerciseLibrary";
 import { useWorkoutPlan } from "./useWorkoutPlan";
-import { adaptLibraryExercise } from "@/src/lib/workout-plan-adapter";
+import {
+  adaptLibraryExercise,
+  adaptPlanDay,
+  imageForMuscleGroup,
+} from "@/src/lib/workout-plan-adapter";
+import { getTodaysPlanDayIndex } from "@/src/lib/plan-day-selection";
 import type { WorkoutPlan } from "../data/workouts";
 
 interface RawSession {
@@ -17,7 +22,8 @@ interface RawSession {
 
 function estimateMinutes(plan: WorkoutPlan): number {
   const seconds = plan.exercises.reduce((sum, ex) => {
-    const work = ex.type === "duration" ? (ex.durationSec ?? 0) : (ex.reps ?? 10) * 3;
+    const work =
+      ex.type === "duration" ? (ex.durationSec ?? 0) : (ex.reps ?? 10) * 3;
     return sum + (work + ex.restSec) * ex.sets;
   }, 0);
   return Math.round(seconds / 60);
@@ -29,7 +35,8 @@ export function useInProgressSession() {
 
   const sessionQuery = useQuery({
     queryKey: ["in-progress-session"],
-    queryFn: () => api.get<RawSession[]>("/api/workouts?completed=false&limit=1"),
+    queryFn: () =>
+      api.get<RawSession[]>("/api/workouts?completed=false&limit=1"),
   });
 
   const result = useMemo(() => {
@@ -59,11 +66,26 @@ export function useInProgressSession() {
       return { ...adapted, id: se.id };
     });
 
+    // Prefer today's plan-day cover for the continue-card hero; else muscle image.
+    let coverImage = "";
+    if (apiPlan) {
+      const todaysIndex = getTodaysPlanDayIndex(apiPlan.daysPerWeek);
+      if (todaysIndex != null && apiPlan.days[todaysIndex]) {
+        coverImage = adaptPlanDay(
+          apiPlan.days[todaysIndex],
+          apiPlan.goalId,
+        ).coverImage;
+      }
+    }
+    if (!coverImage && exercises[0]?.muscleGroup) {
+      coverImage = imageForMuscleGroup(exercises[0].muscleGroup);
+    }
+
     const plan: WorkoutPlan = {
       id: session.id,
       title: session.notes ?? "Workout",
       tag: "In progress",
-      coverImage: "", // ContinueWorkoutCard doesn't use an image, unlike WorkoutPlanCard
+      coverImage,
       exercises,
     };
 
@@ -74,9 +96,10 @@ export function useInProgressSession() {
 
     // Time-based estimate, NOT real set-completion data — see note above
     // on why actual per-set progress isn't available for an abandoned session.
-    const percent = totalMinutes > 0
-      ? Math.min(100, Math.round((elapsedMinutes / totalMinutes) * 100))
-      : 0;
+    const percent =
+      totalMinutes > 0
+        ? Math.min(100, Math.round((elapsedMinutes / totalMinutes) * 100))
+        : 0;
     const minutesLeft = Math.max(0, totalMinutes - elapsedMinutes);
     const estCalories = Math.round(totalMinutes * 8.5);
 
@@ -87,7 +110,7 @@ export function useInProgressSession() {
       minutesLeft,
       estCalories,
     };
-  }, [sessionQuery.data, allExercises, apiPlan?.goalId]);
+  }, [sessionQuery.data, allExercises, apiPlan]);
 
   return { inProgress: result, isLoading: sessionQuery.isLoading };
 }

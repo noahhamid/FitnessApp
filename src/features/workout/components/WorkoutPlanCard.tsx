@@ -11,7 +11,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Dumbbell } from "lucide-react-native";
+import { Dumbbell, Play } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 
@@ -22,6 +22,8 @@ type Props = {
   exerciseCount: number;
   muscles: string;
   imageUrl: string;
+  /** When set, shows the accent CTA under the metadata (Today). Omit on browse/full-plan. */
+  ctaLabel?: string;
   onPress?: () => void;
   entranceDelay?: number;
   style?: StyleProp<ViewStyle>;
@@ -30,10 +32,10 @@ type Props = {
 
 function formatDuration(minutes: number) {
   if (!Number.isFinite(minutes) || minutes <= 0) return "—";
-  if (minutes < 60) return `${Math.round(minutes)}`;
+  if (minutes < 60) return `${Math.round(minutes)} min`;
   const h = Math.floor(minutes / 60);
   const m = Math.round(minutes % 60);
-  return m > 0 ? `${h}h${m}m` : `${h}h`;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
 function WorkoutPlanCardBase({
@@ -43,6 +45,7 @@ function WorkoutPlanCardBase({
   exerciseCount,
   muscles,
   imageUrl,
+  ctaLabel,
   onPress,
   entranceDelay = 0,
   style,
@@ -99,7 +102,7 @@ function WorkoutPlanCardBase({
   }, []);
 
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">(
-    "loading",
+    imageUrl ? "loading" : "error",
   );
   const shimmer = useRef(new Animated.Value(0.3)).current;
   useEffect(() => {
@@ -124,15 +127,9 @@ function WorkoutPlanCardBase({
     return () => loop.stop();
   }, [imgStatus, shimmer]);
 
-  const durationValue = formatDuration(minutes);
-  const durationUnit = minutes >= 60 ? "" : "min";
-
-  const muscleList = (muscles || "Full body")
-    .split(",")
-    .map((m) => m.trim())
-    .filter(Boolean);
-  const visibleMuscles = muscleList.slice(0, 3);
-  const extraMuscles = muscleList.length - visibleMuscles.length;
+  const meta = `${formatDuration(minutes)} · ${exerciseCount} ${
+    exerciseCount === 1 ? "exercise" : "exercises"
+  } · ${muscles || "Full body"}`;
 
   return (
     <Animated.View
@@ -152,92 +149,102 @@ function WorkoutPlanCardBase({
         style,
       ]}
     >
-      <Pressable
-        onPress={onPress}
-        onPressIn={onPressIn}
-        onPressOut={onPressOut}
-        disabled={!onPress}
-        testID={testID}
-        accessibilityRole={onPress ? "button" : undefined}
-        accessibilityLabel={`${title}, ${tag}, ${exerciseCount} exercises, ${durationValue} ${
-          durationUnit || "minutes"
-        }, targets ${muscles}`}
-        android_ripple={{ color: "rgba(10,10,10,0.08)", borderless: false }}
-        hitSlop={4}
-        style={s.pressableReset}
-      >
-        <Animated.View style={[s.card, { opacity: pressOpacity }]}>
-          {imgStatus !== "error" ? (
-            <>
-              <Image
-                source={{ uri: imageUrl }}
-                style={s.image}
-                resizeMode="cover"
-                onLoad={() => setImgStatus("loaded")}
-                onError={() => setImgStatus("error")}
-                accessible
-                accessibilityLabel={`${title} workout preview`}
-              />
-              {imgStatus === "loading" && (
-                <Animated.View
-                  style={[s.shimmerOverlay, { opacity: shimmer }]}
+      <Animated.View style={[s.card, { opacity: pressOpacity }]}>
+        {/* Photo hero */}
+        <Pressable
+          onPress={onPress}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          disabled={!onPress}
+          testID={testID}
+          accessibilityRole={onPress ? "button" : undefined}
+          accessibilityLabel={`Start ${title}, ${tag}, ${meta}`}
+          style={s.heroPressable}
+        >
+          <View style={s.hero}>
+            {imgStatus !== "error" && imageUrl ? (
+              <>
+                <Image
+                  source={{ uri: imageUrl }}
+                  style={s.heroImage}
+                  resizeMode="cover"
+                  onLoad={() => setImgStatus("loaded")}
+                  onError={() => setImgStatus("error")}
+                  accessible
+                  accessibilityLabel={`${title} workout preview`}
                 />
-              )}
-            </>
-          ) : (
-            <View style={s.imageFallback}>
-              <Dumbbell size={30} color={T.faint} strokeWidth={1.6} />
-            </View>
-          )}
-
-          <LinearGradient
-            colors={[
-              "rgba(9,9,12,0.00)",
-              "rgba(9,9,12,0.12)",
-              "rgba(9,9,12,0.88)",
-            ]}
-            locations={[0, 0.38, 1]}
-            style={StyleSheet.absoluteFillObject}
-            pointerEvents="none"
-          />
-
-          <View style={s.tagPill}>
-            <Text style={s.tagText} numberOfLines={1}>
-              {tag}
-            </Text>
-          </View>
-
-          <View style={s.durationRing}>
-            <Text style={s.durationValue}>{durationValue}</Text>
-            {!!durationUnit && (
-              <Text style={s.durationUnit}>{durationUnit}</Text>
+                {imgStatus === "loading" && (
+                  <Animated.View
+                    style={[s.shimmerOverlay, { opacity: shimmer }]}
+                  />
+                )}
+              </>
+            ) : (
+              <View style={s.imageFallback}>
+                <Dumbbell size={30} color={T.faint} strokeWidth={1.6} />
+              </View>
             )}
-          </View>
 
-          <View style={s.bottomContent} pointerEvents="none">
-            <Text style={s.title} numberOfLines={1} ellipsizeMode="tail">
-              {title}
-            </Text>
-            <Text style={s.subtitle} numberOfLines={1}>
-              {exerciseCount} {exerciseCount === 1 ? "exercise" : "exercises"}
-            </Text>
-            <View style={s.muscleRow}>
-              {visibleMuscles.map((m) => (
-                <View key={m} style={s.muscleChip}>
-                  <Text style={s.muscleChipText} numberOfLines={1}>
-                    {m}
-                  </Text>
-                </View>
-              ))}
-              {extraMuscles > 0 && (
-                <View style={s.muscleChip}>
-                  <Text style={s.muscleChipText}>+{extraMuscles}</Text>
-                </View>
-              )}
+            <LinearGradient
+              colors={["transparent", "rgba(0,0,0,0.45)"]}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
+
+            <View style={s.tagPill}>
+              <Text style={s.tagText} numberOfLines={1}>
+                {tag}
+              </Text>
+            </View>
+
+            <View style={s.playBtn} pointerEvents="none">
+              <Play
+                size={22}
+                color={T.onImage}
+                strokeWidth={2.4}
+                fill={T.onImage}
+              />
             </View>
           </View>
-        </Animated.View>
-      </Pressable>
+        </Pressable>
+
+        {/* Body */}
+        <Pressable
+          onPress={onPress}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          disabled={!onPress}
+          style={s.body}
+        >
+          <Text style={s.title} numberOfLines={1} ellipsizeMode="tail">
+            {title}
+          </Text>
+          <Text style={s.meta} numberOfLines={1}>
+            {meta}
+          </Text>
+
+          {ctaLabel ? (
+            <Pressable
+              onPress={onPress}
+              disabled={!onPress}
+              accessibilityRole="button"
+              accessibilityLabel={`${ctaLabel}, ${title}`}
+              style={({ pressed }) => [
+                s.cta,
+                pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+              ]}
+            >
+              <Play
+                size={14}
+                color={T.onAccent}
+                strokeWidth={2.5}
+                fill={T.onAccent}
+              />
+              <Text style={s.ctaText}>{ctaLabel}</Text>
+            </Pressable>
+          ) : null}
+        </Pressable>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -246,118 +253,95 @@ export const WorkoutPlanCard = memo(WorkoutPlanCardBase);
 
 function makeStyles(T: AppTheme) {
   return StyleSheet.create({
-  pressableReset: { borderRadius: 24 },
-  card: {
-    height: 188,
-    borderRadius: 24,
-    overflow: "hidden",
-    marginBottom: 14,
-    backgroundColor: T.bgElevated,
-    shadowColor: "#0A0A0A",
-    shadowOffset: { width: 0, height: 4 }, // was height: 6
-    shadowOpacity: 0.07, // was 0.08
-    shadowRadius: 20, // was 14
-    elevation: 4, // was 2
-  },
-
-  image: { ...StyleSheet.absoluteFillObject },
-  shimmerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,255,255,0.10)",
-  },
-  imageFallback: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: T.bgElevated,
-  },
-
-  tagPill: {
-    position: "absolute",
-    top: 12,
-    left: 14,
-    maxWidth: 130,
-    backgroundColor: T.onImageGlass,
-    borderWidth: 1,
-    borderColor: T.onImageBorder,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  tagText: {
-    fontFamily: T.bodyBold,
-    fontSize: 10,
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-    color: T.onImage,
-  },
-
-  durationRing: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 1.5,
-    borderColor: T.accent,
-    backgroundColor: T.onImageGlass,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  durationValue: {
-    fontFamily: T.displayBold,
-    fontSize: 13,
-    lineHeight: 15,
-    color: T.onImage,
-    fontVariant: ["tabular-nums"],
-  },
-  durationUnit: {
-    fontFamily: T.bodySemi,
-    fontSize: 8,
-    color: T.onImageMuted,
-    marginTop: -1,
-  },
-
-  bottomContent: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    bottom: 14,
-    gap: 6,
-  },
-  title: {
-    fontFamily: T.displayBold,
-    fontSize: 19,
-    letterSpacing: -0.4,
-    color: T.onImage,
-    textShadowColor: "rgba(0,0,0,0.4)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
-  },
-  subtitle: {
-    fontFamily: T.bodyMed,
-    fontSize: 12,
-    color: T.onImageMuted,
-  },
-  muscleRow: {
-    flexDirection: "row",
-    gap: 6,
-    marginTop: 2,
-  },
-  muscleChip: {
-    backgroundColor: T.onImageGlass,
-    borderWidth: 1,
-    borderColor: T.onImageBorder,
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-  },
-  muscleChipText: {
-    fontFamily: T.bodySemi,
-    fontSize: 10,
-    letterSpacing: 0.2,
-    color: T.onImage,
-  },
+    card: {
+      borderRadius: T.radius.md,
+      overflow: "hidden",
+      marginBottom: 14,
+      backgroundColor: T.bgElevated,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: T.glassBorder,
+      ...T.shadow.card,
+    },
+    heroPressable: {},
+    hero: {
+      height: 156,
+      width: "100%",
+      backgroundColor: T.bgElevated,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    heroImage: { ...StyleSheet.absoluteFillObject },
+    shimmerOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(255,255,255,0.10)",
+    },
+    imageFallback: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: T.accentTint,
+    },
+    tagPill: {
+      position: "absolute",
+      top: 12,
+      left: 14,
+      maxWidth: 140,
+      backgroundColor: T.onImageGlass,
+      borderWidth: 1,
+      borderColor: T.onImageBorder,
+      borderRadius: T.radius.pill,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    tagText: {
+      fontFamily: T.bodyBold,
+      fontSize: 10,
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+      color: T.onImage,
+    },
+    playBtn: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: T.onImageGlass,
+      borderWidth: 1,
+      borderColor: T.onImageBorder,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingLeft: 2,
+    },
+    body: {
+      paddingHorizontal: 14,
+      paddingTop: 14,
+      paddingBottom: 14,
+      gap: 6,
+    },
+    title: {
+      fontFamily: T.display,
+      fontSize: 16,
+      letterSpacing: -0.2,
+      color: T.white,
+    },
+    meta: {
+      fontFamily: T.bodyMed,
+      fontSize: 12,
+      color: T.muted,
+    },
+    cta: {
+      marginTop: 8,
+      height: 40,
+      borderRadius: T.radius.sm,
+      backgroundColor: T.accent,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    ctaText: {
+      fontFamily: T.bodySemi,
+      fontSize: 14,
+      color: T.onAccent,
+    },
   });
 }

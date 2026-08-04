@@ -21,6 +21,8 @@ type ApiNutritionGoal = {
   protein: number;
   carbs: number;
   fat: number;
+  bmr: number;
+  tdee: number;
   updatedAt: string;
 };
 
@@ -60,6 +62,8 @@ function toNutritionGoals(row: ApiNutritionGoal): NutritionGoals {
     protein: row.protein,
     carbs: row.carbs,
     fat: row.fat,
+    bmr: row.bmr ?? 0,
+    tdee: row.tdee ?? 0,
     updated_at: row.updatedAt,
   };
 }
@@ -134,10 +138,32 @@ export async function upsertNutritionGoals(
   return toNutritionGoals(row);
 }
 
+/** Accept a previously fetched adaptive suggestion (server re-verifies freshness). */
+export async function applyAdaptiveSuggestion(
+  suggestedCalories: number,
+): Promise<NutritionGoals> {
+  const row = await api.patch<ApiNutritionGoal>(
+    "/api/nutrition/goals/apply-suggestion",
+    { suggestedCalories },
+  );
+  return toNutritionGoals(row);
+}
+
 export async function fetchMealLog(date?: string): Promise<MealLogEntry[]> {
   const logDate = date ?? todayLocal();
   const rows = await api.get<ApiMealLog[]>(
     `/api/nutrition/log?date=${encodeURIComponent(logDate)}`,
+  );
+  return rows.map(toMealLogEntry);
+}
+
+/** Range fetch — mirrors useWorkoutHistory's from/to pattern. */
+export async function fetchMealLogRange(
+  from: string,
+  to: string,
+): Promise<MealLogEntry[]> {
+  const rows = await api.get<ApiMealLog[]>(
+    `/api/nutrition/log?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
   );
   return rows.map(toMealLogEntry);
 }

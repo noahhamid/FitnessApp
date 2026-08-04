@@ -96,17 +96,18 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  sessions              Session[]
-  accounts              Account[]
-  workoutSessions       WorkoutSession[]
-  profile               UserProfile?
-  nutritionGoal         NutritionGoal?
-  mealLogs              MealLog[]
-  weightLogs            WeightLog[]
-  plannedExtraExercises PlannedExtraExercise[]
-  weightGoal            WeightGoal?
-  waterLogs             WaterLog[]
-  workoutPlan           WorkoutPlan?
+  sessions                Session[]
+  accounts                Account[]
+  workoutSessions         WorkoutSession[]
+  profile                 UserProfile?
+  nutritionGoal           NutritionGoal?
+  mealLogs                MealLog[]
+  weightLogs              WeightLog[]
+  plannedExtraExercises   PlannedExtraExercise[]
+  weightGoal              WeightGoal?
+  waterLogs               WaterLog[]
+  workoutPlan             WorkoutPlan?
+  nutritionAdjustmentLogs NutritionAdjustmentLog[]
 
   @@map("user")
 }
@@ -208,12 +209,29 @@ model NutritionGoal {
   protein   Int
   carbs     Int
   fat       Int
+  bmr       Int      @default(0) // Mifflin-St Jeor — persisted for transparency / adaptive logic later
+  tdee      Int      @default(0) // maintenance estimate — activity from daysPerWeek
   updatedAt DateTime @updatedAt
 
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("nutrition_goal")
+}
+
+/// History of adaptive calorie-target changes (accept/apply flow).
+model NutritionAdjustmentLog {
+  id          String   @id @default(cuid())
+  appliedAt   DateTime @default(now())
+  oldCalories Int
+  newCalories Int
+  explanation String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, appliedAt])
+  @@map("nutrition_adjustment_log")
 }
 
 model MealLog {

@@ -238,7 +238,18 @@ exports.Prisma.NutritionGoalScalarFieldEnum = {
   protein: 'protein',
   carbs: 'carbs',
   fat: 'fat',
+  bmr: 'bmr',
+  tdee: 'tdee',
   updatedAt: 'updatedAt',
+  userId: 'userId'
+};
+
+exports.Prisma.NutritionAdjustmentLogScalarFieldEnum = {
+  id: 'id',
+  appliedAt: 'appliedAt',
+  oldCalories: 'oldCalories',
+  newCalories: 'newCalories',
+  explanation: 'explanation',
   userId: 'userId'
 };
 
@@ -376,6 +387,7 @@ exports.Prisma.ModelName = {
   WorkoutSession: 'WorkoutSession',
   WorkoutExercise: 'WorkoutExercise',
   NutritionGoal: 'NutritionGoal',
+  NutritionAdjustmentLog: 'NutritionAdjustmentLog',
   MealLog: 'MealLog',
   WaterLog: 'WaterLog',
   WeightLog: 'WeightLog',

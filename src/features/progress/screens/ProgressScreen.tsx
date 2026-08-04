@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus } from "lucide-react-native";
+import { useLocalSearchParams } from "expo-router";
 import {
   useWeightLog,
   useAddWeightLog,
@@ -31,16 +32,24 @@ import { VolumeTrendCard } from "../components/VolumeTrendCard";
 import { MuscleBalanceCard } from "../components/MuscleBalanceCard";
 import { StreakHeroCard } from "../components/StreakHeroCard";
 import { AdherenceCard } from "../components/AdherenceCard";
+import { MealHistoryCard } from "../components/MealHistoryCard";
 import { localDateOnly, parseLocalDateKey } from "../lib/localDate";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
 import { useExerciseLibrary } from "@/src/features/workout/hooks/useExerciseLibrary";
 import { useWorkoutStreak } from "@/src/features/workout/hooks/useWorkoutStreak";
+import { useMealLogRange } from "@/src/features/nutrition/hooks/useNutrition";
 
 function eightWeeksAgo(): string {
   const d = new Date();
   d.setDate(d.getDate() - 56);
+  return localDateOnly(d);
+}
+
+function thirtyDaysAgo(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 29);
   return localDateOnly(d);
 }
 
@@ -56,6 +65,9 @@ function startOfThisWeekMonday(): Date {
 export default function ProgressScreen() {
   const { T, styles: s, resolved } = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const { section } = useLocalSearchParams<{ section?: string }>();
+  const scrollRef = useRef<ScrollView>(null);
+  const mealSectionY = useRef(0);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -91,6 +103,13 @@ export default function ProgressScreen() {
   const { data: personalRecords } = usePersonalRecords();
   const { data: exerciseLibrary } = useExerciseLibrary();
   const { streakDays } = useWorkoutStreak(true);
+
+  const mealFrom = thirtyDaysAgo();
+  const mealTo = localDateOnly();
+  const { data: mealHistory, isLoading: mealHistoryLoading } = useMealLogRange(
+    mealFrom,
+    mealTo,
+  );
 
   const nameToGroup = useMemo(() => {
     const map = new Map<string, string>();
@@ -148,6 +167,18 @@ export default function ProgressScreen() {
       })
     : "";
 
+  // Deep-link from Nutrition "See all" / "Full report" → scroll to meals.
+  useEffect(() => {
+    if (section !== "meals") return;
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, mealSectionY.current - 12),
+        animated: true,
+      });
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [section, mealHistoryLoading]);
+
   const handleSaveWeight = async (weight: number) => {
     try {
       await addWeight.mutateAsync({ weight });
@@ -164,6 +195,7 @@ export default function ProgressScreen() {
         backgroundColor={T.bg}
       />
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[
           s.scrollContent,
           { paddingTop: topInset(insets.top) + T.space.sm },
@@ -203,6 +235,19 @@ export default function ProgressScreen() {
             />
           </View>
         )}
+
+        <View
+          style={s.section}
+          onLayout={(e) => {
+            mealSectionY.current = e.nativeEvent.layout.y;
+          }}
+        >
+          <Text style={s.sectionTitle}>Nutrition</Text>
+          <MealHistoryCard
+            meals={mealHistory ?? []}
+            isLoading={mealHistoryLoading}
+          />
+        </View>
 
         <View style={s.section}>
           <Text style={s.sectionTitle}>Training</Text>

@@ -558,6 +558,9 @@ export default function WorkoutScreen() {
                 minutes={inProgress.minutesLeft}
                 calories={inProgress.estCalories}
                 percent={inProgress.percent}
+                imageUrl={
+                  inProgress.plan.coverImage || todaysWorkout?.coverImage
+                }
                 exercises={inProgress.plan.exercises}
                 personalRecords={personalRecords}
                 onPress={handleResume}
@@ -609,6 +612,7 @@ export default function WorkoutScreen() {
                     exerciseCount={todaysWorkout.exercises.length}
                     muscles={muscleSummary(todaysWorkout)}
                     imageUrl={todaysWorkout.coverImage}
+                    ctaLabel="Start workout"
                     entranceDelay={0}
                     onPress={() => handleCardPress(todaysWorkout, "today")}
                   />

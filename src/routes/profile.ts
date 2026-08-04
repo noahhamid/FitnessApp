@@ -118,6 +118,8 @@ profileRouter.put("/", async (c) => {
       protein: targets.protein,
       carbs: targets.carbs,
       fat: targets.fat,
+      bmr: targets.bmr,
+      tdee: targets.tdee,
     };
 
     await prisma.nutritionGoal.upsert({

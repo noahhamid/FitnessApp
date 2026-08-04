@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "nutrition_goal" ADD COLUMN "bmr" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "nutrition_goal" ADD COLUMN "tdee" INTEGER NOT NULL DEFAULT 0;

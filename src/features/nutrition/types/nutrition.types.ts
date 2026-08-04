@@ -9,6 +9,8 @@ export type NutritionGoals = {
   protein: number;
   carbs: number;
   fat: number;
+  bmr: number;
+  tdee: number;
   updated_at: string;
 };
 export type FoodScanResult = {

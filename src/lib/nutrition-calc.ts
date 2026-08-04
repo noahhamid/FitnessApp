@@ -61,6 +61,24 @@ function clampDaysPerWeek(days: number): number {
   return Math.min(6, Math.max(2, Math.round(days)));
 }
 
+/**
+ * Macro split used by initial targets AND adaptive apply.
+ * Protein is g/kg bodyweight (goal-dependent); fat is 25% of calories;
+ * carbs fill the remainder. Keep this as the single source of truth.
+ */
+export function macrosForCalorieTarget(input: {
+  calories: number;
+  weightKg: number;
+  goalId: GoalId;
+}): { protein: number; carbs: number; fat: number } {
+  const { calories, weightKg, goalId } = input;
+  const protein = Math.round(weightKg * PROTEIN_G_PER_KG[goalId]);
+  const fat = Math.round((calories * FAT_PERCENT_OF_CALORIES) / 9);
+  const carbsRaw = (calories - protein * 4 - fat * 9) / 4;
+  const carbs = Math.max(0, Math.round(carbsRaw));
+  return { protein, carbs, fat };
+}
+
 export function computeNutritionTargets(
   input: NutritionInput,
 ): NutritionTargets {
@@ -77,11 +95,12 @@ export function computeNutritionTargets(
   // 3. Calorie target
   const calories = Math.round(tdee * GOAL_CALORIE_FACTOR[goalId]);
 
-  // 4. Macros
-  const protein = Math.round(weightKg * PROTEIN_G_PER_KG[goalId]);
-  const fat = Math.round((calories * FAT_PERCENT_OF_CALORIES) / 9);
-  const carbsRaw = (calories - protein * 4 - fat * 9) / 4;
-  const carbs = Math.max(0, Math.round(carbsRaw));
+  // 4. Macros (shared with adaptive apply)
+  const { protein, carbs, fat } = macrosForCalorieTarget({
+    calories,
+    weightKg,
+    goalId,
+  });
 
   return {
     bmr: Math.round(bmr),

@@ -17,19 +17,24 @@ import {
   deleteMealEntry,
   fetchDailyTotals,
   fetchMealLog,
+  fetchMealLogRange,
   fetchNutritionGoals,
   fetchSuggestion,
   fetchWater,
   fetchWeeklyTrend,
   upsertNutritionGoals,
+  applyAdaptiveSuggestion,
 } from "../services/nutrition.service";
 
 const KEYS = {
   goals: ["nutrition", "goals"] as const,
   log: (date: string) => ["nutrition", "log", date] as const,
+  logRange: (from: string, to: string) =>
+    ["nutrition", "log-range", from, to] as const,
   totals: (date: string) => ["nutrition", "totals", date] as const,
   water: (date: string) => ["nutrition", "water", date] as const,
   weekly: (date: string) => ["nutrition", "weekly", date] as const,
+  adaptive: ["nutrition", "adaptive-suggestion"] as const,
 };
 
 function today(): string {
@@ -49,8 +54,31 @@ export function useUpdateGoals() {
   });
 }
 
+export function useApplyAdaptiveSuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (suggestedCalories: number) =>
+      applyAdaptiveSuggestion(suggestedCalories),
+    onSuccess: (updated) => {
+      qc.setQueryData(KEYS.goals, updated);
+      qc.invalidateQueries({ queryKey: KEYS.goals });
+      qc.invalidateQueries({ queryKey: KEYS.adaptive });
+      qc.invalidateQueries({ queryKey: ["nutrition", "weekly"] });
+    },
+  });
+}
+
 export function useMealLog(date = today()) {
   return useQuery<MealLogEntry[]>({ queryKey: KEYS.log(date), queryFn: () => fetchMealLog(date) });
+}
+
+/** Date-range meal logs — mirrors useWorkoutHistory(from, to). */
+export function useMealLogRange(from: string, to: string) {
+  return useQuery<MealLogEntry[]>({
+    queryKey: KEYS.logRange(from, to),
+    queryFn: () => fetchMealLogRange(from, to),
+    enabled: !!from && !!to,
+  });
 }
 
 export function useDailyTotals(date = today()) {
@@ -65,6 +93,8 @@ export function useAddMeal() {
       qc.invalidateQueries({ queryKey: KEYS.log(vars.log_date) });
       qc.invalidateQueries({ queryKey: KEYS.totals(vars.log_date) });
       qc.invalidateQueries({ queryKey: ["nutrition", "weekly"] });
+      qc.invalidateQueries({ queryKey: ["nutrition", "log-range"] });
+      qc.invalidateQueries({ queryKey: ["week-overview", "meals"] });
     },
   });
 }
@@ -77,6 +107,8 @@ export function useDeleteMeal(date = today()) {
       qc.invalidateQueries({ queryKey: KEYS.log(date) });
       qc.invalidateQueries({ queryKey: KEYS.totals(date) });
       qc.invalidateQueries({ queryKey: ["nutrition", "weekly"] });
+      qc.invalidateQueries({ queryKey: ["nutrition", "log-range"] });
+      qc.invalidateQueries({ queryKey: ["week-overview", "meals"] });
     },
   });
 }

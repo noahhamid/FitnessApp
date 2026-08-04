@@ -1,6 +1,7 @@
 import { useMemo } from "react";
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/src/lib/api";
+import { fetchMealLogRange } from "@/src/features/nutrition/services/nutrition.service";
 
 const WEEKDAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
@@ -60,25 +61,31 @@ export function useWeekOverview(weekOffset = 0) {
       ),
   });
 
-  // One lightweight query per day for meal presence — nutrition's API
-  // only supports a single-date lookup, not a range, so this fans out
-  // 7 parallel requests rather than one bulk call.
-  const mealQueries = useQueries({
-    queries: weekDates.map((d) => ({
-      queryKey: ["week-overview", "meals", toDateStr(d)],
-      queryFn: () =>
-        api.get<{ id: string }[]>(`/api/nutrition/log?date=${toDateStr(d)}`),
-    })),
+  // One range fetch for meal presence (was 7 parallel single-day calls).
+  const mealQuery = useQuery({
+    queryKey: ["week-overview", "meals", weekStart, weekEnd],
+    queryFn: () => fetchMealLogRange(weekStart, weekEnd),
   });
 
-  const isLoading =
-    workoutQuery.isLoading || mealQueries.some((q) => q.isLoading);
+  const isLoading = workoutQuery.isLoading || mealQuery.isLoading;
 
-  const workoutDatesWithSession = new Set(
-    (workoutQuery.data ?? [])
-      .filter((s) => s.completedAt)
-      .map((s) => s.completedAt!.slice(0, 10)),
+  const workoutDatesWithSession = useMemo(
+    () =>
+      new Set(
+        (workoutQuery.data ?? [])
+          .filter((s) => s.completedAt)
+          .map((s) => s.completedAt!.slice(0, 10)),
+      ),
+    [workoutQuery.data],
   );
+
+  const mealDatesWithLog = useMemo(() => {
+    const set = new Set<string>();
+    for (const entry of mealQuery.data ?? []) {
+      set.add(entry.log_date);
+    }
+    return set;
+  }, [mealQuery.data]);
 
   const days: WeekDay[] = weekDates.map((d, i) => {
     const fullDate = toDateStr(d);
@@ -87,7 +94,7 @@ export function useWeekOverview(weekOffset = 0) {
       date: d.getDate(),
       fullDate,
       hasWorkout: workoutDatesWithSession.has(fullDate),
-      hasMeal: (mealQueries[i]?.data?.length ?? 0) > 0,
+      hasMeal: mealDatesWithLog.has(fullDate),
     };
   });
 

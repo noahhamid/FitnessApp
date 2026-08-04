@@ -9,6 +9,7 @@ import React, {
 import {
   View,
   Text,
+  Image,
   Pressable,
   StyleSheet,
   Animated,
@@ -48,6 +49,8 @@ type Props = {
   minutes: number;
   calories: number;
   percent: number;
+  /** Cover photo for the hero — same source as WorkoutPlanCard. */
+  imageUrl?: string;
   exercises?: ExerciseItem[];
   /** From usePersonalRecords — used to highlight a PR for this workout. */
   personalRecords?: PersonalRecord[];
@@ -244,6 +247,7 @@ export function ContinueWorkoutCard({
   minutes,
   calories,
   percent,
+  imageUrl,
   exercises,
   personalRecords,
   onPress,
@@ -258,6 +262,9 @@ export function ContinueWorkoutCard({
   const listHeight = useRef(new Animated.Value(COLLAPSED_LIST_H)).current;
   const seenIdsRef = useRef<Set<string> | null>(null);
   const [enteringIds, setEnteringIds] = useState<Set<string>>(new Set());
+  const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">(
+    imageUrl ? "loading" : "error",
+  );
 
   const exerciseCount = exercises?.length ?? 0;
   const needsBound = exerciseCount > COLLAPSE_AFTER;
@@ -316,25 +323,62 @@ export function ContinueWorkoutCard({
     setExpanded((v) => !v);
   }, []);
 
+  const meta = `${minutes} min left · ${calories} cal · ${Math.round(percent)}% done`;
+
   return (
     <Animated.View style={[{ transform: [{ scale }] }, style]}>
-      <Pressable
-        onPress={onPress}
-        onPressIn={onPressIn}
-        onPressOut={onPressOut}
-        disabled={!onPress}
-        testID={testID}
-        accessibilityRole={onPress ? "button" : undefined}
-        accessibilityLabel={`Continue ${title}, ${tag}, ${Math.round(percent)} percent complete, ${minutes} minutes left, ${calories} calories${
-          exerciseCount > 0
-            ? `, ${exerciseCount} ${exerciseCount === 1 ? "exercise" : "exercises"}`
-            : ""
-        }`}
-        android_ripple={{ color: "rgba(10,10,10,0.06)", borderless: false }}
-        hitSlop={4}
-        style={s.pressableReset}
-      >
-        <View style={s.card}>
+      <View style={s.card} testID={testID}>
+        {/* Photo hero — resume via play or CTA; list/PR stay below */}
+        <Pressable
+          onPress={onPress}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          disabled={!onPress}
+          accessibilityRole={onPress ? "button" : undefined}
+          accessibilityLabel={`Continue ${title}, ${tag}, ${meta}`}
+          style={s.heroPressable}
+        >
+          <View style={s.hero}>
+            {imgStatus !== "error" && imageUrl ? (
+              <Image
+                source={{ uri: imageUrl }}
+                style={s.heroImage}
+                resizeMode="cover"
+                onLoad={() => setImgStatus("loaded")}
+                onError={() => setImgStatus("error")}
+                accessible
+                accessibilityLabel={`${title} workout preview`}
+              />
+            ) : (
+              <View style={s.imageFallback}>
+                <Dumbbell size={30} color={T.faint} strokeWidth={1.6} />
+              </View>
+            )}
+
+            <LinearGradient
+              colors={["transparent", "rgba(0,0,0,0.45)"]}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
+
+            <View style={s.heroTagPill}>
+              <Text style={s.heroTagText} numberOfLines={1}>
+                In progress
+              </Text>
+            </View>
+
+            <View style={s.playBtn} pointerEvents="none">
+              <Play
+                size={22}
+                color={T.onImage}
+                strokeWidth={2.4}
+                fill={T.onImage}
+              />
+            </View>
+          </View>
+        </Pressable>
+
+        <View style={s.bodyPad}>
           <View style={s.headerRow}>
             <View style={s.left}>
               <Text style={s.eyebrow}>Continue workout</Text>
@@ -387,16 +431,27 @@ export function ContinueWorkoutCard({
 
             <View style={s.right}>
               <ProgressRing percent={percent} />
-              <View style={s.playBadge}>
-                <Play
-                  size={14}
-                  color={T.onAccent}
-                  strokeWidth={2.5}
-                  fill={T.onAccent}
-                />
-              </View>
             </View>
           </View>
+
+          <Pressable
+            onPress={onPress}
+            disabled={!onPress}
+            accessibilityRole="button"
+            accessibilityLabel={`Continue workout, ${title}`}
+            style={({ pressed }) => [
+              s.cta,
+              pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+            ]}
+          >
+            <Play
+              size={14}
+              color={T.onAccent}
+              strokeWidth={2.5}
+              fill={T.onAccent}
+            />
+            <Text style={s.ctaText}>Continue workout</Text>
+          </Pressable>
 
           {exerciseCount > 0 && (
             <>
@@ -492,241 +547,285 @@ export function ContinueWorkoutCard({
             </>
           )}
         </View>
-      </Pressable>
+      </View>
     </Animated.View>
   );
 }
 
 function makeStyles(T: AppTheme) {
   return StyleSheet.create({
-  pressableReset: { borderRadius: 24 },
-  card: {
-    borderRadius: 24,
-    // Solid elevated surface — T.glass is translucent in darkTheme and
-    // Android elevation paints a white plate under translucent fills.
-    backgroundColor: T.bgElevated,
-    borderWidth: 0.5,
-    borderColor: T.glassBorder,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    overflow: "hidden",
-    shadowColor: "#0A0A0A",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
-    elevation: 2,
-  },
+    card: {
+      borderRadius: T.radius.md,
+      // Solid elevated surface — T.glass is translucent in darkTheme and
+      // Android elevation paints a white plate under translucent fills.
+      backgroundColor: T.bgElevated,
+      borderWidth: 0.5,
+      borderColor: T.glassBorder,
+      overflow: "hidden",
+      ...T.shadow.card,
+    },
+    heroPressable: {},
+    hero: {
+      height: 156,
+      width: "100%",
+      backgroundColor: T.bgElevated,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    heroImage: { ...StyleSheet.absoluteFillObject },
+    imageFallback: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: T.accentTint,
+    },
+    heroTagPill: {
+      position: "absolute",
+      top: 12,
+      left: 14,
+      backgroundColor: T.onImageGlass,
+      borderWidth: 1,
+      borderColor: T.onImageBorder,
+      borderRadius: T.radius.pill,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    heroTagText: {
+      fontFamily: T.bodyBold,
+      fontSize: 10,
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+      color: T.onImage,
+    },
+    playBtn: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: T.onImageGlass,
+      borderWidth: 1,
+      borderColor: T.onImageBorder,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingLeft: 2,
+    },
+    bodyPad: {
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+    },
 
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  left: { flex: 1, gap: 6, paddingRight: 14 },
-  eyebrow: {
-    fontFamily: T.bodyBold,
-    fontSize: 10,
-    letterSpacing: 1.4,
-    textTransform: "uppercase",
-    color: T.accent,
-  },
-  title: {
-    fontFamily: T.displayBold,
-    fontSize: 21,
-    letterSpacing: -0.4,
-    color: T.white,
-  },
-  tagPill: {
-    alignSelf: "flex-start",
-    backgroundColor: T.accentTint,
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    marginTop: 2,
-  },
-  tagText: {
-    fontFamily: T.bodyBold,
-    fontSize: 9.5,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-    color: T.accent,
-  },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    left: { flex: 1, gap: 6, paddingRight: 14 },
+    eyebrow: {
+      fontFamily: T.bodyBold,
+      fontSize: 10,
+      letterSpacing: 1.4,
+      textTransform: "uppercase",
+      color: T.accent,
+    },
+    title: {
+      fontFamily: T.displayBold,
+      fontSize: 21,
+      letterSpacing: -0.4,
+      color: T.white,
+    },
+    tagPill: {
+      alignSelf: "flex-start",
+      backgroundColor: T.accentTint,
+      borderRadius: 999,
+      paddingHorizontal: 9,
+      paddingVertical: 4,
+      marginTop: 2,
+    },
+    tagText: {
+      fontFamily: T.bodyBold,
+      fontSize: 9.5,
+      letterSpacing: 0.6,
+      textTransform: "uppercase",
+      color: T.accent,
+    },
 
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 4,
-  },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: T.accentTint,
-    borderWidth: 0.5,
-    borderColor: T.border,
-  },
-  chipPrimary: {
-    backgroundColor: T.accentTint,
-    borderColor: T.accentLine,
-  },
-  chipText: {
-    fontFamily: T.bodySemi,
-    fontSize: 10.5,
-    color: T.muted,
-  },
-  chipTextPrimary: {
-    color: T.accent,
-  },
+    chipRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 6,
+      marginTop: 4,
+    },
+    chip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      borderRadius: 999,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      backgroundColor: T.accentTint,
+      borderWidth: 0.5,
+      borderColor: T.border,
+    },
+    chipPrimary: {
+      backgroundColor: T.accentTint,
+      borderColor: T.accentLine,
+    },
+    chipText: {
+      fontFamily: T.bodySemi,
+      fontSize: 10.5,
+      color: T.muted,
+    },
+    chipTextPrimary: {
+      color: T.accent,
+    },
 
-  statRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginTop: 8,
-  },
-  statItem: { gap: 1 },
-  statValue: {
-    fontFamily: T.displaySemi,
-    fontSize: 15,
-    color: T.white,
-    fontVariant: ["tabular-nums"],
-  },
-  statLabel: { fontFamily: T.bodyMed, fontSize: 10, color: T.muted },
-  hairline: { width: 1, height: 24, backgroundColor: T.border },
+    statRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginTop: 8,
+    },
+    statItem: { gap: 1 },
+    statValue: {
+      fontFamily: T.displaySemi,
+      fontSize: 15,
+      color: T.white,
+      fontVariant: ["tabular-nums"],
+    },
+    statLabel: { fontFamily: T.bodyMed, fontSize: 10, color: T.muted },
+    hairline: { width: 1, height: 24, backgroundColor: T.border },
 
-  right: {
-    width: 84,
-    height: 84,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  playBadge: {
-    position: "absolute",
-    bottom: -2,
-    right: -2,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: T.accent,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 3,
-    borderColor: T.bgElevated,
-  },
-  ringPercent: {
-    fontFamily: T.displaySemi,
-    fontSize: 18,
-    color: T.white,
-    fontVariant: ["tabular-nums"],
-  },
-  ringPercentSign: { fontFamily: T.bodySemi, fontSize: 11, color: T.muted },
+    right: {
+      width: 84,
+      height: 84,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    ringPercent: {
+      fontFamily: T.displaySemi,
+      fontSize: 18,
+      color: T.white,
+      fontVariant: ["tabular-nums"],
+    },
+    ringPercentSign: { fontFamily: T.bodySemi, fontSize: 11, color: T.muted },
 
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: T.border,
-    marginTop: 18,
-    marginBottom: 14,
-  },
-  exerciseList: { gap: 10 },
-  exerciseListLabel: {
-    fontFamily: T.bodyBold,
-    fontSize: 10,
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-    color: T.muted,
-    marginBottom: 2,
-  },
-  listClip: {
-    overflow: "hidden",
-  },
-  fadeGradient: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 36,
-  },
-  expandRow: {
-    alignSelf: "flex-start",
-    paddingVertical: 4,
-  },
-  expandText: {
-    fontFamily: T.bodySemi,
-    fontSize: 12,
-    color: T.accent,
-  },
-  exerciseRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 10,
-  },
-  exIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: T.accentTint,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  exerciseName: {
-    flex: 1,
-    fontFamily: T.bodySemi,
-    fontSize: 14,
-    color: T.white,
-  },
-  exerciseTarget: {
-    fontFamily: T.displaySemi,
-    fontSize: 13,
-    color: T.muted,
-    fontVariant: ["tabular-nums"],
-  },
+    cta: {
+      marginTop: 14,
+      height: 40,
+      borderRadius: T.radius.sm,
+      backgroundColor: T.accent,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    ctaText: {
+      fontFamily: T.bodySemi,
+      fontSize: 14,
+      color: T.onAccent,
+    },
 
-  prRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: T.accentTint,
-    borderRadius: 14,
-    borderWidth: 0.5,
-    borderColor: T.accentLine,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  prIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: T.bgElevated,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  prTextWrap: { flex: 1, gap: 1 },
-  prEyebrow: {
-    fontFamily: T.bodyBold,
-    fontSize: 9,
-    letterSpacing: 1.1,
-    textTransform: "uppercase",
-    color: T.accent,
-  },
-  prTitle: {
-    fontFamily: T.bodySemi,
-    fontSize: 13,
-    color: T.white,
-  },
-  prValue: {
-    fontFamily: T.displaySemi,
-    fontSize: 13,
-    color: T.accent,
-    fontVariant: ["tabular-nums"],
-  },
-  prValueMuted: {
-    fontFamily: T.bodyMed,
-    fontSize: 11,
-    color: T.muted,
-  },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: T.border,
+      marginTop: 18,
+      marginBottom: 14,
+    },
+    exerciseList: { gap: 10 },
+    exerciseListLabel: {
+      fontFamily: T.bodyBold,
+      fontSize: 10,
+      letterSpacing: 1.2,
+      textTransform: "uppercase",
+      color: T.muted,
+      marginBottom: 2,
+    },
+    listClip: {
+      overflow: "hidden",
+    },
+    fadeGradient: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: 36,
+    },
+    expandRow: {
+      alignSelf: "flex-start",
+      paddingVertical: 4,
+    },
+    expandText: {
+      fontFamily: T.bodySemi,
+      fontSize: 12,
+      color: T.accent,
+    },
+    exerciseRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 10,
+    },
+    exIconWrap: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      backgroundColor: T.accentTint,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    exerciseName: {
+      flex: 1,
+      fontFamily: T.bodySemi,
+      fontSize: 14,
+      color: T.white,
+    },
+    exerciseTarget: {
+      fontFamily: T.displaySemi,
+      fontSize: 13,
+      color: T.muted,
+      fontVariant: ["tabular-nums"],
+    },
+
+    prRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      backgroundColor: T.accentTint,
+      borderRadius: 14,
+      borderWidth: 0.5,
+      borderColor: T.accentLine,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+    },
+    prIconWrap: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      backgroundColor: T.bgElevated,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    prTextWrap: { flex: 1, gap: 1 },
+    prEyebrow: {
+      fontFamily: T.bodyBold,
+      fontSize: 9,
+      letterSpacing: 1.1,
+      textTransform: "uppercase",
+      color: T.accent,
+    },
+    prTitle: {
+      fontFamily: T.bodySemi,
+      fontSize: 13,
+      color: T.white,
+    },
+    prValue: {
+      fontFamily: T.displaySemi,
+      fontSize: 13,
+      color: T.accent,
+      fontVariant: ["tabular-nums"],
+    },
+    prValueMuted: {
+      fontFamily: T.bodyMed,
+      fontSize: 11,
+      color: T.muted,
+    },
   });
 }

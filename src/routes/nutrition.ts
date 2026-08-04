@@ -7,6 +7,16 @@ import { parseJson, parseQuery } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
 import type { AppEnv } from "../types/hono";
 import { GYM_FOODS } from "../lib/gymFoods";
+import {
+  ADAPTIVE_WINDOW_DAYS,
+  APPLY_SUGGESTION_TOLERANCE_KCAL,
+  computeAdaptiveSuggestion,
+  type AdaptiveSuggestion,
+} from "../lib/adaptive-nutrition";
+import {
+  macrosForCalorieTarget,
+  type GoalId,
+} from "../lib/nutrition-calc";
 
 const mealEnum = z.enum(["Breakfast", "Lunch", "Dinner", "Snack"]);
 
@@ -17,12 +27,17 @@ const goalsSchema = z.object({
   fat: z.number().int().positive(),
 });
 
+const applySuggestionSchema = z.object({
+  /** Calorie target the client received from GET /adaptive-suggestion. */
+  suggestedCalories: z.number().int().positive(),
+});
+
 const waterAdjustSchema = z.object({
   logDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   delta: z.number().int(), // +1 to add a glass, -1 to remove
 });
 
-// ── update mealLogSchema to accept the new fields ──────────────────────────
+// ?? update mealLogSchema to accept the new fields ??????????????????????????
 const mealLogSchema = z.object({
   logDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   meal: mealEnum,
@@ -39,6 +54,16 @@ const mealLogUpdateSchema = mealLogSchema.partial();
 
 const logDateQuerySchema = z.object({
   date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  // Range params mirror GET /api/workouts?from=&to= (additive ? single-day
+  // `date` remains the default when neither from nor to is supplied).
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
@@ -109,11 +134,35 @@ nutritionRouter.get("/log", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
   if (!query.success) return query.response;
 
-  const dateStr = query.data.date ?? todayLogDate();
-  const logDate = parseLogDate(dateStr);
+  const user = getUser(c);
+  const { from: fromStr, to: toStr, date: dateStr } = query.data;
+
+  // Range mode ? same from/to validation style as workouts listSessions.
+  if (fromStr || toStr) {
+    const from = fromStr ? parseLogDate(fromStr) : null;
+    const to = toStr ? parseLogDate(toStr) : null;
+    if (fromStr && !from) return err(c, "Invalid from date format", 400);
+    if (toStr && !to) return err(c, "Invalid to date format", 400);
+
+    const meals = await prisma.mealLog.findMany({
+      where: {
+        userId: user.id,
+        logDate: {
+          ...(from ? { gte: from } : {}),
+          ...(to ? { lte: to } : {}),
+        },
+      },
+      orderBy: [{ logDate: "asc" }, { loggedAt: "asc" }],
+    });
+
+    return ok(c, meals.map(serializeMealLog));
+  }
+
+  // Single-day mode (unchanged) ? defaults to today when date omitted.
+  const singleStr = dateStr ?? todayLogDate();
+  const logDate = parseLogDate(singleStr);
   if (!logDate) return err(c, "Invalid date format", 400);
 
-  const user = getUser(c);
   const meals = await prisma.mealLog.findMany({
     where: { userId: user.id, logDate },
     orderBy: { id: "asc" },
@@ -262,7 +311,7 @@ nutritionRouter.post("/water", async (c) => {
   return ok(c, { glasses: log.glasses });
 });
 
-// ── Weekly trend + streak ───────────────────────────────────────────────
+// ?? Weekly trend + streak ???????????????????????????????????????????????
 function isoDate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
@@ -368,4 +417,180 @@ nutritionRouter.get("/suggestions", async (c) => {
     body,
     suggestions: picks.map((f) => ({ label: f.name, calories: f.cal })),
   });
+});
+
+/** Fresh adaptive suggestion for a user ? shared by GET and apply. */
+async function freshAdaptiveSuggestion(userId: string): Promise<
+  | { ok: false; reason: "missing_profile" | "missing_nutrition_goal" }
+  | {
+      ok: true;
+      suggestion: AdaptiveSuggestion;
+      nutritionGoal: {
+        id: string;
+        calories: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+        bmr: number;
+        tdee: number;
+        userId: string;
+        updatedAt: Date;
+      };
+      goalId: GoalId;
+      weightKg: number;
+    }
+> {
+  const [profile, nutritionGoal] = await Promise.all([
+    prisma.userProfile.findUnique({ where: { userId } }),
+    prisma.nutritionGoal.findUnique({ where: { userId } }),
+  ]);
+
+  if (!profile?.goalId) {
+    return { ok: false, reason: "missing_profile" };
+  }
+  if (!nutritionGoal) {
+    return { ok: false, reason: "missing_nutrition_goal" };
+  }
+
+  const asOf = todayLogDate();
+  const windowStart = parseLogDate(asOf)!;
+  windowStart.setUTCDate(
+    windowStart.getUTCDate() - (ADAPTIVE_WINDOW_DAYS - 1),
+  );
+
+  const logs = await prisma.weightLog.findMany({
+    where: {
+      userId,
+      logDate: { gte: windowStart, lte: parseLogDate(asOf)! },
+    },
+    orderBy: { logDate: "asc" },
+  });
+
+  const suggestion = computeAdaptiveSuggestion({
+    entries: logs.map((row) => ({
+      logDate: row.logDate.toISOString().slice(0, 10),
+      weightKg: Number(row.weight),
+    })),
+    goalId: profile.goalId,
+    currentCalories: nutritionGoal.calories,
+    asOf,
+  });
+
+  const weightKg =
+    profile.weightKg != null
+      ? Number(profile.weightKg)
+      : suggestion.eligible
+        ? suggestion.currentTrendSummary.currentWeightKg
+        : 0;
+
+  return {
+    ok: true,
+    suggestion,
+    nutritionGoal,
+    goalId: profile.goalId as GoalId,
+    weightKg,
+  };
+}
+
+// Adaptive calorie suggestion (read-only; never mutates NutritionGoal).
+nutritionRouter.get("/adaptive-suggestion", async (c) => {
+  const user = getUser(c);
+  const fresh = await freshAdaptiveSuggestion(user.id);
+
+  if (!fresh.ok) {
+    return ok(c, {
+      eligible: false as const,
+      reason: fresh.reason,
+    });
+  }
+
+  return ok(c, fresh.suggestion);
+});
+
+/**
+ * Accept an adaptive suggestion. Recomputes server-side with fresh weight
+ * data; rejects if the client's suggestedCalories no longer matches within
+ * APPLY_SUGGESTION_TOLERANCE_KCAL (stale / no longer valid).
+ */
+nutritionRouter.patch("/goals/apply-suggestion", async (c) => {
+  const parsed = await parseJson(c, applySuggestionSchema);
+  if (!parsed.success) return parsed.response;
+
+  const user = getUser(c);
+  const clientSuggested = parsed.data.suggestedCalories;
+
+  const fresh = await freshAdaptiveSuggestion(user.id);
+  if (!fresh.ok) {
+    return err(
+      c,
+      fresh.reason === "missing_profile"
+        ? "Profile incomplete ? cannot apply suggestion"
+        : "Nutrition goal not found",
+      400,
+    );
+  }
+
+  const { suggestion, nutritionGoal, goalId, weightKg } = fresh;
+
+  if (!suggestion.eligible) {
+    return err(
+      c,
+      `Suggestion no longer eligible (${suggestion.reason}). Fetch a fresh adaptive suggestion.`,
+      409,
+    );
+  }
+
+  if (!suggestion.adjustmentNeeded) {
+    return err(
+      c,
+      "No adjustment needed with current weight trend. Fetch a fresh adaptive suggestion.",
+      409,
+    );
+  }
+
+  const drift = Math.abs(suggestion.suggestedCalories - clientSuggested);
+  if (drift > APPLY_SUGGESTION_TOLERANCE_KCAL) {
+    return err(
+      c,
+      `Suggestion is stale (server now suggests ${suggestion.suggestedCalories} kcal, client sent ${clientSuggested}). Fetch a fresh adaptive suggestion.`,
+      409,
+    );
+  }
+
+  // Prefer the freshly recomputed target (authoritative), not the client number.
+  const newCalories = suggestion.suggestedCalories;
+  const oldCalories = nutritionGoal.calories;
+
+  if (weightKg <= 0) {
+    return err(c, "Cannot recompute macros without a body weight", 400);
+  }
+
+  const macros = macrosForCalorieTarget({
+    calories: newCalories,
+    weightKg,
+    goalId,
+  });
+
+  const [updated] = await prisma.$transaction([
+    prisma.nutritionGoal.update({
+      where: { userId: user.id },
+      data: {
+        calories: newCalories,
+        protein: macros.protein,
+        carbs: macros.carbs,
+        fat: macros.fat,
+        // bmr/tdee unchanged ? those are profile-derived maintenance estimates
+      },
+    }),
+    prisma.nutritionAdjustmentLog.create({
+      data: {
+        userId: user.id,
+        oldCalories,
+        newCalories,
+        explanation: suggestion.explanation,
+      },
+    }),
+  ]);
+
+  return ok(c, updated);
 });

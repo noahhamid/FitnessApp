@@ -74,6 +74,11 @@ export type WorkoutExercise = $Result.DefaultSelection<Prisma.$WorkoutExercisePa
  */
 export type NutritionGoal = $Result.DefaultSelection<Prisma.$NutritionGoalPayload>
 /**
+ * Model NutritionAdjustmentLog
+ * History of adaptive calorie-target changes (accept/apply flow).
+ */
+export type NutritionAdjustmentLog = $Result.DefaultSelection<Prisma.$NutritionAdjustmentLogPayload>
+/**
  * Model MealLog
  * 
  */
@@ -443,6 +448,16 @@ export class PrismaClient<
     * ```
     */
   get nutritionGoal(): Prisma.NutritionGoalDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.nutritionAdjustmentLog`: Exposes CRUD operations for the **NutritionAdjustmentLog** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more NutritionAdjustmentLogs
+    * const nutritionAdjustmentLogs = await prisma.nutritionAdjustmentLog.findMany()
+    * ```
+    */
+  get nutritionAdjustmentLog(): Prisma.NutritionAdjustmentLogDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.mealLog`: Exposes CRUD operations for the **MealLog** model.
@@ -939,6 +954,7 @@ export namespace Prisma {
     WorkoutSession: 'WorkoutSession',
     WorkoutExercise: 'WorkoutExercise',
     NutritionGoal: 'NutritionGoal',
+    NutritionAdjustmentLog: 'NutritionAdjustmentLog',
     MealLog: 'MealLog',
     WaterLog: 'WaterLog',
     WeightLog: 'WeightLog',
@@ -959,7 +975,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "exercise" | "workoutPlan" | "workoutPlanDay" | "workoutPlanExercise" | "user" | "userProfile" | "session" | "account" | "verification" | "workoutSession" | "workoutExercise" | "nutritionGoal" | "mealLog" | "waterLog" | "weightLog" | "weightGoal" | "plannedExtraExercise"
+      modelProps: "exercise" | "workoutPlan" | "workoutPlanDay" | "workoutPlanExercise" | "user" | "userProfile" | "session" | "account" | "verification" | "workoutSession" | "workoutExercise" | "nutritionGoal" | "nutritionAdjustmentLog" | "mealLog" | "waterLog" | "weightLog" | "weightGoal" | "plannedExtraExercise"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1851,6 +1867,80 @@ export namespace Prisma {
           }
         }
       }
+      NutritionAdjustmentLog: {
+        payload: Prisma.$NutritionAdjustmentLogPayload<ExtArgs>
+        fields: Prisma.NutritionAdjustmentLogFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.NutritionAdjustmentLogFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NutritionAdjustmentLogPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.NutritionAdjustmentLogFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NutritionAdjustmentLogPayload>
+          }
+          findFirst: {
+            args: Prisma.NutritionAdjustmentLogFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NutritionAdjustmentLogPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.NutritionAdjustmentLogFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NutritionAdjustmentLogPayload>
+          }
+          findMany: {
+            args: Prisma.NutritionAdjustmentLogFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NutritionAdjustmentLogPayload>[]
+          }
+          create: {
+            args: Prisma.NutritionAdjustmentLogCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NutritionAdjustmentLogPayload>
+          }
+          createMany: {
+            args: Prisma.NutritionAdjustmentLogCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.NutritionAdjustmentLogCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NutritionAdjustmentLogPayload>[]
+          }
+          delete: {
+            args: Prisma.NutritionAdjustmentLogDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NutritionAdjustmentLogPayload>
+          }
+          update: {
+            args: Prisma.NutritionAdjustmentLogUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NutritionAdjustmentLogPayload>
+          }
+          deleteMany: {
+            args: Prisma.NutritionAdjustmentLogDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.NutritionAdjustmentLogUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.NutritionAdjustmentLogUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NutritionAdjustmentLogPayload>[]
+          }
+          upsert: {
+            args: Prisma.NutritionAdjustmentLogUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$NutritionAdjustmentLogPayload>
+          }
+          aggregate: {
+            args: Prisma.NutritionAdjustmentLogAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateNutritionAdjustmentLog>
+          }
+          groupBy: {
+            args: Prisma.NutritionAdjustmentLogGroupByArgs<ExtArgs>
+            result: $Utils.Optional<NutritionAdjustmentLogGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.NutritionAdjustmentLogCountArgs<ExtArgs>
+            result: $Utils.Optional<NutritionAdjustmentLogCountAggregateOutputType> | number
+          }
+        }
+      }
       MealLog: {
         payload: Prisma.$MealLogPayload<ExtArgs>
         fields: Prisma.MealLogFieldRefs
@@ -2341,6 +2431,7 @@ export namespace Prisma {
     workoutSession?: WorkoutSessionOmit
     workoutExercise?: WorkoutExerciseOmit
     nutritionGoal?: NutritionGoalOmit
+    nutritionAdjustmentLog?: NutritionAdjustmentLogOmit
     mealLog?: MealLogOmit
     waterLog?: WaterLogOmit
     weightLog?: WeightLogOmit
@@ -2526,6 +2617,7 @@ export namespace Prisma {
     weightLogs: number
     plannedExtraExercises: number
     waterLogs: number
+    nutritionAdjustmentLogs: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2536,6 +2628,7 @@ export namespace Prisma {
     weightLogs?: boolean | UserCountOutputTypeCountWeightLogsArgs
     plannedExtraExercises?: boolean | UserCountOutputTypeCountPlannedExtraExercisesArgs
     waterLogs?: boolean | UserCountOutputTypeCountWaterLogsArgs
+    nutritionAdjustmentLogs?: boolean | UserCountOutputTypeCountNutritionAdjustmentLogsArgs
   }
 
   // Custom InputTypes
@@ -2596,6 +2689,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountWaterLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: WaterLogWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountNutritionAdjustmentLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: NutritionAdjustmentLogWhereInput
   }
 
 
@@ -7336,6 +7436,7 @@ export namespace Prisma {
     weightGoal?: boolean | User$weightGoalArgs<ExtArgs>
     waterLogs?: boolean | User$waterLogsArgs<ExtArgs>
     workoutPlan?: boolean | User$workoutPlanArgs<ExtArgs>
+    nutritionAdjustmentLogs?: boolean | User$nutritionAdjustmentLogsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -7382,6 +7483,7 @@ export namespace Prisma {
     weightGoal?: boolean | User$weightGoalArgs<ExtArgs>
     waterLogs?: boolean | User$waterLogsArgs<ExtArgs>
     workoutPlan?: boolean | User$workoutPlanArgs<ExtArgs>
+    nutritionAdjustmentLogs?: boolean | User$nutritionAdjustmentLogsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -7401,6 +7503,7 @@ export namespace Prisma {
       weightGoal: Prisma.$WeightGoalPayload<ExtArgs> | null
       waterLogs: Prisma.$WaterLogPayload<ExtArgs>[]
       workoutPlan: Prisma.$WorkoutPlanPayload<ExtArgs> | null
+      nutritionAdjustmentLogs: Prisma.$NutritionAdjustmentLogPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -7815,6 +7918,7 @@ export namespace Prisma {
     weightGoal<T extends User$weightGoalArgs<ExtArgs> = {}>(args?: Subset<T, User$weightGoalArgs<ExtArgs>>): Prisma__WeightGoalClient<$Result.GetResult<Prisma.$WeightGoalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     waterLogs<T extends User$waterLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$waterLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WaterLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     workoutPlan<T extends User$workoutPlanArgs<ExtArgs> = {}>(args?: Subset<T, User$workoutPlanArgs<ExtArgs>>): Prisma__WorkoutPlanClient<$Result.GetResult<Prisma.$WorkoutPlanPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    nutritionAdjustmentLogs<T extends User$nutritionAdjustmentLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$nutritionAdjustmentLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NutritionAdjustmentLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -8485,6 +8589,30 @@ export namespace Prisma {
      */
     include?: WorkoutPlanInclude<ExtArgs> | null
     where?: WorkoutPlanWhereInput
+  }
+
+  /**
+   * User.nutritionAdjustmentLogs
+   */
+  export type User$nutritionAdjustmentLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NutritionAdjustmentLog
+     */
+    select?: NutritionAdjustmentLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the NutritionAdjustmentLog
+     */
+    omit?: NutritionAdjustmentLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NutritionAdjustmentLogInclude<ExtArgs> | null
+    where?: NutritionAdjustmentLogWhereInput
+    orderBy?: NutritionAdjustmentLogOrderByWithRelationInput | NutritionAdjustmentLogOrderByWithRelationInput[]
+    cursor?: NutritionAdjustmentLogWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: NutritionAdjustmentLogScalarFieldEnum | NutritionAdjustmentLogScalarFieldEnum[]
   }
 
   /**
@@ -15131,6 +15259,8 @@ export namespace Prisma {
     protein: number | null
     carbs: number | null
     fat: number | null
+    bmr: number | null
+    tdee: number | null
   }
 
   export type NutritionGoalSumAggregateOutputType = {
@@ -15138,6 +15268,8 @@ export namespace Prisma {
     protein: number | null
     carbs: number | null
     fat: number | null
+    bmr: number | null
+    tdee: number | null
   }
 
   export type NutritionGoalMinAggregateOutputType = {
@@ -15146,6 +15278,8 @@ export namespace Prisma {
     protein: number | null
     carbs: number | null
     fat: number | null
+    bmr: number | null
+    tdee: number | null
     updatedAt: Date | null
     userId: string | null
   }
@@ -15156,6 +15290,8 @@ export namespace Prisma {
     protein: number | null
     carbs: number | null
     fat: number | null
+    bmr: number | null
+    tdee: number | null
     updatedAt: Date | null
     userId: string | null
   }
@@ -15166,6 +15302,8 @@ export namespace Prisma {
     protein: number
     carbs: number
     fat: number
+    bmr: number
+    tdee: number
     updatedAt: number
     userId: number
     _all: number
@@ -15177,6 +15315,8 @@ export namespace Prisma {
     protein?: true
     carbs?: true
     fat?: true
+    bmr?: true
+    tdee?: true
   }
 
   export type NutritionGoalSumAggregateInputType = {
@@ -15184,6 +15324,8 @@ export namespace Prisma {
     protein?: true
     carbs?: true
     fat?: true
+    bmr?: true
+    tdee?: true
   }
 
   export type NutritionGoalMinAggregateInputType = {
@@ -15192,6 +15334,8 @@ export namespace Prisma {
     protein?: true
     carbs?: true
     fat?: true
+    bmr?: true
+    tdee?: true
     updatedAt?: true
     userId?: true
   }
@@ -15202,6 +15346,8 @@ export namespace Prisma {
     protein?: true
     carbs?: true
     fat?: true
+    bmr?: true
+    tdee?: true
     updatedAt?: true
     userId?: true
   }
@@ -15212,6 +15358,8 @@ export namespace Prisma {
     protein?: true
     carbs?: true
     fat?: true
+    bmr?: true
+    tdee?: true
     updatedAt?: true
     userId?: true
     _all?: true
@@ -15309,6 +15457,8 @@ export namespace Prisma {
     protein: number
     carbs: number
     fat: number
+    bmr: number
+    tdee: number
     updatedAt: Date
     userId: string
     _count: NutritionGoalCountAggregateOutputType | null
@@ -15338,6 +15488,8 @@ export namespace Prisma {
     protein?: boolean
     carbs?: boolean
     fat?: boolean
+    bmr?: boolean
+    tdee?: boolean
     updatedAt?: boolean
     userId?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -15349,6 +15501,8 @@ export namespace Prisma {
     protein?: boolean
     carbs?: boolean
     fat?: boolean
+    bmr?: boolean
+    tdee?: boolean
     updatedAt?: boolean
     userId?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -15360,6 +15514,8 @@ export namespace Prisma {
     protein?: boolean
     carbs?: boolean
     fat?: boolean
+    bmr?: boolean
+    tdee?: boolean
     updatedAt?: boolean
     userId?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -15371,11 +15527,13 @@ export namespace Prisma {
     protein?: boolean
     carbs?: boolean
     fat?: boolean
+    bmr?: boolean
+    tdee?: boolean
     updatedAt?: boolean
     userId?: boolean
   }
 
-  export type NutritionGoalOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "calories" | "protein" | "carbs" | "fat" | "updatedAt" | "userId", ExtArgs["result"]["nutritionGoal"]>
+  export type NutritionGoalOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "calories" | "protein" | "carbs" | "fat" | "bmr" | "tdee" | "updatedAt" | "userId", ExtArgs["result"]["nutritionGoal"]>
   export type NutritionGoalInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -15397,6 +15555,8 @@ export namespace Prisma {
       protein: number
       carbs: number
       fat: number
+      bmr: number
+      tdee: number
       updatedAt: Date
       userId: string
     }, ExtArgs["result"]["nutritionGoal"]>
@@ -15828,6 +15988,8 @@ export namespace Prisma {
     readonly protein: FieldRef<"NutritionGoal", 'Int'>
     readonly carbs: FieldRef<"NutritionGoal", 'Int'>
     readonly fat: FieldRef<"NutritionGoal", 'Int'>
+    readonly bmr: FieldRef<"NutritionGoal", 'Int'>
+    readonly tdee: FieldRef<"NutritionGoal", 'Int'>
     readonly updatedAt: FieldRef<"NutritionGoal", 'DateTime'>
     readonly userId: FieldRef<"NutritionGoal", 'String'>
   }
@@ -16246,6 +16408,1120 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: NutritionGoalInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model NutritionAdjustmentLog
+   */
+
+  export type AggregateNutritionAdjustmentLog = {
+    _count: NutritionAdjustmentLogCountAggregateOutputType | null
+    _avg: NutritionAdjustmentLogAvgAggregateOutputType | null
+    _sum: NutritionAdjustmentLogSumAggregateOutputType | null
+    _min: NutritionAdjustmentLogMinAggregateOutputType | null
+    _max: NutritionAdjustmentLogMaxAggregateOutputType | null
+  }
+
+  export type NutritionAdjustmentLogAvgAggregateOutputType = {
+    oldCalories: number | null
+    newCalories: number | null
+  }
+
+  export type NutritionAdjustmentLogSumAggregateOutputType = {
+    oldCalories: number | null
+    newCalories: number | null
+  }
+
+  export type NutritionAdjustmentLogMinAggregateOutputType = {
+    id: string | null
+    appliedAt: Date | null
+    oldCalories: number | null
+    newCalories: number | null
+    explanation: string | null
+    userId: string | null
+  }
+
+  export type NutritionAdjustmentLogMaxAggregateOutputType = {
+    id: string | null
+    appliedAt: Date | null
+    oldCalories: number | null
+    newCalories: number | null
+    explanation: string | null
+    userId: string | null
+  }
+
+  export type NutritionAdjustmentLogCountAggregateOutputType = {
+    id: number
+    appliedAt: number
+    oldCalories: number
+    newCalories: number
+    explanation: number
+    userId: number
+    _all: number
+  }
+
+
+  export type NutritionAdjustmentLogAvgAggregateInputType = {
+    oldCalories?: true
+    newCalories?: true
+  }
+
+  export type NutritionAdjustmentLogSumAggregateInputType = {
+    oldCalories?: true
+    newCalories?: true
+  }
+
+  export type NutritionAdjustmentLogMinAggregateInputType = {
+    id?: true
+    appliedAt?: true
+    oldCalories?: true
+    newCalories?: true
+    explanation?: true
+    userId?: true
+  }
+
+  export type NutritionAdjustmentLogMaxAggregateInputType = {
+    id?: true
+    appliedAt?: true
+    oldCalories?: true
+    newCalories?: true
+    explanation?: true
+    userId?: true
+  }
+
+  export type NutritionAdjustmentLogCountAggregateInputType = {
+    id?: true
+    appliedAt?: true
+    oldCalories?: true
+    newCalories?: true
+    explanation?: true
+    userId?: true
+    _all?: true
+  }
+
+  export type NutritionAdjustmentLogAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which NutritionAdjustmentLog to aggregate.
+     */
+    where?: NutritionAdjustmentLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of NutritionAdjustmentLogs to fetch.
+     */
+    orderBy?: NutritionAdjustmentLogOrderByWithRelationInput | NutritionAdjustmentLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: NutritionAdjustmentLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` NutritionAdjustmentLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` NutritionAdjustmentLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned NutritionAdjustmentLogs
+    **/
+    _count?: true | NutritionAdjustmentLogCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: NutritionAdjustmentLogAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: NutritionAdjustmentLogSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: NutritionAdjustmentLogMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: NutritionAdjustmentLogMaxAggregateInputType
+  }
+
+  export type GetNutritionAdjustmentLogAggregateType<T extends NutritionAdjustmentLogAggregateArgs> = {
+        [P in keyof T & keyof AggregateNutritionAdjustmentLog]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateNutritionAdjustmentLog[P]>
+      : GetScalarType<T[P], AggregateNutritionAdjustmentLog[P]>
+  }
+
+
+
+
+  export type NutritionAdjustmentLogGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: NutritionAdjustmentLogWhereInput
+    orderBy?: NutritionAdjustmentLogOrderByWithAggregationInput | NutritionAdjustmentLogOrderByWithAggregationInput[]
+    by: NutritionAdjustmentLogScalarFieldEnum[] | NutritionAdjustmentLogScalarFieldEnum
+    having?: NutritionAdjustmentLogScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: NutritionAdjustmentLogCountAggregateInputType | true
+    _avg?: NutritionAdjustmentLogAvgAggregateInputType
+    _sum?: NutritionAdjustmentLogSumAggregateInputType
+    _min?: NutritionAdjustmentLogMinAggregateInputType
+    _max?: NutritionAdjustmentLogMaxAggregateInputType
+  }
+
+  export type NutritionAdjustmentLogGroupByOutputType = {
+    id: string
+    appliedAt: Date
+    oldCalories: number
+    newCalories: number
+    explanation: string
+    userId: string
+    _count: NutritionAdjustmentLogCountAggregateOutputType | null
+    _avg: NutritionAdjustmentLogAvgAggregateOutputType | null
+    _sum: NutritionAdjustmentLogSumAggregateOutputType | null
+    _min: NutritionAdjustmentLogMinAggregateOutputType | null
+    _max: NutritionAdjustmentLogMaxAggregateOutputType | null
+  }
+
+  type GetNutritionAdjustmentLogGroupByPayload<T extends NutritionAdjustmentLogGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<NutritionAdjustmentLogGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof NutritionAdjustmentLogGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], NutritionAdjustmentLogGroupByOutputType[P]>
+            : GetScalarType<T[P], NutritionAdjustmentLogGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type NutritionAdjustmentLogSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    appliedAt?: boolean
+    oldCalories?: boolean
+    newCalories?: boolean
+    explanation?: boolean
+    userId?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["nutritionAdjustmentLog"]>
+
+  export type NutritionAdjustmentLogSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    appliedAt?: boolean
+    oldCalories?: boolean
+    newCalories?: boolean
+    explanation?: boolean
+    userId?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["nutritionAdjustmentLog"]>
+
+  export type NutritionAdjustmentLogSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    appliedAt?: boolean
+    oldCalories?: boolean
+    newCalories?: boolean
+    explanation?: boolean
+    userId?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["nutritionAdjustmentLog"]>
+
+  export type NutritionAdjustmentLogSelectScalar = {
+    id?: boolean
+    appliedAt?: boolean
+    oldCalories?: boolean
+    newCalories?: boolean
+    explanation?: boolean
+    userId?: boolean
+  }
+
+  export type NutritionAdjustmentLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "appliedAt" | "oldCalories" | "newCalories" | "explanation" | "userId", ExtArgs["result"]["nutritionAdjustmentLog"]>
+  export type NutritionAdjustmentLogInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type NutritionAdjustmentLogIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type NutritionAdjustmentLogIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $NutritionAdjustmentLogPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "NutritionAdjustmentLog"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      appliedAt: Date
+      oldCalories: number
+      newCalories: number
+      explanation: string
+      userId: string
+    }, ExtArgs["result"]["nutritionAdjustmentLog"]>
+    composites: {}
+  }
+
+  type NutritionAdjustmentLogGetPayload<S extends boolean | null | undefined | NutritionAdjustmentLogDefaultArgs> = $Result.GetResult<Prisma.$NutritionAdjustmentLogPayload, S>
+
+  type NutritionAdjustmentLogCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<NutritionAdjustmentLogFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: NutritionAdjustmentLogCountAggregateInputType | true
+    }
+
+  export interface NutritionAdjustmentLogDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['NutritionAdjustmentLog'], meta: { name: 'NutritionAdjustmentLog' } }
+    /**
+     * Find zero or one NutritionAdjustmentLog that matches the filter.
+     * @param {NutritionAdjustmentLogFindUniqueArgs} args - Arguments to find a NutritionAdjustmentLog
+     * @example
+     * // Get one NutritionAdjustmentLog
+     * const nutritionAdjustmentLog = await prisma.nutritionAdjustmentLog.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends NutritionAdjustmentLogFindUniqueArgs>(args: SelectSubset<T, NutritionAdjustmentLogFindUniqueArgs<ExtArgs>>): Prisma__NutritionAdjustmentLogClient<$Result.GetResult<Prisma.$NutritionAdjustmentLogPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one NutritionAdjustmentLog that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {NutritionAdjustmentLogFindUniqueOrThrowArgs} args - Arguments to find a NutritionAdjustmentLog
+     * @example
+     * // Get one NutritionAdjustmentLog
+     * const nutritionAdjustmentLog = await prisma.nutritionAdjustmentLog.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends NutritionAdjustmentLogFindUniqueOrThrowArgs>(args: SelectSubset<T, NutritionAdjustmentLogFindUniqueOrThrowArgs<ExtArgs>>): Prisma__NutritionAdjustmentLogClient<$Result.GetResult<Prisma.$NutritionAdjustmentLogPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first NutritionAdjustmentLog that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NutritionAdjustmentLogFindFirstArgs} args - Arguments to find a NutritionAdjustmentLog
+     * @example
+     * // Get one NutritionAdjustmentLog
+     * const nutritionAdjustmentLog = await prisma.nutritionAdjustmentLog.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends NutritionAdjustmentLogFindFirstArgs>(args?: SelectSubset<T, NutritionAdjustmentLogFindFirstArgs<ExtArgs>>): Prisma__NutritionAdjustmentLogClient<$Result.GetResult<Prisma.$NutritionAdjustmentLogPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first NutritionAdjustmentLog that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NutritionAdjustmentLogFindFirstOrThrowArgs} args - Arguments to find a NutritionAdjustmentLog
+     * @example
+     * // Get one NutritionAdjustmentLog
+     * const nutritionAdjustmentLog = await prisma.nutritionAdjustmentLog.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends NutritionAdjustmentLogFindFirstOrThrowArgs>(args?: SelectSubset<T, NutritionAdjustmentLogFindFirstOrThrowArgs<ExtArgs>>): Prisma__NutritionAdjustmentLogClient<$Result.GetResult<Prisma.$NutritionAdjustmentLogPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more NutritionAdjustmentLogs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NutritionAdjustmentLogFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all NutritionAdjustmentLogs
+     * const nutritionAdjustmentLogs = await prisma.nutritionAdjustmentLog.findMany()
+     * 
+     * // Get first 10 NutritionAdjustmentLogs
+     * const nutritionAdjustmentLogs = await prisma.nutritionAdjustmentLog.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const nutritionAdjustmentLogWithIdOnly = await prisma.nutritionAdjustmentLog.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends NutritionAdjustmentLogFindManyArgs>(args?: SelectSubset<T, NutritionAdjustmentLogFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NutritionAdjustmentLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a NutritionAdjustmentLog.
+     * @param {NutritionAdjustmentLogCreateArgs} args - Arguments to create a NutritionAdjustmentLog.
+     * @example
+     * // Create one NutritionAdjustmentLog
+     * const NutritionAdjustmentLog = await prisma.nutritionAdjustmentLog.create({
+     *   data: {
+     *     // ... data to create a NutritionAdjustmentLog
+     *   }
+     * })
+     * 
+     */
+    create<T extends NutritionAdjustmentLogCreateArgs>(args: SelectSubset<T, NutritionAdjustmentLogCreateArgs<ExtArgs>>): Prisma__NutritionAdjustmentLogClient<$Result.GetResult<Prisma.$NutritionAdjustmentLogPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many NutritionAdjustmentLogs.
+     * @param {NutritionAdjustmentLogCreateManyArgs} args - Arguments to create many NutritionAdjustmentLogs.
+     * @example
+     * // Create many NutritionAdjustmentLogs
+     * const nutritionAdjustmentLog = await prisma.nutritionAdjustmentLog.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends NutritionAdjustmentLogCreateManyArgs>(args?: SelectSubset<T, NutritionAdjustmentLogCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many NutritionAdjustmentLogs and returns the data saved in the database.
+     * @param {NutritionAdjustmentLogCreateManyAndReturnArgs} args - Arguments to create many NutritionAdjustmentLogs.
+     * @example
+     * // Create many NutritionAdjustmentLogs
+     * const nutritionAdjustmentLog = await prisma.nutritionAdjustmentLog.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many NutritionAdjustmentLogs and only return the `id`
+     * const nutritionAdjustmentLogWithIdOnly = await prisma.nutritionAdjustmentLog.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends NutritionAdjustmentLogCreateManyAndReturnArgs>(args?: SelectSubset<T, NutritionAdjustmentLogCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NutritionAdjustmentLogPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a NutritionAdjustmentLog.
+     * @param {NutritionAdjustmentLogDeleteArgs} args - Arguments to delete one NutritionAdjustmentLog.
+     * @example
+     * // Delete one NutritionAdjustmentLog
+     * const NutritionAdjustmentLog = await prisma.nutritionAdjustmentLog.delete({
+     *   where: {
+     *     // ... filter to delete one NutritionAdjustmentLog
+     *   }
+     * })
+     * 
+     */
+    delete<T extends NutritionAdjustmentLogDeleteArgs>(args: SelectSubset<T, NutritionAdjustmentLogDeleteArgs<ExtArgs>>): Prisma__NutritionAdjustmentLogClient<$Result.GetResult<Prisma.$NutritionAdjustmentLogPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one NutritionAdjustmentLog.
+     * @param {NutritionAdjustmentLogUpdateArgs} args - Arguments to update one NutritionAdjustmentLog.
+     * @example
+     * // Update one NutritionAdjustmentLog
+     * const nutritionAdjustmentLog = await prisma.nutritionAdjustmentLog.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends NutritionAdjustmentLogUpdateArgs>(args: SelectSubset<T, NutritionAdjustmentLogUpdateArgs<ExtArgs>>): Prisma__NutritionAdjustmentLogClient<$Result.GetResult<Prisma.$NutritionAdjustmentLogPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more NutritionAdjustmentLogs.
+     * @param {NutritionAdjustmentLogDeleteManyArgs} args - Arguments to filter NutritionAdjustmentLogs to delete.
+     * @example
+     * // Delete a few NutritionAdjustmentLogs
+     * const { count } = await prisma.nutritionAdjustmentLog.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends NutritionAdjustmentLogDeleteManyArgs>(args?: SelectSubset<T, NutritionAdjustmentLogDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more NutritionAdjustmentLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NutritionAdjustmentLogUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many NutritionAdjustmentLogs
+     * const nutritionAdjustmentLog = await prisma.nutritionAdjustmentLog.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends NutritionAdjustmentLogUpdateManyArgs>(args: SelectSubset<T, NutritionAdjustmentLogUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more NutritionAdjustmentLogs and returns the data updated in the database.
+     * @param {NutritionAdjustmentLogUpdateManyAndReturnArgs} args - Arguments to update many NutritionAdjustmentLogs.
+     * @example
+     * // Update many NutritionAdjustmentLogs
+     * const nutritionAdjustmentLog = await prisma.nutritionAdjustmentLog.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more NutritionAdjustmentLogs and only return the `id`
+     * const nutritionAdjustmentLogWithIdOnly = await prisma.nutritionAdjustmentLog.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends NutritionAdjustmentLogUpdateManyAndReturnArgs>(args: SelectSubset<T, NutritionAdjustmentLogUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NutritionAdjustmentLogPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one NutritionAdjustmentLog.
+     * @param {NutritionAdjustmentLogUpsertArgs} args - Arguments to update or create a NutritionAdjustmentLog.
+     * @example
+     * // Update or create a NutritionAdjustmentLog
+     * const nutritionAdjustmentLog = await prisma.nutritionAdjustmentLog.upsert({
+     *   create: {
+     *     // ... data to create a NutritionAdjustmentLog
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the NutritionAdjustmentLog we want to update
+     *   }
+     * })
+     */
+    upsert<T extends NutritionAdjustmentLogUpsertArgs>(args: SelectSubset<T, NutritionAdjustmentLogUpsertArgs<ExtArgs>>): Prisma__NutritionAdjustmentLogClient<$Result.GetResult<Prisma.$NutritionAdjustmentLogPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of NutritionAdjustmentLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NutritionAdjustmentLogCountArgs} args - Arguments to filter NutritionAdjustmentLogs to count.
+     * @example
+     * // Count the number of NutritionAdjustmentLogs
+     * const count = await prisma.nutritionAdjustmentLog.count({
+     *   where: {
+     *     // ... the filter for the NutritionAdjustmentLogs we want to count
+     *   }
+     * })
+    **/
+    count<T extends NutritionAdjustmentLogCountArgs>(
+      args?: Subset<T, NutritionAdjustmentLogCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], NutritionAdjustmentLogCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a NutritionAdjustmentLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NutritionAdjustmentLogAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends NutritionAdjustmentLogAggregateArgs>(args: Subset<T, NutritionAdjustmentLogAggregateArgs>): Prisma.PrismaPromise<GetNutritionAdjustmentLogAggregateType<T>>
+
+    /**
+     * Group by NutritionAdjustmentLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {NutritionAdjustmentLogGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends NutritionAdjustmentLogGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: NutritionAdjustmentLogGroupByArgs['orderBy'] }
+        : { orderBy?: NutritionAdjustmentLogGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, NutritionAdjustmentLogGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetNutritionAdjustmentLogGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the NutritionAdjustmentLog model
+   */
+  readonly fields: NutritionAdjustmentLogFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for NutritionAdjustmentLog.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__NutritionAdjustmentLogClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the NutritionAdjustmentLog model
+   */
+  interface NutritionAdjustmentLogFieldRefs {
+    readonly id: FieldRef<"NutritionAdjustmentLog", 'String'>
+    readonly appliedAt: FieldRef<"NutritionAdjustmentLog", 'DateTime'>
+    readonly oldCalories: FieldRef<"NutritionAdjustmentLog", 'Int'>
+    readonly newCalories: FieldRef<"NutritionAdjustmentLog", 'Int'>
+    readonly explanation: FieldRef<"NutritionAdjustmentLog", 'String'>
+    readonly userId: FieldRef<"NutritionAdjustmentLog", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * NutritionAdjustmentLog findUnique
+   */
+  export type NutritionAdjustmentLogFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NutritionAdjustmentLog
+     */
+    select?: NutritionAdjustmentLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the NutritionAdjustmentLog
+     */
+    omit?: NutritionAdjustmentLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NutritionAdjustmentLogInclude<ExtArgs> | null
+    /**
+     * Filter, which NutritionAdjustmentLog to fetch.
+     */
+    where: NutritionAdjustmentLogWhereUniqueInput
+  }
+
+  /**
+   * NutritionAdjustmentLog findUniqueOrThrow
+   */
+  export type NutritionAdjustmentLogFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NutritionAdjustmentLog
+     */
+    select?: NutritionAdjustmentLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the NutritionAdjustmentLog
+     */
+    omit?: NutritionAdjustmentLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NutritionAdjustmentLogInclude<ExtArgs> | null
+    /**
+     * Filter, which NutritionAdjustmentLog to fetch.
+     */
+    where: NutritionAdjustmentLogWhereUniqueInput
+  }
+
+  /**
+   * NutritionAdjustmentLog findFirst
+   */
+  export type NutritionAdjustmentLogFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NutritionAdjustmentLog
+     */
+    select?: NutritionAdjustmentLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the NutritionAdjustmentLog
+     */
+    omit?: NutritionAdjustmentLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NutritionAdjustmentLogInclude<ExtArgs> | null
+    /**
+     * Filter, which NutritionAdjustmentLog to fetch.
+     */
+    where?: NutritionAdjustmentLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of NutritionAdjustmentLogs to fetch.
+     */
+    orderBy?: NutritionAdjustmentLogOrderByWithRelationInput | NutritionAdjustmentLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for NutritionAdjustmentLogs.
+     */
+    cursor?: NutritionAdjustmentLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` NutritionAdjustmentLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` NutritionAdjustmentLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of NutritionAdjustmentLogs.
+     */
+    distinct?: NutritionAdjustmentLogScalarFieldEnum | NutritionAdjustmentLogScalarFieldEnum[]
+  }
+
+  /**
+   * NutritionAdjustmentLog findFirstOrThrow
+   */
+  export type NutritionAdjustmentLogFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NutritionAdjustmentLog
+     */
+    select?: NutritionAdjustmentLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the NutritionAdjustmentLog
+     */
+    omit?: NutritionAdjustmentLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NutritionAdjustmentLogInclude<ExtArgs> | null
+    /**
+     * Filter, which NutritionAdjustmentLog to fetch.
+     */
+    where?: NutritionAdjustmentLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of NutritionAdjustmentLogs to fetch.
+     */
+    orderBy?: NutritionAdjustmentLogOrderByWithRelationInput | NutritionAdjustmentLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for NutritionAdjustmentLogs.
+     */
+    cursor?: NutritionAdjustmentLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` NutritionAdjustmentLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` NutritionAdjustmentLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of NutritionAdjustmentLogs.
+     */
+    distinct?: NutritionAdjustmentLogScalarFieldEnum | NutritionAdjustmentLogScalarFieldEnum[]
+  }
+
+  /**
+   * NutritionAdjustmentLog findMany
+   */
+  export type NutritionAdjustmentLogFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NutritionAdjustmentLog
+     */
+    select?: NutritionAdjustmentLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the NutritionAdjustmentLog
+     */
+    omit?: NutritionAdjustmentLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NutritionAdjustmentLogInclude<ExtArgs> | null
+    /**
+     * Filter, which NutritionAdjustmentLogs to fetch.
+     */
+    where?: NutritionAdjustmentLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of NutritionAdjustmentLogs to fetch.
+     */
+    orderBy?: NutritionAdjustmentLogOrderByWithRelationInput | NutritionAdjustmentLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing NutritionAdjustmentLogs.
+     */
+    cursor?: NutritionAdjustmentLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` NutritionAdjustmentLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` NutritionAdjustmentLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of NutritionAdjustmentLogs.
+     */
+    distinct?: NutritionAdjustmentLogScalarFieldEnum | NutritionAdjustmentLogScalarFieldEnum[]
+  }
+
+  /**
+   * NutritionAdjustmentLog create
+   */
+  export type NutritionAdjustmentLogCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NutritionAdjustmentLog
+     */
+    select?: NutritionAdjustmentLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the NutritionAdjustmentLog
+     */
+    omit?: NutritionAdjustmentLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NutritionAdjustmentLogInclude<ExtArgs> | null
+    /**
+     * The data needed to create a NutritionAdjustmentLog.
+     */
+    data: XOR<NutritionAdjustmentLogCreateInput, NutritionAdjustmentLogUncheckedCreateInput>
+  }
+
+  /**
+   * NutritionAdjustmentLog createMany
+   */
+  export type NutritionAdjustmentLogCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many NutritionAdjustmentLogs.
+     */
+    data: NutritionAdjustmentLogCreateManyInput | NutritionAdjustmentLogCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * NutritionAdjustmentLog createManyAndReturn
+   */
+  export type NutritionAdjustmentLogCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NutritionAdjustmentLog
+     */
+    select?: NutritionAdjustmentLogSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the NutritionAdjustmentLog
+     */
+    omit?: NutritionAdjustmentLogOmit<ExtArgs> | null
+    /**
+     * The data used to create many NutritionAdjustmentLogs.
+     */
+    data: NutritionAdjustmentLogCreateManyInput | NutritionAdjustmentLogCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NutritionAdjustmentLogIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * NutritionAdjustmentLog update
+   */
+  export type NutritionAdjustmentLogUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NutritionAdjustmentLog
+     */
+    select?: NutritionAdjustmentLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the NutritionAdjustmentLog
+     */
+    omit?: NutritionAdjustmentLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NutritionAdjustmentLogInclude<ExtArgs> | null
+    /**
+     * The data needed to update a NutritionAdjustmentLog.
+     */
+    data: XOR<NutritionAdjustmentLogUpdateInput, NutritionAdjustmentLogUncheckedUpdateInput>
+    /**
+     * Choose, which NutritionAdjustmentLog to update.
+     */
+    where: NutritionAdjustmentLogWhereUniqueInput
+  }
+
+  /**
+   * NutritionAdjustmentLog updateMany
+   */
+  export type NutritionAdjustmentLogUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update NutritionAdjustmentLogs.
+     */
+    data: XOR<NutritionAdjustmentLogUpdateManyMutationInput, NutritionAdjustmentLogUncheckedUpdateManyInput>
+    /**
+     * Filter which NutritionAdjustmentLogs to update
+     */
+    where?: NutritionAdjustmentLogWhereInput
+    /**
+     * Limit how many NutritionAdjustmentLogs to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * NutritionAdjustmentLog updateManyAndReturn
+   */
+  export type NutritionAdjustmentLogUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NutritionAdjustmentLog
+     */
+    select?: NutritionAdjustmentLogSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the NutritionAdjustmentLog
+     */
+    omit?: NutritionAdjustmentLogOmit<ExtArgs> | null
+    /**
+     * The data used to update NutritionAdjustmentLogs.
+     */
+    data: XOR<NutritionAdjustmentLogUpdateManyMutationInput, NutritionAdjustmentLogUncheckedUpdateManyInput>
+    /**
+     * Filter which NutritionAdjustmentLogs to update
+     */
+    where?: NutritionAdjustmentLogWhereInput
+    /**
+     * Limit how many NutritionAdjustmentLogs to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NutritionAdjustmentLogIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * NutritionAdjustmentLog upsert
+   */
+  export type NutritionAdjustmentLogUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NutritionAdjustmentLog
+     */
+    select?: NutritionAdjustmentLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the NutritionAdjustmentLog
+     */
+    omit?: NutritionAdjustmentLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NutritionAdjustmentLogInclude<ExtArgs> | null
+    /**
+     * The filter to search for the NutritionAdjustmentLog to update in case it exists.
+     */
+    where: NutritionAdjustmentLogWhereUniqueInput
+    /**
+     * In case the NutritionAdjustmentLog found by the `where` argument doesn't exist, create a new NutritionAdjustmentLog with this data.
+     */
+    create: XOR<NutritionAdjustmentLogCreateInput, NutritionAdjustmentLogUncheckedCreateInput>
+    /**
+     * In case the NutritionAdjustmentLog was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<NutritionAdjustmentLogUpdateInput, NutritionAdjustmentLogUncheckedUpdateInput>
+  }
+
+  /**
+   * NutritionAdjustmentLog delete
+   */
+  export type NutritionAdjustmentLogDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NutritionAdjustmentLog
+     */
+    select?: NutritionAdjustmentLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the NutritionAdjustmentLog
+     */
+    omit?: NutritionAdjustmentLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NutritionAdjustmentLogInclude<ExtArgs> | null
+    /**
+     * Filter which NutritionAdjustmentLog to delete.
+     */
+    where: NutritionAdjustmentLogWhereUniqueInput
+  }
+
+  /**
+   * NutritionAdjustmentLog deleteMany
+   */
+  export type NutritionAdjustmentLogDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which NutritionAdjustmentLogs to delete
+     */
+    where?: NutritionAdjustmentLogWhereInput
+    /**
+     * Limit how many NutritionAdjustmentLogs to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * NutritionAdjustmentLog without action
+   */
+  export type NutritionAdjustmentLogDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the NutritionAdjustmentLog
+     */
+    select?: NutritionAdjustmentLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the NutritionAdjustmentLog
+     */
+    omit?: NutritionAdjustmentLogOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: NutritionAdjustmentLogInclude<ExtArgs> | null
   }
 
 
@@ -21972,11 +23248,25 @@ export namespace Prisma {
     protein: 'protein',
     carbs: 'carbs',
     fat: 'fat',
+    bmr: 'bmr',
+    tdee: 'tdee',
     updatedAt: 'updatedAt',
     userId: 'userId'
   };
 
   export type NutritionGoalScalarFieldEnum = (typeof NutritionGoalScalarFieldEnum)[keyof typeof NutritionGoalScalarFieldEnum]
+
+
+  export const NutritionAdjustmentLogScalarFieldEnum: {
+    id: 'id',
+    appliedAt: 'appliedAt',
+    oldCalories: 'oldCalories',
+    newCalories: 'newCalories',
+    explanation: 'explanation',
+    userId: 'userId'
+  };
+
+  export type NutritionAdjustmentLogScalarFieldEnum = (typeof NutritionAdjustmentLogScalarFieldEnum)[keyof typeof NutritionAdjustmentLogScalarFieldEnum]
 
 
   export const MealLogScalarFieldEnum: {
@@ -22560,6 +23850,7 @@ export namespace Prisma {
     weightGoal?: XOR<WeightGoalNullableScalarRelationFilter, WeightGoalWhereInput> | null
     waterLogs?: WaterLogListRelationFilter
     workoutPlan?: XOR<WorkoutPlanNullableScalarRelationFilter, WorkoutPlanWhereInput> | null
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -22581,6 +23872,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalOrderByWithRelationInput
     waterLogs?: WaterLogOrderByRelationAggregateInput
     workoutPlan?: WorkoutPlanOrderByWithRelationInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -22605,6 +23897,7 @@ export namespace Prisma {
     weightGoal?: XOR<WeightGoalNullableScalarRelationFilter, WeightGoalWhereInput> | null
     waterLogs?: WaterLogListRelationFilter
     workoutPlan?: XOR<WorkoutPlanNullableScalarRelationFilter, WorkoutPlanWhereInput> | null
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -23059,6 +24352,8 @@ export namespace Prisma {
     protein?: IntFilter<"NutritionGoal"> | number
     carbs?: IntFilter<"NutritionGoal"> | number
     fat?: IntFilter<"NutritionGoal"> | number
+    bmr?: IntFilter<"NutritionGoal"> | number
+    tdee?: IntFilter<"NutritionGoal"> | number
     updatedAt?: DateTimeFilter<"NutritionGoal"> | Date | string
     userId?: StringFilter<"NutritionGoal"> | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
@@ -23070,6 +24365,8 @@ export namespace Prisma {
     protein?: SortOrder
     carbs?: SortOrder
     fat?: SortOrder
+    bmr?: SortOrder
+    tdee?: SortOrder
     updatedAt?: SortOrder
     userId?: SortOrder
     user?: UserOrderByWithRelationInput
@@ -23085,6 +24382,8 @@ export namespace Prisma {
     protein?: IntFilter<"NutritionGoal"> | number
     carbs?: IntFilter<"NutritionGoal"> | number
     fat?: IntFilter<"NutritionGoal"> | number
+    bmr?: IntFilter<"NutritionGoal"> | number
+    tdee?: IntFilter<"NutritionGoal"> | number
     updatedAt?: DateTimeFilter<"NutritionGoal"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }, "id" | "userId">
@@ -23095,6 +24394,8 @@ export namespace Prisma {
     protein?: SortOrder
     carbs?: SortOrder
     fat?: SortOrder
+    bmr?: SortOrder
+    tdee?: SortOrder
     updatedAt?: SortOrder
     userId?: SortOrder
     _count?: NutritionGoalCountOrderByAggregateInput
@@ -23113,8 +24414,72 @@ export namespace Prisma {
     protein?: IntWithAggregatesFilter<"NutritionGoal"> | number
     carbs?: IntWithAggregatesFilter<"NutritionGoal"> | number
     fat?: IntWithAggregatesFilter<"NutritionGoal"> | number
+    bmr?: IntWithAggregatesFilter<"NutritionGoal"> | number
+    tdee?: IntWithAggregatesFilter<"NutritionGoal"> | number
     updatedAt?: DateTimeWithAggregatesFilter<"NutritionGoal"> | Date | string
     userId?: StringWithAggregatesFilter<"NutritionGoal"> | string
+  }
+
+  export type NutritionAdjustmentLogWhereInput = {
+    AND?: NutritionAdjustmentLogWhereInput | NutritionAdjustmentLogWhereInput[]
+    OR?: NutritionAdjustmentLogWhereInput[]
+    NOT?: NutritionAdjustmentLogWhereInput | NutritionAdjustmentLogWhereInput[]
+    id?: StringFilter<"NutritionAdjustmentLog"> | string
+    appliedAt?: DateTimeFilter<"NutritionAdjustmentLog"> | Date | string
+    oldCalories?: IntFilter<"NutritionAdjustmentLog"> | number
+    newCalories?: IntFilter<"NutritionAdjustmentLog"> | number
+    explanation?: StringFilter<"NutritionAdjustmentLog"> | string
+    userId?: StringFilter<"NutritionAdjustmentLog"> | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type NutritionAdjustmentLogOrderByWithRelationInput = {
+    id?: SortOrder
+    appliedAt?: SortOrder
+    oldCalories?: SortOrder
+    newCalories?: SortOrder
+    explanation?: SortOrder
+    userId?: SortOrder
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type NutritionAdjustmentLogWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: NutritionAdjustmentLogWhereInput | NutritionAdjustmentLogWhereInput[]
+    OR?: NutritionAdjustmentLogWhereInput[]
+    NOT?: NutritionAdjustmentLogWhereInput | NutritionAdjustmentLogWhereInput[]
+    appliedAt?: DateTimeFilter<"NutritionAdjustmentLog"> | Date | string
+    oldCalories?: IntFilter<"NutritionAdjustmentLog"> | number
+    newCalories?: IntFilter<"NutritionAdjustmentLog"> | number
+    explanation?: StringFilter<"NutritionAdjustmentLog"> | string
+    userId?: StringFilter<"NutritionAdjustmentLog"> | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id">
+
+  export type NutritionAdjustmentLogOrderByWithAggregationInput = {
+    id?: SortOrder
+    appliedAt?: SortOrder
+    oldCalories?: SortOrder
+    newCalories?: SortOrder
+    explanation?: SortOrder
+    userId?: SortOrder
+    _count?: NutritionAdjustmentLogCountOrderByAggregateInput
+    _avg?: NutritionAdjustmentLogAvgOrderByAggregateInput
+    _max?: NutritionAdjustmentLogMaxOrderByAggregateInput
+    _min?: NutritionAdjustmentLogMinOrderByAggregateInput
+    _sum?: NutritionAdjustmentLogSumOrderByAggregateInput
+  }
+
+  export type NutritionAdjustmentLogScalarWhereWithAggregatesInput = {
+    AND?: NutritionAdjustmentLogScalarWhereWithAggregatesInput | NutritionAdjustmentLogScalarWhereWithAggregatesInput[]
+    OR?: NutritionAdjustmentLogScalarWhereWithAggregatesInput[]
+    NOT?: NutritionAdjustmentLogScalarWhereWithAggregatesInput | NutritionAdjustmentLogScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"NutritionAdjustmentLog"> | string
+    appliedAt?: DateTimeWithAggregatesFilter<"NutritionAdjustmentLog"> | Date | string
+    oldCalories?: IntWithAggregatesFilter<"NutritionAdjustmentLog"> | number
+    newCalories?: IntWithAggregatesFilter<"NutritionAdjustmentLog"> | number
+    explanation?: StringWithAggregatesFilter<"NutritionAdjustmentLog"> | string
+    userId?: StringWithAggregatesFilter<"NutritionAdjustmentLog"> | string
   }
 
   export type MealLogWhereInput = {
@@ -23723,6 +25088,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -23744,6 +25110,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -23765,6 +25132,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -23786,6 +25154,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -24278,6 +25647,8 @@ export namespace Prisma {
     protein: number
     carbs: number
     fat: number
+    bmr?: number
+    tdee?: number
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutNutritionGoalInput
   }
@@ -24288,6 +25659,8 @@ export namespace Prisma {
     protein: number
     carbs: number
     fat: number
+    bmr?: number
+    tdee?: number
     updatedAt?: Date | string
     userId: string
   }
@@ -24298,6 +25671,8 @@ export namespace Prisma {
     protein?: IntFieldUpdateOperationsInput | number
     carbs?: IntFieldUpdateOperationsInput | number
     fat?: IntFieldUpdateOperationsInput | number
+    bmr?: IntFieldUpdateOperationsInput | number
+    tdee?: IntFieldUpdateOperationsInput | number
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutNutritionGoalNestedInput
   }
@@ -24308,6 +25683,8 @@ export namespace Prisma {
     protein?: IntFieldUpdateOperationsInput | number
     carbs?: IntFieldUpdateOperationsInput | number
     fat?: IntFieldUpdateOperationsInput | number
+    bmr?: IntFieldUpdateOperationsInput | number
+    tdee?: IntFieldUpdateOperationsInput | number
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     userId?: StringFieldUpdateOperationsInput | string
   }
@@ -24318,6 +25695,8 @@ export namespace Prisma {
     protein: number
     carbs: number
     fat: number
+    bmr?: number
+    tdee?: number
     updatedAt?: Date | string
     userId: string
   }
@@ -24328,6 +25707,8 @@ export namespace Prisma {
     protein?: IntFieldUpdateOperationsInput | number
     carbs?: IntFieldUpdateOperationsInput | number
     fat?: IntFieldUpdateOperationsInput | number
+    bmr?: IntFieldUpdateOperationsInput | number
+    tdee?: IntFieldUpdateOperationsInput | number
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -24337,7 +25718,71 @@ export namespace Prisma {
     protein?: IntFieldUpdateOperationsInput | number
     carbs?: IntFieldUpdateOperationsInput | number
     fat?: IntFieldUpdateOperationsInput | number
+    bmr?: IntFieldUpdateOperationsInput | number
+    tdee?: IntFieldUpdateOperationsInput | number
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    userId?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type NutritionAdjustmentLogCreateInput = {
+    id?: string
+    appliedAt?: Date | string
+    oldCalories: number
+    newCalories: number
+    explanation: string
+    user: UserCreateNestedOneWithoutNutritionAdjustmentLogsInput
+  }
+
+  export type NutritionAdjustmentLogUncheckedCreateInput = {
+    id?: string
+    appliedAt?: Date | string
+    oldCalories: number
+    newCalories: number
+    explanation: string
+    userId: string
+  }
+
+  export type NutritionAdjustmentLogUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    oldCalories?: IntFieldUpdateOperationsInput | number
+    newCalories?: IntFieldUpdateOperationsInput | number
+    explanation?: StringFieldUpdateOperationsInput | string
+    user?: UserUpdateOneRequiredWithoutNutritionAdjustmentLogsNestedInput
+  }
+
+  export type NutritionAdjustmentLogUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    oldCalories?: IntFieldUpdateOperationsInput | number
+    newCalories?: IntFieldUpdateOperationsInput | number
+    explanation?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type NutritionAdjustmentLogCreateManyInput = {
+    id?: string
+    appliedAt?: Date | string
+    oldCalories: number
+    newCalories: number
+    explanation: string
+    userId: string
+  }
+
+  export type NutritionAdjustmentLogUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    oldCalories?: IntFieldUpdateOperationsInput | number
+    newCalories?: IntFieldUpdateOperationsInput | number
+    explanation?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type NutritionAdjustmentLogUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    oldCalories?: IntFieldUpdateOperationsInput | number
+    newCalories?: IntFieldUpdateOperationsInput | number
+    explanation?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
   }
 
@@ -25081,6 +26526,12 @@ export namespace Prisma {
     isNot?: WorkoutPlanWhereInput | null
   }
 
+  export type NutritionAdjustmentLogListRelationFilter = {
+    every?: NutritionAdjustmentLogWhereInput
+    some?: NutritionAdjustmentLogWhereInput
+    none?: NutritionAdjustmentLogWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -25111,6 +26562,10 @@ export namespace Prisma {
   }
 
   export type WaterLogOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type NutritionAdjustmentLogOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -25577,6 +27032,8 @@ export namespace Prisma {
     protein?: SortOrder
     carbs?: SortOrder
     fat?: SortOrder
+    bmr?: SortOrder
+    tdee?: SortOrder
     updatedAt?: SortOrder
     userId?: SortOrder
   }
@@ -25586,6 +27043,8 @@ export namespace Prisma {
     protein?: SortOrder
     carbs?: SortOrder
     fat?: SortOrder
+    bmr?: SortOrder
+    tdee?: SortOrder
   }
 
   export type NutritionGoalMaxOrderByAggregateInput = {
@@ -25594,6 +27053,8 @@ export namespace Prisma {
     protein?: SortOrder
     carbs?: SortOrder
     fat?: SortOrder
+    bmr?: SortOrder
+    tdee?: SortOrder
     updatedAt?: SortOrder
     userId?: SortOrder
   }
@@ -25604,6 +27065,8 @@ export namespace Prisma {
     protein?: SortOrder
     carbs?: SortOrder
     fat?: SortOrder
+    bmr?: SortOrder
+    tdee?: SortOrder
     updatedAt?: SortOrder
     userId?: SortOrder
   }
@@ -25613,6 +27076,45 @@ export namespace Prisma {
     protein?: SortOrder
     carbs?: SortOrder
     fat?: SortOrder
+    bmr?: SortOrder
+    tdee?: SortOrder
+  }
+
+  export type NutritionAdjustmentLogCountOrderByAggregateInput = {
+    id?: SortOrder
+    appliedAt?: SortOrder
+    oldCalories?: SortOrder
+    newCalories?: SortOrder
+    explanation?: SortOrder
+    userId?: SortOrder
+  }
+
+  export type NutritionAdjustmentLogAvgOrderByAggregateInput = {
+    oldCalories?: SortOrder
+    newCalories?: SortOrder
+  }
+
+  export type NutritionAdjustmentLogMaxOrderByAggregateInput = {
+    id?: SortOrder
+    appliedAt?: SortOrder
+    oldCalories?: SortOrder
+    newCalories?: SortOrder
+    explanation?: SortOrder
+    userId?: SortOrder
+  }
+
+  export type NutritionAdjustmentLogMinOrderByAggregateInput = {
+    id?: SortOrder
+    appliedAt?: SortOrder
+    oldCalories?: SortOrder
+    newCalories?: SortOrder
+    explanation?: SortOrder
+    userId?: SortOrder
+  }
+
+  export type NutritionAdjustmentLogSumOrderByAggregateInput = {
+    oldCalories?: SortOrder
+    newCalories?: SortOrder
   }
 
   export type EnumMealFilter<$PrismaModel = never> = {
@@ -26155,6 +27657,13 @@ export namespace Prisma {
     connect?: WorkoutPlanWhereUniqueInput
   }
 
+  export type NutritionAdjustmentLogCreateNestedManyWithoutUserInput = {
+    create?: XOR<NutritionAdjustmentLogCreateWithoutUserInput, NutritionAdjustmentLogUncheckedCreateWithoutUserInput> | NutritionAdjustmentLogCreateWithoutUserInput[] | NutritionAdjustmentLogUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: NutritionAdjustmentLogCreateOrConnectWithoutUserInput | NutritionAdjustmentLogCreateOrConnectWithoutUserInput[]
+    createMany?: NutritionAdjustmentLogCreateManyUserInputEnvelope
+    connect?: NutritionAdjustmentLogWhereUniqueInput | NutritionAdjustmentLogWhereUniqueInput[]
+  }
+
   export type SessionUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<SessionCreateWithoutUserInput, SessionUncheckedCreateWithoutUserInput> | SessionCreateWithoutUserInput[] | SessionUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SessionCreateOrConnectWithoutUserInput | SessionCreateOrConnectWithoutUserInput[]
@@ -26226,6 +27735,13 @@ export namespace Prisma {
     create?: XOR<WorkoutPlanCreateWithoutUserInput, WorkoutPlanUncheckedCreateWithoutUserInput>
     connectOrCreate?: WorkoutPlanCreateOrConnectWithoutUserInput
     connect?: WorkoutPlanWhereUniqueInput
+  }
+
+  export type NutritionAdjustmentLogUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<NutritionAdjustmentLogCreateWithoutUserInput, NutritionAdjustmentLogUncheckedCreateWithoutUserInput> | NutritionAdjustmentLogCreateWithoutUserInput[] | NutritionAdjustmentLogUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: NutritionAdjustmentLogCreateOrConnectWithoutUserInput | NutritionAdjustmentLogCreateOrConnectWithoutUserInput[]
+    createMany?: NutritionAdjustmentLogCreateManyUserInputEnvelope
+    connect?: NutritionAdjustmentLogWhereUniqueInput | NutritionAdjustmentLogWhereUniqueInput[]
   }
 
   export type BoolFieldUpdateOperationsInput = {
@@ -26374,6 +27890,20 @@ export namespace Prisma {
     update?: XOR<XOR<WorkoutPlanUpdateToOneWithWhereWithoutUserInput, WorkoutPlanUpdateWithoutUserInput>, WorkoutPlanUncheckedUpdateWithoutUserInput>
   }
 
+  export type NutritionAdjustmentLogUpdateManyWithoutUserNestedInput = {
+    create?: XOR<NutritionAdjustmentLogCreateWithoutUserInput, NutritionAdjustmentLogUncheckedCreateWithoutUserInput> | NutritionAdjustmentLogCreateWithoutUserInput[] | NutritionAdjustmentLogUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: NutritionAdjustmentLogCreateOrConnectWithoutUserInput | NutritionAdjustmentLogCreateOrConnectWithoutUserInput[]
+    upsert?: NutritionAdjustmentLogUpsertWithWhereUniqueWithoutUserInput | NutritionAdjustmentLogUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: NutritionAdjustmentLogCreateManyUserInputEnvelope
+    set?: NutritionAdjustmentLogWhereUniqueInput | NutritionAdjustmentLogWhereUniqueInput[]
+    disconnect?: NutritionAdjustmentLogWhereUniqueInput | NutritionAdjustmentLogWhereUniqueInput[]
+    delete?: NutritionAdjustmentLogWhereUniqueInput | NutritionAdjustmentLogWhereUniqueInput[]
+    connect?: NutritionAdjustmentLogWhereUniqueInput | NutritionAdjustmentLogWhereUniqueInput[]
+    update?: NutritionAdjustmentLogUpdateWithWhereUniqueWithoutUserInput | NutritionAdjustmentLogUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: NutritionAdjustmentLogUpdateManyWithWhereWithoutUserInput | NutritionAdjustmentLogUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: NutritionAdjustmentLogScalarWhereInput | NutritionAdjustmentLogScalarWhereInput[]
+  }
+
   export type SessionUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<SessionCreateWithoutUserInput, SessionUncheckedCreateWithoutUserInput> | SessionCreateWithoutUserInput[] | SessionUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SessionCreateOrConnectWithoutUserInput | SessionCreateOrConnectWithoutUserInput[]
@@ -26510,6 +28040,20 @@ export namespace Prisma {
     delete?: WorkoutPlanWhereInput | boolean
     connect?: WorkoutPlanWhereUniqueInput
     update?: XOR<XOR<WorkoutPlanUpdateToOneWithWhereWithoutUserInput, WorkoutPlanUpdateWithoutUserInput>, WorkoutPlanUncheckedUpdateWithoutUserInput>
+  }
+
+  export type NutritionAdjustmentLogUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<NutritionAdjustmentLogCreateWithoutUserInput, NutritionAdjustmentLogUncheckedCreateWithoutUserInput> | NutritionAdjustmentLogCreateWithoutUserInput[] | NutritionAdjustmentLogUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: NutritionAdjustmentLogCreateOrConnectWithoutUserInput | NutritionAdjustmentLogCreateOrConnectWithoutUserInput[]
+    upsert?: NutritionAdjustmentLogUpsertWithWhereUniqueWithoutUserInput | NutritionAdjustmentLogUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: NutritionAdjustmentLogCreateManyUserInputEnvelope
+    set?: NutritionAdjustmentLogWhereUniqueInput | NutritionAdjustmentLogWhereUniqueInput[]
+    disconnect?: NutritionAdjustmentLogWhereUniqueInput | NutritionAdjustmentLogWhereUniqueInput[]
+    delete?: NutritionAdjustmentLogWhereUniqueInput | NutritionAdjustmentLogWhereUniqueInput[]
+    connect?: NutritionAdjustmentLogWhereUniqueInput | NutritionAdjustmentLogWhereUniqueInput[]
+    update?: NutritionAdjustmentLogUpdateWithWhereUniqueWithoutUserInput | NutritionAdjustmentLogUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: NutritionAdjustmentLogUpdateManyWithWhereWithoutUserInput | NutritionAdjustmentLogUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: NutritionAdjustmentLogScalarWhereInput | NutritionAdjustmentLogScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutProfileInput = {
@@ -26668,6 +28212,20 @@ export namespace Prisma {
     upsert?: UserUpsertWithoutNutritionGoalInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutNutritionGoalInput, UserUpdateWithoutNutritionGoalInput>, UserUncheckedUpdateWithoutNutritionGoalInput>
+  }
+
+  export type UserCreateNestedOneWithoutNutritionAdjustmentLogsInput = {
+    create?: XOR<UserCreateWithoutNutritionAdjustmentLogsInput, UserUncheckedCreateWithoutNutritionAdjustmentLogsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutNutritionAdjustmentLogsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutNutritionAdjustmentLogsNestedInput = {
+    create?: XOR<UserCreateWithoutNutritionAdjustmentLogsInput, UserUncheckedCreateWithoutNutritionAdjustmentLogsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutNutritionAdjustmentLogsInput
+    upsert?: UserUpsertWithoutNutritionAdjustmentLogsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutNutritionAdjustmentLogsInput, UserUpdateWithoutNutritionAdjustmentLogsInput>, UserUncheckedUpdateWithoutNutritionAdjustmentLogsInput>
   }
 
   export type UserCreateNestedOneWithoutMealLogsInput = {
@@ -27262,6 +28820,7 @@ export namespace Prisma {
     plannedExtraExercises?: PlannedExtraExerciseCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogCreateNestedManyWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutWorkoutPlanInput = {
@@ -27282,6 +28841,7 @@ export namespace Prisma {
     plannedExtraExercises?: PlannedExtraExerciseUncheckedCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutWorkoutPlanInput = {
@@ -27342,6 +28902,7 @@ export namespace Prisma {
     plannedExtraExercises?: PlannedExtraExerciseUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutWorkoutPlanInput = {
@@ -27362,6 +28923,7 @@ export namespace Prisma {
     plannedExtraExercises?: PlannedExtraExerciseUncheckedUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type WorkoutPlanDayUpsertWithWhereUniqueWithoutPlanInput = {
@@ -27723,6 +29285,8 @@ export namespace Prisma {
     protein: number
     carbs: number
     fat: number
+    bmr?: number
+    tdee?: number
     updatedAt?: Date | string
   }
 
@@ -27732,6 +29296,8 @@ export namespace Prisma {
     protein: number
     carbs: number
     fat: number
+    bmr?: number
+    tdee?: number
     updatedAt?: Date | string
   }
 
@@ -27898,6 +29464,32 @@ export namespace Prisma {
     create: XOR<WorkoutPlanCreateWithoutUserInput, WorkoutPlanUncheckedCreateWithoutUserInput>
   }
 
+  export type NutritionAdjustmentLogCreateWithoutUserInput = {
+    id?: string
+    appliedAt?: Date | string
+    oldCalories: number
+    newCalories: number
+    explanation: string
+  }
+
+  export type NutritionAdjustmentLogUncheckedCreateWithoutUserInput = {
+    id?: string
+    appliedAt?: Date | string
+    oldCalories: number
+    newCalories: number
+    explanation: string
+  }
+
+  export type NutritionAdjustmentLogCreateOrConnectWithoutUserInput = {
+    where: NutritionAdjustmentLogWhereUniqueInput
+    create: XOR<NutritionAdjustmentLogCreateWithoutUserInput, NutritionAdjustmentLogUncheckedCreateWithoutUserInput>
+  }
+
+  export type NutritionAdjustmentLogCreateManyUserInputEnvelope = {
+    data: NutritionAdjustmentLogCreateManyUserInput | NutritionAdjustmentLogCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
   export type SessionUpsertWithWhereUniqueWithoutUserInput = {
     where: SessionWhereUniqueInput
     update: XOR<SessionUpdateWithoutUserInput, SessionUncheckedUpdateWithoutUserInput>
@@ -28044,6 +29636,8 @@ export namespace Prisma {
     protein?: IntFieldUpdateOperationsInput | number
     carbs?: IntFieldUpdateOperationsInput | number
     fat?: IntFieldUpdateOperationsInput | number
+    bmr?: IntFieldUpdateOperationsInput | number
+    tdee?: IntFieldUpdateOperationsInput | number
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -28053,6 +29647,8 @@ export namespace Prisma {
     protein?: IntFieldUpdateOperationsInput | number
     carbs?: IntFieldUpdateOperationsInput | number
     fat?: IntFieldUpdateOperationsInput | number
+    bmr?: IntFieldUpdateOperationsInput | number
+    tdee?: IntFieldUpdateOperationsInput | number
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -28231,6 +29827,34 @@ export namespace Prisma {
     days?: WorkoutPlanDayUncheckedUpdateManyWithoutPlanNestedInput
   }
 
+  export type NutritionAdjustmentLogUpsertWithWhereUniqueWithoutUserInput = {
+    where: NutritionAdjustmentLogWhereUniqueInput
+    update: XOR<NutritionAdjustmentLogUpdateWithoutUserInput, NutritionAdjustmentLogUncheckedUpdateWithoutUserInput>
+    create: XOR<NutritionAdjustmentLogCreateWithoutUserInput, NutritionAdjustmentLogUncheckedCreateWithoutUserInput>
+  }
+
+  export type NutritionAdjustmentLogUpdateWithWhereUniqueWithoutUserInput = {
+    where: NutritionAdjustmentLogWhereUniqueInput
+    data: XOR<NutritionAdjustmentLogUpdateWithoutUserInput, NutritionAdjustmentLogUncheckedUpdateWithoutUserInput>
+  }
+
+  export type NutritionAdjustmentLogUpdateManyWithWhereWithoutUserInput = {
+    where: NutritionAdjustmentLogScalarWhereInput
+    data: XOR<NutritionAdjustmentLogUpdateManyMutationInput, NutritionAdjustmentLogUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type NutritionAdjustmentLogScalarWhereInput = {
+    AND?: NutritionAdjustmentLogScalarWhereInput | NutritionAdjustmentLogScalarWhereInput[]
+    OR?: NutritionAdjustmentLogScalarWhereInput[]
+    NOT?: NutritionAdjustmentLogScalarWhereInput | NutritionAdjustmentLogScalarWhereInput[]
+    id?: StringFilter<"NutritionAdjustmentLog"> | string
+    appliedAt?: DateTimeFilter<"NutritionAdjustmentLog"> | Date | string
+    oldCalories?: IntFilter<"NutritionAdjustmentLog"> | number
+    newCalories?: IntFilter<"NutritionAdjustmentLog"> | number
+    explanation?: StringFilter<"NutritionAdjustmentLog"> | string
+    userId?: StringFilter<"NutritionAdjustmentLog"> | string
+  }
+
   export type UserCreateWithoutProfileInput = {
     id?: string
     name: string
@@ -28249,6 +29873,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutProfileInput = {
@@ -28269,6 +29894,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutProfileInput = {
@@ -28305,6 +29931,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutProfileInput = {
@@ -28325,6 +29952,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutSessionsInput = {
@@ -28345,6 +29973,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSessionsInput = {
@@ -28365,6 +29994,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSessionsInput = {
@@ -28401,6 +30031,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -28421,6 +30052,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutAccountsInput = {
@@ -28441,6 +30073,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAccountsInput = {
@@ -28461,6 +30094,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAccountsInput = {
@@ -28497,6 +30131,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -28517,6 +30152,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutWorkoutSessionsInput = {
@@ -28537,6 +30173,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutWorkoutSessionsInput = {
@@ -28557,6 +30194,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutWorkoutSessionsInput = {
@@ -28615,6 +30253,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutWorkoutSessionsInput = {
@@ -28635,6 +30274,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type WorkoutExerciseUpsertWithWhereUniqueWithoutSessionInput = {
@@ -28729,6 +30369,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutNutritionGoalInput = {
@@ -28749,6 +30390,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutNutritionGoalInput = {
@@ -28785,6 +30427,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutNutritionGoalInput = {
@@ -28799,6 +30442,107 @@ export namespace Prisma {
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     workoutSessions?: WorkoutSessionUncheckedUpdateManyWithoutUserNestedInput
     profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
+    mealLogs?: MealLogUncheckedUpdateManyWithoutUserNestedInput
+    weightLogs?: WeightLogUncheckedUpdateManyWithoutUserNestedInput
+    plannedExtraExercises?: PlannedExtraExerciseUncheckedUpdateManyWithoutUserNestedInput
+    weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
+    workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserCreateWithoutNutritionAdjustmentLogsInput = {
+    id?: string
+    name: string
+    email: string
+    emailVerified?: boolean
+    image?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    sessions?: SessionCreateNestedManyWithoutUserInput
+    accounts?: AccountCreateNestedManyWithoutUserInput
+    workoutSessions?: WorkoutSessionCreateNestedManyWithoutUserInput
+    profile?: UserProfileCreateNestedOneWithoutUserInput
+    nutritionGoal?: NutritionGoalCreateNestedOneWithoutUserInput
+    mealLogs?: MealLogCreateNestedManyWithoutUserInput
+    weightLogs?: WeightLogCreateNestedManyWithoutUserInput
+    plannedExtraExercises?: PlannedExtraExerciseCreateNestedManyWithoutUserInput
+    weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogCreateNestedManyWithoutUserInput
+    workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutNutritionAdjustmentLogsInput = {
+    id?: string
+    name: string
+    email: string
+    emailVerified?: boolean
+    image?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
+    workoutSessions?: WorkoutSessionUncheckedCreateNestedManyWithoutUserInput
+    profile?: UserProfileUncheckedCreateNestedOneWithoutUserInput
+    nutritionGoal?: NutritionGoalUncheckedCreateNestedOneWithoutUserInput
+    mealLogs?: MealLogUncheckedCreateNestedManyWithoutUserInput
+    weightLogs?: WeightLogUncheckedCreateNestedManyWithoutUserInput
+    plannedExtraExercises?: PlannedExtraExerciseUncheckedCreateNestedManyWithoutUserInput
+    weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
+    waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
+    workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutNutritionAdjustmentLogsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutNutritionAdjustmentLogsInput, UserUncheckedCreateWithoutNutritionAdjustmentLogsInput>
+  }
+
+  export type UserUpsertWithoutNutritionAdjustmentLogsInput = {
+    update: XOR<UserUpdateWithoutNutritionAdjustmentLogsInput, UserUncheckedUpdateWithoutNutritionAdjustmentLogsInput>
+    create: XOR<UserCreateWithoutNutritionAdjustmentLogsInput, UserUncheckedCreateWithoutNutritionAdjustmentLogsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutNutritionAdjustmentLogsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutNutritionAdjustmentLogsInput, UserUncheckedUpdateWithoutNutritionAdjustmentLogsInput>
+  }
+
+  export type UserUpdateWithoutNutritionAdjustmentLogsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    emailVerified?: BoolFieldUpdateOperationsInput | boolean
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sessions?: SessionUpdateManyWithoutUserNestedInput
+    accounts?: AccountUpdateManyWithoutUserNestedInput
+    workoutSessions?: WorkoutSessionUpdateManyWithoutUserNestedInput
+    profile?: UserProfileUpdateOneWithoutUserNestedInput
+    nutritionGoal?: NutritionGoalUpdateOneWithoutUserNestedInput
+    mealLogs?: MealLogUpdateManyWithoutUserNestedInput
+    weightLogs?: WeightLogUpdateManyWithoutUserNestedInput
+    plannedExtraExercises?: PlannedExtraExerciseUpdateManyWithoutUserNestedInput
+    weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
+    waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
+    workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutNutritionAdjustmentLogsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    emailVerified?: BoolFieldUpdateOperationsInput | boolean
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
+    workoutSessions?: WorkoutSessionUncheckedUpdateManyWithoutUserNestedInput
+    profile?: UserProfileUncheckedUpdateOneWithoutUserNestedInput
+    nutritionGoal?: NutritionGoalUncheckedUpdateOneWithoutUserNestedInput
     mealLogs?: MealLogUncheckedUpdateManyWithoutUserNestedInput
     weightLogs?: WeightLogUncheckedUpdateManyWithoutUserNestedInput
     plannedExtraExercises?: PlannedExtraExerciseUncheckedUpdateManyWithoutUserNestedInput
@@ -28825,6 +30569,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutMealLogsInput = {
@@ -28845,6 +30590,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutMealLogsInput = {
@@ -28881,6 +30627,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutMealLogsInput = {
@@ -28901,6 +30648,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutWaterLogsInput = {
@@ -28921,6 +30669,7 @@ export namespace Prisma {
     plannedExtraExercises?: PlannedExtraExerciseCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutWaterLogsInput = {
@@ -28941,6 +30690,7 @@ export namespace Prisma {
     plannedExtraExercises?: PlannedExtraExerciseUncheckedCreateNestedManyWithoutUserInput
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutWaterLogsInput = {
@@ -28977,6 +30727,7 @@ export namespace Prisma {
     plannedExtraExercises?: PlannedExtraExerciseUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutWaterLogsInput = {
@@ -28997,6 +30748,7 @@ export namespace Prisma {
     plannedExtraExercises?: PlannedExtraExerciseUncheckedUpdateManyWithoutUserNestedInput
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutWeightLogsInput = {
@@ -29017,6 +30769,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutWeightLogsInput = {
@@ -29037,6 +30790,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutWeightLogsInput = {
@@ -29073,6 +30827,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutWeightLogsInput = {
@@ -29093,6 +30848,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutWeightGoalInput = {
@@ -29113,6 +30869,7 @@ export namespace Prisma {
     plannedExtraExercises?: PlannedExtraExerciseCreateNestedManyWithoutUserInput
     waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutWeightGoalInput = {
@@ -29133,6 +30890,7 @@ export namespace Prisma {
     plannedExtraExercises?: PlannedExtraExerciseUncheckedCreateNestedManyWithoutUserInput
     waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutWeightGoalInput = {
@@ -29169,6 +30927,7 @@ export namespace Prisma {
     plannedExtraExercises?: PlannedExtraExerciseUpdateManyWithoutUserNestedInput
     waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutWeightGoalInput = {
@@ -29189,6 +30948,7 @@ export namespace Prisma {
     plannedExtraExercises?: PlannedExtraExerciseUncheckedUpdateManyWithoutUserNestedInput
     waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutPlannedExtraExercisesInput = {
@@ -29209,6 +30969,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutPlannedExtraExercisesInput = {
@@ -29229,6 +30990,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedCreateNestedOneWithoutUserInput
     waterLogs?: WaterLogUncheckedCreateNestedManyWithoutUserInput
     workoutPlan?: WorkoutPlanUncheckedCreateNestedOneWithoutUserInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutPlannedExtraExercisesInput = {
@@ -29265,6 +31027,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutPlannedExtraExercisesInput = {
@@ -29285,6 +31048,7 @@ export namespace Prisma {
     weightGoal?: WeightGoalUncheckedUpdateOneWithoutUserNestedInput
     waterLogs?: WaterLogUncheckedUpdateManyWithoutUserNestedInput
     workoutPlan?: WorkoutPlanUncheckedUpdateOneWithoutUserNestedInput
+    nutritionAdjustmentLogs?: NutritionAdjustmentLogUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type WorkoutPlanExerciseCreateManyExerciseInput = {
@@ -29450,6 +31214,14 @@ export namespace Prisma {
     id?: string
     logDate: Date | string
     glasses?: number
+  }
+
+  export type NutritionAdjustmentLogCreateManyUserInput = {
+    id?: string
+    appliedAt?: Date | string
+    oldCalories: number
+    newCalories: number
+    explanation: string
   }
 
   export type SessionUpdateWithoutUserInput = {
@@ -29653,6 +31425,30 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     logDate?: DateTimeFieldUpdateOperationsInput | Date | string
     glasses?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type NutritionAdjustmentLogUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    oldCalories?: IntFieldUpdateOperationsInput | number
+    newCalories?: IntFieldUpdateOperationsInput | number
+    explanation?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type NutritionAdjustmentLogUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    oldCalories?: IntFieldUpdateOperationsInput | number
+    newCalories?: IntFieldUpdateOperationsInput | number
+    explanation?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type NutritionAdjustmentLogUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    appliedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    oldCalories?: IntFieldUpdateOperationsInput | number
+    newCalories?: IntFieldUpdateOperationsInput | number
+    explanation?: StringFieldUpdateOperationsInput | string
   }
 
   export type WorkoutExerciseCreateManySessionInput = {

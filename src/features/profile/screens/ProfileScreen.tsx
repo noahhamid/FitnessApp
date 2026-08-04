@@ -4,8 +4,6 @@ import {
   saveUserProfile,
 } from "@/src/features/profile/services/profile.service";
 import { fetchWorkoutHistory } from "@/src/features/workout/services/workout.service";
-import { api } from "@/src/lib/api";
-import { calculateNutritionGoals } from "@/src/utils/nutritionCalculator";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
@@ -245,31 +243,14 @@ export default function ProfileScreen() {
       });
       await qc.invalidateQueries({ queryKey: ["auth", "session"] });
       await qc.invalidateQueries({ queryKey: ["user", "profile"] });
+      // Server PUT /api/profile already upserts NutritionGoal via
+      // computeNutritionTargets — refresh clients; do not recompute here.
+      await qc.invalidateQueries({ queryKey: ["nutrition", "goals"] });
       setSaveState("saved");
       saveTimeoutRef.current = setTimeout(() => {
         setSaveState("idle");
         setEditMode(false);
       }, 1400);
-
-      void (async () => {
-        try {
-          const result = calculateNutritionGoals({
-            weightKg: savedWeight,
-            heightCm: savedHeight,
-            age: savedAge,
-            goalId: goalInput,
-          });
-          await api.put("/api/nutrition/goals", {
-            calories: result.calories,
-            protein: result.protein,
-            carbs: result.carbs,
-            fat: result.fat,
-          });
-          await qc.invalidateQueries({ queryKey: ["nutrition", "goals"] });
-        } catch (err) {
-          console.error("[profile] background nutrition update failed:", err);
-        }
-      })();
     } catch (err) {
       setSaveState("idle");
       Alert.alert(
