@@ -1080,16 +1080,25 @@ export function ActiveWorkoutScreen({
                       >
                         <View
                           style={[
-                            s.exStatusDot,
-                            complete && s.exStatusDotDone,
+                            s.exThumbWrap,
+                            complete && s.exThumbWrapDone,
                           ]}
                         >
+                          <Image
+                            source={{
+                              uri: imageForMuscleGroup(ex.muscleGroup),
+                            }}
+                            style={s.exThumb}
+                            accessibilityIgnoresInvertColors
+                          />
                           {complete && (
-                            <Check
-                              size={11}
-                              color={T.accentOnDarkText}
-                              strokeWidth={3}
-                            />
+                            <View style={s.exThumbCheck}>
+                              <Check
+                                size={11}
+                                color={T.accentOnDarkText}
+                                strokeWidth={3}
+                              />
+                            </View>
                           )}
                         </View>
                         <View style={{ flex: 1 }}>
@@ -1656,18 +1665,26 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
   },
   exListRowDone: { opacity: 0.72 },
-  exStatusDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.18)",
+  exThumbWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  exThumbWrapDone: {
+    opacity: 0.95,
+  },
+  exThumb: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+  },
+  exThumbCheck: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-  },
-  exStatusDotDone: {
-    borderColor: T.accentOnDark,
-    backgroundColor: T.accentOnDark,
+    backgroundColor: "rgba(8,9,11,0.45)",
   },
   exListName: {
     color: T.onDark,

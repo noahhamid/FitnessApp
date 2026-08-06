@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -10,7 +10,15 @@ import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { DashboardHeader } from "../components/DashboardHeader";
 import { LinearGradient } from "expo-linear-gradient";
-import { DashboardCalendar } from "../components/DashboardCalendar";
+import { DaySelector } from "@/src/features/nutrition/components/DaySelector";
+import { useWorkoutHistory } from "@/src/features/progress/hooks/useProgress";
+import { localDateOnly } from "@/src/features/progress/lib/localDate";
+import {
+  dayLabel,
+  formatWeekLabel,
+  shiftDateStr,
+  weekDatesFor,
+} from "@/src/lib/week-days";
 import {
   TodaySnapshotRow,
   SNAPSHOT_ICONS,
@@ -21,48 +29,31 @@ import { FadeInUp } from "../components/FadeInUp";
 import { UpNextWorkoutCard } from "../components/UpNextWorkoutCard";
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
-import { useWeekOverview } from "../hooks/useWeekOverview";
 import { useCoachCard } from "../hooks/useCoachCard";
 import { useTodaysWorkoutSummary } from "../hooks/useTodaysWorkoutSummary";
+import { useInProgressSession } from "@/src/features/workout/hooks/useInProgressSession";
 import {
-  useNutritionGoals,
   useDailyTotals,
   useWater,
+  useWeeklyTrend,
 } from "@/src/features/nutrition/hooks/useNutrition";
-import { useWeeklyTrend } from "@/src/features/nutrition/hooks/useNutrition";
 import { getGreeting } from "@/src/lib/greeting";
-
-function todayStr(): string {
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
-}
-
-function shiftDateStr(iso: string, deltaDays: number): string {
-  const d = new Date(`${iso}T00:00:00`);
-  d.setDate(d.getDate() + deltaDays);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function formatWeekLabel(
-  weekStart: string,
-  weekEnd: string,
-  weekOffset: number,
-): string {
-  if (weekOffset === 0) return "This week";
-  const start = new Date(`${weekStart}T00:00:00`);
-  const end = new Date(`${weekEnd}T00:00:00`);
-  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-  return `${start.toLocaleDateString(undefined, opts)} – ${end.toLocaleDateString(undefined, opts)}`;
-}
 
 export default function DashboardScreen() {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
-  const today = todayStr();
+  const today = localDateOnly();
   const [selectedDate, setSelectedDate] = useState(today);
   const [weekOffset, setWeekOffset] = useState(0);
 
   const { user } = useAuth();
-  const { days, weekStart, weekEnd } = useWeekOverview(weekOffset);
+  // Mount shared hook so past-day in-progress sessions auto-complete even
+  // if the user never opens the Workout tab this session.
+  useInProgressSession();
+
+  const { weekStart, weekEnd, weekDates } = useMemo(
+    () => weekDatesFor(weekOffset),
+    [weekOffset],
+  );
 
   const shiftWeek = (delta: number) => {
     setWeekOffset((o) => o + delta);
@@ -70,9 +61,36 @@ export default function DashboardScreen() {
     setSelectedDate((prev) => shiftDateStr(prev, delta * 7));
   };
 
+  const { data: weekSessions } = useWorkoutHistory(weekStart, weekEnd);
+  // Today's chip must stay accurate even when the strip is on another week.
+  const { data: todaySessions } = useWorkoutHistory(today, today);
+
+  const workoutDates = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of weekSessions ?? []) {
+      if (s.completedAt) set.add(localDateOnly(new Date(s.completedAt)));
+    }
+    return set;
+  }, [weekSessions]);
+
+  const days = useMemo(
+    () =>
+      weekDates.map((d) => {
+        const date = localDateOnly(d);
+        return {
+          label: dayLabel(date),
+          num: d.getDate(),
+          hasLog: workoutDates.has(date),
+          date,
+        };
+      }),
+    [weekDates, workoutDates],
+  );
+
+  const activeDayIndex = days.findIndex((d) => d.date === selectedDate);
+
   const isToday = selectedDate === today;
 
-  const { data: goals } = useNutritionGoals();
   const { data: totals } = useDailyTotals(selectedDate);
   const { data: water } = useWater(selectedDate);
   const { data: weekly } = useWeeklyTrend(today);
@@ -84,11 +102,7 @@ export default function DashboardScreen() {
   const lunchDone = loggedMealTypes.has("Lunch");
   const dinnerDone = loggedMealTypes.has("Dinner");
 
-  // Single source of truth for "was a workout actually completed" —
-  // comes from useWeekOverview's real completed-session data, shared
-  // by both the challenge card and the snapshot row below.
-  const workoutCompletedForDay =
-    days.find((d) => d.fullDate === selectedDate)?.hasWorkout ?? false;
+  const workoutCompletedForDay = workoutDates.has(selectedDate);
 
   const dayKind: "today" | "past" | "future" =
     selectedDate === today ? "today" : selectedDate < today ? "past" : "future";
@@ -102,9 +116,15 @@ export default function DashboardScreen() {
     else router.push("/log-meal");
   }
 
-  // --- Snapshot row workout status (today only) ---
-  const todayWorkoutDone =
-    days.find((d) => d.fullDate === today)?.hasWorkout ?? false;
+  const todayWorkoutDone = useMemo(
+    () =>
+      (todaySessions ?? []).some(
+        (s) =>
+          !!s.completedAt &&
+          localDateOnly(new Date(s.completedAt)) === today,
+      ),
+    [todaySessions, today],
+  );
 
   const {
     isLoading: coachLoading,
@@ -139,11 +159,14 @@ export default function DashboardScreen() {
         streakDays={weekly?.streak ?? 0}
       />
 
-      <View style={styles.calendarWrap}>
-        <DashboardCalendar
+      <View style={styles.daySelectorWrap}>
+        <DaySelector
           days={days}
-          selectedDate={selectedDate}
-          onSelectDate={setSelectedDate}
+          activeIndex={activeDayIndex}
+          onSelect={(i) => {
+            const picked = days[i];
+            if (picked) setSelectedDate(picked.date);
+          }}
           onPrevWeek={() => shiftWeek(-1)}
           onNextWeek={() => shiftWeek(1)}
           weekLabel={formatWeekLabel(weekStart, weekEnd, weekOffset)}
@@ -248,7 +271,7 @@ export default function DashboardScreen() {
 function makeStyles(T: AppTheme) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: T.bg },
-    calendarWrap: { paddingHorizontal: 20, paddingBottom: 4 },
+    daySelectorWrap: { paddingHorizontal: 20, paddingBottom: 4 },
     scroll: { flex: 1 },
     content: {
       paddingHorizontal: 20,

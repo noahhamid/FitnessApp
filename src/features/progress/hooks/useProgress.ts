@@ -70,6 +70,19 @@ export function useWorkoutHistory(from: string, to: string) {
   });
 }
 
+/** Lifetime completed-session count (prisma.count — not a capped list length). */
+export function useCompletedSessionCount() {
+  return useQuery({
+    queryKey: ["workout-session-count", "completed"] as const,
+    queryFn: async () => {
+      const data = await api.get<{ count: number }>(
+        "/api/workouts/count?completed=true",
+      );
+      return data.count;
+    },
+  });
+}
+
 // ── Personal records ─────────────────────────────────────────────────────────
 
 export interface PersonalRecord {

@@ -84,9 +84,14 @@ export default function ScanMealScreen() {
     }
 
     setStatus("analyzing");
+    const startedAt = Date.now();
     try {
       const mimeType = asset.mimeType ?? "image/jpeg";
+      console.log(
+        `[scan-meal] uploading ${(asset.base64.length / 1024 / 1024).toFixed(2)}MB base64, mime=${mimeType}`,
+      );
       const scan = await scanFoodImage(asset.base64, mimeType);
+      console.log(`[scan-meal] scan ok in ${Date.now() - startedAt}ms`);
       setResult(scan);
       setName(scan.name);
       setCal(String(scan.cal));
@@ -94,11 +99,16 @@ export default function ScanMealScreen() {
       setCarbs(String(scan.carbs));
       setFat(String(scan.fat));
       setStatus("reviewing");
-    } catch {
-      setStatus("error");
-      setErrorMsg(
-        "Couldn't analyze that photo. Try again or enter it manually.",
+    } catch (e) {
+      // Surface the API's own message (rate limit, auth, parse failure) —
+      // a single generic string here makes scan failures undiagnosable.
+      const detail = e instanceof Error ? e.message : String(e);
+      console.error(
+        `[scan-meal] scan failed after ${Date.now() - startedAt}ms:`,
+        detail,
       );
+      setStatus("error");
+      setErrorMsg(`${detail} — try again or enter it manually.`);
     }
   };
 

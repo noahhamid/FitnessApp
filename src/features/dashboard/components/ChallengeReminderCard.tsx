@@ -1,10 +1,14 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import {
-  AlarmClock,
   CheckCircle2,
   MinusCircle,
   ChevronRight,
+  Dumbbell,
+  Coffee,
+  UtensilsCrossed,
+  Moon,
+  type LucideProps,
 } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
@@ -23,11 +27,23 @@ type Props = {
   onPress?: () => void;
 };
 
+const STEPS: StepKey[] = ["workout", "breakfast", "lunch", "dinner"];
+
 const STEP_MESSAGE: Record<StepKey, string> = {
-  workout: "Get today's workout in",
+  workout: "Time for today's workout",
   breakfast: "Log your breakfast",
-  lunch: "Log your lunch",
-  dinner: "Log your dinner",
+  lunch: "Log your lunch next",
+  dinner: "Finish strong — log dinner",
+};
+
+const STEP_ICON: Record<
+  StepKey,
+  React.ComponentType<LucideProps>
+> = {
+  workout: Dumbbell,
+  breakfast: Coffee,
+  lunch: UtensilsCrossed,
+  dinner: Moon,
 };
 
 export function ChallengeReminderCard({
@@ -49,9 +65,7 @@ export function ChallengeReminderCard({
   };
   const complete = workoutDone && breakfastDone && lunchDone && dinnerDone;
   const currentStep: StepKey | null =
-    (["workout", "breakfast", "lunch", "dinner"] as StepKey[]).find(
-      (s) => !doneMap[s],
-    ) ?? null;
+    STEPS.find((key) => !doneMap[key]) ?? null;
 
   const isActionable = dayKind === "today" && !complete && !isLoading;
 
@@ -107,15 +121,21 @@ export function ChallengeReminderCard({
         ? [s.iconBadge, s.iconBadgeMissed]
         : [s.iconBadge];
 
-  const icon = isLoading ? (
-    <AlarmClock size={16} color={T.faint} strokeWidth={2} />
-  ) : complete ? (
-    <CheckCircle2 size={16} color={T.accent} strokeWidth={2} />
-  ) : dayKind === "past" ? (
-    <MinusCircle size={16} color={T.faint} strokeWidth={2} />
-  ) : (
-    <AlarmClock size={16} color={T.accent} strokeWidth={2} />
-  );
+  // State icons for complete/missed; per-step icon only when today is in progress
+  // (or future — show first step as a preview). Loading keeps a quiet faint look.
+  let icon: React.ReactNode;
+  if (isLoading) {
+    icon = <Dumbbell size={16} color={T.faint} strokeWidth={2} />;
+  } else if (complete) {
+    icon = <CheckCircle2 size={16} color={T.accent} strokeWidth={2} />;
+  } else if (dayKind === "past") {
+    icon = <MinusCircle size={16} color={T.faint} strokeWidth={2} />;
+  } else {
+    const StepIcon = STEP_ICON[currentStep ?? "workout"];
+    icon = <StepIcon size={16} color={T.accent} strokeWidth={2} />;
+  }
+
+  const showProgress = !isLoading;
 
   return (
     <PressableScale
@@ -133,6 +153,18 @@ export function ChallengeReminderCard({
 
         <View style={s.textBlock}>
           <Text style={s.message}>{message}</Text>
+          {showProgress && (
+            <View style={s.progressRow}>
+              {STEPS.map((key) => (
+                <View
+                  key={key}
+                  style={[s.dot, doneMap[key] && s.dotFilled]}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
+                />
+              ))}
+            </View>
+          )}
           {subLabel ? (
             <Text style={s.deadline}>{subLabel.toUpperCase()}</Text>
           ) : null}
@@ -177,12 +209,25 @@ function makeStyles(T: AppTheme) {
     },
     iconBadgeComplete: { backgroundColor: T.accentSoft },
     iconBadgeMissed: { backgroundColor: T.border },
-    textBlock: { flex: 1 },
+    textBlock: { flex: 1, gap: 4 },
     message: {
       fontFamily: T.bodySemi,
       fontSize: 13.5,
       color: T.white,
-      marginBottom: 2,
+    },
+    progressRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    dot: {
+      width: 14,
+      height: 3.5,
+      borderRadius: 2,
+      backgroundColor: T.border,
+    },
+    dotFilled: {
+      backgroundColor: T.accent,
     },
     deadline: {
       fontFamily: T.bodyMed,

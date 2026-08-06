@@ -7,7 +7,7 @@ import {
   type LucideProps,
 } from "lucide-react-native";
 
-/** Shared muscle-group → icon map (ContinueWorkoutCard chips, library rows). */
+/** Shared muscle-group → icon map (ContinueWorkoutCard chips). */
 export const MUSCLE_ICON: Record<string, ComponentType<LucideProps>> = {
   chest: Dumbbell,
   back: Layers,

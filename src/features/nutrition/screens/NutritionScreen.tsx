@@ -31,6 +31,12 @@ import {
   useSuggestion,
 } from "../hooks/useNutrition";
 import type { MealLogEntry, MealType } from "../types/nutrition.types";
+import {
+  dayLabel,
+  formatWeekLabel,
+  shiftDateStr,
+  weekDatesFor,
+} from "@/src/lib/week-days";
 
 const WATER_GOAL_GLASSES = 8;
 const MEAL_SLOTS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"];
@@ -52,32 +58,6 @@ function toDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function shiftDateStr(iso: string, deltaDays: number): string {
-  const d = new Date(`${iso}T00:00:00`);
-  d.setDate(d.getDate() + deltaDays);
-  return toDateStr(d);
-}
-
-function mondayOfWeek(weekOffset: number): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  const diff = (d.getDay() + 6) % 7; // days since Monday
-  d.setDate(d.getDate() - diff + weekOffset * 7);
-  return d;
-}
-
-function formatWeekLabel(
-  weekStart: string,
-  weekEnd: string,
-  weekOffset: number,
-): string {
-  if (weekOffset === 0) return "This week";
-  const start = new Date(`${weekStart}T00:00:00`);
-  const end = new Date(`${weekEnd}T00:00:00`);
-  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-  return `${start.toLocaleDateString(undefined, opts)} – ${end.toLocaleDateString(undefined, opts)}`;
-}
-
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -89,12 +69,6 @@ function dayNum(dateStr: string): number {
   return new Date(dateStr + "T00:00:00").getDate();
 }
 
-function dayLabel(dateStr: string): string {
-  return new Date(dateStr + "T00:00:00")
-    .toLocaleDateString("en-US", { weekday: "short" })
-    .toUpperCase();
-}
-
 export default function MealScreen() {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
   const router = useRouter();
@@ -102,19 +76,10 @@ export default function MealScreen() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [targetsOpen, setTargetsOpen] = useState(false);
 
-  const { weekStart, weekEnd, weekDates } = useMemo(() => {
-    const monday = mondayOfWeek(weekOffset);
-    const dates = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(monday);
-      d.setDate(d.getDate() + i);
-      return d;
-    });
-    return {
-      weekStart: toDateStr(dates[0]),
-      weekEnd: toDateStr(dates[6]), // Sunday inclusive
-      weekDates: dates,
-    };
-  }, [weekOffset]);
+  const { weekStart, weekEnd, weekDates } = useMemo(
+    () => weekDatesFor(weekOffset),
+    [weekOffset],
+  );
 
   const shiftWeek = (delta: number) => {
     setWeekOffset((o) => o + delta);

@@ -5,6 +5,7 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { ChevronDown, ChevronRight } from "lucide-react-native";
 import { CategoryFilter } from "./CategoryFilter";
@@ -12,10 +13,10 @@ import { useExerciseLibrary } from "../hooks/useExerciseLibrary";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import {
-  muscleIconFor,
   formatMuscleGroup,
   formatMovementPattern,
 } from "../lib/muscle-icons";
+import { imageForMuscleGroup } from "@/src/lib/workout-plan-adapter";
 
 const MUSCLE_GROUP_CATEGORIES = [
   "All",
@@ -101,7 +102,6 @@ export function ExerciseLibrarySection({ onView }: Props) {
 
       <View style={s.list}>
         {visibleExercises.map((ex) => {
-          const Icon = muscleIconFor(ex.muscleGroup);
           const meta = `${formatMuscleGroup(ex.muscleGroup)} · ${formatMovementPattern(ex.movementPattern)}`;
           return (
             <Pressable
@@ -112,7 +112,11 @@ export function ExerciseLibrarySection({ onView }: Props) {
               accessibilityLabel={`${ex.name}, ${meta}`}
             >
               <View style={s.iconWrap}>
-                <Icon size={16} color={T.accent} strokeWidth={2.2} />
+                <Image
+                  source={{ uri: imageForMuscleGroup(ex.muscleGroup) }}
+                  style={s.rowIcon}
+                  accessibilityIgnoresInvertColors
+                />
               </View>
               <View style={s.rowMain}>
                 <Text style={s.rowName} numberOfLines={1}>
@@ -195,6 +199,12 @@ function makeStyles(T: AppTheme) {
       backgroundColor: T.accentTint,
       alignItems: "center",
       justifyContent: "center",
+      overflow: "hidden",
+    },
+    rowIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
     },
     rowMain: { flex: 1, minWidth: 0 },
     rowName: { fontFamily: T.bodySemi, color: T.white, fontSize: 14 },

@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { canPerform, type EquipmentAccess } from "./equipment-rank";
+import { dayTitleFromMuscleGroups } from "./plan-day-title";
 
 export type ExperienceLevel = "novice" | "intermediate" | "advanced";
 export type GoalId = "lose" | "build" | "endure" | "health";
@@ -189,7 +190,12 @@ export async function generateWorkoutPlan(input: WorkoutPlanInput): Promise<Work
       };
     });
 
-    return { dayIndex, label: day.label, exercises };
+    return {
+      dayIndex,
+      // Store muscle-derived title; UI also recomputes at render for old rows.
+      label: dayTitleFromMuscleGroups(exercises),
+      exercises,
+    };
   });
 
   return { splitLabel: template.splitLabel, daysPerWeek: clampDays(input.daysPerWeek), days };

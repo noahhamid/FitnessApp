@@ -3,14 +3,18 @@ import {
   fetchUserProfile,
   saveUserProfile,
 } from "@/src/features/profile/services/profile.service";
-import { fetchWorkoutHistory } from "@/src/features/workout/services/workout.service";
+import {
+  useCompletedSessionCount,
+  useWorkoutHistory,
+} from "@/src/features/progress/hooks/useProgress";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -19,21 +23,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { ThemeModeTestToggle } from "@/src/context/ThemeModeTestToggle";
+import { LinearGradient } from "expo-linear-gradient";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
+import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
+import { AppearanceModeControl } from "@/src/features/profile/components/AppearanceModeControl";
+import { weekDatesFor } from "@/src/lib/week-days";
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const T = {
-  bg: "#121212",
-  card: "#1E1E1E",
-  surface: "#262626", // inputs / chips resting state
-  gold: "#FFC700",
-  red: "#FF5C5C", // only ever shown on press for destructive actions
-  text: "#FFFFFF",
-  sub: "#A0A0A0",
-  border: "#FFFFFF0D",
-};
+const SUPPORT_EMAIL = "support@fitnessapp.com";
 
-// ─── Fitness goals ────────────────────────────────────────────────────────────
 const GOALS = [
   { id: "lose", label: "Lose Weight", icon: "trending-down-outline" as const },
   { id: "build", label: "Build Muscle", icon: "barbell-outline" as const },
@@ -50,7 +48,6 @@ function parsePositiveNumber(value: string): number | null {
   return parsed;
 }
 
-// ─── Settings row data ────────────────────────────────────────────────────────
 const SETTINGS = [
   {
     id: "body",
@@ -65,20 +62,13 @@ const SETTINGS = [
     icon: "trending-up-outline" as const,
   },
   {
-    id: "account",
-    label: "Account Info",
-    sub: null,
-    icon: "person-outline" as const,
-  },
-  {
     id: "help",
     label: "Help & Support",
     sub: "FAQ · Contact us",
     icon: "help-circle-outline" as const,
   },
-];
+] as const;
 
-// ─── Compact metric mini (right-column of avatar card) ───────────────────────
 function MetricMini({
   value,
   unit,
@@ -88,17 +78,17 @@ function MetricMini({
   unit: string;
   accent?: boolean;
 }) {
+  const { T, styles } = useThemedStyles(makeStyles);
   return (
-    <View style={s.metricMini}>
-      <Text style={[s.metricMiniValue, accent && { color: T.gold }]}>
+    <View style={styles.metricMini}>
+      <Text style={[styles.metricMiniValue, accent && { color: T.accent }]}>
         {value}
       </Text>
-      <Text style={s.metricMiniUnit}>{unit}</Text>
+      <Text style={styles.metricMiniUnit}>{unit}</Text>
     </View>
   );
 }
 
-// ─── Sign out button with press-only red accent ──────────────────────────────
 function SignOutButton({
   onConfirm,
   pending,
@@ -106,8 +96,9 @@ function SignOutButton({
   onConfirm: () => void;
   pending: boolean;
 }) {
+  const { T, styles } = useThemedStyles(makeStyles);
   const [pressed, setPressed] = useState(false);
-  const tint = pressed ? T.red : T.sub;
+  const tint = pressed ? T.badge : T.muted;
 
   return (
     <TouchableOpacity
@@ -115,22 +106,22 @@ function SignOutButton({
       onPressOut={() => setPressed(false)}
       onPress={onConfirm}
       activeOpacity={0.85}
-      style={[s.signOutBtn, pressed && s.signOutBtnPressed]}
+      style={[styles.signOutBtn, pressed && styles.signOutBtnPressed]}
     >
       {pending ? (
         <ActivityIndicator size="small" color={tint} />
       ) : (
         <>
           <Ionicons name="log-out-outline" size={16} color={tint} />
-          <Text style={[s.signOutText, { color: tint }]}>Sign Out</Text>
+          <Text style={[styles.signOutText, { color: tint }]}>Sign Out</Text>
         </>
       )}
     </TouchableOpacity>
   );
 }
 
-// ─── Main screen ─────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
+  const { T, styles, resolved } = useThemedStyles(makeStyles);
   const { user, isPending: authPending } = useAuth();
   const signOutMutation = useSignOut();
   const qc = useQueryClient();
@@ -140,10 +131,10 @@ export default function ProfileScreen() {
     queryFn: fetchUserProfile,
   });
 
-  const { data: historyRows = [] } = useQuery({
-    queryKey: ["workouts", "history", "list"] as const,
-    queryFn: () => fetchWorkoutHistory(20),
-  });
+  const { weekStart, weekEnd } = useMemo(() => weekDatesFor(0), []);
+  const { data: totalSessions = 0 } = useCompletedSessionCount();
+  const { data: weekSessions } = useWorkoutHistory(weekStart, weekEnd);
+  const thisWeek = weekSessions?.length ?? 0;
 
   const [editMode, setEditMode] = useState(false);
   const [nameInput, setNameInput] = useState("");
@@ -180,14 +171,6 @@ export default function ProfileScreen() {
     weightKg > 0 && heightCm > 0
       ? (weightKg / Math.pow(heightCm / 100, 2)).toFixed(1)
       : null;
-
-  const streakDays = historyRows.length;
-  const thisWeek = Math.min(
-    historyRows.filter((h) =>
-      /^(Today|Yesterday|Mon|Tue|Wed|Thu|Fri|Sat|Sun)/.test(h.date),
-    ).length,
-    7,
-  );
 
   useEffect(() => {
     if (editMode) return;
@@ -261,38 +244,39 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView edges={["top"]} style={s.safe}>
+    <SafeAreaView edges={["top"]} style={styles.safe}>
+      <LinearGradient
+        colors={["rgba(28,63,46,0.06)", "rgba(28,63,46,0)"]}
+        style={styles.topWash}
+        pointerEvents="none"
+      />
       <StatusBar
-        barStyle="light-content"
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
         backgroundColor={T.bg}
         translucent={false}
       />
-      <View style={s.screen}>
+      <View style={styles.screen}>
         <ScrollView
-          contentContainerStyle={s.scroll}
+          contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ══════════════════════════════════════════════════════════════
-              1. PREMIUM HEADER
-          ══════════════════════════════════════════════════════════════ */}
-          <View style={s.header}>
-            <View style={s.headerLeft}>
-              <View style={s.headerLabelRow}>
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <View style={styles.headerLabelRow}>
                 <Ionicons
                   name="shield-checkmark-outline"
                   size={11}
-                  color={T.sub}
+                  color={T.muted}
                 />
-                <Text style={s.headerLabelText}>ATHLETE PROFILE</Text>
+                <Text style={styles.headerLabelText}>ATHLETE PROFILE</Text>
               </View>
-              <Text style={s.headerGreeting}>Manage your account,</Text>
-              <Text style={s.headerHero}>ACCOUNT.</Text>
+              <Text style={styles.headerGreeting}>Manage your account,</Text>
+              <Text style={styles.headerHero}>ACCOUNT.</Text>
             </View>
 
-            {/* Edit / Save button */}
             <TouchableOpacity
-              style={[s.editBtn, editMode && s.editBtnActive]}
+              style={[styles.editBtn, editMode && styles.editBtnActive]}
               onPress={() =>
                 editMode ? void handleSaveProfile() : setEditMode(true)
               }
@@ -302,23 +286,23 @@ export default function ProfileScreen() {
               {saveState === "saving" ? (
                 <ActivityIndicator
                   size="small"
-                  color={T.bg}
+                  color={T.onAccent}
                   style={{ width: 40 }}
                 />
               ) : saveState === "saved" ? (
                 <>
-                  <Ionicons name="checkmark" size={13} color={T.bg} />
-                  <Text style={s.editBtnActiveText}>Saved</Text>
+                  <Ionicons name="checkmark" size={13} color={T.onAccent} />
+                  <Text style={styles.editBtnActiveText}>Saved</Text>
                 </>
               ) : editMode ? (
                 <>
-                  <Ionicons name="checkmark" size={13} color={T.bg} />
-                  <Text style={s.editBtnActiveText}>Save</Text>
+                  <Ionicons name="checkmark" size={13} color={T.onAccent} />
+                  <Text style={styles.editBtnActiveText}>Save</Text>
                 </>
               ) : (
                 <>
-                  <Ionicons name="pencil-outline" size={12} color={T.gold} />
-                  <Text style={s.editBtnText}>Edit</Text>
+                  <Ionicons name="pencil-outline" size={12} color={T.accent} />
+                  <Text style={styles.editBtnText}>Edit</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -326,121 +310,106 @@ export default function ProfileScreen() {
 
           {loading && (
             <View style={{ paddingBottom: 8, paddingLeft: 16 }}>
-              <ActivityIndicator color={T.gold} size="small" />
+              <ActivityIndicator color={T.accent} size="small" />
             </View>
           )}
 
-          {/* ══════════════════════════════════════════════════════════════
-              2. AVATAR + BIOMETRICS CARD (horizontal)
-          ══════════════════════════════════════════════════════════════ */}
-          <View style={s.userCard}>
-            {/* Left: sharp avatar container, gold ring */}
-            <View style={s.avatarRing}>
-              <View style={s.avatar}>
-                <Text style={s.initials}>{initials}</Text>
+          <GlassSurface style={styles.userCard}>
+            <View style={styles.avatarRing}>
+              <View style={styles.avatar}>
+                <Text style={styles.initials}>{initials}</Text>
               </View>
             </View>
 
-            {/* Center: name + tier + email */}
-            <View style={s.userInfo}>
-              <Text style={s.userName} numberOfLines={1}>
+            <View style={styles.userInfo}>
+              <Text style={styles.userName} numberOfLines={1}>
                 {name}
               </Text>
-              <View style={s.memberBadge}>
-                <Text style={s.memberText}>PREMIUM</Text>
-              </View>
-              <Text style={s.userEmail} numberOfLines={1}>
+              <Text style={styles.userEmail} numberOfLines={1}>
                 {email}
               </Text>
             </View>
 
-            {/* Right: compact vertical metrics */}
-            <View style={s.userMetrics}>
+            <View style={styles.userMetrics}>
               <MetricMini
                 value={weightKg > 0 ? weightKg.toFixed(1) : "—"}
                 unit="KG"
               />
-              <View style={s.metricDivLine} />
+              <View style={styles.metricDivLine} />
               <MetricMini value={heightCm > 0 ? heightCm : "—"} unit="CM" />
-              <View style={s.metricDivLine} />
+              <View style={styles.metricDivLine} />
               <MetricMini value={bmi ?? "—"} unit="BMI" accent={!!bmi} />
             </View>
-          </View>
+          </GlassSurface>
 
-          {/* ══════════════════════════════════════════════════════════════
-              3. EDIT SECTION (conditional)
-          ══════════════════════════════════════════════════════════════ */}
           {editMode && (
-            <View style={s.editSection}>
-              <View style={s.editSectionHeader}>
-                <Text style={s.editSectionTitle}>Edit Profile</Text>
+            <GlassSurface style={styles.editSection}>
+              <View style={styles.editSectionHeader}>
+                <Text style={styles.editSectionTitle}>Edit Profile</Text>
                 <TouchableOpacity
                   onPress={() => {
                     setEditMode(false);
                     setSaveState("idle");
                   }}
                   activeOpacity={0.7}
-                  style={s.cancelBtn}
+                  style={styles.cancelBtn}
                 >
-                  <Text style={s.cancelBtnText}>Cancel</Text>
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Name */}
-              <View style={s.editField}>
-                <Text style={s.editFieldLabel}>Name</Text>
+              <View style={styles.editField}>
+                <Text style={styles.editFieldLabel}>Name</Text>
                 <TextInput
                   value={nameInput}
                   onChangeText={setNameInput}
                   placeholder="Your name"
-                  placeholderTextColor={T.sub}
-                  style={s.editInput}
+                  placeholderTextColor={T.muted}
+                  style={styles.editInput}
                 />
               </View>
 
-              {/* Metrics row */}
-              <View style={s.editFieldRow}>
-                <View style={[s.editField, { flex: 1 }]}>
-                  <Text style={s.editFieldLabel}>Weight (kg)</Text>
+              <View style={styles.editFieldRow}>
+                <View style={[styles.editField, { flex: 1 }]}>
+                  <Text style={styles.editFieldLabel}>Weight (kg)</Text>
                   <TextInput
                     value={weightInput}
                     onChangeText={setWeightInput}
                     keyboardType="decimal-pad"
                     placeholder="75"
-                    placeholderTextColor={T.sub}
-                    style={s.editInput}
+                    placeholderTextColor={T.muted}
+                    style={styles.editInput}
                     selectTextOnFocus
                   />
                 </View>
-                <View style={[s.editField, { flex: 1 }]}>
-                  <Text style={s.editFieldLabel}>Height (cm)</Text>
+                <View style={[styles.editField, { flex: 1 }]}>
+                  <Text style={styles.editFieldLabel}>Height (cm)</Text>
                   <TextInput
                     value={heightInput}
                     onChangeText={setHeightInput}
                     keyboardType="number-pad"
                     placeholder="175"
-                    placeholderTextColor={T.sub}
-                    style={s.editInput}
+                    placeholderTextColor={T.muted}
+                    style={styles.editInput}
                     selectTextOnFocus
                   />
                 </View>
-                <View style={[s.editField, { flex: 1 }]}>
-                  <Text style={s.editFieldLabel}>Age</Text>
+                <View style={[styles.editField, { flex: 1 }]}>
+                  <Text style={styles.editFieldLabel}>Age</Text>
                   <TextInput
                     value={ageInput}
                     onChangeText={setAgeInput}
                     keyboardType="number-pad"
                     placeholder="25"
-                    placeholderTextColor={T.sub}
-                    style={s.editInput}
+                    placeholderTextColor={T.muted}
+                    style={styles.editInput}
                     selectTextOnFocus
                   />
                 </View>
               </View>
 
-              {/* Goal picker */}
-              <Text style={s.editFieldLabel}>Fitness Goal</Text>
-              <View style={s.goalGrid}>
+              <Text style={styles.editFieldLabel}>Fitness Goal</Text>
+              <View style={styles.goalGrid}>
                 {GOALS.map((goal) => {
                   const active = goalInput === goal.id;
                   return (
@@ -448,15 +417,18 @@ export default function ProfileScreen() {
                       key={goal.id}
                       onPress={() => setGoalInput(goal.id)}
                       activeOpacity={0.75}
-                      style={[s.goalChip, active && s.goalChipActive]}
+                      style={[styles.goalChip, active && styles.goalChipActive]}
                     >
                       <Ionicons
                         name={goal.icon}
                         size={13}
-                        color={active ? T.gold : T.sub}
+                        color={active ? T.accent : T.muted}
                       />
                       <Text
-                        style={[s.goalChipText, active && { color: T.gold }]}
+                        style={[
+                          styles.goalChipText,
+                          active && { color: T.accent },
+                        ]}
                       >
                         {goal.label}
                       </Text>
@@ -464,94 +436,89 @@ export default function ProfileScreen() {
                   );
                 })}
               </View>
-            </View>
+            </GlassSurface>
           )}
 
-          {/* ══════════════════════════════════════════════════════════════
-              4. PERFORMANCE SNAPSHOT
-          ══════════════════════════════════════════════════════════════ */}
-          <Text style={s.sectionLabel}>PERFORMANCE SNAPSHOT</Text>
-          <View style={s.snapshotRow}>
-            {/* Streak card */}
-            <View style={s.snapshotCard}>
-              <Ionicons name="flame-outline" size={18} color={T.sub} />
-              <Text style={s.snapshotValue}>{streakDays}</Text>
-              <Text style={s.snapshotLabel}>Total Sessions</Text>
-            </View>
+          <Text style={styles.sectionLabel}>PERFORMANCE SNAPSHOT</Text>
+          <View style={styles.snapshotRow}>
+            <GlassSurface style={styles.snapshotCard}>
+              <Ionicons name="flame-outline" size={18} color={T.muted} />
+              <Text style={styles.snapshotValue}>{totalSessions}</Text>
+              <Text style={styles.snapshotLabel}>Total Sessions</Text>
+            </GlassSurface>
 
-            {/* This week card */}
-            <View style={s.snapshotCard}>
-              <Ionicons name="calendar-outline" size={18} color={T.sub} />
-              <Text style={[s.snapshotValue, { color: T.gold }]}>
+            <GlassSurface style={styles.snapshotCard}>
+              <Ionicons name="calendar-outline" size={18} color={T.muted} />
+              <Text style={[styles.snapshotValue, { color: T.accent }]}>
                 {thisWeek}
               </Text>
-              <Text style={s.snapshotLabel}>This Week</Text>
-            </View>
+              <Text style={styles.snapshotLabel}>This Week</Text>
+            </GlassSurface>
 
-            {/* Active goal card */}
-            <View style={s.snapshotCard}>
-              <Ionicons name={activeGoal.icon} size={18} color={T.sub} />
-              <Text style={[s.snapshotValue, { fontSize: 13, lineHeight: 15 }]}>
+            <GlassSurface style={styles.snapshotCard}>
+              <Ionicons name={activeGoal.icon} size={18} color={T.muted} />
+              <Text
+                style={[styles.snapshotValue, { fontSize: 13, lineHeight: 15 }]}
+              >
                 {activeGoal.label.split(" ")[0]}
               </Text>
-              <Text style={s.snapshotLabel}>Goal</Text>
-            </View>
+              <Text style={styles.snapshotLabel}>Goal</Text>
+            </GlassSurface>
           </View>
 
-          {/* ══════════════════════════════════════════════════════════════
-              5. SETTINGS CARD (unified dark surface)
-          ══════════════════════════════════════════════════════════════ */}
-          <Text style={s.sectionLabel}>APP SETTINGS</Text>
-          {/* TEMPORARY Stage 2B test point — provider/persistence only;
-              Profile chrome stays on local hardcoded T until a later stage. */}
-          <ThemeModeTestToggle />
-          <View style={s.settingsCard}>
-            {SETTINGS.map((setting, i) => {
-              const isLast = i === SETTINGS.length - 1;
-
-              let rightValue: string | null = null;
-              if (setting.id === "goal") rightValue = activeGoal.label;
-              if (setting.id === "account") rightValue = email;
+          <Text style={styles.sectionLabel}>APP SETTINGS</Text>
+          <GlassSurface style={styles.settingsCard}>
+            {SETTINGS.map((setting) => {
+              const rightValue =
+                setting.id === "goal" ? activeGoal.label : null;
 
               return (
                 <TouchableOpacity
                   key={setting.id}
-                  style={[s.settingRow, isLast && { borderBottomWidth: 0 }]}
+                  style={styles.settingRow}
                   activeOpacity={0.7}
                   onPress={() => {
                     if (setting.id === "body" || setting.id === "goal") {
                       setEditMode(true);
                     } else if (setting.id === "help") {
-                      Alert.alert(
-                        "Help & Support",
-                        "For assistance, contact support@fitnessapp.com",
-                        [{ text: "OK" }],
-                      );
+                      void Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
                     }
                   }}
                 >
-                  {/* Icon — plain, no colored badge */}
-                  <Ionicons name={setting.icon} size={18} color={T.sub} />
+                  <Ionicons name={setting.icon} size={18} color={T.muted} />
 
-                  {/* Title + optional sub */}
-                  <View style={s.settingContent}>
-                    <Text style={s.settingTitle}>{setting.label}</Text>
-                    {rightValue && (
-                      <Text style={s.settingValue} numberOfLines={1}>
+                  <View style={styles.settingContent}>
+                    <Text style={styles.settingTitle}>{setting.label}</Text>
+                    {setting.sub ? (
+                      <Text style={styles.settingValue} numberOfLines={1}>
+                        {setting.sub}
+                      </Text>
+                    ) : rightValue ? (
+                      <Text style={styles.settingValue} numberOfLines={1}>
                         {rightValue}
                       </Text>
-                    )}
+                    ) : null}
                   </View>
 
-                  <Ionicons name="chevron-forward" size={14} color={T.sub} />
+                  <Ionicons name="chevron-forward" size={14} color={T.muted} />
                 </TouchableOpacity>
               );
             })}
-          </View>
 
-          {/* ══════════════════════════════════════════════════════════════
-              6. SIGN OUT
-          ══════════════════════════════════════════════════════════════ */}
+            {/* Appearance — stacked row inside the same settings card */}
+            <View style={[styles.settingRow, styles.appearanceRow]}>
+              <View style={styles.appearanceHeader}>
+                <Ionicons
+                  name="contrast-outline"
+                  size={18}
+                  color={T.muted}
+                />
+                <Text style={styles.settingTitle}>Appearance</Text>
+              </View>
+              <AppearanceModeControl />
+            </View>
+          </GlassSurface>
+
           <SignOutButton
             pending={signOutMutation.isPending}
             onConfirm={() =>
@@ -577,338 +544,335 @@ export default function ProfileScreen() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: T.bg },
-  screen: {
-    flex: 1,
-    backgroundColor: T.bg,
-    maxWidth: 430,
-    alignSelf: "center",
-    width: "100%",
-  },
-  scroll: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 32,
-  },
+function makeStyles(T: AppTheme) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: T.bg },
+    topWash: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 260,
+    },
+    screen: {
+      flex: 1,
+      backgroundColor: T.bg,
+      maxWidth: 430,
+      alignSelf: "center",
+      width: "100%",
+    },
+    scroll: {
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 32,
+    },
 
-  // ── 1. Premium header ──────────────────────────────────────────────────────
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    paddingTop: 6,
-    paddingBottom: 20,
-  },
-  headerLeft: { gap: 2 },
-  headerLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    marginBottom: 4,
-  },
-  headerLabelText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 12,
-    color: T.sub,
-    letterSpacing: 1.5,
-  },
-  headerGreeting: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 13,
-    color: T.sub,
-  },
-  headerHero: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 38,
-    color: T.text,
-    lineHeight: 40,
-    letterSpacing: 0.5,
-  },
-  editBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: T.card,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  editBtnActive: {
-    backgroundColor: T.gold,
-  },
-  editBtnText: {
-    fontFamily: "DMSans_600SemiBold",
-    fontSize: 13,
-    color: T.gold,
-  },
-  editBtnActiveText: {
-    fontFamily: "DMSans_600SemiBold",
-    fontSize: 13,
-    color: T.bg,
-  },
+    header: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      justifyContent: "space-between",
+      paddingTop: 6,
+      paddingBottom: 20,
+    },
+    headerLeft: { gap: 2 },
+    headerLabelRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      marginBottom: 4,
+    },
+    headerLabelText: {
+      fontFamily: T.bodySemi,
+      fontSize: 11,
+      color: T.muted,
+      letterSpacing: 1.2,
+    },
+    headerGreeting: {
+      fontFamily: T.body,
+      fontSize: 13,
+      color: T.muted,
+    },
+    headerHero: {
+      fontFamily: T.displayExtraBold,
+      fontSize: 34,
+      color: T.white,
+      lineHeight: 36,
+      letterSpacing: -0.4,
+    },
+    editBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      backgroundColor: T.bgElevated,
+      borderRadius: T.radius.pill,
+      borderWidth: 0.5,
+      borderColor: T.border,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+    editBtnActive: {
+      backgroundColor: T.accent,
+      borderColor: T.accent,
+    },
+    editBtnText: {
+      fontFamily: T.bodySemi,
+      fontSize: 13,
+      color: T.accent,
+    },
+    editBtnActiveText: {
+      fontFamily: T.bodySemi,
+      fontSize: 13,
+      color: T.onAccent,
+    },
 
-  // ── 2. Avatar + biometrics card ────────────────────────────────────────────
-  userCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: T.card,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 12,
-    gap: 14,
-  },
+    userCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderRadius: T.radius.lg,
+      padding: 16,
+      marginBottom: 12,
+      gap: 14,
+    },
+    avatarRing: {
+      position: "relative",
+    },
+    avatar: {
+      width: 64,
+      height: 64,
+      borderRadius: T.radius.md,
+      backgroundColor: T.accentTint,
+      borderWidth: 1.5,
+      borderColor: T.accentLine,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    initials: {
+      fontFamily: T.displayExtraBold,
+      fontSize: 22,
+      color: T.white,
+      letterSpacing: 0.5,
+    },
+    userInfo: {
+      flex: 1,
+      gap: 4,
+    },
+    userName: {
+      fontFamily: T.displayBold,
+      fontSize: 18,
+      color: T.white,
+      letterSpacing: -0.2,
+      lineHeight: 22,
+    },
+    userEmail: {
+      fontFamily: T.body,
+      fontSize: 11,
+      color: T.muted,
+    },
+    userMetrics: {
+      alignItems: "flex-end",
+      gap: 2,
+    },
+    metricMini: {
+      alignItems: "flex-end",
+      gap: 0,
+    },
+    metricMiniValue: {
+      fontFamily: T.displayBold,
+      fontSize: 16,
+      color: T.white,
+      lineHeight: 18,
+      letterSpacing: -0.3,
+    },
+    metricMiniUnit: {
+      fontFamily: T.bodyMed,
+      fontSize: 8,
+      color: T.muted,
+      letterSpacing: 0.5,
+      lineHeight: 10,
+    },
+    metricDivLine: {
+      width: 28,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: T.border,
+      marginVertical: 4,
+      alignSelf: "flex-end",
+    },
 
-  // Avatar — sharp container, gold ring
-  avatarRing: {
-    position: "relative",
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: T.surface,
-    borderWidth: 1.5,
-    borderColor: T.gold + "AA",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  initials: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 24,
-    color: T.text,
-    letterSpacing: 1,
-  },
+    editSection: {
+      borderRadius: T.radius.lg,
+      padding: 16,
+      marginBottom: 12,
+      gap: 12,
+    },
+    editSectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 4,
+    },
+    editSectionTitle: {
+      fontFamily: T.displaySemi,
+      fontSize: 16,
+      color: T.white,
+      letterSpacing: -0.2,
+    },
+    cancelBtn: {
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+      borderRadius: T.radius.sm,
+      backgroundColor: T.accentTint,
+    },
+    cancelBtnText: {
+      fontFamily: T.bodyMed,
+      fontSize: 12,
+      color: T.muted,
+    },
+    editField: {
+      gap: 6,
+    },
+    editFieldRow: {
+      flexDirection: "row",
+      gap: 10,
+    },
+    editFieldLabel: {
+      fontFamily: T.bodyMed,
+      fontSize: 10,
+      color: T.muted,
+      letterSpacing: 0.4,
+    },
+    editInput: {
+      fontFamily: T.body,
+      fontSize: 14,
+      color: T.white,
+      backgroundColor: T.accentTint,
+      borderRadius: T.radius.sm,
+      borderWidth: 0.5,
+      borderColor: T.border,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    goalGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginTop: 2,
+    },
+    goalChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: T.accentTint,
+      borderRadius: T.radius.sm,
+      borderWidth: 0.5,
+      borderColor: T.border,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    goalChipActive: {
+      backgroundColor: T.accentTint,
+      borderColor: T.accent,
+    },
+    goalChipText: {
+      fontFamily: T.bodyMed,
+      fontSize: 12,
+      color: T.muted,
+    },
 
-  // Center: user info
-  userInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  userName: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 20,
-    color: T.text,
-    letterSpacing: 0.2,
-    lineHeight: 22,
-  },
-  memberBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: T.gold + "14",
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  memberText: {
-    fontFamily: "DMSans_600SemiBold",
-    fontSize: 9,
-    color: T.gold,
-    letterSpacing: 0.6,
-  },
-  userEmail: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 11,
-    color: T.sub,
-  },
+    sectionLabel: {
+      fontFamily: T.displaySemi,
+      fontSize: 12,
+      color: T.white,
+      letterSpacing: 1,
+      marginBottom: 10,
+      marginTop: 8,
+    },
+    snapshotRow: {
+      flexDirection: "row",
+      gap: 10,
+      marginBottom: 12,
+    },
+    snapshotCard: {
+      flex: 1,
+      borderRadius: T.radius.md,
+      paddingVertical: 16,
+      paddingHorizontal: 12,
+      alignItems: "center",
+      gap: 8,
+    },
+    snapshotValue: {
+      fontFamily: T.displayBold,
+      fontSize: 22,
+      color: T.white,
+      lineHeight: 24,
+      letterSpacing: -0.3,
+    },
+    snapshotLabel: {
+      fontFamily: T.body,
+      fontSize: 9,
+      color: T.muted,
+      letterSpacing: 0.4,
+      textAlign: "center",
+    },
 
-  // Right: compact metrics column
-  userMetrics: {
-    alignItems: "flex-end",
-    gap: 2,
-  },
-  metricMini: {
-    alignItems: "flex-end",
-    gap: 0,
-  },
-  metricMiniValue: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 16,
-    color: T.text,
-    lineHeight: 18,
-    letterSpacing: -0.3,
-  },
-  metricMiniUnit: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 8,
-    color: T.sub,
-    letterSpacing: 0.5,
-    lineHeight: 10,
-  },
-  metricDivLine: {
-    width: 28,
-    height: 1,
-    backgroundColor: T.border,
-    marginVertical: 4,
-    alignSelf: "flex-end",
-  },
+    settingsCard: {
+      borderRadius: T.radius.lg,
+      overflow: "hidden",
+      marginBottom: 16,
+    },
+    settingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: T.border,
+    },
+    settingContent: {
+      flex: 1,
+      gap: 2,
+    },
+    settingTitle: {
+      fontFamily: T.bodyMed,
+      fontSize: 14,
+      color: T.white,
+    },
+    settingValue: {
+      fontFamily: T.body,
+      fontSize: 11,
+      color: T.muted,
+    },
+    appearanceRow: {
+      flexDirection: "column",
+      alignItems: "stretch",
+      gap: 12,
+      paddingVertical: 14,
+      borderBottomWidth: 0,
+    },
+    appearanceHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+    },
 
-  // ── 3. Edit section ────────────────────────────────────────────────────────
-  editSection: {
-    backgroundColor: T.card,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 12,
-    gap: 12,
-  },
-  editSectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  editSectionTitle: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 16,
-    color: T.text,
-    letterSpacing: 0.3,
-  },
-  cancelBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 10,
-    backgroundColor: T.surface,
-  },
-  cancelBtnText: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 12,
-    color: T.sub,
-  },
-  editField: {
-    gap: 6,
-  },
-  editFieldRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  editFieldLabel: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 10,
-    color: T.sub,
-    letterSpacing: 0.4,
-  },
-  editInput: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 14,
-    color: T.text,
-    backgroundColor: T.surface,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-
-  // Goal picker grid
-  goalGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 2,
-  },
-  goalChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: T.surface,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  goalChipActive: {
-    backgroundColor: T.gold + "16",
-  },
-  goalChipText: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 12,
-    color: T.sub,
-  },
-
-  // ── 4. Performance snapshot ────────────────────────────────────────────────
-  sectionLabel: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
-    color: T.text,
-    letterSpacing: 1.2,
-    marginBottom: 10,
-    marginTop: 8,
-  },
-  snapshotRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 12,
-  },
-  snapshotCard: {
-    flex: 1,
-    backgroundColor: T.card,
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    alignItems: "center",
-    gap: 8,
-  },
-  snapshotValue: {
-    fontFamily: "BarlowCondensed_900Black",
-    fontSize: 22,
-    color: T.text,
-    lineHeight: 24,
-    letterSpacing: -0.3,
-  },
-  snapshotLabel: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 9,
-    color: T.sub,
-    letterSpacing: 0.4,
-    textAlign: "center",
-  },
-
-  // ── 5. Settings card ──────────────────────────────────────────────────────
-  settingsCard: {
-    backgroundColor: T.card,
-    borderRadius: 20,
-    overflow: "hidden",
-    marginBottom: 16,
-  },
-  settingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: T.border,
-  },
-  settingContent: {
-    flex: 1,
-    gap: 2,
-  },
-  settingTitle: {
-    fontFamily: "DMSans_500Medium",
-    fontSize: 14,
-    color: T.text,
-  },
-  settingValue: {
-    fontFamily: "DMSans_400Regular",
-    fontSize: 11,
-    color: T.sub,
-  },
-
-  // ── 6. Sign out ───────────────────────────────────────────────────────────
-  signOutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderColor: T.border,
-    backgroundColor: "transparent",
-    borderRadius: 16,
-    paddingVertical: 14,
-  },
-  signOutBtnPressed: {
-    borderColor: T.red + "55",
-  },
-  signOutText: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 16,
-    letterSpacing: 0.3,
-  },
-});
+    signOutBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      borderWidth: 1,
+      borderColor: T.border,
+      backgroundColor: "transparent",
+      borderRadius: T.radius.md,
+      paddingVertical: 14,
+    },
+    signOutBtnPressed: {
+      borderColor: T.badge,
+    },
+    signOutText: {
+      fontFamily: T.displaySemi,
+      fontSize: 15,
+      letterSpacing: -0.2,
+    },
+  });
+}

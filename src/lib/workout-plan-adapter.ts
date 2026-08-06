@@ -1,5 +1,6 @@
 import type { WorkoutPlan, Exercise, ExerciseType } from "@/src/features/workout/data/workouts";
 import { Image } from "react-native";
+import { dayTitleFromMuscleGroups } from "@/src/lib/plan-day-title";
 
 // ── Types matching the real backend response (GET /api/workouts/plan) ──
 export interface ApiPlanExercise {
@@ -51,11 +52,10 @@ const EXERCISE_PLACEHOLDER_URI = Image.resolveAssetSource(
 ).uri;
 
 const COVER_BY_LABEL_HINT: { match: RegExp; url: string }[] = [
-  { match: /push/i, url: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=80" },
-  { match: /pull/i, url: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&q=80" },
-  { match: /leg/i, url: "https://hips.hearstapps.com/hmg-prod/images/muscular-shirtless-man-exercising-with-weights-in-royalty-free-image-1700572250.jpg?crop=0.88847xw:1xh;center,top&resize=1200:*" },
+  { match: /push|chest|triceps|shoulder/i, url: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=80" },
+  { match: /pull|back|biceps/i, url: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&q=80" },
+  { match: /leg|quad|hamstring|glute|calf|lower/i, url: "https://hips.hearstapps.com/hmg-prod/images/muscular-shirtless-man-exercising-with-weights-in-royalty-free-image-1700572250.jpg?crop=0.88847xw:1xh;center,top&resize=1200:*" },
   { match: /upper/i, url: "https://i.pinimg.com/736x/22/72/88/2272887bd04a94150dc8f84bddd4d87a.jpg" },
-  { match: /lower/i, url: "https://hips.hearstapps.com/hmg-prod/images/muscular-shirtless-man-exercising-with-weights-in-royalty-free-image-1700572250.jpg?crop=0.88847xw:1xh;center,top&resize=1200:*" },
   { match: /full body/i, url: "https://muscleevo.net/wp-content/uploads/2020/08/full-body-workout.jpg" },
 ];
 const DEFAULT_COVER = "https://muscleevo.net/wp-content/uploads/2020/08/full-body-workout.jpg";
@@ -65,8 +65,10 @@ export function imageForMuscleGroup(_muscleGroup?: string): string {
   return EXERCISE_PLACEHOLDER_URI;
 }
 
-function coverImageForDay(label: string): string {
-  const hit = COVER_BY_LABEL_HINT.find((h) => h.match.test(label));
+function coverImageForDay(title: string, storedLabel: string): string {
+  const hit = COVER_BY_LABEL_HINT.find(
+    (h) => h.match.test(title) || h.match.test(storedLabel),
+  );
   return hit?.url ?? DEFAULT_COVER;
 }
 
@@ -110,14 +112,17 @@ function adaptExercise(ex: ApiPlanExercise, goalId: string): Exercise {
 }
 
 export function adaptPlanDay(day: ApiPlanDay, goalId: string): WorkoutPlan {
+  const sorted = [...day.exercises].sort((a, b) => a.orderIndex - b.orderIndex);
+  // Render-time title from actual muscles so stored "Upper A" / "Push" labels
+  // update immediately without regenerating the plan.
+  const title = dayTitleFromMuscleGroups(sorted);
+
   return {
     id: day.id,
-    title: day.label,
+    title,
     tag: goalId.charAt(0).toUpperCase() + goalId.slice(1),
-    coverImage: coverImageForDay(day.label),
-    exercises: day.exercises
-      .sort((a, b) => a.orderIndex - b.orderIndex)
-      .map((ex) => adaptExercise(ex, goalId)),
+    coverImage: coverImageForDay(title, day.label),
+    exercises: sorted.map((ex) => adaptExercise(ex, goalId)),
   };
 }
 

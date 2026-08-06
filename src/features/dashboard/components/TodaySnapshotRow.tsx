@@ -1,21 +1,45 @@
-import { ComponentType, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, StyleSheet, Text, View } from "react-native";
-import { Flame, Dumbbell, GlassWater, LucideProps } from "lucide-react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Animated,
+  Easing,
+  Image,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { GlassSurface } from "./GlassSurface";
 
+export type SnapshotKind = "calories" | "workout" | "water";
+
 type Snapshot = {
-  icon: ComponentType<LucideProps>;
+  /** Which local asset to show — kept as `icon` so Dashboard call sites stay stable. */
+  icon: SnapshotKind;
   value: string;
   label: string;
 };
 
+/** Stable keys Dashboard already passes as `SNAPSHOT_ICONS.calories` etc. */
 export const SNAPSHOT_ICONS = {
-  calories: Flame,
-  workout: Dumbbell,
-  water: GlassWater,
+  calories: "calories",
+  workout: "workout",
+  water: "water",
+} as const satisfies Record<SnapshotKind, SnapshotKind>;
+
+const ASSET_SOURCE = {
+  calories: require("../../../../assets/images/kcal.png"),
+  workout: require("../../../../assets/images/workout.png"),
+  water: require("../../../../assets/images/water.png"),
+} as const;
+
+const ASSET_URI: Record<SnapshotKind, string> = {
+  calories: Image.resolveAssetSource(ASSET_SOURCE.calories).uri,
+  workout: Image.resolveAssetSource(ASSET_SOURCE.workout).uri,
+  water: Image.resolveAssetSource(ASSET_SOURCE.water).uri,
 };
+
+const ICON_SIZE = 36;
 
 // splits "482" -> ["482", ""], "6/8" -> ["6", "/8"], "Done" -> [null, "Done"]
 function splitLeadingNumber(value: string): [number | null, string] {
@@ -69,23 +93,18 @@ function AnimatedValue({
   );
 }
 
-/** Each icon gets one gesture that matches what it represents —
- * not decoration, a tiny piece of characterization. */
-function IconMotion({
-  Icon,
-  color,
+/** Each asset gets one gesture that matches what it represents. */
+function AssetMotion({
+  kind,
   delay,
+  imageStyle,
 }: {
-  Icon: ComponentType<LucideProps>;
-  color: string;
+  kind: SnapshotKind;
   delay: number;
+  imageStyle: ReturnType<typeof makeStyles>["asset"];
 }) {
   const anim = useRef(new Animated.Value(0)).current;
   const flicker = useRef(new Animated.Value(0)).current;
-
-  const isFlame = Icon === SNAPSHOT_ICONS.calories;
-  const isDumbbell = Icon === SNAPSHOT_ICONS.workout;
-  const isWater = Icon === SNAPSHOT_ICONS.water;
 
   useEffect(() => {
     const entrance = Animated.timing(anim, {
@@ -98,7 +117,7 @@ function IconMotion({
     entrance.start();
 
     let loop: Animated.CompositeAnimation | undefined;
-    if (isFlame) {
+    if (kind === "calories") {
       loop = Animated.loop(
         Animated.sequence([
           Animated.timing(flicker, {
@@ -122,23 +141,23 @@ function IconMotion({
       entrance.stop();
       loop?.stop();
     };
-  }, [delay]);
+  }, [delay, kind]);
 
   let transform: any[] = [{ scale: anim }];
 
-  if (isDumbbell) {
+  if (kind === "workout") {
     const rotate = anim.interpolate({
       inputRange: [0, 1],
       outputRange: ["-22deg", "0deg"],
     });
     transform = [{ scale: anim }, { rotate }];
-  } else if (isWater) {
+  } else if (kind === "water") {
     const translateY = anim.interpolate({
       inputRange: [0, 1],
       outputRange: [-6, 0],
     });
     transform = [{ scale: anim }, { translateY }];
-  } else if (isFlame) {
+  } else if (kind === "calories") {
     const flickerRotate = flicker.interpolate({
       inputRange: [0, 1],
       outputRange: ["-4deg", "4deg"],
@@ -155,13 +174,18 @@ function IconMotion({
 
   return (
     <Animated.View style={{ opacity: anim, transform }}>
-      <Icon size={15} color={color} strokeWidth={2} />
+      <Image
+        source={{ uri: ASSET_URI[kind] }}
+        style={imageStyle}
+        resizeMode="cover"
+        accessibilityIgnoresInvertColors
+      />
     </Animated.View>
   );
 }
 
 export function TodaySnapshotRow({ items }: { items: Snapshot[] }) {
-  const { T, styles } = useThemedStyles(makeStyles);
+  const { styles } = useThemedStyles(makeStyles);
 
   return (
     <View style={styles.row}>
@@ -169,9 +193,11 @@ export function TodaySnapshotRow({ items }: { items: Snapshot[] }) {
         const delay = i * 90;
         return (
           <GlassSurface key={i} style={styles.card}>
-            <View style={styles.iconBadge}>
-              <IconMotion Icon={item.icon} color={T.accent} delay={delay} />
-            </View>
+            <AssetMotion
+              kind={item.icon}
+              delay={delay}
+              imageStyle={styles.asset}
+            />
             <AnimatedValue
               value={item.value}
               delay={delay + 120}
@@ -195,15 +221,11 @@ function makeStyles(T: AppTheme) {
       alignItems: "center",
       gap: 8,
     },
-    iconBadge: {
-      width: 32,
-      height: 32,
+    // Opaque full-bleed assets — rounded square, no tinted well behind.
+    asset: {
+      width: ICON_SIZE,
+      height: ICON_SIZE,
       borderRadius: T.radius.sm,
-      backgroundColor: T.ringGlass,
-      borderWidth: 0.5,
-      borderColor: T.ringBorder,
-      alignItems: "center",
-      justifyContent: "center",
       zIndex: 1,
     },
     value: {

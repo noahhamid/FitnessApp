@@ -11,6 +11,7 @@ import {
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
+import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import { PressableScale } from "./PressableScale";
 
 type Day = { label: string; num: number; hasLog?: boolean; date: string };
@@ -35,6 +36,7 @@ export function DaySelector({
   weekLabel,
 }: Props) {
   const { T, styles } = useThemedStyles(makeStyles);
+  const todayKey = localDateOnly();
   const [rowWidth, setRowWidth] = useState(0);
   const [rowHeight, setRowHeight] = useState(0);
   // Always divide by 7 so a short/empty days array can't inflate cell width.
@@ -170,8 +172,20 @@ export function DaySelector({
         <View style={styles.row} onLayout={handleRowLayout}>
           {days.map((d, i) => {
             const active = i === activeIndex;
+            const isToday = d.date === todayKey;
             return (
               <View key={d.date} style={styles.item}>
+                {/* Absolutely positioned so today's ring matches the selected
+                    pill's geometry without adding border box to the cell. */}
+                {isToday && (
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.todayRing,
+                      active && styles.todayRingOnFill,
+                    ]}
+                  />
+                )}
                 <PressableScale
                   onPress={() => handleSelect(i, d.date)}
                   scaleTo={0.94}
@@ -189,13 +203,18 @@ export function DaySelector({
                     <Animated.Text
                       style={[
                         styles.dnum,
+                        isToday && !active && styles.dnumToday,
                         active && styles.dnumActive,
                         { transform: [{ scale: getNumberScale(d.date) }] },
                       ]}
                     >
                       {d.num}
                     </Animated.Text>
-                    {d.hasLog && !active && <View style={styles.logDot} />}
+                    {d.hasLog && (
+                      <View
+                        style={[styles.logDot, active && styles.logDotActive]}
+                      />
+                    )}
                   </View>
                 </PressableScale>
               </View>
@@ -254,6 +273,23 @@ function makeStyles(T: AppTheme) {
       minWidth: 0,
     },
     pressableReset: { borderRadius: 15, width: "100%" },
+    todayRing: {
+      position: "absolute",
+      top: 0,
+      bottom: 0,
+      left: INDICATOR_INSET,
+      right: INDICATOR_INSET,
+      borderRadius: 15,
+      borderWidth: 1.5,
+      borderColor: T.accent,
+      backgroundColor: T.accentTint,
+    },
+    // Selected + today: the accent pill already fills the cell, so the ring
+    // becomes an inset outline instead of a second fill.
+    todayRingOnFill: {
+      borderColor: T.onAccent,
+      backgroundColor: "transparent",
+    },
     indicator: {
       position: "absolute",
       top: 0,
@@ -279,6 +315,7 @@ function makeStyles(T: AppTheme) {
     dnameActive: { color: T.onAccent },
     dnum: { fontFamily: T.display, fontSize: 16, color: T.white, marginTop: 3 },
     dnumActive: { color: T.onAccent },
+    dnumToday: { color: T.accent },
     logDot: {
       width: 4,
       height: 4,
@@ -286,5 +323,6 @@ function makeStyles(T: AppTheme) {
       backgroundColor: T.accent,
       marginTop: 4,
     },
+    logDotActive: { backgroundColor: T.onAccent },
   });
 }

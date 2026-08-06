@@ -317,7 +317,7 @@ export default function WorkoutScreen() {
           throw new Error("Forced start failure (dev test)");
         }
         const session = await startSession.mutateAsync({
-          notes: `${apiPlan?.splitLabel ?? "Workout"} — ${plan.title}`,
+          notes: plan.title,
           exercises: plan.exercises.map((ex) => ({ exerciseName: ex.name })),
         });
 
@@ -558,11 +558,14 @@ export default function WorkoutScreen() {
         exercise={viewingExercise}
         imageUrl={imageForMuscleGroup(viewingExercise.muscleGroup)}
         addedToToday={addedNames.has(viewingExercise.name)}
-        allowRemove={!inProgress}
-        showStart={!inProgress}
+        // Mid-workout library modal (ActiveWorkoutScreen) passes
+        // showStart={false} / allowRemove={false}. Today browse omits
+        // showStart so it defaults to true — previously showStart={!inProgress}
+        // hid Start whenever a Continue session existed.
         addLabel={
           inProgress ? "Add to this workout" : "Add to today's session"
         }
+        allowRemove={!inProgress}
         addPending={inProgress ? liveAddPending : isAddingExtra}
         onBack={() => {
           setView(libraryDetailFrom);

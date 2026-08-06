@@ -18,8 +18,8 @@ const CORNER_ARC_STROKE_DARK = "rgba(255,255,255,0.35)";
 const CORNER_ARC_STROKE_LIGHT = "rgba(255,255,255,1)";
 const CORNER_ARC_STROKE_WIDTH = 1.5;
 
-/** Shared faux-glass tokens — TodaySnapshotRow / ProgressCoachCard /
- * DashboardCalendar stay on one intensity. */
+/** Shared faux-glass tokens — TodaySnapshotRow / ProgressCoachCard
+ * stay on one intensity. */
 export const GLASS_GRADIENT_DARK = [
   "rgba(255,255,255,0.16)",
   "rgba(255,255,255,0.02)",

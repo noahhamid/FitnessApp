@@ -253,7 +253,29 @@ const listSessions = async (c: Context<AppEnv>) => {
 workoutsRouter.post("/", createSession);
 workoutsRouter.get("/", listSessions);
 
+const countQuerySchema = z.object({
+  completed: z.enum(["true", "false"]).optional(),
+});
 
+/** Cheap lifetime count — avoids hauling session rows just to measure length. */
+workoutsRouter.get("/count", async (c) => {
+  const query = parseQuery(c, countQuerySchema);
+  if (!query.success) return query.response;
+
+  const user = getUser(c);
+  const count = await prisma.workoutSession.count({
+    where: {
+      userId: user.id,
+      ...(query.data.completed === "true"
+        ? { completedAt: { not: null } }
+        : query.data.completed === "false"
+          ? { completedAt: null }
+          : {}),
+    },
+  });
+
+  return ok(c, { count });
+});
 
 workoutsRouter.get("/progression", async (c) => {
   const user = getUser(c);
