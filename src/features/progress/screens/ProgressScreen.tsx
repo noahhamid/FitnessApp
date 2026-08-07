@@ -211,8 +211,8 @@ export default function ProgressScreen() {
   return (
     <View style={s.screen}>
       <StatusBar
-        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
-        backgroundColor={T.bg}
+        barStyle="light-content"
+        backgroundColor="#000000"
       />
       <ScrollView
         ref={scrollRef}

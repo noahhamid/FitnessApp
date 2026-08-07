@@ -3,6 +3,7 @@ import {
   Animated,
   Easing,
   Image,
+  Platform,
   StyleSheet,
   View,
 } from "react-native";
@@ -24,10 +25,18 @@ type Props = {
 
 /**
  * Branded in-app splash shown the moment the native splash hides.
- * Fades out when `ready` — no artificial minimum display time.
+ *
+ * Note: In Expo Go (SDK 52+), the *native* splash is always Expo Go's own
+ * loading view / app icon — app.config splash-icon is ignored there. This
+ * component is the branded experience you can actually see in Expo Go;
+ * native splash config only applies in a real build.
+ *
+ * Exit waits for the entrance animation to finish *and* `ready`, so a
+ * fast auth hydrate doesn't wipe the overlay before the mark appears.
  */
 export function AnimatedSplashScreen({ ready, children }: Props) {
   const [exited, setExited] = useState(false);
+  const [entranceDone, setEntranceDone] = useState(false);
   const overlayOpacity = useRef(new Animated.Value(1)).current;
   const markOpacity = useRef(new Animated.Value(0)).current;
   const markScale = useRef(new Animated.Value(0.88)).current;
@@ -39,11 +48,15 @@ export function AnimatedSplashScreen({ ready, children }: Props) {
   const nativeHidden = useRef(false);
   const exitStarted = useRef(false);
 
-  // Hide OS splash as soon as this branded layer is on screen.
+  // Hide OS/Expo splash only after this layer has painted (avoids a flash of
+  // the real app underneath before the overlay is on screen).
   useEffect(() => {
     if (nativeHidden.current) return;
     nativeHidden.current = true;
-    void SplashScreen.hideAsync();
+    const id = requestAnimationFrame(() => {
+      void SplashScreen.hideAsync();
+    });
+    return () => cancelAnimationFrame(id);
   }, []);
 
   // Entrance + breathing loop.
@@ -59,7 +72,9 @@ export function AnimatedSplashScreen({ ready, children }: Props) {
         toValue: 1,
         ...SETTLE,
       }),
-    ]).start();
+    ]).start(({ finished }) => {
+      if (finished) setEntranceDone(true);
+    });
 
     const breathLoop = Animated.loop(
       Animated.sequence([
@@ -129,9 +144,9 @@ export function AnimatedSplashScreen({ ready, children }: Props) {
     };
   }, [breath, glow, markOpacity, markScale, dotA, dotB, dotC]);
 
-  // Exit as soon as the app is actually ready — no fake hold.
+  // Exit only after entrance finished AND app is ready — no extra fake hold.
   useEffect(() => {
-    if (!ready || exitStarted.current || exited) return;
+    if (!ready || !entranceDone || exitStarted.current || exited) return;
     exitStarted.current = true;
     Animated.timing(overlayOpacity, {
       toValue: 0,
@@ -141,14 +156,14 @@ export function AnimatedSplashScreen({ ready, children }: Props) {
     }).start(({ finished }) => {
       if (finished) setExited(true);
     });
-  }, [ready, exited, overlayOpacity]);
+  }, [ready, entranceDone, exited, overlayOpacity]);
 
   return (
     <View style={styles.root}>
       {children}
       {!exited ? (
         <Animated.View
-          pointerEvents="none"
+          pointerEvents="auto"
           style={[styles.overlay, { opacity: overlayOpacity }]}
         >
           <Animated.View
@@ -192,7 +207,8 @@ const styles = StyleSheet.create({
     backgroundColor: NEAR_BLACK,
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 100,
+    zIndex: 999,
+    ...(Platform.OS === "android" ? { elevation: 999 } : null),
   },
   glow: {
     position: "absolute",
@@ -202,8 +218,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(242, 239, 233, 0.12)",
   },
   mark: {
-    width: 128,
-    height: 128,
+    width: 148,
+    height: 148,
   },
   dots: {
     position: "absolute",

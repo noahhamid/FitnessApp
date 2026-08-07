@@ -20,6 +20,7 @@ import {
   macrosForCalorieTarget,
   type GoalId,
 } from "../lib/nutrition-calc";
+import { publicApiBase } from "../lib/public-api-url";
 
 const mealEnum = z.enum(["Breakfast", "Lunch", "Dinner", "Snack"]);
 
@@ -62,14 +63,6 @@ const mealPhotoSchema = z.object({
 });
 
 const mealLogUpdateSchema = mealLogSchema.partial();
-
-function publicApiBase(): string {
-  return (
-    process.env.BETTER_AUTH_URL?.replace(/\/$/, "") ||
-    process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, "") ||
-    "http://127.0.0.1:3000"
-  );
-}
 
 const logDateQuerySchema = z.object({
   date: z

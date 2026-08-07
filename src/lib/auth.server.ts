@@ -36,6 +36,7 @@ export const auth = betterAuth({
     "exp://localhost:8081",
     "exp://192.168.100.243:8081",
     "exp://",
+    "https://potentialpeak-app.vercel.app",
     ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
   ],
 });

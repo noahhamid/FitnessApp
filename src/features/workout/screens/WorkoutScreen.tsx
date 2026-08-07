@@ -512,7 +512,7 @@ export default function WorkoutScreen() {
           pointerEvents="none"
         />
         <StatusBar
-          barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+          barStyle="light-content"
         />
         <ScrollView
           style={s.scroll}
@@ -635,7 +635,7 @@ export default function WorkoutScreen() {
   return (
     <View style={s.screen}>
       <StatusBar
-        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+        barStyle="light-content"
       />
       <ScrollView
         style={s.scroll}

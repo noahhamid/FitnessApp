@@ -252,8 +252,8 @@ export default function ProfileScreen() {
         pointerEvents="none"
       />
       <StatusBar
-        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
-        backgroundColor={T.bg}
+        barStyle="light-content"
+        backgroundColor="#000000"
         translucent={false}
       />
       <View style={styles.screen}>

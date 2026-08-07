@@ -172,8 +172,8 @@ export default function DashboardScreen() {
         pointerEvents="none"
       />
       <StatusBar
-        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
-        backgroundColor={T.bg}
+        barStyle="light-content"
+        backgroundColor="#000000"
         translucent={false}
       />
 

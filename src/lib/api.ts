@@ -1,8 +1,9 @@
 import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
 import { AUTH_STORAGE_PREFIX, authClient } from "./auth-client";
+import { PRODUCTION_API_URL } from "./public-api-url";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? PRODUCTION_API_URL;
 
 type ApiEnvelope<T> = { data: T };
 type ApiFailure = { error: string };
@@ -98,10 +99,6 @@ async function request<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
-  if (!API_URL) {
-    throw new Error("EXPO_PUBLIC_API_URL is not configured");
-  }
-
   const authHeaders = await buildAuthHeaders();
   const response = await fetch(`${API_URL}${path}`, {
     method,
