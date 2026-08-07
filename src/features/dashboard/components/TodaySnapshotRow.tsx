@@ -1,45 +1,76 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Animated,
-  Easing,
-  Image,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ComponentType, useEffect, useMemo, useRef, useState } from "react";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { Flame, Dumbbell, Droplet, LucideProps } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { GlassSurface } from "./GlassSurface";
 
-export type SnapshotKind = "calories" | "workout" | "water";
+type SnapshotKind = "calories" | "workout" | "water";
 
 type Snapshot = {
-  /** Which local asset to show — kept as `icon` so Dashboard call sites stay stable. */
-  icon: SnapshotKind;
+  icon: ComponentType<LucideProps>;
   value: string;
   label: string;
 };
 
-/** Stable keys Dashboard already passes as `SNAPSHOT_ICONS.calories` etc. */
 export const SNAPSHOT_ICONS = {
-  calories: "calories",
-  workout: "workout",
-  water: "water",
-} as const satisfies Record<SnapshotKind, SnapshotKind>;
-
-const ASSET_SOURCE = {
-  calories: require("../../../../assets/images/kcal.png"),
-  workout: require("../../../../assets/images/workout.png"),
-  water: require("../../../../assets/images/water.png"),
-} as const;
-
-const ASSET_URI: Record<SnapshotKind, string> = {
-  calories: Image.resolveAssetSource(ASSET_SOURCE.calories).uri,
-  workout: Image.resolveAssetSource(ASSET_SOURCE.workout).uri,
-  water: Image.resolveAssetSource(ASSET_SOURCE.water).uri,
+  calories: Flame,
+  workout: Dumbbell,
+  water: Droplet,
 };
 
-const ICON_SIZE = 36;
+/**
+ * Semantic icon-well colors — scoped to TodaySnapshotRow only.
+ * Deeper solids on light (hold on white glass); brighter + slightly stronger
+ * tint on dark (read on near-black panels).
+ */
+const SEMANTIC = {
+  calories: {
+    light: {
+      bg: "rgba(232,122,46,0.14)",
+      border: "rgba(232,122,46,0.28)",
+      icon: "#D96B1F",
+    },
+    dark: {
+      bg: "rgba(255,140,60,0.18)",
+      border: "rgba(255,140,60,0.32)",
+      icon: "#FF9B4A",
+    },
+  },
+  water: {
+    light: {
+      bg: "rgba(64,140,230,0.14)",
+      border: "rgba(64,140,230,0.28)",
+      icon: "#2F7FD4",
+    },
+    dark: {
+      bg: "rgba(70,150,255,0.18)",
+      border: "rgba(70,150,255,0.32)",
+      icon: "#6BA8FF",
+    },
+  },
+} as const;
+
+function kindForIcon(Icon: ComponentType<LucideProps>): SnapshotKind {
+  if (Icon === SNAPSHOT_ICONS.calories) return "calories";
+  if (Icon === SNAPSHOT_ICONS.water) return "water";
+  return "workout";
+}
+
+function wellColors(
+  kind: SnapshotKind,
+  resolved: "light" | "dark",
+  T: AppTheme,
+) {
+  if (kind === "workout") {
+    return {
+      bg: T.accentTint,
+      border: T.accentLine,
+      icon: T.accent,
+    };
+  }
+  return SEMANTIC[kind][resolved];
+}
 
 // splits "482" -> ["482", ""], "6/8" -> ["6", "/8"], "Done" -> [null, "Done"]
 function splitLeadingNumber(value: string): [number | null, string] {
@@ -93,18 +124,22 @@ function AnimatedValue({
   );
 }
 
-/** Each asset gets one gesture that matches what it represents. */
-function AssetMotion({
-  kind,
+/** Each icon gets one gesture that matches what it represents. */
+function IconMotion({
+  Icon,
+  color,
   delay,
-  imageStyle,
 }: {
-  kind: SnapshotKind;
+  Icon: ComponentType<LucideProps>;
+  color: string;
   delay: number;
-  imageStyle: ReturnType<typeof makeStyles>["asset"];
 }) {
   const anim = useRef(new Animated.Value(0)).current;
   const flicker = useRef(new Animated.Value(0)).current;
+
+  const isFlame = Icon === SNAPSHOT_ICONS.calories;
+  const isDumbbell = Icon === SNAPSHOT_ICONS.workout;
+  const isWater = Icon === SNAPSHOT_ICONS.water;
 
   useEffect(() => {
     const entrance = Animated.timing(anim, {
@@ -117,7 +152,7 @@ function AssetMotion({
     entrance.start();
 
     let loop: Animated.CompositeAnimation | undefined;
-    if (kind === "calories") {
+    if (isFlame) {
       loop = Animated.loop(
         Animated.sequence([
           Animated.timing(flicker, {
@@ -141,23 +176,23 @@ function AssetMotion({
       entrance.stop();
       loop?.stop();
     };
-  }, [delay, kind]);
+  }, [delay]);
 
   let transform: any[] = [{ scale: anim }];
 
-  if (kind === "workout") {
+  if (isDumbbell) {
     const rotate = anim.interpolate({
       inputRange: [0, 1],
       outputRange: ["-22deg", "0deg"],
     });
     transform = [{ scale: anim }, { rotate }];
-  } else if (kind === "water") {
+  } else if (isWater) {
     const translateY = anim.interpolate({
       inputRange: [0, 1],
       outputRange: [-6, 0],
     });
     transform = [{ scale: anim }, { translateY }];
-  } else if (kind === "calories") {
+  } else if (isFlame) {
     const flickerRotate = flicker.interpolate({
       inputRange: [0, 1],
       outputRange: ["-4deg", "4deg"],
@@ -174,30 +209,33 @@ function AssetMotion({
 
   return (
     <Animated.View style={{ opacity: anim, transform }}>
-      <Image
-        source={{ uri: ASSET_URI[kind] }}
-        style={imageStyle}
-        resizeMode="cover"
-        accessibilityIgnoresInvertColors
-      />
+      <Icon size={16} color={color} strokeWidth={2} />
     </Animated.View>
   );
 }
 
 export function TodaySnapshotRow({ items }: { items: Snapshot[] }) {
-  const { styles } = useThemedStyles(makeStyles);
+  const { T, styles, resolved } = useThemedStyles(makeStyles);
 
   return (
     <View style={styles.row}>
       {items.map((item, i) => {
         const delay = i * 90;
+        const kind = kindForIcon(item.icon);
+        const colors = wellColors(kind, resolved, T);
         return (
           <GlassSurface key={i} style={styles.card}>
-            <AssetMotion
-              kind={item.icon}
-              delay={delay}
-              imageStyle={styles.asset}
-            />
+            <View
+              style={[
+                styles.iconWell,
+                {
+                  backgroundColor: colors.bg,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <IconMotion Icon={item.icon} color={colors.icon} delay={delay} />
+            </View>
             <AnimatedValue
               value={item.value}
               delay={delay + 120}
@@ -221,11 +259,13 @@ function makeStyles(T: AppTheme) {
       alignItems: "center",
       gap: 8,
     },
-    // Opaque full-bleed assets — rounded square, no tinted well behind.
-    asset: {
-      width: ICON_SIZE,
-      height: ICON_SIZE,
-      borderRadius: T.radius.sm,
+    iconWell: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      borderWidth: 0.5,
+      alignItems: "center",
+      justifyContent: "center",
       zIndex: 1,
     },
     value: {

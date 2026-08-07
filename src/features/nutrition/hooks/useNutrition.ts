@@ -25,6 +25,10 @@ import {
   upsertNutritionGoals,
   applyAdaptiveSuggestion,
 } from "../services/nutrition.service";
+import {
+  cancelReminder,
+  mealTypeToSlot,
+} from "@/src/lib/meal-workout-reminders";
 
 const KEYS = {
   goals: ["nutrition", "goals"] as const,
@@ -95,6 +99,8 @@ export function useAddMeal() {
       qc.invalidateQueries({ queryKey: ["nutrition", "weekly"] });
       qc.invalidateQueries({ queryKey: ["nutrition", "log-range"] });
       qc.invalidateQueries({ queryKey: ["week-overview", "meals"] });
+      // Drop the matching local reminder so a logged meal never nags.
+      void cancelReminder(mealTypeToSlot(vars.meal), vars.log_date);
     },
   });
 }

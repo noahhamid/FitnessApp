@@ -1,3 +1,6 @@
+import { randomBytes } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { Hono } from "hono";
 import { z } from "zod";
 import { parseLogDate, todayLogDate } from "../lib/dates";
@@ -50,7 +53,23 @@ const mealLogSchema = z.object({
   source: z.enum(["manual", "scan"]).default("manual"),
 });
 
+const mealPhotoSchema = z.object({
+  base64: z.string().trim().min(1),
+  mimeType: z
+    .string()
+    .trim()
+    .regex(/^image\/(jpeg|jpg|png|webp)$/i, "mimeType must be image/jpeg|png|webp"),
+});
+
 const mealLogUpdateSchema = mealLogSchema.partial();
+
+function publicApiBase(): string {
+  return (
+    process.env.BETTER_AUTH_URL?.replace(/\/$/, "") ||
+    process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, "") ||
+    "http://127.0.0.1:3000"
+  );
+}
 
 const logDateQuerySchema = z.object({
   date: z
@@ -169,6 +188,38 @@ nutritionRouter.get("/log", async (c) => {
   });
 
   return ok(c, meals.map(serializeMealLog));
+});
+
+/**
+ * Persist a meal-scan photo to disk and return a fetchable URL for MealLog.imageUrl.
+ * No cloud storage in this app — files live under /uploads/meals and are served
+ * statically from the API host (unguessable filenames; GET is public so <Image>
+ * can load without auth headers).
+ */
+nutritionRouter.post("/meal-photo", async (c) => {
+  const parsed = await parseJson(c, mealPhotoSchema);
+  if (!parsed.success) return parsed.response;
+
+  const user = getUser(c);
+  const mime = parsed.data.mimeType.toLowerCase();
+  const ext =
+    mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg";
+  const filename = `${user.id.slice(0, 8)}-${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
+  const dir = path.join(process.cwd(), "uploads", "meals");
+
+  try {
+    await mkdir(dir, { recursive: true });
+    await writeFile(
+      path.join(dir, filename),
+      Buffer.from(parsed.data.base64, "base64"),
+    );
+  } catch (e) {
+    console.error("[meal-photo] write failed:", e);
+    return err(c, "Could not save photo", 500);
+  }
+
+  const url = `${publicApiBase()}/uploads/meals/${filename}`;
+  return ok(c, { url }, 201);
 });
 
 nutritionRouter.post("/log", async (c) => {

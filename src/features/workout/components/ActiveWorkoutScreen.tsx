@@ -13,6 +13,7 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -38,7 +39,8 @@ import {
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { WorkoutPlan, type Exercise } from "../data/workouts";
-import { T } from "@/src/theme";
+import { T, type AppTheme } from "@/src/theme";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
 import { ExerciseLibrarySection } from "./ExerciseLibrarySection";
 import { ExerciseDetailCard } from "./ExerciseDetailCard";
 import { useAddToLiveSession } from "../hooks/useAddToLiveSession";
@@ -49,6 +51,13 @@ import {
 import { topInset } from "@/src/lib/safe-area";
 import { imageForMuscleGroup } from "@/src/lib/workout-plan-adapter";
 import type { LibraryExercise } from "../hooks/useExerciseLibrary";
+
+/** Hero photo band — image is clipped here, not full-screen absoluteFill.
+ *  Panel starts just below with a slight overlap so the sheet sits on the
+ *  faded edge of the photo (not fighting a full-bleed image behind content). */
+const WIN_H = Dimensions.get("window").height;
+const HERO_BAND_H = Math.round(WIN_H * 0.3);
+const PANEL_TOP = HERO_BAND_H - 28;
 
 type Phase = "exercise" | "rest" | "done";
 /** list = home base; focus = logging one exercise (manual tap or auto-play). */
@@ -215,6 +224,8 @@ function LibraryModalBody({
   addingName: string | null;
   addError: string | null;
 }) {
+  // Modal portal — useThemedStyles (not static light `T`) so dark mode applies.
+  const { T: theme, styles: lib } = useThemedStyles(makeLibraryStyles);
   const insets = useSafeAreaInsets();
   const safeTop = topInset(insets.top);
   const [viewing, setViewing] = useState<LibraryExercise | null>(null);
@@ -239,17 +250,17 @@ function LibraryModalBody({
   }
 
   return (
-    <View style={[s.libraryModal, { paddingTop: safeTop + 8 }]}>
-      <View style={s.libraryModalHeader}>
-        <Text style={s.libraryModalTitle}>Add to workout</Text>
+    <View style={[lib.root, { paddingTop: safeTop + 8 }]}>
+      <View style={lib.header}>
+        <Text style={lib.title}>Add to workout</Text>
         <Pressable
           onPress={onClose}
           hitSlop={8}
-          style={s.libraryCloseBtn}
+          style={lib.closeBtn}
           accessibilityRole="button"
           accessibilityLabel="Close library"
         >
-          <X size={18} color={T.white} strokeWidth={2.2} />
+          <X size={18} color={theme.text} strokeWidth={2.2} />
         </Pressable>
       </View>
       <ScrollView
@@ -262,12 +273,55 @@ function LibraryModalBody({
       >
         <ExerciseLibrarySection onView={(ex) => setViewing(ex)} />
         {addingName && (
-          <Text style={s.addingHint}>Adding {addingName}…</Text>
+          <Text style={lib.addingHint}>Adding {addingName}…</Text>
         )}
-        {addError && <Text style={s.addErrorText}>{addError}</Text>}
+        {addError && <Text style={lib.addErrorText}>{addError}</Text>}
       </ScrollView>
     </View>
   );
+}
+
+function makeLibraryStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: theme.bg },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 20,
+      paddingBottom: 8,
+    },
+    title: {
+      fontFamily: theme.displayBold,
+      fontSize: 20,
+      color: theme.text,
+      letterSpacing: -0.3,
+    },
+    closeBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: theme.bgElevated,
+      borderWidth: 0.5,
+      borderColor: theme.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    addingHint: {
+      fontFamily: theme.bodyMed,
+      fontSize: 12,
+      color: theme.muted,
+      textAlign: "center",
+      marginTop: 12,
+    },
+    addErrorText: {
+      fontFamily: theme.bodyMed,
+      fontSize: 12,
+      color: theme.badge,
+      textAlign: "center",
+      marginTop: 8,
+    },
+  });
 }
 
 const Stepper = ({
@@ -341,7 +395,6 @@ export function ActiveWorkoutScreen({
   const deleteSession = useDeleteWorkoutSession();
   const updateSessionExercise = useUpdateSessionExercise();
   const [libraryOpen, setLibraryOpen] = useState(false);
-  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const sessionReady = !!sessionId && !sessionCreating && !sessionCreateError;
 
   const guardSessionReady = (actionLabel: string): boolean => {
@@ -364,29 +417,6 @@ export function ActiveWorkoutScreen({
       `Hang on a moment — ${actionLabel} will be available once your workout is saved.`,
     );
     return false;
-  };
-
-  const dismissCancelConfirm = () => setCancelConfirmOpen(false);
-
-  const confirmCancelWorkout = () => {
-    if (deleteSession.isPending) return;
-    setCancelConfirmOpen(false);
-    // No server row yet — just leave.
-    if (!sessionId) {
-      onClose();
-      return;
-    }
-    deleteSession.mutate(sessionId, {
-      onSuccess: () => onClose(),
-      onError: (err) => {
-        Alert.alert(
-          "Couldn't cancel workout",
-          err instanceof Error
-            ? err.message
-            : "Check your connection and try again.",
-        );
-      },
-    });
   };
 
   const [localExercises, setLocalExercises] = useState<Exercise[]>(
@@ -516,17 +546,19 @@ export function ActiveWorkoutScreen({
 
   const requestCancelWorkout = () => {
     if (deleteSession.isPending) return;
-    // Stage 1 persists sets mid-workout — leave the session for Resume /
-    // ContinueWorkoutCard instead of deleting whenever anything is logged.
+    // Logged progress → leave session resumable (ContinueWorkoutCard).
     const hasLocalProgress =
       Object.values(setsDoneRef.current).some((n) => n > 0) ||
       logsRef.current.length > 0 ||
       exercisesRef.current.some((e) => (e.loggedSets?.length ?? 0) > 0);
-    if (hasLocalProgress) {
+    if (hasLocalProgress || !sessionId) {
       onClose();
       return;
     }
-    setCancelConfirmOpen(true);
+    // Zero progress: silent DELETE, then leave — no confirmation dialog.
+    deleteSession.mutate(sessionId, {
+      onSettled: () => onClose(),
+    });
   };
 
   useEffect(() => {
@@ -544,8 +576,6 @@ export function ActiveWorkoutScreen({
   const btnScale = useRef(new Animated.Value(1)).current;
   const pauseScale = useRef(new Animated.Value(1)).current;
   const setNumScale = useRef(new Animated.Value(1)).current;
-  const restContentOpacity = useRef(new Animated.Value(0)).current;
-  const exContentOpacity = useRef(new Animated.Value(1)).current;
   const barWidth = useRef(new Animated.Value(0)).current;
   const doneOpacity = useRef(new Animated.Value(0)).current;
   const doneScale = useRef(new Animated.Value(0.6)).current;
@@ -611,22 +641,6 @@ export function ActiveWorkoutScreen({
     const t = setTimeout(() => setSecsLeft((n) => (n ?? 1) - 1), 1000);
     return () => clearTimeout(t);
   }, [secsLeft, paused, phase, selected, screenMode]);
-
-  useEffect(() => {
-    const toRest = phase === "rest" && screenMode === "focus";
-    Animated.parallel([
-      Animated.timing(restContentOpacity, {
-        toValue: toRest ? 1 : 0,
-        duration: 320,
-        useNativeDriver: false,
-      }),
-      Animated.timing(exContentOpacity, {
-        toValue: toRest ? 0 : 1,
-        duration: 320,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, [phase, screenMode]);
 
   useEffect(() => {
     exFade.setValue(0);
@@ -913,23 +927,24 @@ export function ActiveWorkoutScreen({
 
   return (
     <View style={s.screen}>
-      <Animated.Image
-        source={{ uri: heroImage }}
-        style={[s.bgImage, { transform: [{ scale: imgScale }] }]}
-        resizeMode="cover"
-      />
-
-      <LinearGradient
-        colors={[
-          "rgba(8,9,11,0.70)",
-          "rgba(8,9,11,0.12)",
-          "rgba(8,9,11,0.00)",
-          "rgba(8,9,11,0.62)",
-        ]}
-        locations={[0, 0.26, 0.58, 1]}
-        style={StyleSheet.absoluteFillObject}
-        pointerEvents="none"
-      />
+      {/* Hero photo band only — not full-screen; panel sits below on solid dark. */}
+      <View style={[s.heroBand, { height: HERO_BAND_H }]} pointerEvents="none">
+        <Animated.Image
+          source={{ uri: heroImage }}
+          style={[s.bgImage, { transform: [{ scale: imgScale }] }]}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={[
+            "rgba(8,9,11,0.55)",
+            "rgba(8,9,11,0.15)",
+            "rgba(8,9,11,0.55)",
+            T.darkBg,
+          ]}
+          locations={[0, 0.35, 0.72, 1]}
+          style={StyleSheet.absoluteFillObject}
+        />
+      </View>
 
       <View
         style={[s.topContent, { paddingTop: safeTop + 8 }]}
@@ -1027,7 +1042,10 @@ export function ActiveWorkoutScreen({
       </View>
 
       <Animated.View
-        style={[s.panelOuter, { transform: [{ translateY: panelY }] }]}
+        style={[
+          s.panelOuter,
+          { top: PANEL_TOP, transform: [{ translateY: panelY }] },
+        ]}
       >
         <View style={[s.panel, { paddingBottom: insets.bottom + 18 }]}>
           <ScrollView
@@ -1166,9 +1184,7 @@ export function ActiveWorkoutScreen({
 
             {/* ── FOCUS (manual or auto logging) ───────────────────────── */}
             {screenMode === "focus" && selected && phase === "rest" && (
-              <Animated.View
-                style={[s.restBlock, { opacity: restContentOpacity }]}
-              >
+              <View style={s.restBlock}>
                 <Text style={s.restEyebrow}>Rest</Text>
                 <CountdownRing
                   left={secsLeft ?? 0}
@@ -1191,21 +1207,19 @@ export function ActiveWorkoutScreen({
                 >
                   <SkipForward
                     size={13}
-                    color={T.onDark}
+                    color="#FFFFFF"
                     strokeWidth={2.4}
                   />
                   <Text style={s.skipText}>Skip rest</Text>
                 </TouchableOpacity>
-              </Animated.View>
+              </View>
             )}
 
             {screenMode === "focus" &&
               selected &&
               phase === "exercise" &&
               !selectedComplete && (
-                <Animated.View
-                  style={[s.activeBlock, { opacity: exContentOpacity }]}
-                >
+                <View style={s.activeBlock}>
                   {playMode === "auto" && (
                     <Text style={s.autoBadge}>AUTO</Text>
                   )}
@@ -1317,7 +1331,7 @@ export function ActiveWorkoutScreen({
                       Back to exercise list
                     </Text>
                   </TouchableOpacity>
-                </Animated.View>
+                </View>
               )}
           </ScrollView>
         </View>
@@ -1356,63 +1370,26 @@ export function ActiveWorkoutScreen({
           />
         </SafeAreaProvider>
       </Modal>
-
-      {/* Same Modal + dimmed-backdrop pattern as WeightLogSheet; panel uses
-          ActiveWorkout immersive dark tokens (T.darkGlass / darkGlassBorder). */}
-      <Modal
-        visible={cancelConfirmOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={dismissCancelConfirm}
-        statusBarTranslucent
-      >
-        <View style={s.cancelModalRoot}>
-          <Pressable
-            style={s.cancelBackdrop}
-            onPress={dismissCancelConfirm}
-            accessibilityRole="button"
-            accessibilityLabel="Dismiss"
-          />
-          <View style={s.cancelCard} accessibilityViewIsModal>
-            <Text style={s.cancelTitle}>Cancel this workout?</Text>
-            <Text style={s.cancelBody}>Your progress won't be saved.</Text>
-            <View style={s.cancelActions}>
-              <TouchableOpacity
-                style={s.cancelKeepBtn}
-                onPress={dismissCancelConfirm}
-                activeOpacity={0.9}
-                accessibilityRole="button"
-                accessibilityLabel="Keep going"
-              >
-                <Text style={s.cancelKeepText}>Keep going</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={s.cancelDestroyBtn}
-                onPress={confirmCancelWorkout}
-                disabled={deleteSession.isPending}
-                activeOpacity={0.9}
-                accessibilityRole="button"
-                accessibilityLabel="Cancel workout"
-              >
-                {deleteSession.isPending ? (
-                  <ActivityIndicator size="small" color="#FFB4B4" />
-                ) : (
-                  <Text style={s.cancelDestroyText}>Cancel workout</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: T.darkBg },
+  heroBand: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    overflow: "hidden",
+  },
   bgImage: { ...StyleSheet.absoluteFillObject },
 
-  topContent: { paddingHorizontal: 18, gap: 12 },
+  topContent: {
+    paddingHorizontal: 18,
+    gap: 12,
+    zIndex: 2,
+  },
   topBar: { flexDirection: "row", alignItems: "center", gap: 10 },
   setupErrorBanner: {
     backgroundColor: "rgba(180,60,60,0.35)",
@@ -1428,72 +1405,6 @@ const s = StyleSheet.create({
     fontSize: 12.5,
   },
   actionDisabled: { opacity: 0.45 },
-  cancelModalRoot: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 28,
-  },
-  cancelBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(10,10,10,0.72)",
-  },
-  cancelCard: {
-    backgroundColor: T.darkPanel,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: T.darkGlassBorder,
-    paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 18,
-    gap: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 12,
-  },
-  cancelTitle: {
-    color: T.onDark,
-    fontFamily: T.displaySemi,
-    fontSize: 18,
-    letterSpacing: -0.3,
-  },
-  cancelBody: {
-    color: T.onDarkMuted,
-    fontFamily: T.bodyMed,
-    fontSize: 13.5,
-    lineHeight: 19,
-    marginBottom: 10,
-  },
-  cancelActions: { gap: 10 },
-  cancelKeepBtn: {
-    height: 48,
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: T.darkGlass,
-    borderWidth: 1,
-    borderColor: T.darkGlassBorder,
-  },
-  cancelKeepText: {
-    color: T.onDark,
-    fontFamily: T.bodyBold,
-    fontSize: 14.5,
-  },
-  cancelDestroyBtn: {
-    height: 48,
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(180,60,60,0.28)",
-    borderWidth: 1,
-    borderColor: "rgba(255,120,120,0.4)",
-  },
-  cancelDestroyText: {
-    color: "#FFB4B4",
-    fontFamily: T.bodyBold,
-    fontSize: 14.5,
-  },
   iconBtn: {
     width: 42,
     height: 42,
@@ -1565,7 +1476,8 @@ const s = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    top: "38%",
+    // `top` set inline from PANEL_TOP (hero band − overlap)
+    zIndex: 3,
   },
   panel: {
     flex: 1,
@@ -1615,30 +1527,6 @@ const s = StyleSheet.create({
     fontSize: 12,
   },
   exList: { gap: 8 },
-  libraryModal: { flex: 1, backgroundColor: T.bg },
-  libraryModalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 8,
-  },
-  libraryModalTitle: {
-    fontFamily: T.displayBold,
-    fontSize: 20,
-    color: T.white,
-    letterSpacing: -0.3,
-  },
-  libraryCloseBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: T.glass,
-    borderWidth: 0.5,
-    borderColor: T.glassBorder,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   addingHint: {
     fontFamily: T.bodyMed,
     fontSize: 12,
@@ -1891,14 +1779,19 @@ const s = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     alignSelf: "center",
-    backgroundColor: T.darkGlass,
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderWidth: 1,
-    borderColor: T.darkGlassBorder,
+    borderColor: "rgba(255,255,255,0.22)",
     borderRadius: 999,
     paddingVertical: 10,
     paddingHorizontal: 20,
   },
-  skipText: { color: T.onDark, fontFamily: T.bodySemi, fontSize: 12.5 },
+  // Explicit white — same family as T.onDark; avoids low-contrast on darkGlass.
+  skipText: {
+    color: "#FFFFFF",
+    fontFamily: T.bodySemi,
+    fontSize: 12.5,
+  },
 
   finishBtn: {
     flexDirection: "row",

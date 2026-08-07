@@ -25,18 +25,62 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { authClient } from "@/src/lib/auth-client";
-import { AppThemeProvider } from "@/src/context/ThemeContext";
+import { AppThemeProvider, useTheme } from "@/src/context/ThemeContext";
+import {
+  useAuthHydration,
+  useAuthStore,
+} from "@/src/features/auth/hooks/useAuth";
+import { AnimatedSplashScreen } from "@/src/components/AnimatedSplashScreen";
 
 import * as WebBrowser from "expo-web-browser";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+function useAuthStoreHydrated(): boolean {
+  const [hydrated, setHydrated] = useState(() =>
+    useAuthStore.persist.hasHydrated(),
+  );
+  useEffect(() => {
+    if (hydrated) return;
+    const unsub = useAuthStore.persist.onFinishHydration(() => {
+      setHydrated(true);
+    });
+    // In case hydration finished between first render and effect.
+    if (useAuthStore.persist.hasHydrated()) setHydrated(true);
+    return unsub;
+  }, [hydrated]);
+  return hydrated;
+}
+
+/** Inside providers — waits on theme + auth, then releases the branded splash. */
+function AppWithBrandedSplash() {
+  const fontsReady = true; // fonts already gated before this mounts
+  const { hydrated: themeHydrated } = useTheme();
+  const authHydrated = useAuthHydration();
+  const storeHydrated = useAuthStoreHydrated();
+  const ready = fontsReady && themeHydrated && authHydrated && storeHydrated;
+
+  return (
+    <AnimatedSplashScreen ready={ready}>
+      <ThemeProvider value={DarkTheme}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(app)" />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <StatusBar style="light" />
+      </ThemeProvider>
+    </AnimatedSplashScreen>
+  );
+}
 
 export default function RootLayout() {
   // Keys must match fontFamily strings in src/theme.ts (and legacy
@@ -59,10 +103,12 @@ export default function RootLayout() {
     "PlusJakartaSans-SemiBold": PlusJakartaSans_600SemiBold,
     "PlusJakartaSans-Bold": PlusJakartaSans_700Bold,
   });
+
   useEffect(() => {
     const cookie = authClient.getCookie?.();
     console.log("STORED SESSION COOKIE ON APP LOAD:", cookie);
   }, []);
+
   useEffect(() => {
     WebBrowser.warmUpAsync();
     return () => {
@@ -70,25 +116,15 @@ export default function RootLayout() {
     };
   }, []);
 
-  useEffect(() => {
-    if (loaded || err) SplashScreen.hideAsync();
-  }, [loaded, err]);
-
+  // Keep the native splash up until fonts resolve — then hand off to the
+  // branded AnimatedSplashScreen (which calls SplashScreen.hideAsync on mount).
   if (!loaded && !err) return null;
 
   return (
     <SafeAreaProvider>
       <AppThemeProvider>
         <QueryClientProvider client={queryClient}>
-          <ThemeProvider value={DarkTheme}>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(app)" />
-              <Stack.Screen name="+not-found" />
-            </Stack>
-            <StatusBar style="light" />
-          </ThemeProvider>
+          <AppWithBrandedSplash />
         </QueryClientProvider>
       </AppThemeProvider>
     </SafeAreaProvider>

@@ -28,6 +28,7 @@ import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
 import { AppearanceModeControl } from "@/src/features/profile/components/AppearanceModeControl";
+import { PageHeader } from "@/src/components/PageHeader";
 import { weekDatesFor } from "@/src/lib/week-days";
 
 const SUPPORT_EMAIL = "support@fitnessapp.com";
@@ -261,52 +262,51 @@ export default function ProfileScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <View style={styles.headerLabelRow}>
-                <Ionicons
-                  name="shield-checkmark-outline"
-                  size={11}
-                  color={T.muted}
-                />
-                <Text style={styles.headerLabelText}>ATHLETE PROFILE</Text>
-              </View>
-              <Text style={styles.headerGreeting}>Manage your account,</Text>
-              <Text style={styles.headerHero}>ACCOUNT.</Text>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.editBtn, editMode && styles.editBtnActive]}
-              onPress={() =>
-                editMode ? void handleSaveProfile() : setEditMode(true)
-              }
-              disabled={saveState === "saving"}
-              activeOpacity={0.8}
-            >
-              {saveState === "saving" ? (
-                <ActivityIndicator
-                  size="small"
-                  color={T.onAccent}
-                  style={{ width: 40 }}
-                />
-              ) : saveState === "saved" ? (
-                <>
-                  <Ionicons name="checkmark" size={13} color={T.onAccent} />
-                  <Text style={styles.editBtnActiveText}>Saved</Text>
-                </>
-              ) : editMode ? (
-                <>
-                  <Ionicons name="checkmark" size={13} color={T.onAccent} />
-                  <Text style={styles.editBtnActiveText}>Save</Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="pencil-outline" size={12} color={T.accent} />
-                  <Text style={styles.editBtnText}>Edit</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+          <PageHeader
+            eyebrow="Athlete profile"
+            eyebrowLeading={
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={11}
+                color={T.muted}
+              />
+            }
+            subtitle="Manage your account,"
+            title="Account"
+            action={
+              <TouchableOpacity
+                style={[styles.editBtn, editMode && styles.editBtnActive]}
+                onPress={() =>
+                  editMode ? void handleSaveProfile() : setEditMode(true)
+                }
+                disabled={saveState === "saving"}
+                activeOpacity={0.8}
+              >
+                {saveState === "saving" ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={T.onAccent}
+                    style={{ width: 40 }}
+                  />
+                ) : saveState === "saved" ? (
+                  <>
+                    <Ionicons name="checkmark" size={13} color={T.onAccent} />
+                    <Text style={styles.editBtnActiveText}>Saved</Text>
+                  </>
+                ) : editMode ? (
+                  <>
+                    <Ionicons name="checkmark" size={13} color={T.onAccent} />
+                    <Text style={styles.editBtnActiveText}>Save</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="pencil-outline" size={12} color={T.accent} />
+                    <Text style={styles.editBtnText}>Edit</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            }
+          />
 
           {loading && (
             <View style={{ paddingBottom: 8, paddingLeft: 16 }}>
@@ -562,43 +562,11 @@ function makeStyles(T: AppTheme) {
       width: "100%",
     },
     scroll: {
-      paddingHorizontal: 16,
+      paddingHorizontal: T.space.xl,
       paddingTop: 8,
       paddingBottom: 32,
     },
 
-    header: {
-      flexDirection: "row",
-      alignItems: "flex-end",
-      justifyContent: "space-between",
-      paddingTop: 6,
-      paddingBottom: 20,
-    },
-    headerLeft: { gap: 2 },
-    headerLabelRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 5,
-      marginBottom: 4,
-    },
-    headerLabelText: {
-      fontFamily: T.bodySemi,
-      fontSize: 11,
-      color: T.muted,
-      letterSpacing: 1.2,
-    },
-    headerGreeting: {
-      fontFamily: T.body,
-      fontSize: 13,
-      color: T.muted,
-    },
-    headerHero: {
-      fontFamily: T.displayExtraBold,
-      fontSize: 34,
-      color: T.white,
-      lineHeight: 36,
-      letterSpacing: -0.4,
-    },
     editBtn: {
       flexDirection: "row",
       alignItems: "center",

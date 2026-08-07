@@ -21,7 +21,7 @@ export function WelcomeSlides() {
   return (
     <View style={s.root}>
       <ImageBackground
-        source={require("../../../../assets/images/welcome-hero.jpg")}
+        source={require("../../../../assets/images/welcome-hero.jfif")}
         style={s.bg}
         resizeMode="cover"
       >

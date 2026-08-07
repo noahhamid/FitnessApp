@@ -12,8 +12,12 @@ import {
   ViewStyle,
   Image,
   Alert,
+  Modal,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -168,7 +172,7 @@ export default function WorkoutScreen() {
   const { data: apiPlan, isLoading, error } = useWorkoutPlan();
   const { data: lastPerformance } = useLastPerformance();
   const { data: exerciseLibrary } = useExerciseLibrary();
-  const { inProgress } = useInProgressSession();
+  const { inProgress, isLoading: inProgressLoading } = useInProgressSession();
   const { streakDays } = useWorkoutStreak(!!inProgress);
   const { data: personalRecords } = usePersonalRecords();
   const startSession = useStartWorkoutSession();
@@ -369,6 +373,8 @@ export default function WorkoutScreen() {
   /** Instant UI entry — session POST runs in the background. */
   const handleStart = (plan: WorkoutPlan) => {
     if (view === "active" && sessionCreating) return;
+    // Never create while in-progress status is unknown, or when Continue exists.
+    if (inProgressLoading || inProgress) return;
 
     const gen = ++startGenRef.current;
     pendingStartPlanRef.current = plan;
@@ -457,27 +463,42 @@ export default function WorkoutScreen() {
   }
 
   // ── Active workout screen ────────────────────────────────────────────────
-  // Render as soon as view flips — sessionId may still be null while creating.
+  // Full-screen Modal so the floating tab pill (sibling overlay in tabs
+  // layout) cannot sit on top of the immersive workout UI.
   if (view === "active" && selectedDay) {
     return (
-      <ActiveWorkoutScreen
-        plan={selectedDay}
-        sessionId={activeSessionId}
-        sessionCreating={sessionCreating}
-        sessionCreateError={sessionCreateError}
-        onRetryCreateSession={handleRetryCreateSession}
-        initialMode={entryMode}
-        exercises={activeExercises}
-        onExercisesChange={setActiveExercises}
-        onAppendExercise={(ex) =>
-          setActiveExercises((prev) =>
-            prev.some((e) => e.name === ex.name) ? prev : [...prev, ex],
-          )
-        }
-        onClose={leaveActiveWorkout}
-        onFinish={handleFinish}
-        lastPerformance={lastPerformance}
-      />
+      <Modal
+        visible
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => {
+          /* X / focus-back inside ActiveWorkout own the exit path
+             (silent delete vs resume). Hardware back → leave resumable. */
+          leaveActiveWorkout();
+        }}
+        statusBarTranslucent
+      >
+        <SafeAreaProvider>
+          <ActiveWorkoutScreen
+            plan={selectedDay}
+            sessionId={activeSessionId}
+            sessionCreating={sessionCreating}
+            sessionCreateError={sessionCreateError}
+            onRetryCreateSession={handleRetryCreateSession}
+            initialMode={entryMode}
+            exercises={activeExercises}
+            onExercisesChange={setActiveExercises}
+            onAppendExercise={(ex) =>
+              setActiveExercises((prev) =>
+                prev.some((e) => e.name === ex.name) ? prev : [...prev, ex],
+              )
+            }
+            onClose={leaveActiveWorkout}
+            onFinish={handleFinish}
+            lastPerformance={lastPerformance}
+          />
+        </SafeAreaProvider>
+      </Modal>
     );
   }
 
@@ -661,7 +682,21 @@ export default function WorkoutScreen() {
           </View>
         )}
 
-        {inProgress && (
+        {/* Three states for today's card: loading → skeleton (no Start);
+            loaded + in progress → Continue; loaded + idle → Start/rest.
+            Start must not mount until in-progress is definitively known. */}
+        {apiPlan && inProgressLoading && (
+          <View style={s.workoutCardSkeleton} accessibilityLabel="Loading workout">
+            <View style={s.workoutCardSkeletonHero} />
+            <View style={s.workoutCardSkeletonBody}>
+              <View style={s.workoutCardSkeletonLineWide} />
+              <View style={s.workoutCardSkeletonLine} />
+              <View style={s.workoutCardSkeletonCta} />
+            </View>
+          </View>
+        )}
+
+        {!inProgressLoading && inProgress && (
           <>
             <Reveal delay={100} style={{ marginBottom: 12 }}>
               <ContinueWorkoutCard
@@ -686,7 +721,7 @@ export default function WorkoutScreen() {
           </>
         )}
 
-        {apiPlan && (
+        {apiPlan && !inProgressLoading && (
           <>
             {!inProgress && isRestDay && (
               <>
@@ -772,6 +807,40 @@ function makeStyles(T: AppTheme) {
   centerState: { alignItems: "center", paddingVertical: 48, gap: 6 },
   emptyTitle: { color: T.text, fontFamily: T.bodyBold, fontSize: 15 },
   emptySubtitle: { color: T.faint, fontSize: 12, textAlign: "center" },
+  workoutCardSkeleton: {
+    marginBottom: 16,
+    borderRadius: T.radius.xl,
+    overflow: "hidden",
+    backgroundColor: T.bgElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: T.border,
+  },
+  workoutCardSkeletonHero: {
+    height: 156,
+    backgroundColor: T.accentTint,
+  },
+  workoutCardSkeletonBody: {
+    padding: 16,
+    gap: 10,
+  },
+  workoutCardSkeletonLineWide: {
+    height: 16,
+    width: "72%",
+    borderRadius: 8,
+    backgroundColor: T.accentTint,
+  },
+  workoutCardSkeletonLine: {
+    height: 12,
+    width: "48%",
+    borderRadius: 6,
+    backgroundColor: T.accentTint,
+  },
+  workoutCardSkeletonCta: {
+    marginTop: 6,
+    height: 40,
+    borderRadius: 999,
+    backgroundColor: T.accentTint,
+  },
   seeFullPlanWrap: { alignItems: "center", marginTop: 20 },
   seeFullPlanText: {
     color: T.accent,

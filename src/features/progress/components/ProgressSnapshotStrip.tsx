@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { Flame } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
+import { StreakPill } from "@/src/components/StreakPill";
 
 type Props = {
   streakDays: number;
@@ -36,7 +36,7 @@ export function ProgressSnapshotStrip({
   sessionsThisWeek,
   weightDeltaKg,
 }: Props) {
-  const { T, styles: s } = useThemedStyles(makeStyles);
+  const { styles: s } = useThemedStyles(makeStyles);
 
   const weightText =
     weightDeltaKg == null
@@ -47,9 +47,9 @@ export function ProgressSnapshotStrip({
     <View style={s.wrap}>
       <Text style={s.eyebrow}>This week</Text>
       <View style={s.row}>
+        {/* Streak tile keeps the 3-col strip; shared StreakPill is the value. */}
         <SnapshotTile label="Streak">
-          <Flame size={14} color={T.accent} strokeWidth={2.4} />
-          <Text style={s.tileValue}>{streakDays}</Text>
+          <StreakPill days={streakDays} style={s.streakInTile} />
         </SnapshotTile>
 
         <SnapshotTile label="Sessions">
@@ -107,9 +107,15 @@ function makeStyles(T: AppTheme) {
     },
     tileValueRow: {
       flexDirection: "row",
-      alignItems: "baseline",
+      alignItems: "center",
       gap: 4,
       zIndex: 1,
+    },
+    /** Pill sits inside the glass tile — slightly tighter so 3 cols stay even. */
+    streakInTile: {
+      paddingVertical: 5,
+      paddingHorizontal: 8,
+      alignSelf: "flex-start",
     },
     tileValue: {
       fontFamily: T.displayBold,

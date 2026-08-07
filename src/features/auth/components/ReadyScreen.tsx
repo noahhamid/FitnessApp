@@ -6,6 +6,11 @@ import {
 } from "@/src/ui/components/ExperienceIcon";
 import { FONTS } from "@/src/ui/tokens";
 import { api } from "@/src/lib/api";
+import { usePermissions } from "@/src/hooks/usePermissions";
+import {
+  hasSeenReminderSoftPrompt,
+  promptForReminderPermissions,
+} from "@/src/lib/meal-workout-reminders";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef } from "react";
 import {
@@ -56,9 +61,11 @@ export function ReadyScreen() {
     equipment?: string;
   }>();
 
+  const { requestNotifications } = usePermissions();
   const fade = useRef(new Animated.Value(0)).current;
   const rise = useRef(new Animated.Value(16)).current;
   const badgeScale = useRef(new Animated.Value(0.6)).current;
+  const starting = useRef(false);
 
   useEffect(() => {
     Animated.sequence([
@@ -179,7 +186,18 @@ export function ReadyScreen() {
 
         <Pressable
           style={s.primaryBtn}
-          onPress={() => router.replace("/(app)/(tabs)")}
+          onPress={async () => {
+            if (starting.current) return;
+            starting.current = true;
+            try {
+              // Soft ask once at onboarding finish — before the OS prompt.
+              if (!(await hasSeenReminderSoftPrompt())) {
+                await promptForReminderPermissions(requestNotifications);
+              }
+            } finally {
+              router.replace("/(app)/(tabs)");
+            }
+          }}
         >
           <Text style={s.primaryBtnText}>START TRAINING →</Text>
         </Pressable>

@@ -1,77 +1,10 @@
-import { Flame, User } from "lucide-react-native";
-import { StyleSheet, Text, View } from "react-native";
-import { useThemedStyles } from "@/src/context/useThemedStyles";
-import type { AppTheme } from "@/src/theme";
+import { SimpleGreetingHeader } from "@/src/components/SimpleGreetingHeader";
 
 type Props = {
-  greeting: string; // "Good afternoon"
   name: string;
-  streakDays: number;
 };
 
-export function DashboardHeader({ greeting, name, streakDays }: Props) {
-  const { T, styles } = useThemedStyles(makeStyles);
-
-  return (
-    <View style={styles.header}>
-      <View>
-        <Text style={styles.greeting}>{greeting}</Text>
-        <Text style={styles.name}>{name}</Text>
-      </View>
-
-      <View style={styles.right}>
-        <View style={styles.streakBadge}>
-          <Flame size={13} color={T.accent} strokeWidth={2.4} />
-          <Text style={styles.streakText}>{streakDays}</Text>
-        </View>
-        <View style={styles.avatar}>
-          <User size={17} color={T.accent} strokeWidth={2} />
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function makeStyles(T: AppTheme) {
-  return StyleSheet.create({
-    header: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingHorizontal: 20,
-      paddingTop: 10,
-      paddingBottom: 6,
-    },
-    greeting: { fontFamily: T.bodyMed, fontSize: 12, color: T.muted },
-    name: {
-      fontFamily: T.displayBold,
-      fontSize: 24,
-      color: T.white,
-      marginTop: 2,
-      letterSpacing: -0.3,
-    },
-    right: { flexDirection: "row", alignItems: "center", gap: 10 },
-    streakBadge: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 5,
-      backgroundColor: T.ringGlass,
-      borderWidth: 0.5,
-      borderColor: T.glassBorder,
-      borderRadius: 999,
-      paddingVertical: 7,
-      paddingHorizontal: 11,
-    },
-    streakText: { fontFamily: T.bodyBold, fontSize: 11, color: T.accent },
-    avatar: {
-      width: 40,
-      height: 40,
-      borderRadius: 13,
-      backgroundColor: T.ringGlass,
-      borderWidth: 0.5,
-      borderColor: T.ringBorder,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-  });
+/** Dashboard top chrome — greeting + wave + bell (no avatar). */
+export function DashboardHeader({ name }: Props) {
+  return <SimpleGreetingHeader name={name} showAvatar={false} />;
 }

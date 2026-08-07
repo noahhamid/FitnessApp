@@ -19,8 +19,9 @@ import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "../components/PressableScale";
 import { useAddMeal } from "../hooks/useNutrition";
-import { scanFoodImage } from "../services/nutrition.service";
+import { scanFoodImage, uploadMealPhoto } from "../services/nutrition.service";
 import type { FoodScanResult, MealType } from "../types/nutrition.types";
+import * as ImageManipulator from "expo-image-manipulator";
 
 const MEAL_SLOTS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
@@ -124,8 +125,31 @@ export default function ScanMealScreen() {
     !Number.isNaN(Number(cal)) &&
     !addMeal.isPending;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!canSubmit) return;
+
+    let imageUrl: string | null = null;
+    if (photoUri) {
+      try {
+        // Downscale before upload — full camera frames are multi-MB.
+        const prepared = await ImageManipulator.manipulateAsync(
+          photoUri,
+          [{ resize: { width: 1024 } }],
+          {
+            compress: 0.72,
+            format: ImageManipulator.SaveFormat.JPEG,
+            base64: true,
+          },
+        );
+        if (prepared.base64) {
+          imageUrl = await uploadMealPhoto(prepared.base64, "image/jpeg");
+        }
+      } catch (e) {
+        console.error("[scan-meal] photo upload failed:", e);
+        // Still save macros — photo is nice-to-have, not the meal itself.
+      }
+    }
+
     addMeal.mutate(
       {
         log_date: logDate,
@@ -137,7 +161,7 @@ export default function ScanMealScreen() {
         fat: Number(fat) || 0,
         quantity: 1,
         unit: "serving",
-        image_url: null,
+        image_url: imageUrl,
         source: "scan",
       },
       { onSuccess: () => router.back() },

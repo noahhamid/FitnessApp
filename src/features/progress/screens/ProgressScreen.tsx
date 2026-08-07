@@ -40,6 +40,7 @@ import { completedDayKeys, contributionGrid } from "../lib/analytics";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
+import { PageHeader } from "@/src/components/PageHeader";
 import { useExerciseLibrary } from "@/src/features/workout/hooks/useExerciseLibrary";
 import { useWorkoutStreak } from "@/src/features/workout/hooks/useWorkoutStreak";
 import { useMealLogRange } from "@/src/features/nutrition/hooks/useNutrition";
@@ -221,7 +222,7 @@ export default function ProgressScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={s.pageTitle}>Progress</Text>
+        <PageHeader eyebrow="Overview" title="Progress" />
 
         <ProgressSnapshotStrip
           streakDays={streakDays}
@@ -346,13 +347,6 @@ function makeStyles(T: AppTheme) {
     scrollContent: {
       paddingHorizontal: T.space.xl,
       paddingBottom: 128,
-    },
-    pageTitle: {
-      fontFamily: T.displayBold,
-      fontSize: 28,
-      color: T.white,
-      letterSpacing: -0.5,
-      marginBottom: T.space.md,
     },
     tabsWrap: {
       marginBottom: T.space.xl,

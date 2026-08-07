@@ -48,7 +48,7 @@ const REST_SEC_BY_GOAL: Record<string, number> = {
 // Resolved to a packager URI so existing `{ uri: imageUrl }` call sites work.
 const EXERCISE_PLACEHOLDER_URI = Image.resolveAssetSource(
   // User-provided asset (assets/images/icon.jfif).
-  require("../../assets/images/icon.jfif"),
+  require("../../assets/images/icon.jpg"),
 ).uri;
 
 const COVER_BY_LABEL_HINT: { match: RegExp; url: string }[] = [

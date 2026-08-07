@@ -37,6 +37,9 @@ yarn-error.*
 # Upstream exercises-dataset dump (17MB+) — regenerate curated seed from it locally
 /data/exercises-dataset.json
 
+# User-uploaded meal scan photos (served from /uploads)
+/uploads/
+
 # typescript
 *.tsbuildinfo
 

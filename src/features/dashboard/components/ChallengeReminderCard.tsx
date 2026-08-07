@@ -11,8 +11,10 @@ import {
   type LucideProps,
 } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
+import { useTheme } from "@/src/context/ThemeContext";
 import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
+import { GlassSurface } from "./GlassSurface";
 
 export type ChallengeDayKind = "today" | "past" | "future";
 type StepKey = "workout" | "breakfast" | "lunch" | "dinner";
@@ -36,15 +38,72 @@ const STEP_MESSAGE: Record<StepKey, string> = {
   dinner: "Finish strong — log dinner",
 };
 
-const STEP_ICON: Record<
-  StepKey,
-  React.ComponentType<LucideProps>
-> = {
+const STEP_ICON: Record<StepKey, React.ComponentType<LucideProps>> = {
   workout: Dumbbell,
   breakfast: Coffee,
   lunch: UtensilsCrossed,
   dinner: Moon,
 };
+
+/**
+ * Per-step signature colors (light / dark). Workout uses theme accent at
+ * call sites; these are the fixed semantic accents for meals.
+ */
+const STEP_SEMANTIC = {
+  breakfast: {
+    light: {
+      bg: "rgba(232,140,60,0.16)",
+      border: "rgba(232,140,60,0.32)",
+      icon: "#D4842A",
+    },
+    dark: {
+      bg: "rgba(255,170,80,0.20)",
+      border: "rgba(255,170,80,0.36)",
+      icon: "#FFB35C",
+    },
+  },
+  lunch: {
+    light: {
+      bg: "rgba(46,150,90,0.14)",
+      border: "rgba(46,150,90,0.30)",
+      icon: "#2A8F52",
+    },
+    dark: {
+      bg: "rgba(80,220,140,0.18)",
+      border: "rgba(80,220,140,0.34)",
+      icon: "#5EE09A",
+    },
+  },
+  dinner: {
+    light: {
+      bg: "rgba(80,90,190,0.14)",
+      border: "rgba(80,90,190,0.30)",
+      icon: "#4A55B0",
+    },
+    dark: {
+      bg: "rgba(130,145,255,0.18)",
+      border: "rgba(130,145,255,0.34)",
+      icon: "#9AA6FF",
+    },
+  },
+} as const;
+
+type WellColors = { bg: string; border: string; icon: string };
+
+function stepWellColors(
+  key: StepKey,
+  resolved: "light" | "dark",
+  T: AppTheme,
+): WellColors {
+  if (key === "workout") {
+    return {
+      bg: T.accentTint,
+      border: T.accentLine,
+      icon: T.accent,
+    };
+  }
+  return STEP_SEMANTIC[key][resolved];
+}
 
 export function ChallengeReminderCard({
   dayKind,
@@ -56,6 +115,7 @@ export function ChallengeReminderCard({
   onPress,
 }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
+  const { resolved } = useTheme();
 
   const doneMap: Record<StepKey, boolean> = {
     workout: workoutDone,
@@ -113,26 +173,37 @@ export function ChallengeReminderCard({
     message = STEP_MESSAGE[currentStep as StepKey];
   }
 
-  const iconBadgeStyle = isLoading
-    ? [s.iconBadge]
-    : complete
-      ? [s.iconBadge, s.iconBadgeComplete]
-      : dayKind === "past"
-        ? [s.iconBadge, s.iconBadgeMissed]
-        : [s.iconBadge];
+  const focusStep: StepKey = currentStep ?? "workout";
+  const focusColors = stepWellColors(focusStep, resolved, T);
 
-  // State icons for complete/missed; per-step icon only when today is in progress
-  // (or future — show first step as a preview). Loading keeps a quiet faint look.
+  let iconBadgeStyle: object[];
   let icon: React.ReactNode;
+
   if (isLoading) {
+    iconBadgeStyle = [s.iconBadge, s.iconBadgeQuiet];
     icon = <Dumbbell size={16} color={T.faint} strokeWidth={2} />;
   } else if (complete) {
+    iconBadgeStyle = [
+      s.iconBadge,
+      {
+        backgroundColor: T.accentTint,
+        borderColor: T.accentLine,
+      },
+    ];
     icon = <CheckCircle2 size={16} color={T.accent} strokeWidth={2} />;
   } else if (dayKind === "past") {
+    iconBadgeStyle = [s.iconBadge, s.iconBadgeMissed];
     icon = <MinusCircle size={16} color={T.faint} strokeWidth={2} />;
   } else {
-    const StepIcon = STEP_ICON[currentStep ?? "workout"];
-    icon = <StepIcon size={16} color={T.accent} strokeWidth={2} />;
+    iconBadgeStyle = [
+      s.iconBadge,
+      {
+        backgroundColor: focusColors.bg,
+        borderColor: focusColors.border,
+      },
+    ];
+    const StepIcon = STEP_ICON[focusStep];
+    icon = <StepIcon size={16} color={focusColors.icon} strokeWidth={2} />;
   }
 
   const showProgress = !isLoading;
@@ -144,7 +215,7 @@ export function ChallengeReminderCard({
       scaleTo={0.98}
       style={s.pressableReset}
     >
-      <View style={s.card}>
+      <GlassSurface style={s.card}>
         <Animated.View
           style={[...iconBadgeStyle, { transform: [{ scale: pulse }] }]}
         >
@@ -154,15 +225,38 @@ export function ChallengeReminderCard({
         <View style={s.textBlock}>
           <Text style={s.message}>{message}</Text>
           {showProgress && (
-            <View style={s.progressRow}>
-              {STEPS.map((key) => (
-                <View
-                  key={key}
-                  style={[s.dot, doneMap[key] && s.dotFilled]}
-                  accessibilityElementsHidden
-                  importantForAccessibility="no"
-                />
-              ))}
+            <View
+              style={s.progressRow}
+              accessibilityRole="summary"
+              accessibilityLabel={`${STEPS.filter((k) => doneMap[k]).length} of 4 steps done`}
+            >
+              {STEPS.map((key) => {
+                const colors = stepWellColors(key, resolved, T);
+                const done = doneMap[key];
+                const StepIcon = STEP_ICON[key];
+                return (
+                  <View
+                    key={key}
+                    style={[
+                      s.miniWell,
+                      done
+                        ? {
+                            backgroundColor: colors.bg,
+                            borderColor: colors.border,
+                          }
+                        : s.miniWellPending,
+                    ]}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                  >
+                    <StepIcon
+                      size={10}
+                      color={done ? colors.icon : T.faint}
+                      strokeWidth={2.2}
+                    />
+                  </View>
+                );
+              })}
             </View>
           )}
           {subLabel ? (
@@ -175,7 +269,7 @@ export function ChallengeReminderCard({
             <ChevronRight size={16} color={T.faint} strokeWidth={2} />
           </View>
         )}
-      </View>
+      </GlassSurface>
     </PressableScale>
   );
 }
@@ -185,31 +279,30 @@ function makeStyles(T: AppTheme) {
     pressableReset: { borderRadius: 16 },
     card: {
       borderRadius: 16,
-      backgroundColor: T.bgElevated,
-      borderWidth: 0.5,
-      borderColor: T.border,
       flexDirection: "row",
       alignItems: "center",
       paddingHorizontal: 14,
-      paddingVertical: 13,
+      paddingVertical: 12,
       gap: 10,
-      shadowColor: "#0A0A0A",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.03,
-      shadowRadius: 10,
-      elevation: 1,
     },
     iconBadge: {
       width: 32,
       height: 32,
       borderRadius: 16,
-      backgroundColor: T.accentSoft,
+      borderWidth: StyleSheet.hairlineWidth,
       alignItems: "center",
       justifyContent: "center",
+      zIndex: 1,
     },
-    iconBadgeComplete: { backgroundColor: T.accentSoft },
-    iconBadgeMissed: { backgroundColor: T.border },
-    textBlock: { flex: 1, gap: 4 },
+    iconBadgeQuiet: {
+      backgroundColor: T.accentTint,
+      borderColor: T.border,
+    },
+    iconBadgeMissed: {
+      backgroundColor: T.border,
+      borderColor: T.border,
+    },
+    textBlock: { flex: 1, gap: 5, zIndex: 1 },
     message: {
       fontFamily: T.bodySemi,
       fontSize: 13.5,
@@ -218,16 +311,19 @@ function makeStyles(T: AppTheme) {
     progressRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 4,
+      gap: 5,
     },
-    dot: {
-      width: 14,
-      height: 3.5,
-      borderRadius: 2,
-      backgroundColor: T.border,
+    miniWell: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: StyleSheet.hairlineWidth,
+      alignItems: "center",
+      justifyContent: "center",
     },
-    dotFilled: {
-      backgroundColor: T.accent,
+    miniWellPending: {
+      backgroundColor: "transparent",
+      borderColor: T.border,
     },
     deadline: {
       fontFamily: T.bodyMed,
@@ -239,6 +335,7 @@ function makeStyles(T: AppTheme) {
       height: 24,
       alignItems: "center",
       justifyContent: "center",
+      zIndex: 1,
     },
   });
 }

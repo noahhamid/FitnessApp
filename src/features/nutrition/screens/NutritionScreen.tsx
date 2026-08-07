@@ -160,7 +160,6 @@ export default function MealScreen() {
         eyebrow={`${dayLabel(selectedDate)} · Diet`}
         title="Today's plate"
         caloriesLeft={caloriesLeft}
-        streakDays={weekly?.streak ?? 0}
       />
 
       <View style={styles.daySelectorWrap}>

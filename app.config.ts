@@ -1,5 +1,7 @@
 import type { ExpoConfig } from "expo/config";
 
+const NEAR_BLACK = "#0A0A0A";
+
 const config: ExpoConfig = {
   name: "Exo",
   slug: "exo-fitness",
@@ -15,8 +17,10 @@ const config: ExpoConfig = {
   android: {
     package: "com.exo.fitness",
     adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
+      // Foreground is pre-padded (~52%) so the diagonal mark survives
+      // circle / squircle / rounded-square masks. Solid near-black plate.
       foregroundImage: "./assets/images/android-icon-foreground.png",
+      backgroundColor: NEAR_BLACK,
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
@@ -35,15 +39,22 @@ const config: ExpoConfig = {
       "expo-splash-screen",
       {
         image: "./assets/images/splash-icon.png",
-        imageWidth: 200,
+        imageWidth: 180,
         resizeMode: "contain",
-        backgroundColor: "#ffffff",
+        backgroundColor: NEAR_BLACK,
         dark: {
-          backgroundColor: "#000000",
+          backgroundColor: NEAR_BLACK,
         },
       },
     ],
     "expo-font",
+    [
+      "expo-notifications",
+      {
+        color: "#1C3F2E",
+        defaultChannel: "meal-workout-reminders",
+      },
+    ],
   ],
   experiments: {
     typedRoutes: false,

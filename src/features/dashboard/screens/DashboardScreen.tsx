@@ -25,7 +25,6 @@ import {
 } from "../components/TodaySnapshotRow";
 import { ProgressCoachCard } from "../components/ProgressCoachCard";
 
-import { FadeInUp } from "../components/FadeInUp";
 import { UpNextWorkoutCard } from "../components/UpNextWorkoutCard";
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
@@ -35,9 +34,35 @@ import { useInProgressSession } from "@/src/features/workout/hooks/useInProgress
 import {
   useDailyTotals,
   useWater,
-  useWeeklyTrend,
 } from "@/src/features/nutrition/hooks/useNutrition";
-import { getGreeting } from "@/src/lib/greeting";
+
+function SectionSkeleton({
+  height,
+  style,
+}: {
+  height: number;
+  style?: object;
+}) {
+  const { styles } = useThemedStyles(makeSkeletonStyles);
+  return (
+    <View
+      style={[styles.block, { height }, style]}
+      accessibilityLabel="Loading"
+    />
+  );
+}
+
+function makeSkeletonStyles(T: AppTheme) {
+  return StyleSheet.create({
+    block: {
+      borderRadius: T.radius.xl,
+      backgroundColor: T.bgElevated,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: T.border,
+      overflow: "hidden",
+    },
+  });
+}
 
 export default function DashboardScreen() {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
@@ -57,12 +82,10 @@ export default function DashboardScreen() {
 
   const shiftWeek = (delta: number) => {
     setWeekOffset((o) => o + delta);
-    // Keep the same weekday selected in the newly visible week.
     setSelectedDate((prev) => shiftDateStr(prev, delta * 7));
   };
 
   const { data: weekSessions } = useWorkoutHistory(weekStart, weekEnd);
-  // Today's chip must stay accurate even when the strip is on another week.
   const { data: todaySessions } = useWorkoutHistory(today, today);
 
   const workoutDates = useMemo(() => {
@@ -93,10 +116,8 @@ export default function DashboardScreen() {
 
   const { data: totals } = useDailyTotals(selectedDate);
   const { data: water } = useWater(selectedDate);
-  const { data: weekly } = useWeeklyTrend(today);
   const { data: mealsForDay } = useMealLog(selectedDate);
 
-  // --- Challenge card derivation (selected day) ---
   const loggedMealTypes = new Set((mealsForDay ?? []).map((m) => m.meal));
   const breakfastDone = loggedMealTypes.has("Breakfast");
   const lunchDone = loggedMealTypes.has("Lunch");
@@ -135,8 +156,11 @@ export default function DashboardScreen() {
     coachBody,
   } = useCoachCard();
 
-  const { day: todaysWorkoutDay, summary: todaysWorkout } =
-    useTodaysWorkoutSummary(selectedDate);
+  const {
+    day: todaysWorkoutDay,
+    summary: todaysWorkout,
+    isLoading: workoutSummaryLoading,
+  } = useTodaysWorkoutSummary(selectedDate);
 
   const caloriesConsumed = totals ? totals.cal : null;
 
@@ -153,11 +177,7 @@ export default function DashboardScreen() {
         translucent={false}
       />
 
-      <DashboardHeader
-        greeting={getGreeting()}
-        name={user?.name ?? "there"}
-        streakDays={weekly?.streak ?? 0}
-      />
+      <DashboardHeader name={user?.name ?? "there"} />
 
       <View style={styles.daySelectorWrap}>
         <DaySelector
@@ -217,7 +237,16 @@ export default function DashboardScreen() {
           ]}
         />
 
-        {todaysWorkoutDay && (
+        {workoutSummaryLoading ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                {isToday ? "Up next" : "Workout"}
+              </Text>
+            </View>
+            <SectionSkeleton height={224} />
+          </>
+        ) : todaysWorkoutDay ? (
           <>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
@@ -231,38 +260,36 @@ export default function DashboardScreen() {
               </Text>
             </View>
 
-            <FadeInUp>
-              {todaysWorkoutDay.kind === "rest" ? (
-                <UpNextWorkoutCard
-                  variant="rest"
-                  onPress={() => router.push("/(app)/(tabs)/train")}
-                />
-              ) : (
-                <UpNextWorkoutCard
-                  title={todaysWorkoutDay.title}
-                  tag={todaysWorkoutDay.tag}
-                  minutes={todaysWorkoutDay.minutes}
-                  exerciseCount={todaysWorkoutDay.exerciseCount}
-                  imageUrl={todaysWorkoutDay.imageUrl}
-                  onPress={() => router.push("/(app)/(tabs)/train")}
-                  onStartPress={() => router.push("/(app)/(tabs)/train")}
-                />
-              )}
-            </FadeInUp>
+            {todaysWorkoutDay.kind === "rest" ? (
+              <UpNextWorkoutCard
+                variant="rest"
+                onPress={() => router.push("/(app)/(tabs)/train")}
+              />
+            ) : (
+              <UpNextWorkoutCard
+                title={todaysWorkoutDay.title}
+                tag={todaysWorkoutDay.tag}
+                minutes={todaysWorkoutDay.minutes}
+                exerciseCount={todaysWorkoutDay.exerciseCount}
+                imageUrl={todaysWorkoutDay.imageUrl}
+                onPress={() => router.push("/(app)/(tabs)/train")}
+                onStartPress={() => router.push("/(app)/(tabs)/train")}
+              />
+            )}
           </>
-        )}
+        ) : null}
 
-        {!coachLoading && hasEnoughData && (
-          <FadeInUp delay={80}>
-            <ProgressCoachCard
-              progressLabel="Weight this month"
-              progressValue={progressValue}
-              sparklinePoints={sparklinePoints}
-              coachHeadline={coachHeadline}
-              coachBody={coachBody}
-            />
-          </FadeInUp>
-        )}
+        {coachLoading ? (
+          <SectionSkeleton height={168} />
+        ) : hasEnoughData ? (
+          <ProgressCoachCard
+            progressLabel="Weight this month"
+            progressValue={progressValue}
+            sparklinePoints={sparklinePoints}
+            coachHeadline={coachHeadline}
+            coachBody={coachBody}
+          />
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -276,7 +303,6 @@ function makeStyles(T: AppTheme) {
     content: {
       paddingHorizontal: 20,
       paddingTop: 14,
-      // Clears the absolute floating tab pill (~64 + safe-area + gap).
       paddingBottom: 110,
       gap: 16,
     },

@@ -10,10 +10,12 @@ import {
   ViewStyle,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { UtensilsCrossed } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
+
+const MANUAL_MEAL_ASSET = require("../../../../assets/images/meal.png");
+const MANUAL_MEAL_URI = Image.resolveAssetSource(MANUAL_MEAL_ASSET).uri;
 
 export type MealMacros = { carbs: number; protein: number; fat: number };
 
@@ -42,7 +44,7 @@ function MealPhotoCardBase({
   style,
   testID,
 }: Props) {
-  const { T, styles: s } = useThemedStyles(makeStyles);
+  const { styles: s } = useThemedStyles(makeStyles);
   const entrance = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     const anim = Animated.timing(entrance, {
@@ -57,10 +59,17 @@ function MealPhotoCardBase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const displayUri = imageUrl?.trim() ? imageUrl : MANUAL_MEAL_URI;
+  const isRemoteScan = Boolean(imageUrl?.trim());
+
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">(
     "loading",
   );
   const shimmer = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    setImgStatus("loading");
+  }, [displayUri]);
+
   useEffect(() => {
     if (imgStatus !== "loading") return;
     const loop = Animated.loop(
@@ -112,16 +121,17 @@ function MealPhotoCardBase({
         style={s.pressableReset}
       >
         <View style={s.card}>
-          {imageUrl && imgStatus !== "error" ? (
+          {imgStatus !== "error" ? (
             <>
               <Image
-                source={{ uri: imageUrl }}
-                style={s.image}
-                resizeMode="cover"
+                source={{ uri: displayUri }}
+                style={[s.image, !isRemoteScan && s.manualAsset]}
+                resizeMode={isRemoteScan ? "cover" : "contain"}
                 onLoad={onLoad}
                 onError={onError}
                 accessible
                 accessibilityLabel={`${name} photo`}
+                accessibilityIgnoresInvertColors
               />
               {imgStatus === "loading" && (
                 <Animated.View
@@ -131,7 +141,12 @@ function MealPhotoCardBase({
             </>
           ) : (
             <View style={s.imageFallback}>
-              <UtensilsCrossed size={28} color={T.faint} strokeWidth={1.6} />
+              <Image
+                source={{ uri: MANUAL_MEAL_URI }}
+                style={s.manualFallbackImage}
+                resizeMode="contain"
+                accessibilityIgnoresInvertColors
+              />
             </View>
           )}
 
@@ -186,109 +201,123 @@ export const MealPhotoCard = memo(MealPhotoCardBase);
 
 function makeStyles(T: AppTheme) {
   return StyleSheet.create({
-  pressableReset: { borderRadius: 24 },
-  card: {
-    height: 168,
-    borderRadius: 24,
-    overflow: "hidden",
-    backgroundColor: T.glass,
-    shadowColor: "#0A0A0A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
-    shadowRadius: 18,
-    elevation: 3,
-  },
+    pressableReset: { borderRadius: 24 },
+    card: {
+      height: 168,
+      borderRadius: 24,
+      overflow: "hidden",
+      backgroundColor: T.glass,
+      shadowColor: "#0A0A0A",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.07,
+      shadowRadius: 18,
+      elevation: 3,
+    },
 
-  image: { ...StyleSheet.absoluteFillObject },
-  shimmerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,255,255,0.10)",
-  },
-  imageFallback: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: T.glass,
-  },
+    image: { ...StyleSheet.absoluteFillObject },
+    /** Local meal.png sits inset so the 3D icon reads as a badge, not a stretched photo. */
+    manualAsset: {
+      top: 28,
+      bottom: 52,
+      left: "22%",
+      right: "22%",
+      width: undefined,
+      height: undefined,
+    },
+    shimmerOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(255,255,255,0.10)",
+    },
+    imageFallback: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: T.glass,
+      paddingBottom: 36,
+    },
+    manualFallbackImage: {
+      width: 72,
+      height: 72,
+    },
 
-  tagPill: {
-    position: "absolute",
-    top: 12,
-    left: 14,
-    maxWidth: 130,
-    backgroundColor: T.onImageGlass,
-    borderWidth: 1,
-    borderColor: T.onImageBorder,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  tagText: {
-    fontFamily: T.bodyBold,
-    fontSize: 10,
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-    color: T.onImage,
-  },
+    tagPill: {
+      position: "absolute",
+      top: 12,
+      left: 14,
+      maxWidth: 130,
+      backgroundColor: T.onImageGlass,
+      borderWidth: 1,
+      borderColor: T.onImageBorder,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    tagText: {
+      fontFamily: T.bodyBold,
+      fontSize: 10,
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+      color: T.onImage,
+    },
 
-  calRing: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    borderColor: T.accent,
-    backgroundColor: T.onImageGlass,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  calValue: {
-    fontFamily: T.display,
-    fontSize: 12,
-    lineHeight: 14,
-    color: T.onImage,
-    fontVariant: ["tabular-nums"],
-  },
-  calUnit: {
-    fontFamily: T.bodySemi,
-    fontSize: 8,
-    color: T.onImageMuted,
-    marginTop: -1,
-  },
+    calRing: {
+      position: "absolute",
+      top: 12,
+      right: 12,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      borderWidth: 1.5,
+      borderColor: T.accent,
+      backgroundColor: T.onImageGlass,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    calValue: {
+      fontFamily: T.display,
+      fontSize: 12,
+      lineHeight: 14,
+      color: T.onImage,
+      fontVariant: ["tabular-nums"],
+    },
+    calUnit: {
+      fontFamily: T.bodySemi,
+      fontSize: 8,
+      color: T.onImageMuted,
+      marginTop: -1,
+    },
 
-  bottomContent: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    bottom: 13,
-    gap: 5,
-  },
-  title: {
-    fontFamily: T.display,
-    fontSize: 17,
-    letterSpacing: -0.3,
-    color: T.onImage,
-    textShadowColor: "rgba(0,0,0,0.4)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
-  },
-  subtitle: { fontFamily: T.bodyMed, fontSize: 11.5, color: T.onImageMuted },
-  macroRow: { flexDirection: "row", gap: 6, marginTop: 2 },
-  macroChip: {
-    backgroundColor: T.onImageGlass,
-    borderWidth: 1,
-    borderColor: T.onImageBorder,
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-  },
-  macroChipText: {
-    fontFamily: T.bodySemi,
-    fontSize: 10,
-    letterSpacing: 0.2,
-    color: T.onImage,
-  },
+    bottomContent: {
+      position: "absolute",
+      left: 16,
+      right: 16,
+      bottom: 13,
+      gap: 5,
+    },
+    title: {
+      fontFamily: T.display,
+      fontSize: 17,
+      letterSpacing: -0.3,
+      color: T.onImage,
+      textShadowColor: "rgba(0,0,0,0.4)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 6,
+    },
+    subtitle: { fontFamily: T.bodyMed, fontSize: 11.5, color: T.onImageMuted },
+    macroRow: { flexDirection: "row", gap: 6, marginTop: 2 },
+    macroChip: {
+      backgroundColor: T.onImageGlass,
+      borderWidth: 1,
+      borderColor: T.onImageBorder,
+      borderRadius: 999,
+      paddingHorizontal: 9,
+      paddingVertical: 4,
+    },
+    macroChipText: {
+      fontFamily: T.bodySemi,
+      fontSize: 10,
+      letterSpacing: 0.2,
+      color: T.onImage,
+    },
   });
 }

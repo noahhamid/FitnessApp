@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 import { api } from "@/src/lib/api";
 import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import { useExerciseLibrary } from "./useExerciseLibrary";
-import { useWorkoutPlan } from "./useWorkoutPlan";
+import {
+  useWorkoutPlan,
+  workoutPlanQueryKey,
+  fetchWorkoutPlan,
+} from "./useWorkoutPlan";
 import {
   adaptLibraryExercise,
   adaptPlanDay,
@@ -23,6 +31,29 @@ interface RawSession {
   notes: string | null;
   /** `id` is WorkoutExercise row id — unique per session row, even if names repeat. */
   exercises: { id: string; exerciseName: string; sets?: unknown }[];
+}
+
+export const inProgressSessionQueryKey = ["in-progress-session"] as const;
+
+export function fetchInProgressSessions() {
+  return api.get<RawSession[]>("/api/workouts?completed=false&limit=1");
+}
+
+/** Cold-start prefetch — call once auth/onboarding is ready so Train/Dashboard
+ *  don't open with an unknown in-progress state. */
+export function prefetchWorkoutBootQueries(qc: QueryClient) {
+  void qc.prefetchQuery({
+    queryKey: inProgressSessionQueryKey,
+    queryFn: fetchInProgressSessions,
+  });
+  void qc.prefetchQuery({
+    queryKey: workoutPlanQueryKey,
+    queryFn: fetchWorkoutPlan,
+  });
+  void qc.prefetchQuery({
+    queryKey: ["exercise-library", "all"],
+    queryFn: () => api.get("/api/workouts/exercises"),
+  });
 }
 
 function normalizeSets(raw: unknown): RawSet[] {
@@ -81,9 +112,8 @@ export function useInProgressSession() {
   const { data: allExercises } = useExerciseLibrary(); // unfiltered — need name lookups across all muscle groups
 
   const sessionQuery = useQuery({
-    queryKey: ["in-progress-session"],
-    queryFn: () =>
-      api.get<RawSession[]>("/api/workouts?completed=false&limit=1"),
+    queryKey: inProgressSessionQueryKey,
+    queryFn: fetchInProgressSessions,
   });
 
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -245,5 +275,20 @@ export function useInProgressSession() {
     };
   }, [sessionQuery.data, allExercises, apiPlan]);
 
-  return { inProgress: result, isLoading: sessionQuery.isLoading };
+  // Unknown until the session query settles — and, if today's incomplete
+  // session exists, until the library is ready to build Continue (otherwise
+  // callers would treat null as "no session" and flash Start).
+  const rawSession = sessionQuery.data?.[0];
+  const awaitingTodayContinue =
+    !!rawSession &&
+    rawSession.completedAt == null &&
+    localDateOnly(new Date(rawSession.startedAt)) === localDateOnly() &&
+    !allExercises;
+
+  const isLoading =
+    sessionQuery.isLoading ||
+    (sessionQuery.isFetching && sessionQuery.data === undefined) ||
+    awaitingTodayContinue;
+
+  return { inProgress: result, isLoading };
 }

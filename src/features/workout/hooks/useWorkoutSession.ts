@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { api } from "@/src/lib/api";
+import { cancelReminder } from "@/src/lib/meal-workout-reminders";
 
 interface StartSessionInput {
   notes?: string;
@@ -166,6 +167,8 @@ export function useCompleteWorkoutSession() {
     onSuccess: () => {
       clearInProgressCache(qc);
       invalidateSessionQueries(qc);
+      // Drop today's workout reminder immediately after finish.
+      void cancelReminder("workout");
     },
   });
 }

@@ -1,4 +1,5 @@
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { config } from "dotenv";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -34,6 +35,14 @@ app.route("/api/nutrition", nutritionRouter);
 app.route("/api/profile", profileRouter);
 app.route("/api/weight", weightRouter);
 app.route("/api/workouts", workoutsRouter);
+
+/** Meal-scan photos written by POST /api/nutrition/meal-photo. */
+app.use(
+  "/uploads/*",
+  serveStatic({
+    root: "./",
+  }),
+);
 
 app.get("/health", (c) => ok(c, { ok: true }));
 

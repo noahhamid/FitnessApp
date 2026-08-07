@@ -105,6 +105,18 @@ export async function scanFoodImage(
   return api.post<FoodScanResult>("/api/ai/food-scan", { base64, mimeType });
 }
 
+/** Persist a scan photo; returns a public URL for MealLog.imageUrl. */
+export async function uploadMealPhoto(
+  base64: string,
+  mimeType: string,
+): Promise<string> {
+  const row = await api.post<{ url: string }>("/api/nutrition/meal-photo", {
+    base64,
+    mimeType,
+  });
+  return row.url;
+}
+
 async function readCustomFoods(): Promise<FoodLibraryItem[]> {
   const raw = await AsyncStorage.getItem(CUSTOM_FOODS_KEY);
   if (!raw) return [];
