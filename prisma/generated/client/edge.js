@@ -144,13 +144,21 @@ exports.Prisma.UserProfileScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   goalId: 'goalId',
+  goalDetail: 'goalDetail',
   weightKg: 'weightKg',
+  targetWeightKg: 'targetWeightKg',
+  pace: 'pace',
   heightCm: 'heightCm',
   age: 'age',
   gender: 'gender',
   daysPerWeek: 'daysPerWeek',
   experience: 'experience',
   equipment: 'equipment',
+  focusAreas: 'focusAreas',
+  bodyIssues: 'bodyIssues',
+  injuries: 'injuries',
+  reminderEnabled: 'reminderEnabled',
+  reminderHour: 'reminderHour',
   updatedAt: 'updatedAt'
 };
 
@@ -345,6 +353,12 @@ exports.EquipmentAccess = exports.$Enums.EquipmentAccess = {
   full_gym: 'full_gym',
   home_dumbbells: 'home_dumbbells',
   bodyweight: 'bodyweight'
+};
+
+exports.Pace = exports.$Enums.Pace = {
+  slow: 'slow',
+  moderate: 'moderate',
+  aggressive: 'aggressive'
 };
 
 exports.Prisma.ModelName = {

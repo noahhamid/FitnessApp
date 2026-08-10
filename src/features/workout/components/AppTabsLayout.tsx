@@ -2,7 +2,13 @@ import { Tabs } from "expo-router";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Line, Path, Polyline, Rect } from "react-native-svg";
-import { T } from "@/src/theme";
+
+const T = {
+  bg: "#111318",
+  gold: "#E53935",
+  inactive: "#505050",
+  border: "#FFFFFF08",
+};
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 

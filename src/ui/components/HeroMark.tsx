@@ -9,7 +9,7 @@ import Svg, {
 } from "react-native-svg";
 
 const C = {
-  accent: "#FFC700",
+  accent: "#E53935",
   card: "#1E1E1E",
 };
 
@@ -34,7 +34,7 @@ export function HeroMark({ size = 220 }: HeroMarkProps) {
           cx="110"
           cy="110"
           r="95"
-          stroke="rgba(255,199,0,0.12)"
+          stroke="rgba(229,57,53,0.12)"
           strokeWidth="1.5"
           fill="none"
         />
@@ -42,7 +42,7 @@ export function HeroMark({ size = 220 }: HeroMarkProps) {
           cx="110"
           cy="110"
           r="70"
-          stroke="rgba(255,199,0,0.18)"
+          stroke="rgba(229,57,53,0.18)"
           strokeWidth="1"
           fill="none"
         />

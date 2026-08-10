@@ -1,176 +1,100 @@
-import { ProgressDots } from "@/src/ui/components/ProgressDots";
-import { GoalIcon, GoalIconName } from "@/src/ui/components/GoalIcon";
-import { FONTS } from "@/src/ui/tokens";
-import { router } from "expo-router";
+import { GoalTile } from "@/src/ui/components/GoalTile";
+import { OnboardingHeader } from "@/src/features/auth/components/OnboardingHeader";
+import { OnboardingNav } from "@/src/features/auth/components/OnboardingNav";
+import { C } from "@/src/ui/tokens";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const C = {
-  bg: "#121212",
-  card: "#1E1E1E",
-  border: "#2A2A2A",
-  accent: "#FFC700",
-  text: "#FFFFFF",
-  muted: "#A0A0A0",
-};
-
-const GOALS: { id: string; icon: GoalIconName; title: string; desc: string }[] =
-  [
-    {
-      id: "lose",
-      icon: "lose",
-      title: "Lose Fat",
-      desc: "Cut down, stay strong.",
-    },
-    {
-      id: "build",
-      icon: "build",
-      title: "Build Muscle",
-      desc: "Gain size and strength.",
-    },
-    {
-      id: "endure",
-      icon: "endure",
-      title: "Build Endurance",
-      desc: "Push your conditioning.",
-    },
-    {
-      id: "health",
-      icon: "health",
-      title: "Stay Healthy",
-      desc: "Balanced, sustainable fitness.",
-    },
-  ];
+const GOALS = [
+  {
+    id: "lose",
+    image: require("@/assets/images/losefat.jpg"),
+    title: "Lose Fat",
+  },
+  {
+    id: "build",
+    image: require("@/assets/images/buildmuscle.jpg"),
+    title: "Build Muscle",
+  },
+  {
+    id: "endure",
+    image: require("@/assets/images/buildendurance.jpg"),
+    title: "Build Endurance",
+  },
+  {
+    id: "health",
+    image: require("@/assets/images/stayhealthy.jpg"),
+    title: "Stay Healthy",
+  },
+];
 
 export function GoalsForm() {
-  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams();
   const [selected, setSelected] = useState<string | null>(null);
 
   return (
-    <View
-      style={[
-        s.safe,
-        { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 },
-      ]}
+    <SafeAreaView
+      style={[s.safe, { backgroundColor: C.bg }]}
+      edges={["top", "bottom"]}
     >
-      <View style={s.header}>
-        <Text style={s.counter}>STEP 1 OF 3</Text>
-        <ProgressDots total={3} current={0} />
-        <Text style={s.headline}>YOUR{"\n"}GOAL.</Text>
-        <Text style={s.sub}>What are you training for?</Text>
+      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+
+      <OnboardingHeader
+        headline={"YOUR\nGOAL."}
+        sub="What are you training for?"
+        onBack={() => router.back()}
+      />
+
+      <View style={s.gridContainer} accessibilityRole="radiogroup">
+        {[0, 1].map((row) => (
+          <View key={row} style={s.gridRow}>
+            {GOALS.slice(row * 2, row * 2 + 2).map((g) => (
+              <GoalTile
+                key={g.id}
+                image={g.image}
+                title={g.title}
+                isSelected={selected === g.id}
+                onPress={() => setSelected(g.id)}
+                style={s.tile}
+              />
+            ))}
+          </View>
+        ))}
       </View>
 
-      <View style={s.cards}>
-        {GOALS.map((g) => {
-          const isSelected = selected === g.id;
-          return (
-            <Pressable
-              key={g.id}
-              style={[s.card, isSelected && s.cardSelected]}
-              onPress={() => setSelected(g.id)}
-            >
-              <GoalIcon name={g.icon} />
-              <View style={{ flex: 1, marginLeft: 16 }}>
-                <Text style={s.cardTitle}>{g.title}</Text>
-                <Text style={s.cardDesc}>{g.desc}</Text>
-              </View>
-              <View style={[s.radio, isSelected && s.radioSelected]}>
-                {isSelected && <View style={s.radioDot} />}
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <View style={{ flex: 1 }} />
-
-      <Pressable
-        disabled={!selected}
-        style={[s.primaryBtn, !selected && s.primaryBtnDisabled]}
-        onPress={() =>
+      <OnboardingNav
+        nextDisabled={!selected}
+        onNext={() =>
           router.push({
-            pathname: "/(auth)/onboarding/profile",
-            params: { goalId: selected! },
+            pathname: "/(auth)/onboarding/goal-detail",
+            params: { ...params, goalId: selected! },
           })
         }
-      >
-        <Text style={s.primaryBtnText}>CONTINUE →</Text>
-      </Pressable>
-    </View>
+      />
+    </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: C.bg,
-    paddingHorizontal: 24,
+    paddingBottom: 12,
+    justifyContent: "space-between",
+    position: "relative",
   },
-  header: { marginBottom: 28 },
-  counter: {
-    color: C.muted,
-    fontSize: 11,
-    letterSpacing: 2,
-    fontFamily: FONTS.bold,
-    marginBottom: 8,
+  gridContainer: {
+    flex: 1,
+    zIndex: 1,
+    paddingHorizontal: 12,
+    paddingBottom: 30,
   },
-  headline: {
-    fontFamily: FONTS.black,
-    fontSize: 36,
-    color: C.text,
-    lineHeight: 38,
-    letterSpacing: -0.5,
-    marginTop: 16,
-    marginBottom: 10,
-  },
-  sub: { fontFamily: FONTS.regular, fontSize: 14, color: C.muted },
-  cards: { gap: 12 },
-  card: {
+  gridRow: {
+    flex: 1,
     flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: C.card,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    padding: 16,
   },
-  cardSelected: { borderColor: C.accent },
-  cardTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 16,
-    color: C.text,
-    letterSpacing: 0.3,
-    marginBottom: 2,
-  },
-  cardDesc: { fontFamily: FONTS.regular, fontSize: 12, color: C.muted },
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  radioSelected: { borderColor: C.accent },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: C.accent,
-  },
-  primaryBtn: {
-    backgroundColor: C.accent,
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: "center",
-  },
-  primaryBtnDisabled: { opacity: 0.35 },
-  primaryBtnText: {
-    fontFamily: FONTS.bold,
-    fontSize: 15,
-    color: C.bg,
-    letterSpacing: 1,
+  tile: {
+    flex: 1,
   },
 });

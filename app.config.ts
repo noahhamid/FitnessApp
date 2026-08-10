@@ -3,22 +3,23 @@ import type { ExpoConfig } from "expo/config";
 const NEAR_BLACK = "#0A0A0A";
 
 const config: ExpoConfig = {
-  name: "Exo",
-  slug: "exo-fitness",
+  name: "PotentialPeak",
+  slug: "potential-peak",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
-  scheme: "myapp",
+  scheme: "com.exo.fitness",
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
+    bundleIdentifier: "com.exo.fitness",
+    usesAppleSignIn: true,
   },
   android: {
     package: "com.exo.fitness",
     adaptiveIcon: {
-      // Foreground is pre-padded (~52%) so the diagonal mark survives
-      // circle / squircle / rounded-square masks. Solid near-black plate.
+      backgroundColor: "#C91923",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundColor: NEAR_BLACK,
       backgroundImage: "./assets/images/android-icon-background.png",
@@ -35,15 +36,25 @@ const config: ExpoConfig = {
     "expo-router",
     "expo-secure-store",
     "expo-web-browser",
+    "expo-apple-authentication",
+    [
+      "@react-native-google-signin/google-signin",
+      {
+        iosClientId:
+          "571605491186-kd1lt4933dp1a60hvuvegu2rn9cteodo.apps.googleusercontent.com",
+        iosUrlScheme:
+          "com.googleusercontent.apps.571605491186-kd1lt4933dp1a60hvuvegu2rn9cteodo",
+      },
+    ],
     [
       "expo-splash-screen",
       {
         image: "./assets/images/splash-icon.png",
         imageWidth: 180,
         resizeMode: "contain",
-        backgroundColor: NEAR_BLACK,
+        backgroundColor: "#C91923",
         dark: {
-          backgroundColor: NEAR_BLACK,
+          backgroundColor: "#C91923",
         },
       },
     ],

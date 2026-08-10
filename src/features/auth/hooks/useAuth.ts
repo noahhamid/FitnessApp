@@ -22,27 +22,33 @@ import {
 // Move to src/features/auth/store/authStore.ts when you're ready.
 
 type AuthStoreState = {
-  onboarded:    boolean;
-  goalId:       string | null;
+  onboarded: boolean;
+  /** Soft paywall unlock — workouts stay locked until the offer is accepted. */
+  premiumUnlocked: boolean;
+  goalId: string | null;
   setOnboarded: (v: boolean) => void;
-  setGoalId:    (id: string) => void;
-  reset:        () => void;
+  setPremiumUnlocked: (v: boolean) => void;
+  setGoalId: (id: string) => void;
+  reset: () => void;
 };
 
 export const useAuthStore = create<AuthStoreState>()(
   persist(
     (set) => ({
-      onboarded:    false,
-      goalId:       null,
+      onboarded: false,
+      premiumUnlocked: false,
+      goalId: null,
       setOnboarded: (v) => set({ onboarded: v }),
-      setGoalId:    (id) => set({ goalId: id }),
-      reset:        () => set({ onboarded: false, goalId: null }),
+      setPremiumUnlocked: (v) => set({ premiumUnlocked: v }),
+      setGoalId: (id) => set({ goalId: id }),
+      reset: () =>
+        set({ onboarded: false, premiumUnlocked: false, goalId: null }),
     }),
     {
-      name:    "auth-store",
+      name: "auth-store",
       storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
+    },
+  ),
 );
 
 // ── Session query key ─────────────────────────────────────────────────────────
@@ -60,7 +66,8 @@ export function useAuthSession() {
 
 export function useAuth() {
   const { session, isPending } = useAuthSession();
-  const { onboarded, setOnboarded, goalId, setGoalId } = useAuthStore();
+  const { onboarded, setOnboarded, premiumUnlocked, goalId, setGoalId } =
+    useAuthStore();
   const queryClient = useQueryClient();
 
   const hasSession = !!session?.user;
@@ -76,7 +83,8 @@ export function useAuth() {
     hasSession,
     isPending,
     onboardingComplete: onboarded,
-    user:               session?.user ?? null,
+    premiumUnlocked,
+    user: session?.user ?? null,
     goalId,
     setOnboarded,
     setGoalId,

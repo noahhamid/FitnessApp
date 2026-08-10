@@ -12,12 +12,12 @@ import {
 import { FONTS } from "@/src/ui/tokens";
 
 const C = {
-  bg: "#121212",
+  bg: "#111318",
   bg2: "#181818",
   card: "#1E1E1E",
   border: "#2A2A2A",
-  accent: "#FFC700",
-  accentDim: "rgba(255, 199, 0, 0.10)",
+  accent: "#E53935",
+  accentDim: "rgba(229, 57, 53, 0.10)",
   text: "#FFFFFF",
   muted: "#A0A0A0",
 };

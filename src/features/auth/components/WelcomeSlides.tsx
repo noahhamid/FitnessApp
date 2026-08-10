@@ -1,125 +1,159 @@
 import { router } from "expo-router";
 import {
+  Image,
   ImageBackground,
+  Pressable,
   StyleSheet,
   Text,
   View,
-  Pressable,
+  StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FONTS } from "@/src/ui/tokens";
-
-const C = {
-  bg: "#121212",
-  accent: "#FFC700",
-  text: "#FFFFFF",
-  muted: "rgba(255,255,255,0.65)",
-};
+import { C, FONTS } from "@/src/ui/tokens";
 
 export function WelcomeSlides() {
   return (
-    <View style={s.root}>
-      <ImageBackground
-        source={require("../../../../assets/images/welcome-hero.jfif")}
-        style={s.bg}
-        resizeMode="cover"
-      >
-        {/* Gradient scrim: transparent at top, solid bg color at bottom
-            so the button/text block sits on a fully readable surface. */}
-        <LinearGradient
-          colors={["transparent", "rgba(18,18,18,0.4)", C.bg]}
-          locations={[0, 0.55, 1]}
-          style={s.scrim}
-        />
+    <ImageBackground
+      source={require("../../../../assets/images/welcome-gym.jpg")}
+      style={s.root}
+      resizeMode="cover"
+    >
+      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <LinearGradient
+        colors={[
+          "rgba(17,19,24,0.72)",
+          "rgba(17,19,24,0.84)",
+          C.bg,
+        ]}
+        locations={[0, 0.55, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
 
-        <SafeAreaView style={s.content}>
-          <View style={{ flex: 1 }} />
+      <SafeAreaView style={s.content} edges={["top", "bottom"]}>
+        <View style={s.topSpacer} />
 
-          <View style={s.textBlock}>
-            <Text style={s.welcomeTo}>Welcome to</Text>
-            <Text style={s.brand}>Muscle Monster</Text>
-            <Text style={s.sub}>
-              Personalized fitness made simple and effective.
-            </Text>
+        <View style={s.logoContainer}>
+          <View style={s.imageWrapper}>
+            <Image
+              source={require("../../../../assets/images/potentialpeak_logo.jpg")}
+              style={s.logo}
+              resizeMode="cover"
+            />
           </View>
+          <Text style={s.brand}>
+            Potential<Text style={s.redtext}>Peak</Text>
+          </Text>
+          <Text style={s.sub}>Push. Grow. Repeat.</Text>
+        </View>
 
+        <View style={s.actions}>
           <Pressable
-            style={s.primaryBtn}
-            onPress={() => router.push("/(auth)/sign-up")}
+            accessibilityRole="button"
+            style={({ pressed }) => [s.primaryBtn, pressed && s.pressed]}
+            onPress={() => router.push("/(auth)/onboarding/gender")}
           >
-            <Text style={s.primaryBtnText}>Get Started</Text>
-            <View style={s.arrowCircle}>
-              <Text style={s.arrowText}>→</Text>
-            </View>
+            <Text style={s.primaryBtnText}>BUILD MY PLAN</Text>
           </Pressable>
 
           <Pressable
-            style={s.secondaryBtn}
+            accessibilityRole="button"
+            style={({ pressed }) => [s.linkBtn, pressed && s.pressed]}
             onPress={() => router.push("/(auth)/sign-in")}
           >
-            <Text style={s.secondaryBtnText}>I already have an account</Text>
+            <Text style={s.linkText}>I already have an account</Text>
           </Pressable>
-        </SafeAreaView>
-      </ImageBackground>
-    </View>
+        </View>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg },
-  bg: { flex: 1 },
-  scrim: { ...StyleSheet.absoluteFillObject },
-  content: { flex: 1, paddingHorizontal: 24, justifyContent: "flex-end" },
-  textBlock: { marginBottom: 24 },
-  welcomeTo: {
-    fontFamily: FONTS.regular,
-    fontSize: 15,
-    color: C.muted,
-    marginBottom: 2,
+  root: {
+    flex: 1,
+    backgroundColor: C.bg,
+    overflow: "hidden",
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+    justifyContent: "space-between",
+  },
+  topSpacer: {
+    height: 40,
+  },
+  logoContainer: {
+    alignItems: "center",
+  },
+  imageWrapper: {
+    width: 120,
+    height: 120,
+    borderRadius: 28,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: C.accent,
+    marginBottom: 24,
+    backgroundColor: C.bg,
+    shadowColor: C.accent,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  logo: {
+    width: "100%",
+    height: "100%",
   },
   brand: {
-    fontFamily: FONTS.black,
-    fontSize: 34,
+    fontFamily: FONTS.blackItalic,
+    fontSize: 46,
+    letterSpacing: -1,
+    color: C.text,
+  },
+  redtext: {
     color: C.accent,
-    letterSpacing: -0.5,
-    marginBottom: 10,
+    fontFamily: FONTS.blackItalic,
   },
   sub: {
     fontFamily: FONTS.regular,
-    fontSize: 14,
+    marginTop: 4,
+    fontSize: 13,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
     color: C.muted,
-    lineHeight: 20,
+  },
+  actions: {
+    gap: 6,
+    paddingBottom: 8,
   },
   primaryBtn: {
-    backgroundColor: C.accent,
-    borderRadius: 30,
-    paddingVertical: 8,
-    paddingLeft: 24,
-    paddingRight: 8,
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
+    paddingVertical: 18,
+    borderRadius: 100,
+    backgroundColor: C.accent,
+    shadowColor: C.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    elevation: 4,
   },
   primaryBtnText: {
-    fontFamily: FONTS.bold,
-    fontSize: 16,
-    color: "#121212",
+    fontFamily: FONTS.blackItalic,
+    fontSize: 15,
+    letterSpacing: 1,
+    color: C.text,
   },
-  arrowCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#121212",
+  linkBtn: {
     alignItems: "center",
-    justifyContent: "center",
+    paddingVertical: 15,
   },
-  arrowText: { color: C.accent, fontSize: 18, fontFamily: FONTS.bold },
-  secondaryBtn: { paddingVertical: 16, alignItems: "center", marginBottom: 8 },
-  secondaryBtnText: {
+  linkText: {
     fontFamily: FONTS.regular,
     fontSize: 13,
     color: C.muted,
+  },
+  pressed: {
+    opacity: 0.84,
   },
 });

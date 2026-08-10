@@ -8,7 +8,7 @@ import Svg, {
 } from "react-native-svg";
 
 const C = {
-  accent: "#FFC700",
+  accent: "#E53935",
 };
 
 export function CheckBadge({ size = 96 }: { size?: number }) {
@@ -25,14 +25,14 @@ export function CheckBadge({ size = 96 }: { size?: number }) {
           cx="48"
           cy="48"
           r="46"
-          stroke="rgba(255,199,0,0.2)"
+          stroke="rgba(229,57,53,0.2)"
           strokeWidth="1.5"
           fill="none"
         />
         <Circle cx="48" cy="48" r="36" fill="url(#badgeGrad)" />
         <Path
           d="M34 49 L44 59 L64 37"
-          stroke="#121212"
+          stroke="#1A1A1A"
           strokeWidth="4.5"
           strokeLinecap="round"
           strokeLinejoin="round"

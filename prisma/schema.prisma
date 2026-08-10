@@ -7,9 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-
-// ─── Workout Generation ───────────────────────────────────────────────────────
-
 model Exercise {
   id               String           @id @default(cuid())
   name             String @unique
@@ -87,8 +84,6 @@ enum MovementPattern {
   squat
   carry
 }
-// ─── Better Auth ──────────────────────────────────────────────────────────────
-
 
 
 model User {
@@ -121,13 +116,21 @@ model User {
    userId    String   @unique
    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
    goalId    String?
+   goalDetail      String?
    weightKg  Decimal? @db.Decimal(6, 2)
+   targetWeightKg  Decimal? @db.Decimal(6, 2)
+   pace            Pace?
    heightCm  Int?
    age       Int?
    gender          Gender?           
    daysPerWeek     Int?              
    experience      ExperienceLevel?  
    equipment       EquipmentAccess?  
+   focusAreas      String[]          @default([])
+   bodyIssues      String[]          @default([])
+   injuries        String[]          @default([])
+   reminderEnabled Boolean?          @default(true)
+   reminderHour    Int?
    updatedAt DateTime @updatedAt
    @@map("user_profile")
  }
@@ -178,8 +181,6 @@ model Verification {
   @@map("verification")
 }
 
-// ─── Workout ──────────────────────────────────────────────────────────────────
-
 model WorkoutSession {
   id          String    @id @default(cuid())
   startedAt   DateTime  @default(now())
@@ -204,7 +205,6 @@ model WorkoutExercise {
   @@map("workout_exercise")
 }
 
-// ─── Nutrition ────────────────────────────────────────────────────────────────
 
 model NutritionGoal {
   id        String   @id @default(cuid())
@@ -222,7 +222,6 @@ model NutritionGoal {
   @@map("nutrition_goal")
 }
 
-/// History of adaptive calorie-target changes (accept/apply flow).
 model NutritionAdjustmentLog {
   id          String   @id @default(cuid())
   appliedAt   DateTime @default(now())
@@ -262,10 +261,12 @@ enum MealSource {
   scan
 }
 
+
 model WaterLog {
   id      String   @id @default(cuid())
   logDate DateTime @db.Date
   glasses Int      @default(0)
+
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -274,7 +275,6 @@ model WaterLog {
   @@map("water_log")
 }
 
-// ─── Weight ───────────────────────────────────────────────────────────────────
 
 model WeightLog {
   id      String   @id @default(cuid())
@@ -300,8 +300,6 @@ model WeightGoal {
   @@map("weight_goal")
 }
 
-// ─── Enums ────────────────────────────────────────────────────────────────────
-
 enum Meal {
   Breakfast
   Lunch
@@ -324,6 +322,18 @@ enum EquipmentAccess {
   full_gym
   home_dumbbells
   bodyweight
+}
+
+enum Pace {
+  slow
+  moderate
+  aggressive
+}
+
+enum Pace {
+  slow
+  moderate
+  aggressive
 }
 
 model PlannedExtraExercise {

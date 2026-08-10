@@ -14,10 +14,13 @@ import { useThemedStyles } from "@/src/context/useThemedStyles";
 import { useTheme } from "@/src/context/ThemeContext";
 import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
-import { GlassSurface } from "./GlassSurface";
 
-export type ChallengeDayKind = "today" | "past" | "future";
-type StepKey = "workout" | "breakfast" | "lunch" | "dinner";
+// This card's background IS the accent, same relationship as the old
+// TodaysChallengeCard — needs a deeper gold for the blob and the raw RGB of
+// T.bg for translucent overlays, since the shared token set only has the
+// solid values.
+const accentDeep = "#C62828";
+const darkRgb = "17,19,24"; // matches T.bg
 
 type Props = {
   dayKind: ChallengeDayKind;

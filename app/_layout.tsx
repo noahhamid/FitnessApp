@@ -2,6 +2,7 @@ import {
   BarlowCondensed_700Bold,
   BarlowCondensed_800ExtraBold,
   BarlowCondensed_900Black,
+  BarlowCondensed_900Black_Italic,
 } from "@expo-google-fonts/barlow-condensed";
 import {
   BricolageGrotesque_500Medium,
@@ -38,6 +39,8 @@ import { AnimatedSplashScreen } from "@/src/components/AnimatedSplashScreen";
 import { AppSafeAreaChrome } from "@/src/components/AppSafeAreaChrome";
 
 import * as WebBrowser from "expo-web-browser";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { LoadingScreen } from "@/src/ui/components/LoadingScreen";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -90,6 +93,7 @@ export default function RootLayout() {
   // names, so those are registered under explicit aliases.
   const [loaded, err] = useFonts({
     BarlowCondensed_900Black,
+    BarlowCondensed_900Black_Italic,
     BarlowCondensed_800ExtraBold,
     BarlowCondensed_700Bold,
     DMSans_400Regular,
@@ -117,9 +121,13 @@ export default function RootLayout() {
     };
   }, []);
 
-  // Keep the native splash up until fonts resolve — then hand off to the
-  // branded AnimatedSplashScreen (which calls SplashScreen.hideAsync on mount).
-  if (!loaded && !err) return null;
+  // Hand off from the native splash as soon as we have something rendered, so
+  // our own loading screen covers the wait for fonts rather than a blank view.
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
+  if (!loaded && !err) return <LoadingScreen />;
 
   return (
     <SafeAreaProvider>
