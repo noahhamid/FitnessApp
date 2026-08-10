@@ -5,8 +5,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Line, Path, Polyline, Rect } from "react-native-svg";
 
 const T = {
-  bg: "#121212",
-  gold: "#FFC700",
+  bg: "#111318",
+  gold: "#E53935",
   inactive: "#505050",
   border: "#FFFFFF08",
 };

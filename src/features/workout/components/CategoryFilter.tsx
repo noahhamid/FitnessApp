@@ -13,8 +13,8 @@ import {
 // Worth pulling into a shared theme.ts alongside them at some point.
 const T = {
   glassBorder: "rgba(255,255,255,0.14)",
-  accent: "#FFC700",
-  accentText: "#1A1300",
+  accent: "#E53935",
+  accentText: "#FFFFFF",
   white: "#FFFFFF",
   muted: "rgba(255,255,255,0.62)",
 

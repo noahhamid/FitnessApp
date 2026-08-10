@@ -24,12 +24,12 @@ import { useSaveProfile } from "../hooks/useProfile";
 // Move into src/ui/tokens.ts and export as `C` for app-wide reuse;
 // kept local here so this file is drop-in ready.
 const C = {
-  bg: "#121212",
+  bg: "#111318",
   bg2: "#181818",
   card: "#1E1E1E",
   border: "#2A2A2A",
-  accent: "#FFC700",
-  accentDim: "rgba(255, 199, 0, 0.10)",
+  accent: "#E53935",
+  accentDim: "rgba(229, 57, 53, 0.10)",
   text: "#FFFFFF",
   muted: "#A0A0A0",
 };
@@ -344,7 +344,7 @@ export function ProfileMetricsForm({ onNext, onBack, goalId }: Props) {
                     <Text style={s.finishBtnText}>Saving...</Text>
                   </View>
                 ) : (
-                  <Text style={s.finishBtnText}>CALCULATE MY PLAN →</Text>
+                  <Text style={s.finishBtnText}>CALCULATE MY PLAN</Text>
                 )}
               </Animated.View>
             </Pressable>

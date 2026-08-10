@@ -117,13 +117,21 @@ model User {
    userId    String   @unique
    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
    goalId    String?
+   goalDetail      String?
    weightKg  Decimal? @db.Decimal(6, 2)
+   targetWeightKg  Decimal? @db.Decimal(6, 2)
+   pace            Pace?
    heightCm  Int?
    age       Int?
    gender          Gender?           
    daysPerWeek     Int?              
    experience      ExperienceLevel?  
    equipment       EquipmentAccess?  
+   focusAreas      String[]          @default([])
+   bodyIssues      String[]          @default([])
+   injuries        String[]          @default([])
+   reminderEnabled Boolean?          @default(true)
+   reminderHour    Int?
    updatedAt DateTime @updatedAt
    @@map("user_profile")
  }
@@ -283,5 +291,11 @@ enum EquipmentAccess {
   full_gym
   home_dumbbells
   bodyweight
+}
+
+enum Pace {
+  slow
+  moderate
+  aggressive
 }
 

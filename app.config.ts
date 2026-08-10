@@ -1,21 +1,23 @@
 import type { ExpoConfig } from "expo/config";
 
 const config: ExpoConfig = {
-  name: "Exo",
-  slug: "exo-fitness",
+  name: "PotentialPeak",
+  slug: "potential-peak",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
-  scheme: "myapp",
+  scheme: "com.exo.fitness",
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
+    bundleIdentifier: "com.exo.fitness",
+    usesAppleSignIn: true,
   },
   android: {
     package: "com.exo.fitness",
     adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
+      backgroundColor: "#C91923",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
@@ -31,15 +33,25 @@ const config: ExpoConfig = {
     "expo-router",
     "expo-secure-store",
     "expo-web-browser",
+    "expo-apple-authentication",
+    [
+      "@react-native-google-signin/google-signin",
+      {
+        iosClientId:
+          "571605491186-kd1lt4933dp1a60hvuvegu2rn9cteodo.apps.googleusercontent.com",
+        iosUrlScheme:
+          "com.googleusercontent.apps.571605491186-kd1lt4933dp1a60hvuvegu2rn9cteodo",
+      },
+    ],
     [
       "expo-splash-screen",
       {
         image: "./assets/images/splash-icon.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#ffffff",
+        backgroundColor: "#C91923",
         dark: {
-          backgroundColor: "#000000",
+          backgroundColor: "#C91923",
         },
       },
     ],

@@ -17,10 +17,10 @@ import {
 
 // ── Strict token system — zero color bleed ────────────────────────────────────
 const T = {
-  bg: "#121212",
+  bg: "#111318",
   card: "#1E1E1E",
   surface: "#252525",
-  gold: "#FFC700", // active selections, highlights ONLY
+  gold: "#E53935", // active selections, highlights ONLY
   text: "#FFFFFF",
   sub: "#A0A0A0",
   dim: "#3A3A3A", // dividers, inactive circles, ghost elements

@@ -11,7 +11,7 @@ import { ChevronLeft, Clock, Flame, Repeat } from "lucide-react-native";
 import { WorkoutPlan, Exercise } from "../data/workouts";
 
 const T = {
-  bg: "#000000",
+  bg: "#111318",
   card: "#1C1F26",
   lime: "#D4F445",
   text: "#FFFFFF",

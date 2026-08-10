@@ -24,5 +24,5 @@ const s = StyleSheet.create({
   },
   dot: { height: 4, borderRadius: 2 },
   active: { width: 24, backgroundColor: C.accent },
-  inactive: { width: 8, backgroundColor: C.border },
+  inactive: { width: 8, backgroundColor: C.muted2 },
 });

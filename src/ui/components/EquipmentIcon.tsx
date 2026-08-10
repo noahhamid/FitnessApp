@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import Svg, { Path, Rect, Circle } from "react-native-svg";
 
-const C = { accent: "#FFC700" };
+const C = { accent: "#E53935" };
 
 export type EquipmentAccess = "full_gym" | "home_dumbbells" | "bodyweight";
 
@@ -52,7 +52,7 @@ export function EquipmentIcon({
   active: boolean;
   size?: number;
 }) {
-  const color = active ? "#121212" : C.accent;
+  const color = active ? "#1A1A1A" : C.accent;
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size} viewBox="0 0 32 32">

@@ -77,7 +77,7 @@ export default function DashboardScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Up next</Text>
-          <Text style={styles.sectionLink}>Full plan →</Text>
+          <Text style={styles.sectionLink}>Full plan</Text>
         </View>
 
         <FadeInUp>

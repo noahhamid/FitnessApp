@@ -10,7 +10,7 @@ import { PressableScale } from "./PressableScale";
 // TodaysChallengeCard — needs a deeper gold for the blob and the raw RGB of
 // T.bg for translucent overlays, since the shared token set only has the
 // solid values.
-const accentDeep = "#E8AE00";
+const accentDeep = "#C62828";
 const darkRgb = "17,19,24"; // matches T.bg
 
 type Props = {

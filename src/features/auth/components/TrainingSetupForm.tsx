@@ -1,3 +1,8 @@
+import {
+  ONBOARDING_STEPS,
+  onboardingStepIndex,
+  onboardingStepLabel,
+} from "@/app/(auth)/onboarding/steps";
 import { ProgressDots } from "@/src/ui/components/ProgressDots";
 import {
   ExperienceIcon,
@@ -7,30 +12,31 @@ import {
   EquipmentIcon,
   EquipmentAccess,
 } from "@/src/ui/components/EquipmentIcon";
-import { FONTS } from "@/src/ui/tokens";
+import { C, FONTS } from "@/src/ui/tokens";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
+  Image,
   Pressable,
-  SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { useSaveProfile } from "../hooks/useProfile";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const C = {
-  bg: "#121212",
-  card: "#1E1E1E",
-  border: "#2A2A2A",
-  accent: "#FFC700",
-  text: "#FFFFFF",
-  muted: "#A0A0A0",
-};
+const STEP = "training-setup" as const;
+const STEP_INDEX = onboardingStepIndex(STEP);
 
-const DAYS = [2, 3, 4, 5, 6];
+const DAYS = [2, 3, 4, 5, 6, 7];
+
+const REMINDER_TIMES: { hour: number; label: string }[] = [
+  { hour: 7, label: "MORNING · 7 AM" },
+  { hour: 14, label: "AFTERNOON · 2 PM" },
+  { hour: 19, label: "EVENING · 7 PM" },
+];
 
 const EXPERIENCE: { id: ExperienceLevel; title: string; desc: string }[] = [
   {
@@ -61,61 +67,90 @@ export function TrainingSetupForm() {
   const [days, setDays] = useState<number | null>(null);
   const [experience, setExperience] = useState<ExperienceLevel | null>(null);
   const [equipment, setEquipment] = useState<EquipmentAccess | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const { mutateAsync: saveProfile } = useSaveProfile();
+  const [reminderEnabled, setReminderEnabled] = useState(true);
+  const [reminderHour, setReminderHour] = useState(7);
 
   const canContinue = !!days && !!experience && !!equipment;
 
-  async function handleContinue() {
+  function handleContinue() {
     if (!canContinue) return;
-    setLoading(true);
 
-    try {
-      await saveProfile({
-        daysPerWeek: days!,
-        experience: experience!,
-        equipment: equipment!,
-      });
-      router.push({
-        pathname: "/(auth)/onboarding/ready",
-        params: {
-          ...params,
-          daysPerWeek: String(days),
-          experience: experience!,
-          equipment: equipment!,
-        },
-      });
-    } catch {
-      setLoading(false);
-    }
+    const nextParams = {
+      ...params,
+      daysPerWeek: String(days),
+      experience: experience!,
+      equipment: equipment!,
+      reminderEnabled: reminderEnabled ? "1" : "0",
+      ...(reminderEnabled ? { reminderHour: String(reminderHour) } : {}),
+    };
+
+    router.push({
+      pathname: "/(auth)/onboarding/revised-prediction",
+      params: nextParams,
+    });
   }
 
   return (
-    <SafeAreaView style={s.safe}>
+    <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
+      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+
+      <View style={s.headerWrap}>
+        <LinearGradient
+          colors={[C.bg, "#3A1818", C.accentDeep]}
+          locations={[0, 0.55, 1]}
+          start={{ x: 0, y: 0.6 }}
+          end={{ x: 1, y: 0 }}
+          style={s.headerGradient}
+        />
+
+        <View style={s.header}>
+          <View style={s.stepRow}>
+            <Text style={s.counter}>{onboardingStepLabel(STEP)}</Text>
+            <ProgressDots
+              total={ONBOARDING_STEPS.length}
+              current={STEP_INDEX}
+            />
+          </View>
+
+          <View style={s.titleLogoRow}>
+            <View style={s.titleTextGroup}>
+              <Text style={s.headline}>YOUR{"\n"}TRAINING.</Text>
+              <Text style={s.sub}>
+                Shape your split, experience level and available equipment.
+              </Text>
+            </View>
+
+            <View style={s.logoContainer}>
+              <Image
+                source={require("@/assets/images/potentialpeak_logo_nobackground.jpg")}
+                style={s.logoImage}
+                resizeMode="contain"
+              />
+            </View>
+          </View>
+        </View>
+      </View>
+
       <ScrollView
         contentContainerStyle={s.scroll}
         showsVerticalScrollIndicator={false}
       >
-        <View style={s.header}>
-          <Text style={s.counter}>STEP 3 OF 3</Text>
-          <ProgressDots total={3} current={2} />
-          <Text style={s.headline}>YOUR{"\n"}TRAINING.</Text>
-          <Text style={s.sub}>
-            This shapes your split and how much volume you'll start with.
-          </Text>
-        </View>
-
         <Text style={s.sectionLabel}>DAYS PER WEEK</Text>
         <View style={s.dayRow}>
           {DAYS.map((d) => (
             <Pressable
               key={d}
               onPress={() => setDays(d)}
-              style={[s.dayChip, days === d && s.dayChipActive]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: days === d }}
+              style={({ pressed }) => [
+                s.dayChip,
+                days === d && s.dayChipActive,
+                pressed && s.optionPressed,
+              ]}
             >
               <Text style={[s.dayText, days === d && s.dayTextActive]}>
-                {d}
+                {d} DAYS
               </Text>
             </Pressable>
           ))}
@@ -131,15 +166,22 @@ export function TrainingSetupForm() {
               <Pressable
                 key={e.id}
                 onPress={() => setExperience(e.id)}
-                style={[s.expCard, active && s.expCardActive]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                style={({ pressed }) => [
+                  s.expCard,
+                  active && s.expCardActive,
+                  pressed && s.optionPressed,
+                ]}
               >
                 <ExperienceIcon level={e.id} />
                 <View style={{ flex: 1, marginLeft: 14 }}>
-                  <Text style={s.expTitle}>{e.title}</Text>
-                  <Text style={s.expDesc}>{e.desc}</Text>
-                </View>
-                <View style={[s.radio, active && s.radioSelected]}>
-                  {active && <View style={s.radioDot} />}
+                  <Text style={[s.expTitle, active && s.optionTitleActive]}>
+                    {e.title}
+                  </Text>
+                  <Text style={[s.expDesc, active && s.optionDescActive]}>
+                    {e.desc}
+                  </Text>
                 </View>
               </Pressable>
             );
@@ -155,7 +197,13 @@ export function TrainingSetupForm() {
               <Pressable
                 key={e.id}
                 onPress={() => setEquipment(e.id)}
-                style={[s.equipRow, active && s.equipRowActive]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                style={({ pressed }) => [
+                  s.equipRow,
+                  active && s.equipRowActive,
+                  pressed && s.optionPressed,
+                ]}
               >
                 <View
                   style={[s.equipIconWrap, active && s.equipIconWrapActive]}
@@ -165,29 +213,79 @@ export function TrainingSetupForm() {
                 <Text style={[s.equipLabel, active && s.equipLabelActive]}>
                   {e.label}
                 </Text>
-                <View style={[s.radio, active && s.radioSelected]}>
-                  {active && <View style={s.radioDot} />}
-                </View>
               </Pressable>
             );
           })}
         </View>
+
+        <View style={s.reminderHeader}>
+          <Text style={s.sectionLabel}>TRAINING REMINDER</Text>
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{ checked: reminderEnabled }}
+            onPress={() => setReminderEnabled((v) => !v)}
+            style={[s.toggle, reminderEnabled && s.toggleActive]}
+          >
+            <View style={[s.toggleKnob, reminderEnabled && s.toggleKnobActive]} />
+          </Pressable>
+        </View>
+        {reminderEnabled ? (
+          <View style={s.dayRow}>
+            {REMINDER_TIMES.map((t) => (
+              <Pressable
+                key={t.hour}
+                onPress={() => setReminderHour(t.hour)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: reminderHour === t.hour }}
+                style={({ pressed }) => [
+                  s.dayChip,
+                  reminderHour === t.hour && s.dayChipActive,
+                  pressed && s.optionPressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    s.dayText,
+                    reminderHour === t.hour && s.dayTextActive,
+                  ]}
+                >
+                  {t.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <Text style={s.reminderOffHint}>
+            We won&apos;t send training reminders. Adjust this anytime later.
+          </Text>
+        )}
       </ScrollView>
 
       <View style={s.footer}>
         <Pressable
-          disabled={!canContinue || loading}
-          style={[
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          style={({ pressed }) => [
+            s.backBtn,
+            pressed && s.buttonPressed,
+          ]}
+          onPress={() => router.back()}
+        >
+          <Text style={s.backText}>← BACK</Text>
+        </Pressable>
+
+        <Pressable
+          disabled={!canContinue}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !canContinue }}
+          style={({ pressed }) => [
             s.primaryBtn,
-            (!canContinue || loading) && s.primaryBtnDisabled,
+            !canContinue && s.primaryBtnDisabled,
+            pressed && s.buttonPressed,
           ]}
           onPress={handleContinue}
         >
-          {loading ? (
-            <ActivityIndicator color={C.bg} size="small" />
-          ) : (
-            <Text style={s.primaryBtnText}>CONTINUE →</Text>
-          )}
+          <Text style={s.primaryBtnText}>CONTINUE</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -196,25 +294,78 @@ export function TrainingSetupForm() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  scroll: { paddingHorizontal: 24, paddingTop: 52, paddingBottom: 24 },
-  header: { marginBottom: 20 },
+  headerWrap: {
+    position: "relative",
+    zIndex: 5,
+    marginTop: 10,
+    marginHorizontal: 14,
+    marginBottom: 6,
+    borderRadius: 22,
+    overflow: "hidden",
+    backgroundColor: C.bg,
+  },
+  headerGradient: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  header: {
+    paddingHorizontal: 18,
+    paddingTop: 4,
+    paddingBottom: 14,
+  },
+  stepRow: {
+    marginTop: 8,
+  },
+  titleLogoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: -8,
+  },
+  titleTextGroup: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  logoContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 18,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  logoImage: {
+    width: "100%",
+    height: "100%",
+  },
+  scroll: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 32,
+  },
   counter: {
     color: C.muted,
     fontSize: 11,
     letterSpacing: 2,
     fontFamily: FONTS.bold,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   headline: {
-    fontFamily: FONTS.black,
-    fontSize: 36,
+    fontFamily: FONTS.extraBold,
+    fontSize: 32,
     color: C.text,
-    lineHeight: 38,
+    lineHeight: 36,
     letterSpacing: -0.5,
-    marginTop: 16,
-    marginBottom: 10,
   },
-  sub: { fontFamily: FONTS.regular, fontSize: 14, color: C.muted },
+  sub: {
+    fontFamily: FONTS.regular,
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.7)",
+    marginTop: 6,
+  },
   sectionLabel: {
     fontFamily: FONTS.bold,
     fontSize: 11,
@@ -222,20 +373,38 @@ const s = StyleSheet.create({
     color: C.muted,
     marginBottom: 12,
   },
-  dayRow: { flexDirection: "row", gap: 10 },
+  dayRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
   dayChip: {
-    width: 48,
+    flexGrow: 1,
+    minWidth: 92,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 12,
     borderWidth: 1.5,
     borderColor: C.border,
     backgroundColor: C.card,
     alignItems: "center",
     justifyContent: "center",
   },
-  dayChipActive: { backgroundColor: C.accent, borderColor: C.accent },
-  dayText: { fontFamily: FONTS.bold, fontSize: 15, color: C.text },
-  dayTextActive: { color: C.bg },
+  dayChipActive: {
+    backgroundColor: C.accent,
+    borderColor: C.accent,
+    shadowColor: C.accent,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  dayText: {
+    fontFamily: FONTS.bold,
+    fontSize: 13,
+    letterSpacing: 0.8,
+    color: C.text,
+  },
+  dayTextActive: { color: "#FFFFFF" },
   expCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -245,7 +414,10 @@ const s = StyleSheet.create({
     borderColor: C.border,
     padding: 16,
   },
-  expCardActive: { borderColor: C.accent },
+  expCardActive: {
+    borderColor: C.accent,
+    backgroundColor: "rgba(229,57,53,0.14)",
+  },
   expTitle: {
     fontFamily: FONTS.bold,
     fontSize: 15,
@@ -267,12 +439,15 @@ const s = StyleSheet.create({
     borderColor: C.border,
     padding: 14,
   },
-  equipRowActive: { borderColor: C.accent },
+  equipRowActive: {
+    borderColor: C.accent,
+    backgroundColor: "rgba(229,57,53,0.14)",
+  },
   equipIconWrap: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(255,199,0,0.12)",
+    backgroundColor: "rgba(229,57,53,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -284,35 +459,93 @@ const s = StyleSheet.create({
     marginLeft: 14,
     flex: 1,
   },
-  equipLabelActive: { color: C.text },
-  radio: {
+  equipLabelActive: {
+    color: "#FFFFFF",
+  },
+  optionTitleActive: {
+    color: "#FFFFFF",
+  },
+  optionDescActive: {
+    color: "rgba(255,255,255,0.78)",
+  },
+  optionPressed: {
+    opacity: 0.82,
+  },
+  reminderHeader: {
+    marginTop: 28,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  toggle: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    padding: 3,
+    backgroundColor: C.bg3,
+    justifyContent: "center",
+  },
+  toggleActive: {
+    backgroundColor: C.accent,
+  },
+  toggleKnob: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    borderWidth: 1.5,
+    backgroundColor: "#FFFFFF",
+  },
+  toggleKnobActive: {
+    transform: [{ translateX: 20 }],
+  },
+  reminderOffHint: {
+    fontFamily: FONTS.regular,
+    fontSize: 12,
+    color: C.muted,
+  },
+  footer: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 24,
+    paddingTop: 8,
+  },
+  backBtn: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,
+    backgroundColor: C.card,
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 18,
   },
-  radioSelected: { borderColor: C.accent },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: C.accent,
+  backText: {
+    fontFamily: FONTS.bold,
+    fontSize: 14,
+    letterSpacing: 0.8,
+    color: C.text,
   },
-  footer: { paddingHorizontal: 24, paddingBottom: 24, paddingTop: 8 },
   primaryBtn: {
+    flex: 2,
     backgroundColor: C.accent,
-    borderRadius: 16,
+    borderRadius: 12,
     paddingVertical: 18,
     alignItems: "center",
+    justifyContent: "center",
+    shadowColor: C.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  primaryBtnDisabled: { opacity: 0.35 },
+  primaryBtnDisabled: { opacity: 0.35, shadowOpacity: 0 },
   primaryBtnText: {
     fontFamily: FONTS.bold,
     fontSize: 15,
-    color: C.bg,
+    color: "#FFFFFF",
     letterSpacing: 1,
+  },
+  buttonPressed: {
+    opacity: 0.85,
   },
 });

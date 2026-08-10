@@ -15,7 +15,7 @@ import { Bell } from "lucide-react-native";
 const T = {
   text: "#FFFFFF",
   faint: "rgba(255,255,255,0.6)",
-  accent: "#FFC700",
+  accent: "#E53935",
   panel: "#15161C",
   panelBorder: "rgba(255,255,255,0.10)",
   badge: "#FF5A5A",

@@ -155,6 +155,15 @@ export const EquipmentAccess: {
 
 export type EquipmentAccess = (typeof EquipmentAccess)[keyof typeof EquipmentAccess]
 
+
+export const Pace: {
+  slow: 'slow',
+  moderate: 'moderate',
+  aggressive: 'aggressive'
+};
+
+export type Pace = (typeof Pace)[keyof typeof Pace]
+
 }
 
 export type MuscleGroup = $Enums.MuscleGroup
@@ -180,6 +189,10 @@ export const ExperienceLevel: typeof $Enums.ExperienceLevel
 export type EquipmentAccess = $Enums.EquipmentAccess
 
 export const EquipmentAccess: typeof $Enums.EquipmentAccess
+
+export type Pace = $Enums.Pace
+
+export const Pace: typeof $Enums.Pace
 
 /**
  * ##  Prisma Client ʲˢ
@@ -8252,29 +8265,38 @@ export namespace Prisma {
 
   export type UserProfileAvgAggregateOutputType = {
     weightKg: Decimal | null
+    targetWeightKg: Decimal | null
     heightCm: number | null
     age: number | null
     daysPerWeek: number | null
+    reminderHour: number | null
   }
 
   export type UserProfileSumAggregateOutputType = {
     weightKg: Decimal | null
+    targetWeightKg: Decimal | null
     heightCm: number | null
     age: number | null
     daysPerWeek: number | null
+    reminderHour: number | null
   }
 
   export type UserProfileMinAggregateOutputType = {
     id: string | null
     userId: string | null
     goalId: string | null
+    goalDetail: string | null
     weightKg: Decimal | null
+    targetWeightKg: Decimal | null
+    pace: $Enums.Pace | null
     heightCm: number | null
     age: number | null
     gender: $Enums.Gender | null
     daysPerWeek: number | null
     experience: $Enums.ExperienceLevel | null
     equipment: $Enums.EquipmentAccess | null
+    reminderEnabled: boolean | null
+    reminderHour: number | null
     updatedAt: Date | null
   }
 
@@ -8282,13 +8304,18 @@ export namespace Prisma {
     id: string | null
     userId: string | null
     goalId: string | null
+    goalDetail: string | null
     weightKg: Decimal | null
+    targetWeightKg: Decimal | null
+    pace: $Enums.Pace | null
     heightCm: number | null
     age: number | null
     gender: $Enums.Gender | null
     daysPerWeek: number | null
     experience: $Enums.ExperienceLevel | null
     equipment: $Enums.EquipmentAccess | null
+    reminderEnabled: boolean | null
+    reminderHour: number | null
     updatedAt: Date | null
   }
 
@@ -8296,13 +8323,21 @@ export namespace Prisma {
     id: number
     userId: number
     goalId: number
+    goalDetail: number
     weightKg: number
+    targetWeightKg: number
+    pace: number
     heightCm: number
     age: number
     gender: number
     daysPerWeek: number
     experience: number
     equipment: number
+    focusAreas: number
+    bodyIssues: number
+    injuries: number
+    reminderEnabled: number
+    reminderHour: number
     updatedAt: number
     _all: number
   }
@@ -8310,29 +8345,38 @@ export namespace Prisma {
 
   export type UserProfileAvgAggregateInputType = {
     weightKg?: true
+    targetWeightKg?: true
     heightCm?: true
     age?: true
     daysPerWeek?: true
+    reminderHour?: true
   }
 
   export type UserProfileSumAggregateInputType = {
     weightKg?: true
+    targetWeightKg?: true
     heightCm?: true
     age?: true
     daysPerWeek?: true
+    reminderHour?: true
   }
 
   export type UserProfileMinAggregateInputType = {
     id?: true
     userId?: true
     goalId?: true
+    goalDetail?: true
     weightKg?: true
+    targetWeightKg?: true
+    pace?: true
     heightCm?: true
     age?: true
     gender?: true
     daysPerWeek?: true
     experience?: true
     equipment?: true
+    reminderEnabled?: true
+    reminderHour?: true
     updatedAt?: true
   }
 
@@ -8340,13 +8384,18 @@ export namespace Prisma {
     id?: true
     userId?: true
     goalId?: true
+    goalDetail?: true
     weightKg?: true
+    targetWeightKg?: true
+    pace?: true
     heightCm?: true
     age?: true
     gender?: true
     daysPerWeek?: true
     experience?: true
     equipment?: true
+    reminderEnabled?: true
+    reminderHour?: true
     updatedAt?: true
   }
 
@@ -8354,13 +8403,21 @@ export namespace Prisma {
     id?: true
     userId?: true
     goalId?: true
+    goalDetail?: true
     weightKg?: true
+    targetWeightKg?: true
+    pace?: true
     heightCm?: true
     age?: true
     gender?: true
     daysPerWeek?: true
     experience?: true
     equipment?: true
+    focusAreas?: true
+    bodyIssues?: true
+    injuries?: true
+    reminderEnabled?: true
+    reminderHour?: true
     updatedAt?: true
     _all?: true
   }
@@ -8455,13 +8512,21 @@ export namespace Prisma {
     id: string
     userId: string
     goalId: string | null
+    goalDetail: string | null
     weightKg: Decimal | null
+    targetWeightKg: Decimal | null
+    pace: $Enums.Pace | null
     heightCm: number | null
     age: number | null
     gender: $Enums.Gender | null
     daysPerWeek: number | null
     experience: $Enums.ExperienceLevel | null
     equipment: $Enums.EquipmentAccess | null
+    focusAreas: string[]
+    bodyIssues: string[]
+    injuries: string[]
+    reminderEnabled: boolean | null
+    reminderHour: number | null
     updatedAt: Date
     _count: UserProfileCountAggregateOutputType | null
     _avg: UserProfileAvgAggregateOutputType | null
@@ -8488,13 +8553,21 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     goalId?: boolean
+    goalDetail?: boolean
     weightKg?: boolean
+    targetWeightKg?: boolean
+    pace?: boolean
     heightCm?: boolean
     age?: boolean
     gender?: boolean
     daysPerWeek?: boolean
     experience?: boolean
     equipment?: boolean
+    focusAreas?: boolean
+    bodyIssues?: boolean
+    injuries?: boolean
+    reminderEnabled?: boolean
+    reminderHour?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["userProfile"]>
@@ -8503,13 +8576,21 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     goalId?: boolean
+    goalDetail?: boolean
     weightKg?: boolean
+    targetWeightKg?: boolean
+    pace?: boolean
     heightCm?: boolean
     age?: boolean
     gender?: boolean
     daysPerWeek?: boolean
     experience?: boolean
     equipment?: boolean
+    focusAreas?: boolean
+    bodyIssues?: boolean
+    injuries?: boolean
+    reminderEnabled?: boolean
+    reminderHour?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["userProfile"]>
@@ -8518,13 +8599,21 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     goalId?: boolean
+    goalDetail?: boolean
     weightKg?: boolean
+    targetWeightKg?: boolean
+    pace?: boolean
     heightCm?: boolean
     age?: boolean
     gender?: boolean
     daysPerWeek?: boolean
     experience?: boolean
     equipment?: boolean
+    focusAreas?: boolean
+    bodyIssues?: boolean
+    injuries?: boolean
+    reminderEnabled?: boolean
+    reminderHour?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["userProfile"]>
@@ -8533,17 +8622,25 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     goalId?: boolean
+    goalDetail?: boolean
     weightKg?: boolean
+    targetWeightKg?: boolean
+    pace?: boolean
     heightCm?: boolean
     age?: boolean
     gender?: boolean
     daysPerWeek?: boolean
     experience?: boolean
     equipment?: boolean
+    focusAreas?: boolean
+    bodyIssues?: boolean
+    injuries?: boolean
+    reminderEnabled?: boolean
+    reminderHour?: boolean
     updatedAt?: boolean
   }
 
-  export type UserProfileOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "goalId" | "weightKg" | "heightCm" | "age" | "gender" | "daysPerWeek" | "experience" | "equipment" | "updatedAt", ExtArgs["result"]["userProfile"]>
+  export type UserProfileOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "goalId" | "goalDetail" | "weightKg" | "targetWeightKg" | "pace" | "heightCm" | "age" | "gender" | "daysPerWeek" | "experience" | "equipment" | "focusAreas" | "bodyIssues" | "injuries" | "reminderEnabled" | "reminderHour" | "updatedAt", ExtArgs["result"]["userProfile"]>
   export type UserProfileInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -8563,13 +8660,21 @@ export namespace Prisma {
       id: string
       userId: string
       goalId: string | null
+      goalDetail: string | null
       weightKg: Prisma.Decimal | null
+      targetWeightKg: Prisma.Decimal | null
+      pace: $Enums.Pace | null
       heightCm: number | null
       age: number | null
       gender: $Enums.Gender | null
       daysPerWeek: number | null
       experience: $Enums.ExperienceLevel | null
       equipment: $Enums.EquipmentAccess | null
+      focusAreas: string[]
+      bodyIssues: string[]
+      injuries: string[]
+      reminderEnabled: boolean | null
+      reminderHour: number | null
       updatedAt: Date
     }, ExtArgs["result"]["userProfile"]>
     composites: {}
@@ -8998,13 +9103,21 @@ export namespace Prisma {
     readonly id: FieldRef<"UserProfile", 'String'>
     readonly userId: FieldRef<"UserProfile", 'String'>
     readonly goalId: FieldRef<"UserProfile", 'String'>
+    readonly goalDetail: FieldRef<"UserProfile", 'String'>
     readonly weightKg: FieldRef<"UserProfile", 'Decimal'>
+    readonly targetWeightKg: FieldRef<"UserProfile", 'Decimal'>
+    readonly pace: FieldRef<"UserProfile", 'Pace'>
     readonly heightCm: FieldRef<"UserProfile", 'Int'>
     readonly age: FieldRef<"UserProfile", 'Int'>
     readonly gender: FieldRef<"UserProfile", 'Gender'>
     readonly daysPerWeek: FieldRef<"UserProfile", 'Int'>
     readonly experience: FieldRef<"UserProfile", 'ExperienceLevel'>
     readonly equipment: FieldRef<"UserProfile", 'EquipmentAccess'>
+    readonly focusAreas: FieldRef<"UserProfile", 'String[]'>
+    readonly bodyIssues: FieldRef<"UserProfile", 'String[]'>
+    readonly injuries: FieldRef<"UserProfile", 'String[]'>
+    readonly reminderEnabled: FieldRef<"UserProfile", 'Boolean'>
+    readonly reminderHour: FieldRef<"UserProfile", 'Int'>
     readonly updatedAt: FieldRef<"UserProfile", 'DateTime'>
   }
     
@@ -19407,13 +19520,21 @@ export namespace Prisma {
     id: 'id',
     userId: 'userId',
     goalId: 'goalId',
+    goalDetail: 'goalDetail',
     weightKg: 'weightKg',
+    targetWeightKg: 'targetWeightKg',
+    pace: 'pace',
     heightCm: 'heightCm',
     age: 'age',
     gender: 'gender',
     daysPerWeek: 'daysPerWeek',
     experience: 'experience',
     equipment: 'equipment',
+    focusAreas: 'focusAreas',
+    bodyIssues: 'bodyIssues',
+    injuries: 'injuries',
+    reminderEnabled: 'reminderEnabled',
+    reminderHour: 'reminderHour',
     updatedAt: 'updatedAt'
   };
 
@@ -19696,6 +19817,20 @@ export namespace Prisma {
    * Reference to a field of type 'Decimal[]'
    */
   export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Pace'
+   */
+  export type EnumPaceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Pace'>
+    
+
+
+  /**
+   * Reference to a field of type 'Pace[]'
+   */
+  export type ListEnumPaceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Pace[]'>
     
 
 
@@ -20114,13 +20249,21 @@ export namespace Prisma {
     id?: StringFilter<"UserProfile"> | string
     userId?: StringFilter<"UserProfile"> | string
     goalId?: StringNullableFilter<"UserProfile"> | string | null
+    goalDetail?: StringNullableFilter<"UserProfile"> | string | null
     weightKg?: DecimalNullableFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: DecimalNullableFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    pace?: EnumPaceNullableFilter<"UserProfile"> | $Enums.Pace | null
     heightCm?: IntNullableFilter<"UserProfile"> | number | null
     age?: IntNullableFilter<"UserProfile"> | number | null
     gender?: EnumGenderNullableFilter<"UserProfile"> | $Enums.Gender | null
     daysPerWeek?: IntNullableFilter<"UserProfile"> | number | null
     experience?: EnumExperienceLevelNullableFilter<"UserProfile"> | $Enums.ExperienceLevel | null
     equipment?: EnumEquipmentAccessNullableFilter<"UserProfile"> | $Enums.EquipmentAccess | null
+    focusAreas?: StringNullableListFilter<"UserProfile">
+    bodyIssues?: StringNullableListFilter<"UserProfile">
+    injuries?: StringNullableListFilter<"UserProfile">
+    reminderEnabled?: BoolNullableFilter<"UserProfile"> | boolean | null
+    reminderHour?: IntNullableFilter<"UserProfile"> | number | null
     updatedAt?: DateTimeFilter<"UserProfile"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }
@@ -20129,13 +20272,21 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     goalId?: SortOrderInput | SortOrder
+    goalDetail?: SortOrderInput | SortOrder
     weightKg?: SortOrderInput | SortOrder
+    targetWeightKg?: SortOrderInput | SortOrder
+    pace?: SortOrderInput | SortOrder
     heightCm?: SortOrderInput | SortOrder
     age?: SortOrderInput | SortOrder
     gender?: SortOrderInput | SortOrder
     daysPerWeek?: SortOrderInput | SortOrder
     experience?: SortOrderInput | SortOrder
     equipment?: SortOrderInput | SortOrder
+    focusAreas?: SortOrder
+    bodyIssues?: SortOrder
+    injuries?: SortOrder
+    reminderEnabled?: SortOrderInput | SortOrder
+    reminderHour?: SortOrderInput | SortOrder
     updatedAt?: SortOrder
     user?: UserOrderByWithRelationInput
   }
@@ -20147,13 +20298,21 @@ export namespace Prisma {
     OR?: UserProfileWhereInput[]
     NOT?: UserProfileWhereInput | UserProfileWhereInput[]
     goalId?: StringNullableFilter<"UserProfile"> | string | null
+    goalDetail?: StringNullableFilter<"UserProfile"> | string | null
     weightKg?: DecimalNullableFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: DecimalNullableFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    pace?: EnumPaceNullableFilter<"UserProfile"> | $Enums.Pace | null
     heightCm?: IntNullableFilter<"UserProfile"> | number | null
     age?: IntNullableFilter<"UserProfile"> | number | null
     gender?: EnumGenderNullableFilter<"UserProfile"> | $Enums.Gender | null
     daysPerWeek?: IntNullableFilter<"UserProfile"> | number | null
     experience?: EnumExperienceLevelNullableFilter<"UserProfile"> | $Enums.ExperienceLevel | null
     equipment?: EnumEquipmentAccessNullableFilter<"UserProfile"> | $Enums.EquipmentAccess | null
+    focusAreas?: StringNullableListFilter<"UserProfile">
+    bodyIssues?: StringNullableListFilter<"UserProfile">
+    injuries?: StringNullableListFilter<"UserProfile">
+    reminderEnabled?: BoolNullableFilter<"UserProfile"> | boolean | null
+    reminderHour?: IntNullableFilter<"UserProfile"> | number | null
     updatedAt?: DateTimeFilter<"UserProfile"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }, "id" | "userId">
@@ -20162,13 +20321,21 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     goalId?: SortOrderInput | SortOrder
+    goalDetail?: SortOrderInput | SortOrder
     weightKg?: SortOrderInput | SortOrder
+    targetWeightKg?: SortOrderInput | SortOrder
+    pace?: SortOrderInput | SortOrder
     heightCm?: SortOrderInput | SortOrder
     age?: SortOrderInput | SortOrder
     gender?: SortOrderInput | SortOrder
     daysPerWeek?: SortOrderInput | SortOrder
     experience?: SortOrderInput | SortOrder
     equipment?: SortOrderInput | SortOrder
+    focusAreas?: SortOrder
+    bodyIssues?: SortOrder
+    injuries?: SortOrder
+    reminderEnabled?: SortOrderInput | SortOrder
+    reminderHour?: SortOrderInput | SortOrder
     updatedAt?: SortOrder
     _count?: UserProfileCountOrderByAggregateInput
     _avg?: UserProfileAvgOrderByAggregateInput
@@ -20184,13 +20351,21 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"UserProfile"> | string
     userId?: StringWithAggregatesFilter<"UserProfile"> | string
     goalId?: StringNullableWithAggregatesFilter<"UserProfile"> | string | null
+    goalDetail?: StringNullableWithAggregatesFilter<"UserProfile"> | string | null
     weightKg?: DecimalNullableWithAggregatesFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: DecimalNullableWithAggregatesFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    pace?: EnumPaceNullableWithAggregatesFilter<"UserProfile"> | $Enums.Pace | null
     heightCm?: IntNullableWithAggregatesFilter<"UserProfile"> | number | null
     age?: IntNullableWithAggregatesFilter<"UserProfile"> | number | null
     gender?: EnumGenderNullableWithAggregatesFilter<"UserProfile"> | $Enums.Gender | null
     daysPerWeek?: IntNullableWithAggregatesFilter<"UserProfile"> | number | null
     experience?: EnumExperienceLevelNullableWithAggregatesFilter<"UserProfile"> | $Enums.ExperienceLevel | null
     equipment?: EnumEquipmentAccessNullableWithAggregatesFilter<"UserProfile"> | $Enums.EquipmentAccess | null
+    focusAreas?: StringNullableListFilter<"UserProfile">
+    bodyIssues?: StringNullableListFilter<"UserProfile">
+    injuries?: StringNullableListFilter<"UserProfile">
+    reminderEnabled?: BoolNullableWithAggregatesFilter<"UserProfile"> | boolean | null
+    reminderHour?: IntNullableWithAggregatesFilter<"UserProfile"> | number | null
     updatedAt?: DateTimeWithAggregatesFilter<"UserProfile"> | Date | string
   }
 
@@ -21153,13 +21328,21 @@ export namespace Prisma {
   export type UserProfileCreateInput = {
     id?: string
     goalId?: string | null
+    goalDetail?: string | null
     weightKg?: Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: Decimal | DecimalJsLike | number | string | null
+    pace?: $Enums.Pace | null
     heightCm?: number | null
     age?: number | null
     gender?: $Enums.Gender | null
     daysPerWeek?: number | null
     experience?: $Enums.ExperienceLevel | null
     equipment?: $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileCreatefocusAreasInput | string[]
+    bodyIssues?: UserProfileCreatebodyIssuesInput | string[]
+    injuries?: UserProfileCreateinjuriesInput | string[]
+    reminderEnabled?: boolean | null
+    reminderHour?: number | null
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutProfileInput
   }
@@ -21168,26 +21351,42 @@ export namespace Prisma {
     id?: string
     userId: string
     goalId?: string | null
+    goalDetail?: string | null
     weightKg?: Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: Decimal | DecimalJsLike | number | string | null
+    pace?: $Enums.Pace | null
     heightCm?: number | null
     age?: number | null
     gender?: $Enums.Gender | null
     daysPerWeek?: number | null
     experience?: $Enums.ExperienceLevel | null
     equipment?: $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileCreatefocusAreasInput | string[]
+    bodyIssues?: UserProfileCreatebodyIssuesInput | string[]
+    injuries?: UserProfileCreateinjuriesInput | string[]
+    reminderEnabled?: boolean | null
+    reminderHour?: number | null
     updatedAt?: Date | string
   }
 
   export type UserProfileUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     goalId?: NullableStringFieldUpdateOperationsInput | string | null
+    goalDetail?: NullableStringFieldUpdateOperationsInput | string | null
     weightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    pace?: NullableEnumPaceFieldUpdateOperationsInput | $Enums.Pace | null
     heightCm?: NullableIntFieldUpdateOperationsInput | number | null
     age?: NullableIntFieldUpdateOperationsInput | number | null
     gender?: NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
     daysPerWeek?: NullableIntFieldUpdateOperationsInput | number | null
     experience?: NullableEnumExperienceLevelFieldUpdateOperationsInput | $Enums.ExperienceLevel | null
     equipment?: NullableEnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileUpdatefocusAreasInput | string[]
+    bodyIssues?: UserProfileUpdatebodyIssuesInput | string[]
+    injuries?: UserProfileUpdateinjuriesInput | string[]
+    reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutProfileNestedInput
   }
@@ -21196,13 +21395,21 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     goalId?: NullableStringFieldUpdateOperationsInput | string | null
+    goalDetail?: NullableStringFieldUpdateOperationsInput | string | null
     weightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    pace?: NullableEnumPaceFieldUpdateOperationsInput | $Enums.Pace | null
     heightCm?: NullableIntFieldUpdateOperationsInput | number | null
     age?: NullableIntFieldUpdateOperationsInput | number | null
     gender?: NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
     daysPerWeek?: NullableIntFieldUpdateOperationsInput | number | null
     experience?: NullableEnumExperienceLevelFieldUpdateOperationsInput | $Enums.ExperienceLevel | null
     equipment?: NullableEnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileUpdatefocusAreasInput | string[]
+    bodyIssues?: UserProfileUpdatebodyIssuesInput | string[]
+    injuries?: UserProfileUpdateinjuriesInput | string[]
+    reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -21210,26 +21417,42 @@ export namespace Prisma {
     id?: string
     userId: string
     goalId?: string | null
+    goalDetail?: string | null
     weightKg?: Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: Decimal | DecimalJsLike | number | string | null
+    pace?: $Enums.Pace | null
     heightCm?: number | null
     age?: number | null
     gender?: $Enums.Gender | null
     daysPerWeek?: number | null
     experience?: $Enums.ExperienceLevel | null
     equipment?: $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileCreatefocusAreasInput | string[]
+    bodyIssues?: UserProfileCreatebodyIssuesInput | string[]
+    injuries?: UserProfileCreateinjuriesInput | string[]
+    reminderEnabled?: boolean | null
+    reminderHour?: number | null
     updatedAt?: Date | string
   }
 
   export type UserProfileUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     goalId?: NullableStringFieldUpdateOperationsInput | string | null
+    goalDetail?: NullableStringFieldUpdateOperationsInput | string | null
     weightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    pace?: NullableEnumPaceFieldUpdateOperationsInput | $Enums.Pace | null
     heightCm?: NullableIntFieldUpdateOperationsInput | number | null
     age?: NullableIntFieldUpdateOperationsInput | number | null
     gender?: NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
     daysPerWeek?: NullableIntFieldUpdateOperationsInput | number | null
     experience?: NullableEnumExperienceLevelFieldUpdateOperationsInput | $Enums.ExperienceLevel | null
     equipment?: NullableEnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileUpdatefocusAreasInput | string[]
+    bodyIssues?: UserProfileUpdatebodyIssuesInput | string[]
+    injuries?: UserProfileUpdateinjuriesInput | string[]
+    reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -21237,13 +21460,21 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     goalId?: NullableStringFieldUpdateOperationsInput | string | null
+    goalDetail?: NullableStringFieldUpdateOperationsInput | string | null
     weightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    pace?: NullableEnumPaceFieldUpdateOperationsInput | $Enums.Pace | null
     heightCm?: NullableIntFieldUpdateOperationsInput | number | null
     age?: NullableIntFieldUpdateOperationsInput | number | null
     gender?: NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
     daysPerWeek?: NullableIntFieldUpdateOperationsInput | number | null
     experience?: NullableEnumExperienceLevelFieldUpdateOperationsInput | $Enums.ExperienceLevel | null
     equipment?: NullableEnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileUpdatefocusAreasInput | string[]
+    bodyIssues?: UserProfileUpdatebodyIssuesInput | string[]
+    injuries?: UserProfileUpdateinjuriesInput | string[]
+    reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -22355,6 +22586,13 @@ export namespace Prisma {
     not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
   }
 
+  export type EnumPaceNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.Pace | EnumPaceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumPaceNullableFilter<$PrismaModel> | $Enums.Pace | null
+  }
+
   export type IntNullableFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
@@ -22387,38 +22625,66 @@ export namespace Prisma {
     not?: NestedEnumEquipmentAccessNullableFilter<$PrismaModel> | $Enums.EquipmentAccess | null
   }
 
+  export type StringNullableListFilter<$PrismaModel = never> = {
+    equals?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    has?: string | StringFieldRefInput<$PrismaModel> | null
+    hasEvery?: string[] | ListStringFieldRefInput<$PrismaModel>
+    hasSome?: string[] | ListStringFieldRefInput<$PrismaModel>
+    isEmpty?: boolean
+  }
+
+  export type BoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
   export type UserProfileCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
     goalId?: SortOrder
+    goalDetail?: SortOrder
     weightKg?: SortOrder
+    targetWeightKg?: SortOrder
+    pace?: SortOrder
     heightCm?: SortOrder
     age?: SortOrder
     gender?: SortOrder
     daysPerWeek?: SortOrder
     experience?: SortOrder
     equipment?: SortOrder
+    focusAreas?: SortOrder
+    bodyIssues?: SortOrder
+    injuries?: SortOrder
+    reminderEnabled?: SortOrder
+    reminderHour?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type UserProfileAvgOrderByAggregateInput = {
     weightKg?: SortOrder
+    targetWeightKg?: SortOrder
     heightCm?: SortOrder
     age?: SortOrder
     daysPerWeek?: SortOrder
+    reminderHour?: SortOrder
   }
 
   export type UserProfileMaxOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
     goalId?: SortOrder
+    goalDetail?: SortOrder
     weightKg?: SortOrder
+    targetWeightKg?: SortOrder
+    pace?: SortOrder
     heightCm?: SortOrder
     age?: SortOrder
     gender?: SortOrder
     daysPerWeek?: SortOrder
     experience?: SortOrder
     equipment?: SortOrder
+    reminderEnabled?: SortOrder
+    reminderHour?: SortOrder
     updatedAt?: SortOrder
   }
 
@@ -22426,21 +22692,28 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     goalId?: SortOrder
+    goalDetail?: SortOrder
     weightKg?: SortOrder
+    targetWeightKg?: SortOrder
+    pace?: SortOrder
     heightCm?: SortOrder
     age?: SortOrder
     gender?: SortOrder
     daysPerWeek?: SortOrder
     experience?: SortOrder
     equipment?: SortOrder
+    reminderEnabled?: SortOrder
+    reminderHour?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type UserProfileSumOrderByAggregateInput = {
     weightKg?: SortOrder
+    targetWeightKg?: SortOrder
     heightCm?: SortOrder
     age?: SortOrder
     daysPerWeek?: SortOrder
+    reminderHour?: SortOrder
   }
 
   export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -22457,6 +22730,16 @@ export namespace Prisma {
     _sum?: NestedDecimalNullableFilter<$PrismaModel>
     _min?: NestedDecimalNullableFilter<$PrismaModel>
     _max?: NestedDecimalNullableFilter<$PrismaModel>
+  }
+
+  export type EnumPaceNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.Pace | EnumPaceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumPaceNullableWithAggregatesFilter<$PrismaModel> | $Enums.Pace | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumPaceNullableFilter<$PrismaModel>
+    _max?: NestedEnumPaceNullableFilter<$PrismaModel>
   }
 
   export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -22503,6 +22786,14 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedEnumEquipmentAccessNullableFilter<$PrismaModel>
     _max?: NestedEnumEquipmentAccessNullableFilter<$PrismaModel>
+  }
+
+  export type BoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
   export type SessionCountOrderByAggregateInput = {
@@ -23506,6 +23797,18 @@ export namespace Prisma {
     update?: XOR<XOR<WorkoutPlanUpdateToOneWithWhereWithoutUserInput, WorkoutPlanUpdateWithoutUserInput>, WorkoutPlanUncheckedUpdateWithoutUserInput>
   }
 
+  export type UserProfileCreatefocusAreasInput = {
+    set: string[]
+  }
+
+  export type UserProfileCreatebodyIssuesInput = {
+    set: string[]
+  }
+
+  export type UserProfileCreateinjuriesInput = {
+    set: string[]
+  }
+
   export type UserCreateNestedOneWithoutProfileInput = {
     create?: XOR<UserCreateWithoutProfileInput, UserUncheckedCreateWithoutProfileInput>
     connectOrCreate?: UserCreateOrConnectWithoutProfileInput
@@ -23518,6 +23821,10 @@ export namespace Prisma {
     decrement?: Decimal | DecimalJsLike | number | string
     multiply?: Decimal | DecimalJsLike | number | string
     divide?: Decimal | DecimalJsLike | number | string
+  }
+
+  export type NullableEnumPaceFieldUpdateOperationsInput = {
+    set?: $Enums.Pace | null
   }
 
   export type NullableIntFieldUpdateOperationsInput = {
@@ -23538,6 +23845,25 @@ export namespace Prisma {
 
   export type NullableEnumEquipmentAccessFieldUpdateOperationsInput = {
     set?: $Enums.EquipmentAccess | null
+  }
+
+  export type UserProfileUpdatefocusAreasInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
+  export type UserProfileUpdatebodyIssuesInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
+  export type UserProfileUpdateinjuriesInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
+  export type NullableBoolFieldUpdateOperationsInput = {
+    set?: boolean | null
   }
 
   export type UserUpdateOneRequiredWithoutProfileNestedInput = {
@@ -23946,6 +24272,13 @@ export namespace Prisma {
     not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
   }
 
+  export type NestedEnumPaceNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.Pace | EnumPaceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumPaceNullableFilter<$PrismaModel> | $Enums.Pace | null
+  }
+
   export type NestedEnumGenderNullableFilter<$PrismaModel = never> = {
     equals?: $Enums.Gender | EnumGenderFieldRefInput<$PrismaModel> | null
     in?: $Enums.Gender[] | ListEnumGenderFieldRefInput<$PrismaModel> | null
@@ -23967,6 +24300,11 @@ export namespace Prisma {
     not?: NestedEnumEquipmentAccessNullableFilter<$PrismaModel> | $Enums.EquipmentAccess | null
   }
 
+  export type NestedBoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
   export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
     in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
@@ -23981,6 +24319,16 @@ export namespace Prisma {
     _sum?: NestedDecimalNullableFilter<$PrismaModel>
     _min?: NestedDecimalNullableFilter<$PrismaModel>
     _max?: NestedDecimalNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumPaceNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.Pace | EnumPaceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumPaceNullableWithAggregatesFilter<$PrismaModel> | $Enums.Pace | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumPaceNullableFilter<$PrismaModel>
+    _max?: NestedEnumPaceNullableFilter<$PrismaModel>
   }
 
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -24038,6 +24386,14 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedEnumEquipmentAccessNullableFilter<$PrismaModel>
     _max?: NestedEnumEquipmentAccessNullableFilter<$PrismaModel>
+  }
+
+  export type NestedBoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
   export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
@@ -24626,26 +24982,42 @@ export namespace Prisma {
   export type UserProfileCreateWithoutUserInput = {
     id?: string
     goalId?: string | null
+    goalDetail?: string | null
     weightKg?: Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: Decimal | DecimalJsLike | number | string | null
+    pace?: $Enums.Pace | null
     heightCm?: number | null
     age?: number | null
     gender?: $Enums.Gender | null
     daysPerWeek?: number | null
     experience?: $Enums.ExperienceLevel | null
     equipment?: $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileCreatefocusAreasInput | string[]
+    bodyIssues?: UserProfileCreatebodyIssuesInput | string[]
+    injuries?: UserProfileCreateinjuriesInput | string[]
+    reminderEnabled?: boolean | null
+    reminderHour?: number | null
     updatedAt?: Date | string
   }
 
   export type UserProfileUncheckedCreateWithoutUserInput = {
     id?: string
     goalId?: string | null
+    goalDetail?: string | null
     weightKg?: Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: Decimal | DecimalJsLike | number | string | null
+    pace?: $Enums.Pace | null
     heightCm?: number | null
     age?: number | null
     gender?: $Enums.Gender | null
     daysPerWeek?: number | null
     experience?: $Enums.ExperienceLevel | null
     equipment?: $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileCreatefocusAreasInput | string[]
+    bodyIssues?: UserProfileCreatebodyIssuesInput | string[]
+    injuries?: UserProfileCreateinjuriesInput | string[]
+    reminderEnabled?: boolean | null
+    reminderHour?: number | null
     updatedAt?: Date | string
   }
 
@@ -24885,26 +25257,42 @@ export namespace Prisma {
   export type UserProfileUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     goalId?: NullableStringFieldUpdateOperationsInput | string | null
+    goalDetail?: NullableStringFieldUpdateOperationsInput | string | null
     weightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    pace?: NullableEnumPaceFieldUpdateOperationsInput | $Enums.Pace | null
     heightCm?: NullableIntFieldUpdateOperationsInput | number | null
     age?: NullableIntFieldUpdateOperationsInput | number | null
     gender?: NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
     daysPerWeek?: NullableIntFieldUpdateOperationsInput | number | null
     experience?: NullableEnumExperienceLevelFieldUpdateOperationsInput | $Enums.ExperienceLevel | null
     equipment?: NullableEnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileUpdatefocusAreasInput | string[]
+    bodyIssues?: UserProfileUpdatebodyIssuesInput | string[]
+    injuries?: UserProfileUpdateinjuriesInput | string[]
+    reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type UserProfileUncheckedUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     goalId?: NullableStringFieldUpdateOperationsInput | string | null
+    goalDetail?: NullableStringFieldUpdateOperationsInput | string | null
     weightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    pace?: NullableEnumPaceFieldUpdateOperationsInput | $Enums.Pace | null
     heightCm?: NullableIntFieldUpdateOperationsInput | number | null
     age?: NullableIntFieldUpdateOperationsInput | number | null
     gender?: NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
     daysPerWeek?: NullableIntFieldUpdateOperationsInput | number | null
     experience?: NullableEnumExperienceLevelFieldUpdateOperationsInput | $Enums.ExperienceLevel | null
     equipment?: NullableEnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileUpdatefocusAreasInput | string[]
+    bodyIssues?: UserProfileUpdatebodyIssuesInput | string[]
+    injuries?: UserProfileUpdateinjuriesInput | string[]
+    reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import Svg, { Path, Circle } from "react-native-svg";
 
-const C = { accent: "#FFC700" };
+const C = { accent: "#E53935" };
 
 export type ExperienceLevel = "novice" | "intermediate" | "advanced";
 
@@ -13,7 +13,7 @@ function Bars({ filled }: { filled: number }) {
         <Path
           key={i}
           d={`M${8 + i * 8} ${28 - h} h5 v${h} h-5 Z`}
-          fill={i < filled ? C.accent : "rgba(255,199,0,0.2)"}
+          fill={i < filled ? C.accent : "rgba(229,57,53,0.2)"}
         />
       ))}
     </>

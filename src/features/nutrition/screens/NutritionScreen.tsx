@@ -124,7 +124,7 @@ export default function MealScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's meals</Text>
-          <Text style={styles.sectionLink}>See all →</Text>
+          <Text style={styles.sectionLink}>See all</Text>
         </View>
 
         {Object.entries(MEALS).map(([slot, meal], i) => (
@@ -167,7 +167,7 @@ export default function MealScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>This week</Text>
-          <Text style={styles.sectionLink}>Full report →</Text>
+          <Text style={styles.sectionLink}>Full report</Text>
         </View>
 
         <WeeklyTrendCard

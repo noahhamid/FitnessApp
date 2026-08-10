@@ -2,9 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 
 const T = {
-  bg: "#121212",
+  bg: "#111318",
   card: "#1E1E1E",
-  gold: "#FFC700",
+  gold: "#E53935",
   text: "#FFFFFF",
   sub: "#A0A0A0",
   dim: "#3A3A3A",

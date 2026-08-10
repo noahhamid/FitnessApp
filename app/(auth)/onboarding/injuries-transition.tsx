@@ -1,0 +1,21 @@
+import { OnboardingTransition } from "@/src/features/auth/components/OnboardingTransition";
+import { router, useLocalSearchParams } from "expo-router";
+import { Shield } from "lucide-react-native";
+
+export default function InjuriesTransitionScreen() {
+  const params = useLocalSearchParams<{ injuries?: string }>();
+  const injuries = (params.injuries ?? "").split(",").filter(Boolean);
+  const hasInjuries = injuries.length > 0 && !injuries.includes("none");
+
+  return (
+    <OnboardingTransition
+      headline={
+        hasInjuries ? "WE'LL TRAIN\nAROUND IT." : "NO LIMITATIONS.\nFULL SEND."
+      }
+      icon={Shield}
+      onContinue={() =>
+        router.push({ pathname: "/(auth)/onboarding/experience", params })
+      }
+    />
+  );
+}

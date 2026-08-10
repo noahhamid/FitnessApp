@@ -24,10 +24,10 @@ import {
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
-  bg: "#121212",
+  bg: "#111318",
   card: "#1E1E1E",
   surface: "#262626", // inputs / chips resting state
-  gold: "#FFC700",
+  gold: "#E53935",
   red: "#FF5C5C", // only ever shown on press for destructive actions
   text: "#FFFFFF",
   sub: "#A0A0A0",

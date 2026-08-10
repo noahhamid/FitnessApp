@@ -22,14 +22,14 @@ import { Play } from "lucide-react-native";
 const T = {
   panel: "#15161C",
   panelBorder: "rgba(255,255,255,0.08)",
-  glow: "rgba(255,199,0,0.10)",
+  glow: "rgba(229,57,53,0.10)",
   glass: "rgba(255,255,255,0.06)",
   glassBorder: "rgba(255,255,255,0.10)",
   hairline: "rgba(255,255,255,0.10)",
 
-  accent: "#FFC700",
-  accentSoft: "#FFE066",
-  accentText: "#1A1300",
+  accent: "#E53935",
+  accentSoft: "#EF5350",
+  accentText: "#FFFFFF",
 
   white: "#FFFFFF",
   muted: "rgba(255,255,255,0.62)",

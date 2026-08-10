@@ -4,10 +4,10 @@ import {
   ExperienceIcon,
   ExperienceLevel,
 } from "@/src/ui/components/ExperienceIcon";
+import { previewSplitLabel } from "@/src/lib/onboarding-timeline";
 import { FONTS } from "@/src/ui/tokens";
-import { api } from "@/src/lib/api";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   Animated,
   Pressable,
@@ -18,10 +18,10 @@ import {
 } from "react-native";
 
 const C = {
-  bg: "#121212",
+  bg: "#111318",
   card: "#1E1E1E",
   border: "#2A2A2A",
-  accent: "#FFC700",
+  accent: "#E53935",
   text: "#FFFFFF",
   muted: "#A0A0A0",
 };
@@ -45,15 +45,35 @@ const EQUIPMENT_LABELS: Record<string, string> = {
   bodyweight: "Bodyweight Only",
 };
 
+const FOCUS_LABELS: Record<string, string> = {
+  chest: "Chest",
+  back: "Back",
+  arms: "Arms",
+  abs: "Abs",
+  glutes: "Glutes",
+  legs: "Legs",
+  full_body: "Full Body",
+};
+
+const INJURY_LABELS: Record<string, string> = {
+  knees: "Knees",
+  back: "Back",
+  shoulders: "Shoulders",
+  wrists: "Wrists",
+};
+
 export function ReadyScreen() {
   const params = useLocalSearchParams<{
     goalId?: string;
     weightKg?: string;
     heightCm?: string;
+    age?: string;
     gender?: string;
     daysPerWeek?: string;
     experience?: string;
     equipment?: string;
+    focusAreas?: string;
+    injuries?: string;
   }>();
 
   const fade = useRef(new Animated.Value(0)).current;
@@ -81,10 +101,27 @@ export function ReadyScreen() {
         }),
       ]),
     ]).start();
-  }, []);
+  }, [badgeScale, fade, rise]);
 
   const goalId = params.goalId as GoalIconName | undefined;
   const experience = params.experience as ExperienceLevel | undefined;
+
+  const focusAreas = useMemo(
+    () => (params.focusAreas ?? "").split(",").filter(Boolean),
+    [params.focusAreas],
+  );
+  const injuries = useMemo(
+    () =>
+      (params.injuries ?? "")
+        .split(",")
+        .filter((i) => i && i !== "none"),
+    [params.injuries],
+  );
+
+  const splitLabel = useMemo(() => {
+    const days = parseInt(params.daysPerWeek ?? "3", 10) || 3;
+    return previewSplitLabel(days, experience ?? "novice");
+  }, [params.daysPerWeek, experience]);
 
   return (
     <SafeAreaView style={s.safe}>
@@ -104,7 +141,7 @@ export function ReadyScreen() {
             marginTop: 24,
           }}
         >
-          <Text style={s.kicker}>YOU'RE ALL SET</Text>
+          <Text style={s.kicker}>{"YOU'RE ALL SET"}</Text>
           <Text style={s.headline}>PLAN{"\n"}READY.</Text>
 
           <View style={s.summaryCard}>
@@ -148,24 +185,40 @@ export function ReadyScreen() {
             <View style={s.summaryRow}>
               {experience && <ExperienceIcon level={experience} />}
               <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text style={s.rowLabel}>TRAINING</Text>
+                <Text style={s.rowLabel}>WORKOUT SPLIT</Text>
                 <Text style={s.rowValue}>
-                  {params.daysPerWeek ?? "—"} days/week ·{" "}
-                  {experience ? EXPERIENCE_LABELS[experience] : "—"}
+                  {params.daysPerWeek ?? "—"} days/week · {splitLabel}
                 </Text>
-              </View>
-            </View>
-
-            <View style={s.divider} />
-
-            <View style={s.summaryRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={s.rowLabel}>EQUIPMENT</Text>
-                <Text style={s.rowValue}>
+                <Text style={s.rowSubValue}>
+                  {experience ? EXPERIENCE_LABELS[experience] : "—"} ·{" "}
                   {params.equipment ? EQUIPMENT_LABELS[params.equipment] : "—"}
                 </Text>
               </View>
             </View>
+
+            {focusAreas.length > 0 && (
+              <>
+                <View style={s.divider} />
+                <View>
+                  <Text style={s.rowLabel}>EXTRA FOCUS</Text>
+                  <Text style={s.rowValue}>
+                    {focusAreas.map((f) => FOCUS_LABELS[f] ?? f).join(" · ")}
+                  </Text>
+                </View>
+              </>
+            )}
+
+            {injuries.length > 0 && (
+              <>
+                <View style={s.divider} />
+                <View>
+                  <Text style={s.rowLabel}>WORKING AROUND</Text>
+                  <Text style={s.rowValue}>
+                    {injuries.map((i) => INJURY_LABELS[i] ?? i).join(" · ")}
+                  </Text>
+                </View>
+              </>
+            )}
           </View>
         </Animated.View>
 
@@ -173,9 +226,11 @@ export function ReadyScreen() {
 
         <Pressable
           style={s.primaryBtn}
-          onPress={() => router.replace("/(app)/(tabs)")}
+          onPress={() =>
+            router.push({ pathname: "/(auth)/onboarding/paywall", params })
+          }
         >
-          <Text style={s.primaryBtnText}>START TRAINING →</Text>
+          <Text style={s.primaryBtnText}>CONTINUE</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -224,6 +279,12 @@ const s = StyleSheet.create({
     fontFamily: FONTS.bold,
     fontSize: 14,
     color: C.text,
+  },
+  rowSubValue: {
+    fontFamily: FONTS.regular,
+    fontSize: 12,
+    color: C.muted,
+    marginTop: 2,
   },
   primaryBtn: {
     backgroundColor: C.accent,

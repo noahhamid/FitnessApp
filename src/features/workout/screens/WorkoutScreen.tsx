@@ -9,8 +9,11 @@ import {
   ActivityIndicator,
   StyleProp,
   ViewStyle,
+  Pressable,
 } from "react-native";
+import { router } from "expo-router";
 
+import { useAuthStore } from "@/src/features/auth/hooks/useAuth";
 import { WorkoutTabHeader } from "../components/WorkoutTabHeader";
 import { WorkoutPlanCard } from "../components/WorkoutPlanCard";
 import { WorkoutDetailScreen } from "../components/WorkoutDetailScreen";
@@ -27,12 +30,14 @@ import {
 } from "../hooks/useWorkoutSession";
 import type { WorkoutPlan } from "../data/workouts";
 import { useState } from "react";
+import { FONTS } from "@/src/ui/tokens";
+import { Lock } from "lucide-react-native";
 
 const T = {
-  bg: "#000000",
+  bg: "#111318",
   text: "#FFFFFF",
   faint: "#9AA0AE",
-  accent: "#FFC700",
+  accent: "#E53935",
   display: "SpaceGrotesk_700Bold",
 };
 
@@ -95,6 +100,7 @@ function muscleSummary(plan: WorkoutPlan): string {
 }
 
 export default function WorkoutScreen() {
+  const premiumUnlocked = useAuthStore((s) => s.premiumUnlocked);
   const [view, setView] = useState<ViewState>("list");
   const [selectedDay, setSelectedDay] = useState<WorkoutPlan | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -108,6 +114,31 @@ export default function WorkoutScreen() {
     if (!apiPlan) return [];
     return apiPlan.days.map((day) => adaptPlanDay(day, apiPlan.goalId));
   }, [apiPlan]);
+
+  if (!premiumUnlocked) {
+    return (
+      <View style={s.screen}>
+        <StatusBar barStyle="light-content" />
+        <View style={s.lockWrap}>
+          <View style={s.lockIcon}>
+            <Lock size={28} color={T.accent} strokeWidth={2.2} />
+          </View>
+          <Text style={s.lockTitle}>WORKOUTS LOCKED</Text>
+          <Text style={s.lockBody}>
+            Create your account path is done — unlock PotentialPeak to open your
+            personalized training split.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            style={({ pressed }) => [s.unlockBtn, pressed && { opacity: 0.85 }]}
+            onPress={() => router.push("/(auth)/onboarding/paywall")}
+          >
+            <Text style={s.unlockBtnText}>UNLOCK NOW</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   const handleCardPress = (plan: WorkoutPlan) => {
     setSelectedDay(plan);
@@ -272,6 +303,48 @@ export default function WorkoutScreen() {
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: T.bg },
   scroll: { flex: 1 },
+  lockWrap: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    alignItems: "center",
+  },
+  lockIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(229,57,53,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
+  },
+  lockTitle: {
+    fontFamily: FONTS.black,
+    fontSize: 22,
+    color: T.text,
+    letterSpacing: -0.3,
+    marginBottom: 10,
+  },
+  lockBody: {
+    fontFamily: FONTS.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    color: T.faint,
+    textAlign: "center",
+    marginBottom: 22,
+  },
+  unlockBtn: {
+    backgroundColor: T.accent,
+    borderRadius: 999,
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+  },
+  unlockBtnText: {
+    fontFamily: FONTS.bold,
+    fontSize: 14,
+    color: "#FFFFFF",
+    letterSpacing: 1,
+  },
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 128 },
   splitHeader: { marginBottom: 20 },
   splitLabel: {

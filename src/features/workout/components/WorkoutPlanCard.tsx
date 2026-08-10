@@ -21,8 +21,8 @@ const T = {
   glass: "rgba(255,255,255,0.08)",
   glassBorder: "rgba(255,255,255,0.14)",
   ringGlass: "rgba(10,11,14,0.42)",
-  ringBorder: "rgba(255,199,0,0.65)",
-  accent: "#FFC700",
+  ringBorder: "rgba(229,57,53,0.65)",
+  accent: "#E53935",
   white: "#FFFFFF",
   muted: "rgba(255,255,255,0.7)",
 

@@ -30,9 +30,9 @@ import * as Haptics from "expo-haptics";
 import { WorkoutPlan } from "../data/workouts";
 
 const T = {
-  accent: "#FFC700",
-  accentSoft: "#FFE066",
-  accentText: "#1A1300",
+  accent: "#E53935",
+  accentSoft: "#EF5350",
+  accentText: "#FFFFFF",
 
   bg: "#09090C",
   panel: "#111318",

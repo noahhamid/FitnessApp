@@ -1,125 +1,159 @@
-import { useEffect } from 'react';
-import { router } from 'expo-router';
+import { router } from "expo-router";
 import {
+  Image,
+  ImageBackground,
+  Pressable,
   StyleSheet,
   Text,
   View,
-  Image,
   StatusBar,
-  useColorScheme,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { FONTS } from '@/src/ui/tokens';
-
-// Define your color palettes for both modes
-const THEMES = {
-  dark: {
-    bg: '#080808',
-    red: '#D32F2F',
-    text: '#FFFFFF',
-    muted: 'rgba(255, 255, 255, 0.65)',
-    wrapperBg: '#121212',
-  },
-  light: {
-    bg: '#F9F9F9',
-    red: '#D32F2F',
-    text: '#111111',
-    muted: 'rgba(0, 0, 0, 0.60)',
-    wrapperBg: '#FFFFFF',
-  },
-};
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { C, FONTS } from "@/src/ui/tokens";
 
 export function WelcomeSlides() {
-  // Get current color scheme ('light', 'dark', or null/undefined)
-  const colorScheme = useColorScheme();
-
-  // Fallback to 'dark' if scheme is unavailable
-  const theme = THEMES[colorScheme === 'light' ? 'light' : 'dark'];
-
-  useEffect(() => {
-    // Automatically navigate to the next screen after 3 seconds
-    const timer = setTimeout(() => {
-      router.replace('/(auth)/onboarding/goals');
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
-    <View style={[s.root, { backgroundColor: theme.bg }]}>
-      <StatusBar
-        barStyle={colorScheme === 'light' ? 'dark-content' : 'light-content'}
-        backgroundColor={theme.bg}
+    <ImageBackground
+      source={require("../../../../assets/images/welcome-gym.jpg")}
+      style={s.root}
+      resizeMode="cover"
+    >
+      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <LinearGradient
+        colors={[
+          "rgba(17,19,24,0.72)",
+          "rgba(17,19,24,0.84)",
+          C.bg,
+        ]}
+        locations={[0, 0.55, 1]}
+        style={StyleSheet.absoluteFillObject}
       />
-      <SafeAreaView style={s.content}>
+
+      <SafeAreaView style={s.content} edges={["top", "bottom"]}>
+        <View style={s.topSpacer} />
+
         <View style={s.logoContainer}>
-          <View
-            style={[
-              s.imageWrapper,
-              {
-                borderColor: theme.red,
-                backgroundColor: theme.wrapperBg,
-                shadowColor: theme.red,
-              },
-            ]}
-          >
+          <View style={s.imageWrapper}>
             <Image
-              source={require('../../../../assets/images/potentialpeak_logo.jpg')}
+              source={require("../../../../assets/images/potentialpeak_logo.jpg")}
               style={s.logo}
               resizeMode="cover"
             />
           </View>
-          <Text style={[s.brand, { color: theme.text }]}>
-            Potential<Text style={[s.redtext, { color: theme.red }]}>Peak</Text>
+          <Text style={s.brand}>
+            Potential<Text style={s.redtext}>Peak</Text>
           </Text>
-          <Text style={[s.sub, { color: theme.muted }]}>
-            Push. Grow. Repeat.
-          </Text>
+          <Text style={s.sub}>Push. Grow. Repeat.</Text>
+        </View>
+
+        <View style={s.actions}>
+          <Pressable
+            accessibilityRole="button"
+            style={({ pressed }) => [s.primaryBtn, pressed && s.pressed]}
+            onPress={() => router.push("/(auth)/onboarding/gender")}
+          >
+            <Text style={s.primaryBtnText}>BUILD MY PLAN</Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            style={({ pressed }) => [s.linkBtn, pressed && s.pressed]}
+            onPress={() => router.push("/(auth)/sign-in")}
+          >
+            <Text style={s.linkText}>I already have an account</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
-    </View>
+    </ImageBackground>
   );
 }
 
 const s = StyleSheet.create({
   root: {
     flex: 1,
+    backgroundColor: C.bg,
+    overflow: "hidden",
   },
   content: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: 24,
+    justifyContent: "space-between",
+  },
+  topSpacer: {
+    height: 40,
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   imageWrapper: {
     width: 120,
     height: 120,
     borderRadius: 28,
-    overflow: 'hidden',
+    overflow: "hidden",
     borderWidth: 2,
+    borderColor: C.accent,
     marginBottom: 24,
+    backgroundColor: C.bg,
+    shadowColor: C.accent,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 10,
     elevation: 8,
   },
   logo: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   brand: {
-    fontFamily: FONTS.extraBold,
+    fontFamily: FONTS.blackItalic,
     fontSize: 46,
     letterSpacing: -1,
+    color: C.text,
   },
-  redtext: {},
+  redtext: {
+    color: C.accent,
+    fontFamily: FONTS.blackItalic,
+  },
   sub: {
     fontFamily: FONTS.regular,
+    marginTop: 4,
     fontSize: 13,
     letterSpacing: 1.5,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
+    color: C.muted,
+  },
+  actions: {
+    gap: 6,
+    paddingBottom: 8,
+  },
+  primaryBtn: {
+    alignItems: "center",
+    paddingVertical: 18,
+    borderRadius: 100,
+    backgroundColor: C.accent,
+    shadowColor: C.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  primaryBtnText: {
+    fontFamily: FONTS.blackItalic,
+    fontSize: 15,
+    letterSpacing: 1,
+    color: C.text,
+  },
+  linkBtn: {
+    alignItems: "center",
+    paddingVertical: 15,
+  },
+  linkText: {
+    fontFamily: FONTS.regular,
+    fontSize: 13,
+    color: C.muted,
+  },
+  pressed: {
+    opacity: 0.84,
   },
 });

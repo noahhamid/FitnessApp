@@ -29,15 +29,15 @@ import { WeightChart } from "../components/WeightChart";
 
 // ─── Token system ─────────────────────────────────────────────────────────────
 const T = {
-  canvas: "#121212",
+  canvas: "#111318",
   card: "#1E1E1E",
   cardBorder: "rgba(255,255,255,0.06)",
   white: "#FFFFFF",
   dim: "#A0A0A0",
   dim2: "#6E6E6E",
   ghost: "#2A2A2A",
-  gold: "#FFC700",
-  goldDim: "rgba(255,199,0,0.12)",
+  gold: "#E53935",
+  goldDim: "rgba(229,57,53,0.12)",
 };
 
 type Period = "7D" | "1M" | "3M" | "ALL";

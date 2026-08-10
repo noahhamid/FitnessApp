@@ -1,0 +1,93 @@
+import { OnboardingHeader } from "@/src/features/auth/components/OnboardingHeader";
+import { OnboardingNav } from "@/src/features/auth/components/OnboardingNav";
+import {
+  paceChipImage,
+  resolveChipGender,
+} from "@/src/features/auth/constants/chip-images";
+import { ChipSelect, type ChipOption } from "@/src/ui/components/ChipSelect";
+import { C } from "@/src/ui/tokens";
+import { router, useLocalSearchParams } from "expo-router";
+import { useMemo, useState } from "react";
+import { StatusBar, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+const PACE_COPY: Record<string, { id: string; label: string }[]> = {
+  lose: [
+    { id: "slow", label: "Slow & Steady" },
+    { id: "moderate", label: "Moderate" },
+    { id: "aggressive", label: "Aggressive" },
+  ],
+  build: [
+    { id: "slow", label: "Slow & Steady" },
+    { id: "moderate", label: "Moderate" },
+    { id: "aggressive", label: "Aggressive" },
+  ],
+  endure: [
+    { id: "slow", label: "Easy Does It" },
+    { id: "moderate", label: "Balanced" },
+    { id: "aggressive", label: "Push Hard" },
+  ],
+  health: [
+    { id: "slow", label: "Easy Does It" },
+    { id: "moderate", label: "Balanced" },
+    { id: "aggressive", label: "Push Hard" },
+  ],
+};
+
+export default function OnboardingPaceScreen() {
+  const params = useLocalSearchParams<{ goalId?: string; gender?: string }>();
+  const goalId = params.goalId ?? "health";
+  const gender = resolveChipGender(params.gender);
+  const [selected, setSelected] = useState<string[]>(["moderate"]);
+
+  const options = useMemo<ChipOption[]>(() => {
+    const base = PACE_COPY[goalId] ?? PACE_COPY.health;
+    return base.map((opt) => ({
+      ...opt,
+      image: paceChipImage(opt.id, gender),
+    }));
+  }, [goalId, gender]);
+
+  return (
+    <SafeAreaView
+      style={[s.safe, { backgroundColor: C.bg }]}
+      edges={["top", "bottom"]}
+    >
+      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+
+      <OnboardingHeader
+        headline={"YOUR\nPACE."}
+        sub="How hard do you want to push toward the goal?"
+        onBack={() => router.back()}
+      />
+
+      <View style={s.body}>
+        <ChipSelect options={options} selected={selected} onChange={setSelected} />
+      </View>
+
+      <OnboardingNav
+        onNext={() =>
+          router.push({
+            pathname: "/(auth)/onboarding/predicted-date",
+            params: { ...params, pace: selected[0] ?? "moderate" },
+          })
+        }
+      />
+    </SafeAreaView>
+  );
+}
+
+const s = StyleSheet.create({
+  safe: {
+    flex: 1,
+    paddingBottom: 12,
+    justifyContent: "space-between",
+  },
+  body: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingTop: 4,
+    paddingBottom: 20,
+    minHeight: 0,
+  },
+});

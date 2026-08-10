@@ -3,17 +3,17 @@
 // carbs/protein/fat read as distinct at a glance without leaving the dark/gold system.
 
 export const T = {
-  bg0: "#121212",
+  bg0: "#111318",
   bg2: "#1E1E1E",
   bg3: "#252525",
-  gold: "#FFC700",
+  gold: "#E53935",
   text: "#FFFFFF",
   sub: "#A0A0A0",
   muted: "#5A5A5A",
 
   // macro-coded accents
   carbs: "#5FA8D3",
-  protein: "#FFC700", // reuse gold — protein is the "hero" macro for a fitness app
+  protein: "#E53935", // reuse gold — protein is the "hero" macro for a fitness app
   fat: "#E2603F",
   water: "#5FA8D3",
 };
@@ -31,7 +31,7 @@ export const P = {
   avocadoLight: "#4E6A45",
   coral: "#E2603F",
   card: "#FFFFFF",
-  gold: "#D6A13B",
+  gold: "#C62828",
   blueberry: "#3F6E82",
   creamTag: "#F1ECDF",
   waterIconBg: "#EAF2F5",
