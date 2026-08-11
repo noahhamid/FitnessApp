@@ -133,7 +133,7 @@ export async function ensureAndroidReminderChannel(): Promise<void> {
     name: "Meal & workout reminders",
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 250],
-    lightColor: "#1C3F2E",
+    lightColor: "#E53935",
   });
 }
 

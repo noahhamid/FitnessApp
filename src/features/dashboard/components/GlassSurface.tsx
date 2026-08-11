@@ -28,8 +28,8 @@ export const GLASS_GRADIENT_DARK = [
 
 /** Light: ~1.75× prior wash — full 2× muddies white-on-paper. */
 export const GLASS_GRADIENT_LIGHT = [
-  "rgba(28,63,46,0.07)",
-  "rgba(28,63,46,0)",
+  "rgba(229,57,53,0.07)",
+  "rgba(229,57,53,0)",
   "rgba(10,10,10,0.055)",
 ] as const;
 

@@ -34,9 +34,12 @@ import type { MealLogEntry, MealType } from "../types/nutrition.types";
 import {
   dayLabel,
   formatWeekLabel,
+  minWeekOffsetSince,
   shiftDateStr,
+  signupDateOnly,
   weekDatesFor,
 } from "@/src/lib/week-days";
+import { useAuth } from "@/src/features/auth/hooks/useAuth";
 
 const WATER_GOAL_GLASSES = 8;
 const MEAL_SLOTS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"];
@@ -72,6 +75,9 @@ function dayNum(dateStr: string): number {
 export default function MealScreen() {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
   const router = useRouter();
+  const { user } = useAuth();
+  const joinDate = signupDateOnly(user?.createdAt);
+  const minWeekOffset = minWeekOffsetSince(user?.createdAt);
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [weekOffset, setWeekOffset] = useState(0);
   const [targetsOpen, setTargetsOpen] = useState(false);
@@ -81,10 +87,22 @@ export default function MealScreen() {
     [weekOffset],
   );
 
+  const canGoPrevWeek =
+    minWeekOffset == null ? true : weekOffset > minWeekOffset;
+  const canGoNextWeek = weekOffset < 0;
+
   const shiftWeek = (delta: number) => {
-    setWeekOffset((o) => o + delta);
-    // Keep the same weekday selected in the newly visible week.
-    setSelectedDate((prev) => shiftDateStr(prev, delta * 7));
+    const next = weekOffset + delta;
+    if (minWeekOffset != null && next < minWeekOffset) return;
+    if (next > 0) return;
+    setWeekOffset(next);
+    setSelectedDate((prev) => {
+      const shifted = shiftDateStr(prev, delta * 7);
+      if (joinDate && shifted < joinDate) return joinDate;
+      const today = todayStr();
+      if (shifted > today) return today;
+      return shifted;
+    });
   };
 
   const { data: goals } = useNutritionGoals();
@@ -130,9 +148,10 @@ export default function MealScreen() {
           num: d.getDate(),
           hasLog,
           date,
+          disabled: joinDate ? date < joinDate : false,
         };
       }),
-    [weekDates, loggedByDate, weekDots],
+    [weekDates, loggedByDate, weekDots, joinDate],
   );
 
   const activeDayIndex = days.findIndex((d) => d.date === selectedDate);
@@ -146,7 +165,7 @@ export default function MealScreen() {
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
       <LinearGradient
-        colors={["rgba(28,63,46,0.06)", "rgba(28,63,46,0)"]}
+        colors={["rgba(229,57,53,0.06)", "rgba(229,57,53,0)"]}
         style={styles.topWash}
         pointerEvents="none"
       />
@@ -168,11 +187,13 @@ export default function MealScreen() {
           activeIndex={activeDayIndex}
           onSelect={(i) => {
             const picked = days[i];
-            if (picked) setSelectedDate(picked.date);
+            if (picked && !picked.disabled) setSelectedDate(picked.date);
           }}
           onPrevWeek={() => shiftWeek(-1)}
           onNextWeek={() => shiftWeek(1)}
           weekLabel={formatWeekLabel(weekStart, weekEnd, weekOffset)}
+          canGoPrevWeek={canGoPrevWeek}
+          canGoNextWeek={canGoNextWeek}
         />
       </View>
 

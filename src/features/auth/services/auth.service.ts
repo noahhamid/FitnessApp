@@ -49,20 +49,46 @@ export async function signIn(email: string, password: string): Promise<void> {
 
 // ── Sign up ───────────────────────────────────────────────────────────────────
 
+/** Max length stored for email sign-up display names (first name only). */
+export const SIGN_UP_NAME_MAX_LENGTH = 20;
+
+/**
+ * Keep the first given name only (no father / family names) and clamp length.
+ */
+export function normalizeSignUpFirstName(raw: string): string {
+  const first = raw.trim().split(/\s+/).filter(Boolean)[0] ?? "";
+  return first.slice(0, SIGN_UP_NAME_MAX_LENGTH);
+}
+
 export async function signUp(
   email: string,
   password: string,
   name?: string,
 ): Promise<void> {
+  const firstName = name ? normalizeSignUpFirstName(name) : "";
   const { error } = await authClient.signUp.email({
     email,
     password,
-    name: name ?? email.split("@")[0],
+    name: firstName || email.split("@")[0],
   });
   if (error) throw new Error(error.message);
 }
 
 // ── OAuth ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Drop any cached Google account so the next `signIn()` always shows the
+ * account picker instead of silently reusing the last account.
+ */
+async function clearGoogleSessionForAccountPicker(): Promise<void> {
+  try {
+    if (GoogleSignin.hasPreviousSignIn()) {
+      await GoogleSignin.signOut();
+    }
+  } catch {
+    // No active Google session — picker will still appear.
+  }
+}
 
 /**
  * Native Google Sign-In → Better Auth idToken verification.
@@ -77,6 +103,8 @@ export async function signInWithGoogle(): Promise<void> {
         showPlayServicesUpdateDialog: true,
       });
     }
+
+    await clearGoogleSessionForAccountPicker();
 
     const response = await GoogleSignin.signIn();
     if (response.type === "cancelled") {

@@ -1,3 +1,4 @@
+import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { auth } from "../lib/auth.server";
 import { err } from "../lib/response";

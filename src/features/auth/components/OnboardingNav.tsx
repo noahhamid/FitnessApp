@@ -29,8 +29,6 @@ export function OnboardingNav({
         <Text
           style={s.nextText}
           numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.8}
           allowFontScaling={false}
         >
           {nextLabel}
@@ -62,10 +60,12 @@ const s = StyleSheet.create({
     shadowOpacity: 0,
   },
   nextText: {
-    fontFamily: FONTS.bold,
+    fontFamily: FONTS.blackItalic,
     fontSize: 15,
     letterSpacing: 1,
     color: "#FFFFFF",
+    textTransform: "uppercase",
+    textAlign: "center",
   },
   btnPressed: {
     opacity: 0.85,

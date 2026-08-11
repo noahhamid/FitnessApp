@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const AUTO_ADVANCE_MS = 1000;
+const AUTO_ADVANCE_WITH_SUB_MS = 2200;
 
 type TransitionIcon = ComponentType<{
   size?: number;
@@ -19,27 +20,34 @@ type TransitionIcon = ComponentType<{
 
 type Props = {
   headline: string;
+  /** One short line that explains what the headline means. */
+  sub?: string;
   icon: TransitionIcon;
   onContinue: () => void;
-  /** Override auto-advance delay (ms). Defaults to 1s. */
+  /** Override auto-advance delay (ms). Defaults longer when `sub` is set. */
   durationMs?: number;
 };
 
 /**
  * Full-bleed presentation screen for onboarding beats that aren't questions.
- * Auto-advances after a short beat — headline + icon only.
+ * Auto-advances after a short beat — italic headline + optional context + icon.
  */
 export function OnboardingTransition({
   headline,
+  sub,
   icon: Icon,
   onContinue,
-  durationMs = AUTO_ADVANCE_MS,
+  durationMs,
 }: Props) {
+  const resolvedDuration =
+    durationMs ?? (sub ? AUTO_ADVANCE_WITH_SUB_MS : AUTO_ADVANCE_MS);
   const fade = useRef(new Animated.Value(0)).current;
   const rise = useRef(new Animated.Value(16)).current;
   const progress = useRef(new Animated.Value(0)).current;
   const onContinueRef = useRef(onContinue);
   onContinueRef.current = onContinue;
+
+  const line = headline.replace(/\s*\n\s*/g, " ").trim();
 
   useEffect(() => {
     Animated.parallel([
@@ -55,14 +63,14 @@ export function OnboardingTransition({
       }),
       Animated.timing(progress, {
         toValue: 1,
-        duration: durationMs,
+        duration: resolvedDuration,
         useNativeDriver: false,
       }),
     ]).start();
 
     const timer = setTimeout(() => {
       onContinueRef.current();
-    }, durationMs);
+    }, resolvedDuration);
 
     return () => clearTimeout(timer);
     // Intentionally once on mount — callers often pass an inline onContinue.
@@ -87,7 +95,20 @@ export function OnboardingTransition({
           <View style={s.iconWrap}>
             <Icon size={42} color={C.accent} strokeWidth={2.2} />
           </View>
-          <Text style={s.headline}>{headline}</Text>
+          <Text
+            style={s.headline}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.55}
+            allowFontScaling={false}
+          >
+            {line}
+          </Text>
+          {sub ? (
+            <Text style={s.sub} numberOfLines={2}>
+              {sub}
+            </Text>
+          ) : null}
         </Animated.View>
 
         <View style={{ flex: 1 }} />
@@ -105,6 +126,7 @@ const s = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 24, paddingBottom: 24 },
   center: {
     alignItems: "center",
+    width: "100%",
   },
   iconWrap: {
     width: 88,
@@ -116,12 +138,22 @@ const s = StyleSheet.create({
     marginBottom: 22,
   },
   headline: {
-    fontFamily: FONTS.black,
+    fontFamily: FONTS.blackItalic,
     fontSize: 34,
-    lineHeight: 37,
     color: C.text,
     letterSpacing: -0.5,
     textAlign: "center",
+    width: "100%",
+    textTransform: "uppercase",
+  },
+  sub: {
+    marginTop: 14,
+    fontFamily: FONTS.regular,
+    fontSize: 15,
+    lineHeight: 22,
+    color: C.muted,
+    textAlign: "center",
+    maxWidth: 340,
   },
   progressTrack: {
     height: 3,

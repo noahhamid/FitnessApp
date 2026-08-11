@@ -8,6 +8,7 @@ export default function FocusTransitionScreen() {
   return (
     <OnboardingTransition
       headline={"BUILDING AROUND\nYOUR FOCUS."}
+      sub="Next we'll grab age, height, and weight so the plan fits your body."
       icon={Crosshair}
       onContinue={() =>
         router.push({ pathname: "/(auth)/onboarding/age", params })

@@ -12,6 +12,11 @@ export default function IssuesTransitionScreen() {
       headline={
         hasIssues ? "WE'VE GOT\nYOU COVERED." : "ALREADY AHEAD\nOF THE GAME."
       }
+      sub={
+        hasIssues
+          ? "We'll factor those body concerns into how your workouts are built."
+          : "No body concerns flagged — training stays unconstrained."
+      }
       icon={HeartPulse}
       onContinue={() =>
         router.push({ pathname: "/(auth)/onboarding/injuries", params })

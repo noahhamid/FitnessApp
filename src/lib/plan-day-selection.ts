@@ -24,16 +24,17 @@ export const WEEKDAY_LABELS_SHORT = [
 ] as const;
 
 /**
- * Valid selectable range: onboarding `TrainingSetupForm` offers DAYS = [2,3,4,5,6];
- * profile API zod is `.min(2).max(6)`. 7 is not an option — no table row for it.
+ * Valid selectable range: the onboarding schedule step offers DAYS = [2…7] and
+ * the profile API zod is `.min(2).max(7)`, matching clampDays in
+ * src/lib/workout-plan-generator.ts. Keep these three in sync.
  */
 function clampDaysPerWeek(daysPerWeek: number): number {
   if (!Number.isFinite(daysPerWeek) || daysPerWeek <= 0) return 0;
-  return Math.min(6, Math.max(2, Math.round(daysPerWeek)));
+  return Math.min(7, Math.max(2, Math.round(daysPerWeek)));
 }
 
 /** Fixed real-world patterns — Mon=0 … Sun=6. */
-const WEEKLY_SCHEDULE: Record<2 | 3 | 4 | 5 | 6, readonly boolean[]> = {
+const WEEKLY_SCHEDULE: Record<2 | 3 | 4 | 5 | 6 | 7, readonly boolean[]> = {
   // Mon, Thu
   2: [true, false, false, true, false, false, false],
   // Mon, Wed, Fri
@@ -44,16 +45,18 @@ const WEEKLY_SCHEDULE: Record<2 | 3 | 4 | 5 | 6, readonly boolean[]> = {
   5: [true, true, true, true, true, false, false],
   // Mon–Sat — rest Sunday
   6: [true, true, true, true, true, true, false],
+  // Every day — no scheduled rest
+  7: [true, true, true, true, true, true, true],
 };
 
 /**
- * Lookup the fixed training/rest pattern for daysPerWeek (2–6).
- * Out-of-range values clamp into 2–6; ≤0 → all rest.
+ * Lookup the fixed training/rest pattern for daysPerWeek (2–7).
+ * Out-of-range values clamp into 2–7; ≤0 → all rest.
  */
 export function computeWeeklySchedule(daysPerWeek: number): boolean[] {
   const n = clampDaysPerWeek(daysPerWeek);
   if (n <= 0) return Array<boolean>(7).fill(false);
-  return [...WEEKLY_SCHEDULE[n as 2 | 3 | 4 | 5 | 6]];
+  return [...WEEKLY_SCHEDULE[n as 2 | 3 | 4 | 5 | 6 | 7]];
 }
 
 export function getWeekdayMondayIndex(date: Date): number {

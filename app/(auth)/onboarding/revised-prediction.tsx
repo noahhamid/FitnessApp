@@ -31,18 +31,23 @@ export default function RevisedPredictionScreen() {
   );
 
   let headline: string;
+  let sub: string;
 
   if (estimate.type === "weight" && estimate.alreadyThere) {
     headline = "STILL RIGHT\nON TARGET.";
+    sub = "Your training schedule still supports staying where you are.";
   } else if (estimate.type === "weight") {
     headline = `NOW\n${formatTargetDate(estimate.targetDate).toUpperCase()}`;
+    sub = `Updated estimate with ${daysPerWeek} training days per week factored in.`;
   } else {
     headline = `${estimate.weeksLow}–${estimate.weeksHigh}\nWEEKS OUT`;
+    sub = `Recalculated with ${daysPerWeek} training days per week in the mix.`;
   }
 
   return (
     <OnboardingTransition
       headline={headline}
+      sub={sub}
       icon={Sparkles}
       onContinue={() =>
         router.push({ pathname: "/(auth)/onboarding/creating-plan", params })

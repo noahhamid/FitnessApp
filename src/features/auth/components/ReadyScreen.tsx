@@ -76,11 +76,9 @@ export function ReadyScreen() {
     injuries?: string;
   }>();
 
-  const { requestNotifications } = usePermissions();
   const fade = useRef(new Animated.Value(0)).current;
   const rise = useRef(new Animated.Value(16)).current;
   const badgeScale = useRef(new Animated.Value(0.6)).current;
-  const starting = useRef(false);
 
   useEffect(() => {
     Animated.sequence([
@@ -235,7 +233,7 @@ export function ReadyScreen() {
         <Pressable
           style={s.primaryBtn}
           onPress={() =>
-            router.push({ pathname: "/(auth)/onboarding/paywall", params })
+            router.push({ pathname: "/(auth)/paywall", params })
           }
         >
           <Text style={s.primaryBtnText}>CONTINUE</Text>
@@ -299,11 +297,14 @@ const s = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 18,
     alignItems: "center",
+    justifyContent: "center",
   },
   primaryBtnText: {
-    fontFamily: FONTS.bold,
+    fontFamily: FONTS.blackItalic,
     fontSize: 15,
-    color: C.bg,
     letterSpacing: 1,
+    color: C.bg,
+    textTransform: "uppercase",
+    textAlign: "center",
   },
 });

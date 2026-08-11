@@ -5,5 +5,4 @@ export { ForgotPasswordForm } from "./components/ForgotPasswordForm";
 export { ResetPasswordForm } from "./components/ResetPasswordForm";
 export { GoalsForm } from "./components/GoalsForm";
 export { ProfileMetricsForm } from "./components/ProfileMetricsForm";
-export { TrainingSetupForm } from "./components/TrainingSetupForm";
 export { ReadyScreen } from "./components/ReadyScreen";

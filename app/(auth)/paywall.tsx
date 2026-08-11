@@ -1,5 +1,9 @@
 import { useAuthStore } from "@/src/features/auth/hooks/useAuth";
-import { onboardingParamsForNavigation } from "@/src/features/auth/services/onboarding-payload.service";
+import {
+  onboardingParamsForNavigation,
+  saveCompletedOnboardingPayload,
+  type OnboardingAuthParams,
+} from "@/src/features/auth/services/onboarding-payload.service";
 import { authClient } from "@/src/lib/auth";
 import { C, FONTS } from "@/src/ui/tokens";
 import { LinearGradient } from "expo-linear-gradient";
@@ -28,8 +32,9 @@ const DISCOUNT_PRICE = 26.99;
 const SAVE_AMOUNT = (FULL_PRICE - DISCOUNT_PRICE).toFixed(2);
 
 export default function PaywallScreen() {
-  const params = useLocalSearchParams<{ gender?: string }>();
+  const params = useLocalSearchParams<OnboardingAuthParams>();
   const [offerOpen, setOfferOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const { data: session } = authClient.useSession();
   const alreadyAuthed = !!session?.user;
 
@@ -41,27 +46,42 @@ export default function PaywallScreen() {
     [params.gender],
   );
 
-  function finish(offerAccepted: boolean) {
+  async function finish(offerAccepted: boolean) {
+    if (leaving) return;
+    setLeaving(true);
     setOfferOpen(false);
     useAuthStore.getState().setPremiumUnlocked(offerAccepted);
 
+    const nextParams = onboardingParamsForNavigation({
+      ...params,
+      onboardingComplete: "1",
+      offerAccepted: offerAccepted ? "1" : "0",
+    });
+
+    // Already signed in (e.g. Google earlier, then finished onboarding) —
+    // persist the plan and enter the app. No sign-up step.
     if (alreadyAuthed) {
+      try {
+        await saveCompletedOnboardingPayload(nextParams);
+        useAuthStore.getState().setOnboarded(true);
+      } catch (e) {
+        console.log("paywall: failed to save onboarding payload", e);
+      }
       router.replace("/(app)/(tabs)");
       return;
     }
 
-    router.push({
+    // Guest flow: leave onboarding and open sign-up as a sibling on the
+    // auth stack (replace, not push — back shouldn't return to the paywall).
+    router.replace({
       pathname: "/(auth)/sign-up",
-      params: onboardingParamsForNavigation({
-        ...params,
-        onboardingComplete: "1",
-        offerAccepted: offerAccepted ? "1" : "0",
-      }),
+      params: nextParams,
     });
   }
 
   /** Exit intent: first skip/close surfaces the discount offer. */
   function onDismissAttempt() {
+    if (leaving) return;
     setOfferOpen(true);
   }
 
@@ -94,8 +114,18 @@ export default function PaywallScreen() {
 
             <View style={{ flex: 1 }} />
 
-            <Text style={s.kicker}>UNLOCK EVERYTHING</Text>
-            <Text style={s.headline}>YOUR FULL{"\n"}PLAN IS READY.</Text>
+            <Text style={s.kicker} numberOfLines={1}>
+              UNLOCK EVERYTHING
+            </Text>
+            <Text
+              style={s.headline}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+              allowFontScaling={false}
+            >
+              YOUR FULL PLAN IS READY.
+            </Text>
 
             <View style={s.perks}>
               {PERKS.map((perk) => (
@@ -133,7 +163,9 @@ export default function PaywallScreen() {
         visible={offerOpen}
         transparent
         animationType="fade"
-        onRequestClose={() => finish(false)}
+        onRequestClose={() => {
+          void finish(false);
+        }}
       >
         <View style={s.modalBackdrop}>
           <View style={s.modalCard}>
@@ -143,7 +175,9 @@ export default function PaywallScreen() {
                 accessibilityLabel="Close offer"
                 hitSlop={10}
                 style={s.modalClose}
-                onPress={() => finish(false)}
+                onPress={() => {
+                  void finish(false);
+                }}
               >
                 <X size={18} color="#FFFFFF" strokeWidth={2.4} />
               </Pressable>
@@ -153,8 +187,14 @@ export default function PaywallScreen() {
             </View>
 
             <View style={s.modalBody}>
-              <Text style={s.modalHeadline}>
-                WAIT! A PERSONAL OFFER{"\n"}JUST FOR YOU.
+              <Text
+                style={s.modalHeadline}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+                allowFontScaling={false}
+              >
+                WAIT! A PERSONAL OFFER JUST FOR YOU.
               </Text>
 
               <View style={s.priceCompare}>
@@ -181,11 +221,14 @@ export default function PaywallScreen() {
 
               <Pressable
                 accessibilityRole="button"
+                disabled={leaving}
                 style={({ pressed }) => [
                   s.modalContinue,
                   pressed && s.pressed,
                 ]}
-                onPress={() => finish(true)}
+                onPress={() => {
+                  void finish(true);
+                }}
               >
                 <Text style={s.modalContinueText}>CONTINUE</Text>
               </Pressable>
@@ -226,7 +269,6 @@ const s = StyleSheet.create({
   kicker: {
     fontFamily: FONTS.blackItalic,
     fontSize: 14,
-    lineHeight: 20,
     letterSpacing: 2.5,
     color: C.accent,
     textAlign: "center",
@@ -235,13 +277,11 @@ const s = StyleSheet.create({
   },
   headline: {
     fontFamily: FONTS.blackItalic,
-    fontSize: 38,
-    lineHeight: 44,
+    fontSize: 36,
     color: C.text,
     letterSpacing: -0.5,
     textAlign: "center",
     marginBottom: 24,
-    paddingHorizontal: 4,
     textTransform: "uppercase",
   },
   perks: {
@@ -262,7 +302,6 @@ const s = StyleSheet.create({
   perkText: {
     fontFamily: FONTS.regular,
     fontSize: 14,
-    lineHeight: 20,
     color: C.text,
   },
   priceCard: {
@@ -274,25 +313,25 @@ const s = StyleSheet.create({
   priceLabel: {
     fontFamily: FONTS.blackItalic,
     fontSize: 13,
-    lineHeight: 18,
     letterSpacing: 2,
     color: C.muted,
     textTransform: "uppercase",
+    textAlign: "center",
   },
   price: {
     marginTop: 4,
     fontFamily: FONTS.blackItalic,
     fontSize: 28,
-    lineHeight: 34,
     color: C.text,
     letterSpacing: -0.5,
+    textAlign: "center",
   },
   priceNote: {
     marginTop: 4,
     fontFamily: FONTS.regular,
     fontSize: 12,
-    lineHeight: 16,
     color: C.muted2,
+    textAlign: "center",
   },
   primaryBtn: {
     backgroundColor: C.accent,
@@ -308,17 +347,16 @@ const s = StyleSheet.create({
   },
   primaryBtnText: {
     fontFamily: FONTS.blackItalic,
-    fontSize: 18,
-    lineHeight: 24,
-    color: "#FFFFFF",
+    fontSize: 16,
     letterSpacing: 1,
+    color: "#FFFFFF",
     textTransform: "uppercase",
+    textAlign: "center",
   },
   legal: {
     marginTop: 14,
     fontFamily: FONTS.regular,
     fontSize: 11,
-    lineHeight: 16,
     color: C.muted2,
     textAlign: "center",
   },
@@ -358,18 +396,18 @@ const s = StyleSheet.create({
     marginTop: 10,
     fontFamily: FONTS.blackItalic,
     fontSize: 20,
-    lineHeight: 26,
     letterSpacing: 1,
     color: "#FFFFFF",
     textTransform: "uppercase",
+    textAlign: "center",
   },
   modalHeroDeal: {
     fontFamily: FONTS.blackItalic,
     fontSize: 40,
-    lineHeight: 48,
     color: "#FFE082",
     letterSpacing: -0.5,
     textTransform: "uppercase",
+    textAlign: "center",
   },
   modalBody: {
     paddingHorizontal: 20,
@@ -378,8 +416,7 @@ const s = StyleSheet.create({
   },
   modalHeadline: {
     fontFamily: FONTS.blackItalic,
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 20,
     color: "#111318",
     textAlign: "center",
     marginBottom: 18,
@@ -397,7 +434,6 @@ const s = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 8,
     alignItems: "center",
-    overflow: "visible",
     backgroundColor: "#F4F4F5",
   },
   compareCardMuted: {
@@ -411,35 +447,33 @@ const s = StyleSheet.create({
   compareTerm: {
     fontFamily: FONTS.blackItalic,
     fontSize: 12,
-    lineHeight: 16,
     color: "#666666",
     marginBottom: 6,
     letterSpacing: 0.5,
     textTransform: "uppercase",
+    textAlign: "center",
   },
   compareWas: {
     fontFamily: FONTS.blackItalic,
     fontSize: 18,
-    lineHeight: 24,
     color: C.accent,
     textDecorationLine: "line-through",
+    textAlign: "center",
   },
   compareNow: {
     fontFamily: FONTS.blackItalic,
     fontSize: 20,
-    lineHeight: 26,
     color: C.accent,
+    textAlign: "center",
   },
   compareUnit: {
     fontFamily: FONTS.blackItalic,
     fontSize: 11,
-    lineHeight: 16,
     color: "#888888",
   },
   compareUnitActive: {
     fontFamily: FONTS.blackItalic,
     fontSize: 11,
-    lineHeight: 16,
     color: "#888888",
   },
   compareArrow: {
@@ -450,7 +484,6 @@ const s = StyleSheet.create({
     marginTop: 12,
     fontFamily: FONTS.blackItalic,
     fontSize: 15,
-    lineHeight: 22,
     letterSpacing: 0.5,
     color: C.accent,
     textAlign: "center",
@@ -466,10 +499,10 @@ const s = StyleSheet.create({
   },
   modalContinueText: {
     fontFamily: FONTS.blackItalic,
-    fontSize: 18,
-    lineHeight: 24,
-    color: "#FFFFFF",
+    fontSize: 16,
     letterSpacing: 1,
+    color: "#FFFFFF",
     textTransform: "uppercase",
+    textAlign: "center",
   },
 });

@@ -330,12 +330,6 @@ enum Pace {
   aggressive
 }
 
-enum Pace {
-  slow
-  moderate
-  aggressive
-}
-
 model PlannedExtraExercise {
   id              String          @id @default(cuid())
   logDate         DateTime        @db.Date

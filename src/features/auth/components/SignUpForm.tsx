@@ -20,6 +20,8 @@ import { FONTS } from "@/src/ui/tokens";
 import { SocialAuthButtons } from "./SocialAuthButtons";
 import {
   AuthCancelledError,
+  SIGN_UP_NAME_MAX_LENGTH,
+  normalizeSignUpFirstName,
   signInWithApple,
   signInWithGoogle,
   signUp,
@@ -44,6 +46,7 @@ const BRAND_FOOTER_SIZE = Math.min(Dimensions.get("window").width * 0.17, 96);
 
 export function SignUpForm() {
   const params = useLocalSearchParams<OnboardingAuthParams>();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,7 +54,9 @@ export function SignUpForm() {
   const [appleLoading, setAppleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accountCreated, setAccountCreated] = useState(false);
-  const canContinue = email.length > 3 && password.length >= 8;
+  const firstName = normalizeSignUpFirstName(name);
+  const canContinue =
+    firstName.length > 0 && email.length > 3 && password.length >= 8;
   const completingOnboarding = hasCompletedOnboardingPayload(params);
   const busy = loading || googleLoading || appleLoading;
 
@@ -62,7 +67,7 @@ export function SignUpForm() {
 
     try {
       if (!accountCreated) {
-        await signUp(email, password);
+        await signUp(email, password, firstName);
         setAccountCreated(true);
       }
       await navigateAfterAuth(params, { isNewAccount: true });
@@ -165,6 +170,24 @@ export function SignUpForm() {
               <View style={s.dividerLine} />
               <Text style={s.dividerText}>OR</Text>
               <View style={s.dividerLine} />
+            </View>
+
+            <View style={s.field}>
+              <Text style={s.label}>NAME</Text>
+              <TextInput
+                value={name}
+                onChangeText={(text) =>
+                  setName(text.slice(0, SIGN_UP_NAME_MAX_LENGTH))
+                }
+                placeholder="First name"
+                placeholderTextColor={C.muted}
+                autoCapitalize="words"
+                autoComplete="given-name"
+                textContentType="givenName"
+                maxLength={SIGN_UP_NAME_MAX_LENGTH}
+                style={s.input}
+                selectionColor={C.accent}
+              />
             </View>
 
             <View style={s.field}>

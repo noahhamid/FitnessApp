@@ -10,9 +10,8 @@ import { getSession } from "./auth.service";
 
 const PROFILE_PREFIX = "user-profile-metrics";
 
-// All optional: ProfileMetricsForm and TrainingSetupForm each send a
-// different subset of these across the onboarding flow, so no single
-// call is required to supply everything.
+// All optional: each onboarding step sends a different subset of these
+// across the flow, so no single call is required to supply everything.
 export type ProfileMetrics = {
   weight_kg?: number;
   height_cm?: number;
@@ -59,7 +58,7 @@ export async function upsertProfile(metrics: ProfileMetrics): Promise<void> {
   }
 
   // Merge into existing cache rather than overwrite, since partial saves
-  // (e.g. training-setup screen only sending days/experience/equipment)
+  // (e.g. the schedule step only sending days/experience/equipment)
   // would otherwise wipe out weight/height/age cached from the previous screen.
   const existingRaw = await AsyncStorage.getItem(profileKey(session.user.id));
   const existing: ProfileMetrics = existingRaw ? JSON.parse(existingRaw) : {};

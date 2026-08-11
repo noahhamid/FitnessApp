@@ -7,8 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── Workout Generation ───────────────────────────────────────────────────────
-
 model Exercise {
   id              String                @id @default(cuid())
   name            String                @unique
@@ -85,8 +83,6 @@ enum MovementPattern {
   squat
   carry
 }
-
-// ─── Better Auth ──────────────────────────────────────────────────────────────
 
 model User {
   id            String   @id @default(cuid())
@@ -184,8 +180,6 @@ model Verification {
   @@map("verification")
 }
 
-// ─── Workout ──────────────────────────────────────────────────────────────────
-
 model WorkoutSession {
   id          String    @id @default(cuid())
   startedAt   DateTime  @default(now())
@@ -210,8 +204,6 @@ model WorkoutExercise {
   @@map("workout_exercise")
 }
 
-// ─── Nutrition ────────────────────────────────────────────────────────────────
-
 model NutritionGoal {
   id        String   @id @default(cuid())
   calories  Int
@@ -228,7 +220,6 @@ model NutritionGoal {
   @@map("nutrition_goal")
 }
 
-/// History of adaptive calorie-target changes (accept/apply flow).
 model NutritionAdjustmentLog {
   id          String   @id @default(cuid())
   appliedAt   DateTime @default(now())
@@ -280,8 +271,6 @@ model WaterLog {
   @@map("water_log")
 }
 
-// ─── Weight ───────────────────────────────────────────────────────────────────
-
 model WeightLog {
   id      String   @id @default(cuid())
   logDate DateTime @db.Date
@@ -305,8 +294,6 @@ model WeightGoal {
 
   @@map("weight_goal")
 }
-
-// ─── Enums ────────────────────────────────────────────────────────────────────
 
 enum Meal {
   Breakfast
@@ -332,6 +319,12 @@ enum EquipmentAccess {
   bodyweight
 }
 
+enum Pace {
+  slow
+  moderate
+  aggressive
+}
+
 model PlannedExtraExercise {
   id              String          @id @default(cuid())
   logDate         DateTime        @db.Date
@@ -345,10 +338,4 @@ model PlannedExtraExercise {
 
   @@unique([userId, logDate, exerciseName])
   @@map("planned_extra_exercise")
-}
-
-enum Pace {
-  slow
-  moderate
-  aggressive
 }

@@ -8,156 +8,74 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Circle, Line, Path, Polyline, Rect } from "react-native-svg";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+import { Home, Dumbbell, UtensilsCrossed, LineChart, User } from "lucide-react-native";
+import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { useTheme } from "@/src/context/ThemeContext";
+import type { AppTheme } from "@/src/theme";
+import { bottomInset } from "@/src/lib/safe-area";
 
-const T = {
-  bg: "#111318",
-  gold: "#E53935",
-  inactive: "#505050",
-  border: "#FFFFFF08",
+const IS_ANDROID = Platform.OS === "android";
+
+const PILL_H = 64;
+const PILL_H_MARGIN = 20;
+const PILL_BOTTOM_GAP = 10;
+
+/**
+ * Pill glass fill tokens — slightly stronger than GlassSurface cards (short
+ * surface). Top edge is a SINGLE border on the clip (no stacked highlight
+ * strip). Shadow stays neutral black — a tinted lift reads as a colored glow
+ * around the pill rather than elevation.
+ */
+const PILL_GRADIENT_DARK = [
+  "rgba(255,255,255,0.22)",
+  "rgba(255,255,255,0.02)",
+  "rgba(255,255,255,0.12)",
+] as const;
+const PILL_GRADIENT_LIGHT = [
+  "rgba(255,255,255,0.55)",
+  "rgba(255,255,255,0.15)",
+  "rgba(10,10,10,0.04)",
+] as const;
+
+/** Inactive tab icons — accent at reduced alpha (same family as active, not T.muted gray). */
+const INACTIVE_ICON_ALPHA = 0.78;
+
+function accentAtAlpha(accent: string, alpha: number): string {
+  const hex = accent.replace("#", "");
+  if (hex.length === 6) {
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+  // Already rgba / named — fall back to accentLine-style soft if unexpected.
+  return accent;
+}
+
+const TAB_META: Record<
+  string,
+  {
+    label: string;
+    icon: React.ComponentType<{
+      size: number;
+      color: string;
+      strokeWidth: number;
+    }>;
+  }
+> = {
+  index: { label: "Home", icon: Home },
+  train: { label: "Train", icon: Dumbbell },
+  // UtensilsCrossed reads as "meals" at 22px more clearly than Apple (blob) or Salad (busy).
+  nutrition: { label: "Nutrition", icon: UtensilsCrossed },
+  progress: { label: "Progress", icon: LineChart },
+  profile: { label: "Profile", icon: User },
 };
 
-
-function IconHome({ active }: { active: boolean }) {
-  const c = active ? T.gold : T.inactive;
-  return (
-    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H15v-5h-6v5H4a1 1 0 01-1-1V10.5z"
-        stroke={c}
-        strokeWidth={1.6}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-function IconTrain({ active }: { active: boolean }) {
-  const c = active ? T.gold : T.inactive;
-  return (
-    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-      <Line
-        x1="5.5"
-        y1="12"
-        x2="18.5"
-        y2="12"
-        stroke={c}
-        strokeWidth={1.8}
-        strokeLinecap="round"
-      />
-      <Rect
-        x="2"
-        y="9.5"
-        width="3.5"
-        height="5"
-        rx="1"
-        stroke={c}
-        strokeWidth={1.6}
-      />
-      <Rect
-        x="18.5"
-        y="9.5"
-        width="3.5"
-        height="5"
-        rx="1"
-        stroke={c}
-        strokeWidth={1.6}
-      />
-      <Rect
-        x="5.5"
-        y="8"
-        width="3"
-        height="8"
-        rx="1.5"
-        stroke={c}
-        strokeWidth={1.6}
-      />
-      <Rect
-        x="15.5"
-        y="8"
-        width="3"
-        height="8"
-        rx="1.5"
-        stroke={c}
-        strokeWidth={1.6}
-      />
-    </Svg>
-  );
-}
-
-function IconNutrition({ active }: { active: boolean }) {
-  const c = active ? T.bg : T.inactive;
-  const w = 1.6;
-  return (
-    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M17 12.5C17 16.5 14.5 20 12 21C9.5 20 7 16.5 7 12.5C7 9 9 7 12 7C15 7 17 9 17 12.5Z"
-        stroke={c}
-        strokeWidth={w}
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M9.5 7C9.5 7 8 5.5 9 4"
-        stroke={c}
-        strokeWidth={w}
-        strokeLinecap="round"
-      />
-      <Path
-        d="M14.5 7C14.5 7 16 5.5 15 4"
-        stroke={c}
-        strokeWidth={w}
-        strokeLinecap="round"
-      />
-      <Line
-        x1="12"
-        y1="7"
-        x2="12"
-        y2="5"
-        stroke={c}
-        strokeWidth={w}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-function IconProgress({ active }: { active: boolean }) {
-  const c = active ? T.gold : T.inactive;
-  return (
-    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-      <Polyline
-        points="3,18 8,12 13,15 21,5"
-        stroke={c}
-        strokeWidth={1.6}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Circle cx="21" cy="5" r={2} fill={c} />
-    </Svg>
-  );
-}
-
-function IconProfile({ active }: { active: boolean }) {
-  const c = active ? T.gold : T.inactive;
-  return (
-    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-      <Circle cx="12" cy="8" r="3.5" stroke={c} strokeWidth={1.6} />
-      <Path
-        d="M4 20c0-3.5 3.6-6.5 8-6.5s8 3 8 6.5"
-        stroke={c}
-        strokeWidth={1.6}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-
-function Tab({
-  icon,
-  label,
+function TabSlot({
   focused,
+  label,
   icon: Icon,
   onPress,
   onLongPress,
@@ -380,7 +298,7 @@ function makeStyles(T: AppTheme) {
       position: "absolute",
       height: PILL_H,
       backgroundColor: "transparent",
-      // Neutral black lift — NOT T.shadow.lifted.shadowColor (#1C3F2E pine).
+      // Neutral black lift — never an accent-tinted shadow.
       shadowColor: "#0A0A0A",
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.2,

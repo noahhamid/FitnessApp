@@ -8,20 +8,12 @@ import {
   Animated,
   LayoutChangeEvent,
 } from "react-native";
+import { useThemedStyles } from "@/src/context/useThemedStyles";
+import type { AppTheme } from "@/src/theme";
 
-// Font family strings + palette — same convention as the other components.
-// Worth pulling into a shared theme.ts alongside them at some point.
-const T = {
-  glassBorder: "rgba(255,255,255,0.14)",
-  accent: "#E53935",
-  accentText: "#FFFFFF",
-  white: "#FFFFFF",
-  muted: "rgba(255,255,255,0.62)",
-
-  bodySemi: "Inter_600SemiBold",
-  bodyBold: "Inter_700Bold",
-};
-
+// Kept for backward compatibility wherever this specific union was
+// imported elsewhere — the component itself is now generic, so new
+// usages don't need to conform to this particular set of labels.
 export type Category =
   | "All workouts"
   | "Lower body"

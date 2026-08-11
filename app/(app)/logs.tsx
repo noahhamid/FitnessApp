@@ -1,5 +1,5 @@
 import { NotificationHistoryScreen } from "@/src/features/notifications/screens/NotificationHistoryScreen";
 
-export default function NotificationsRoute() {
+export default function ReminderLogsRoute() {
   return <NotificationHistoryScreen />;
 }

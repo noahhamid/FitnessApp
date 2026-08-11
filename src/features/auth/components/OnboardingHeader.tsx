@@ -10,38 +10,44 @@ type Props = {
 };
 
 /**
- * Render headline in black italic Condensed. The word "YOUR" stays white;
- * everything else is accent red. Headlines without "YOUR" fall back to a
- * white first line / red remainder split.
+ * Single-line italic headline. "YOUR" stays white; everything else is accent.
+ * Newlines in the source string are collapsed to spaces.
  */
 function ColoredHeadline({ headline }: { headline: string }) {
-  if (/\bYOUR\b/i.test(headline)) {
-    const parts = headline.split(/(YOUR)/i);
+  const line = headline.replace(/\s*\n\s*/g, " ").trim();
+
+  if (!/\bYOUR\b/i.test(line)) {
     return (
-      <Text style={s.headline}>
-        {parts.map((part, i) => {
-          if (!part) return null;
-          const isYour = /^YOUR$/i.test(part);
-          return (
-            <Text key={i} style={isYour ? s.headlineLead : s.headlineRest}>
-              {part}
-            </Text>
-          );
-        })}
+      <Text
+        style={[s.headline, s.headlineRest]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        allowFontScaling={false}
+      >
+        {line}
       </Text>
     );
   }
 
-  const nl = headline.indexOf("\n");
-  if (nl === -1) {
-    return <Text style={[s.headline, s.headlineRest]}>{headline}</Text>;
-  }
-
+  const parts = line.split(/(YOUR)/i);
   return (
-    <Text style={s.headline}>
-      <Text style={s.headlineLead}>{headline.slice(0, nl)}</Text>
-      {"\n"}
-      <Text style={s.headlineRest}>{headline.slice(nl + 1)}</Text>
+    <Text
+      style={s.headline}
+      numberOfLines={1}
+      adjustsFontSizeToFit
+      minimumFontScale={0.7}
+      allowFontScaling={false}
+    >
+      {parts.map((part, i) => {
+        if (!part) return null;
+        const isYour = /^YOUR$/i.test(part);
+        return (
+          <Text key={i} style={isYour ? s.headlineLead : s.headlineRest}>
+            {part}
+          </Text>
+        );
+      })}
     </Text>
   );
 }
@@ -75,7 +81,9 @@ export function OnboardingHeader({ headline, sub, onBack }: Props) {
         <View style={s.titleLogoRow}>
           <View style={s.titleTextGroup}>
             <ColoredHeadline headline={headline} />
-            <Text style={s.sub}>{sub}</Text>
+            <Text style={s.sub} numberOfLines={2}>
+              {sub}
+            </Text>
           </View>
 
           <View style={s.logoContainer}>
@@ -94,7 +102,6 @@ export function OnboardingHeader({ headline, sub, onBack }: Props) {
 const s = StyleSheet.create({
   headerWrap: {
     position: "relative",
-    // Above meters/sliders that can sit near the title band (e.g. height).
     zIndex: 5,
     elevation: 5,
     marginTop: 10,
@@ -105,12 +112,7 @@ const s = StyleSheet.create({
     backgroundColor: C.bg,
   },
   headerGradient: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 0,
+    ...StyleSheet.absoluteFillObject,
   },
   header: {
     paddingHorizontal: 18,
@@ -138,6 +140,7 @@ const s = StyleSheet.create({
   },
   titleTextGroup: {
     flex: 1,
+    minWidth: 0,
     paddingRight: 8,
   },
   logoContainer: {
@@ -147,6 +150,7 @@ const s = StyleSheet.create({
     overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
+    flexShrink: 0,
   },
   logoImage: {
     width: "100%",
@@ -155,14 +159,15 @@ const s = StyleSheet.create({
   headline: {
     fontFamily: FONTS.blackItalic,
     fontSize: 34,
-    lineHeight: 36,
     letterSpacing: -0.5,
   },
   headlineLead: {
     color: C.text,
+    fontFamily: FONTS.blackItalic,
   },
   headlineRest: {
     color: C.accent,
+    fontFamily: FONTS.blackItalic,
   },
   sub: {
     fontFamily: FONTS.regular,

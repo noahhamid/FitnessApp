@@ -12,6 +12,11 @@ export default function InjuriesTransitionScreen() {
       headline={
         hasInjuries ? "WE'LL TRAIN\nAROUND IT." : "NO LIMITATIONS.\nFULL SEND."
       }
+      sub={
+        hasInjuries
+          ? "Moves that stress those areas get swapped for safer alternatives."
+          : "Nothing to work around — the full exercise catalog stays open."
+      }
       icon={Shield}
       onContinue={() =>
         router.push({ pathname: "/(auth)/onboarding/experience", params })

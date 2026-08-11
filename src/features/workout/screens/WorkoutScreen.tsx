@@ -507,7 +507,7 @@ export default function WorkoutScreen() {
     return (
       <View style={s.screen}>
         <LinearGradient
-          colors={["rgba(28,63,46,0.06)", "rgba(28,63,46,0)"]}
+          colors={["rgba(229,57,53,0.06)", "rgba(229,57,53,0)"]}
           style={s.topWash}
           pointerEvents="none"
         />

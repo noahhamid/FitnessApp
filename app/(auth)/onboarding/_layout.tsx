@@ -34,7 +34,6 @@ export default function OnboardingLayout() {
       <Stack.Screen name="revised-prediction" />
       <Stack.Screen name="creating-plan" />
       <Stack.Screen name="ready" />
-      <Stack.Screen name="paywall" />
     </Stack>
   );
 }

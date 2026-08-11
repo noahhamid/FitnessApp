@@ -30,7 +30,7 @@ export function paceRateKgPerWeek(
 
 /**
  * More training days per week modestly speeds up the estimate — used only
- * for the post-training-setup "revised prediction" screen.
+ * for the post-schedule "revised prediction" screen.
  */
 export function frequencyBoost(daysPerWeek: number): number {
   const clamped = Math.max(2, Math.min(7, Math.round(daysPerWeek)));

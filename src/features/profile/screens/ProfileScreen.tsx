@@ -247,7 +247,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
       <LinearGradient
-        colors={["rgba(28,63,46,0.06)", "rgba(28,63,46,0)"]}
+        colors={["rgba(229,57,53,0.06)", "rgba(229,57,53,0)"]}
         style={styles.topWash}
         pointerEvents="none"
       />

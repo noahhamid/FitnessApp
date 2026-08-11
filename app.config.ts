@@ -19,7 +19,8 @@ const config: ExpoConfig = {
   android: {
     package: "com.exo.fitness",
     adaptiveIcon: {
-      backgroundColor: "#C91923",
+      // Foreground is pre-padded (~52%) so the diagonal mark survives
+      // circle / squircle / rounded-square masks. Solid near-black plate.
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundColor: NEAR_BLACK,
       backgroundImage: "./assets/images/android-icon-background.png",
@@ -62,7 +63,7 @@ const config: ExpoConfig = {
     [
       "expo-notifications",
       {
-        color: "#1C3F2E",
+        color: "#E53935",
         defaultChannel: "meal-workout-reminders",
       },
     ],

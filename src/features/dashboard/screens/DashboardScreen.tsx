@@ -16,7 +16,9 @@ import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import {
   dayLabel,
   formatWeekLabel,
+  minWeekOffsetSince,
   shiftDateStr,
+  signupDateOnly,
   weekDatesFor,
 } from "@/src/lib/week-days";
 import {
@@ -71,6 +73,8 @@ export default function DashboardScreen() {
   const [weekOffset, setWeekOffset] = useState(0);
 
   const { user } = useAuth();
+  const joinDate = signupDateOnly(user?.createdAt);
+  const minWeekOffset = minWeekOffsetSince(user?.createdAt);
   // Mount shared hook so past-day in-progress sessions auto-complete even
   // if the user never opens the Workout tab this session.
   useInProgressSession();
@@ -80,9 +84,22 @@ export default function DashboardScreen() {
     [weekOffset],
   );
 
+  const canGoPrevWeek =
+    minWeekOffset == null ? true : weekOffset > minWeekOffset;
+  /** Don't browse empty future weeks past the current one on the dashboard. */
+  const canGoNextWeek = weekOffset < 0;
+
   const shiftWeek = (delta: number) => {
-    setWeekOffset((o) => o + delta);
-    setSelectedDate((prev) => shiftDateStr(prev, delta * 7));
+    const next = weekOffset + delta;
+    if (minWeekOffset != null && next < minWeekOffset) return;
+    if (next > 0) return;
+    setWeekOffset(next);
+    setSelectedDate((prev) => {
+      const shifted = shiftDateStr(prev, delta * 7);
+      if (joinDate && shifted < joinDate) return joinDate;
+      if (shifted > today) return today;
+      return shifted;
+    });
   };
 
   const { data: weekSessions } = useWorkoutHistory(weekStart, weekEnd);
@@ -105,9 +122,10 @@ export default function DashboardScreen() {
           num: d.getDate(),
           hasLog: workoutDates.has(date),
           date,
+          disabled: joinDate ? date < joinDate : false,
         };
       }),
-    [weekDates, workoutDates],
+    [weekDates, workoutDates, joinDate],
   );
 
   const activeDayIndex = days.findIndex((d) => d.date === selectedDate);
@@ -167,7 +185,7 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
       <LinearGradient
-        colors={["rgba(28,63,46,0.06)", "rgba(28,63,46,0)"]}
+        colors={["rgba(229,57,53,0.06)", "rgba(229,57,53,0)"]}
         style={styles.topWash}
         pointerEvents="none"
       />
@@ -185,11 +203,13 @@ export default function DashboardScreen() {
           activeIndex={activeDayIndex}
           onSelect={(i) => {
             const picked = days[i];
-            if (picked) setSelectedDate(picked.date);
+            if (picked && !picked.disabled) setSelectedDate(picked.date);
           }}
           onPrevWeek={() => shiftWeek(-1)}
           onNextWeek={() => shiftWeek(1)}
           weekLabel={formatWeekLabel(weekStart, weekEnd, weekOffset)}
+          canGoPrevWeek={canGoPrevWeek}
+          canGoNextWeek={canGoNextWeek}
         />
       </View>
 

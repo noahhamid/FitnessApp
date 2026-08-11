@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Bell } from "lucide-react-native";
+import { ScrollText } from "lucide-react-native";
 import { router } from "expo-router";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
@@ -7,11 +7,6 @@ import { getGreeting } from "@/src/lib/greeting";
 
 type Props = {
   name: string;
-  /**
-   * Visual unread dot matching the reference chrome.
-   * Decorative until unread tracking ships.
-   */
-  showUnreadDot?: boolean;
   /** When false, omit greeting text. Default true. */
   showGreeting?: boolean;
   /** When false, omit initials avatar (Dashboard uses wave emoji instead). Default true. */
@@ -28,17 +23,16 @@ function initialsFromName(name: string): string {
     .toUpperCase();
 }
 
-function onBellPress() {
-  router.push("/(app)/notifications");
+function onLogsPress() {
+  router.push("/(app)/logs");
 }
 
 /**
  * Compact greeting header (Dashboard):
- * optional initials avatar · "Good morning, {name} 👋" · bell (+ unread dot).
+ * optional initials avatar · "Good morning, {name} 👋" · reminder logs.
  */
 export function SimpleGreetingHeader({
   name,
-  showUnreadDot = true,
   showGreeting = true,
   showAvatar = true,
 }: Props) {
@@ -63,14 +57,13 @@ export function SimpleGreetingHeader({
       </View>
 
       <Pressable
-        onPress={onBellPress}
+        onPress={onLogsPress}
         hitSlop={10}
-        style={s.bellBtn}
+        style={s.logsBtn}
         accessibilityRole="button"
-        accessibilityLabel="Notifications"
+        accessibilityLabel="Reminder logs"
       >
-        <Bell size={20} color={T.white} strokeWidth={2} />
-        {showUnreadDot && <View style={s.unreadDot} pointerEvents="none" />}
+        <ScrollText size={20} color={T.white} strokeWidth={2} />
       </Pressable>
     </View>
   );
@@ -122,24 +115,13 @@ function makeStyles(T: AppTheme) {
       letterSpacing: -0.3,
       color: T.white,
     },
-    bellBtn: {
+    logsBtn: {
       width: 40,
       height: 40,
       borderRadius: 20,
       alignItems: "center",
       justifyContent: "center",
       flexShrink: 0,
-    },
-    unreadDot: {
-      position: "absolute",
-      top: 8,
-      right: 9,
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: T.badge,
-      borderWidth: 1.5,
-      borderColor: T.bg,
     },
   });
 }

@@ -243,7 +243,8 @@ const s = StyleSheet.create({
     backfaceVisibility: "hidden",
   },
   itemText: {
-    fontFamily: FONTS.medium,
+    // Distinct display face for the wheel — not the body/UI fonts.
+    fontFamily: FONTS.extraBold,
     fontSize: 40,
     lineHeight: 40,
     letterSpacing: -1,

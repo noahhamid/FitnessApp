@@ -75,7 +75,7 @@ export type WorkoutExercise = $Result.DefaultSelection<Prisma.$WorkoutExercisePa
 export type NutritionGoal = $Result.DefaultSelection<Prisma.$NutritionGoalPayload>
 /**
  * Model NutritionAdjustmentLog
- * History of adaptive calorie-target changes (accept/apply flow).
+ * 
  */
 export type NutritionAdjustmentLog = $Result.DefaultSelection<Prisma.$NutritionAdjustmentLogPayload>
 /**
