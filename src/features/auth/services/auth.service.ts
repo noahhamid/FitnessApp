@@ -2,6 +2,10 @@
 
 import { authClient } from "@/src/lib/auth";
 import {
+  DISPLAY_NAME_MAX_LENGTH,
+  normalizeDisplayFirstName,
+} from "@/src/lib/display-name";
+import {
   GoogleSignin,
   isErrorWithCode,
   statusCodes,
@@ -42,22 +46,32 @@ function configureGoogleSignIn() {
 
 // ── Sign in ───────────────────────────────────────────────────────────────────
 
+type AuthClientError = {
+  message?: string | null;
+  status?: number;
+} | null;
+
+function throwIfAuthError(error: AuthClientError): void {
+  if (!error) return;
+  if (error.status === 429 || /too many requests/i.test(error.message ?? "")) {
+    throw new Error("Too many tries. Wait a few minutes and try again.");
+  }
+  throw new Error(error.message || "Something went wrong.");
+}
+
 export async function signIn(email: string, password: string): Promise<void> {
   const { error } = await authClient.signIn.email({ email, password });
-  if (error) throw new Error(error.message);
+  throwIfAuthError(error);
 }
 
 // ── Sign up ───────────────────────────────────────────────────────────────────
 
-/** Max length stored for email sign-up display names (first name only). */
-export const SIGN_UP_NAME_MAX_LENGTH = 20;
+/** @deprecated Use DISPLAY_NAME_MAX_LENGTH — kept for existing imports. */
+export const SIGN_UP_NAME_MAX_LENGTH = DISPLAY_NAME_MAX_LENGTH;
 
-/**
- * Keep the first given name only (no father / family names) and clamp length.
- */
+/** Keep the first given name only (no family names) and clamp length. */
 export function normalizeSignUpFirstName(raw: string): string {
-  const first = raw.trim().split(/\s+/).filter(Boolean)[0] ?? "";
-  return first.slice(0, SIGN_UP_NAME_MAX_LENGTH);
+  return normalizeDisplayFirstName(raw);
 }
 
 export async function signUp(
@@ -65,13 +79,57 @@ export async function signUp(
   password: string,
   name?: string,
 ): Promise<void> {
-  const firstName = name ? normalizeSignUpFirstName(name) : "";
+  const firstName = name ? normalizeDisplayFirstName(name) : "";
   const { error } = await authClient.signUp.email({
     email,
     password,
     name: firstName || email.split("@")[0],
   });
-  if (error) throw new Error(error.message);
+  throwIfAuthError(error);
+}
+
+export function isEmailNotVerifiedError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /not verified/i.test(message);
+}
+
+export async function sendVerificationEmail(email: string): Promise<void> {
+  const { error } = await authClient.sendVerificationEmail({
+    email,
+    callbackURL: "com.exo.fitness://verify-email",
+  });
+  throwIfAuthError(error);
+}
+
+export async function verifyEmail(token: string): Promise<void> {
+  const { error } = await authClient.verifyEmail({
+    query: { token },
+  });
+  throwIfAuthError(error);
+}
+
+/**
+ * OAuth providers often send "First Last". Persist first name only so greetings
+ * match email sign-up. Prefer an explicit given name when the native SDK has one.
+ */
+async function ensureOAuthFirstName(
+  preferredGivenName?: string | null,
+): Promise<void> {
+  const preferred = preferredGivenName
+    ? normalizeDisplayFirstName(preferredGivenName)
+    : "";
+
+  const { data } = await authClient.getSession();
+  const current = data?.user?.name ?? "";
+  const next =
+    preferred || (current ? normalizeDisplayFirstName(current) : "");
+
+  if (!next || next === current) return;
+
+  const { error } = await authClient.updateUser({ name: next });
+  if (error) {
+    console.log("oauth: failed to trim display name", error.message);
+  }
 }
 
 // ── OAuth ─────────────────────────────────────────────────────────────────────
@@ -120,11 +178,15 @@ export async function signInWithGoogle(): Promise<void> {
       throw new Error("Google did not return an ID token. Check webClientId.");
     }
 
+    const givenName = response.data.user.givenName;
+
     const { error } = await authClient.signIn.social({
       provider: "google",
       idToken: { token: idToken },
     });
-    if (error) throw new Error(error.message);
+    throwIfAuthError(error);
+
+    await ensureOAuthFirstName(givenName);
   } catch (e) {
     if (e instanceof AuthCancelledError) throw e;
     if (isErrorWithCode(e)) {
@@ -179,7 +241,9 @@ export async function signInWithApple(): Promise<void> {
         nonce: rawNonce,
       },
     });
-    if (error) throw new Error(error.message);
+    throwIfAuthError(error);
+
+    await ensureOAuthFirstName(credential.fullName?.givenName);
   } catch (e) {
     if (e instanceof AuthCancelledError) throw e;
     if (
@@ -206,7 +270,7 @@ export async function signOut(): Promise<void> {
   }
 
   const { error } = await authClient.signOut();
-  if (error) throw new Error(error.message);
+  throwIfAuthError(error);
 }
 
 // ── Get current session ───────────────────────────────────────────────────────
@@ -226,7 +290,7 @@ export async function requestPasswordReset(
     email,
     redirectTo,
   });
-  if (error) throw new Error(error.message);
+  throwIfAuthError(error);
 }
 
 export async function resetPassword(
@@ -237,5 +301,5 @@ export async function resetPassword(
     newPassword,
     token,
   });
-  if (error) throw new Error(error.message);
+  throwIfAuthError(error);
 }

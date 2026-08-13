@@ -89,7 +89,7 @@ export function ForgotPasswordForm() {
             <Text style={s.headline}>RESET{"\n"}PASSWORD.</Text>
             <Text style={s.sub}>
               {sent
-                ? "If that email exists, a reset link is on the way. Check your inbox — and your server logs in local/dev."
+                ? "If that email exists, a reset link is on the way. Check your inbox and spam folder."
                 : "Enter the email on your account and we'll send a reset link."}
             </Text>
 

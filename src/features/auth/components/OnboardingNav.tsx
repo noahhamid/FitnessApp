@@ -1,4 +1,5 @@
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
@@ -13,21 +14,23 @@ export function OnboardingNav({
   nextLabel = "CONTINUE",
   nextDisabled = false,
 }: Props) {
+  const { C, styles } = useOnboardingStyles(makeStyles);
+
   return (
-    <View style={s.nav}>
+    <View style={styles.nav}>
       <Pressable
         disabled={nextDisabled}
         accessibilityRole="button"
         accessibilityState={{ disabled: nextDisabled }}
         style={({ pressed }) => [
-          s.nextBtn,
-          nextDisabled && s.nextBtnDisabled,
-          pressed && s.btnPressed,
+          styles.nextBtn,
+          nextDisabled && styles.nextBtnDisabled,
+          pressed && styles.btnPressed,
         ]}
         onPress={onNext}
       >
         <Text
-          style={s.nextText}
+          style={styles.nextText}
           numberOfLines={1}
           allowFontScaling={false}
         >
@@ -38,36 +41,38 @@ export function OnboardingNav({
   );
 }
 
-const s = StyleSheet.create({
-  nav: {
-    marginHorizontal: 24,
-    zIndex: 1,
-  },
-  nextBtn: {
-    paddingVertical: 18,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: C.accent,
-    shadowColor: C.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  nextBtnDisabled: {
-    opacity: 0.35,
-    shadowOpacity: 0,
-  },
-  nextText: {
-    fontFamily: FONTS.blackItalic,
-    fontSize: 15,
-    letterSpacing: 1,
-    color: "#FFFFFF",
-    textTransform: "uppercase",
-    textAlign: "center",
-  },
-  btnPressed: {
-    opacity: 0.85,
-  },
-});
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
+    nav: {
+      marginHorizontal: 24,
+      zIndex: 1,
+    },
+    nextBtn: {
+      paddingVertical: 18,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: C.accent,
+      shadowColor: C.accent,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    nextBtnDisabled: {
+      opacity: 0.35,
+      shadowOpacity: 0,
+    },
+    nextText: {
+      fontFamily: FONTS.blackItalic,
+      fontSize: 15,
+      letterSpacing: 1,
+      color: C.onAccent,
+      textTransform: "uppercase",
+      textAlign: "center",
+    },
+    btnPressed: {
+      opacity: 0.85,
+    },
+  });
+}

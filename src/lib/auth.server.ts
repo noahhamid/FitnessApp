@@ -1,7 +1,11 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { expo } from "@better-auth/expo";
+import { normalizeDisplayFirstName } from "./display-name";
 import { prisma } from "./prisma";
+import { sendAuthEmail } from "./send-auth-email";
+
+const APP_VERIFY_EMAIL_URL = "com.exo.fitness://verify-email";
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -13,43 +17,69 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
 
+  databaseHooks: {
+    user: {
+      create: {
+        async before(user) {
+          if (typeof user.name !== "string" || !user.name.trim()) {
+            return { data: user };
+          }
+          return {
+            data: {
+              ...user,
+              name: normalizeDisplayFirstName(user.name),
+            },
+          };
+        },
+      },
+      update: {
+        async before(user) {
+          if (typeof user.name !== "string") return { data: user };
+          return {
+            data: {
+              ...user,
+              name: normalizeDisplayFirstName(user.name),
+            },
+          };
+        },
+      },
+    },
+  },
+
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
-    sendResetPassword: async ({ user, url, token }) => {
-      // Prefer Resend when configured; always log in server console for local/dev.
-      console.log(`[password-reset] ${user.email}`);
-      console.log(`[password-reset] url: ${url}`);
-      console.log(`[password-reset] token: ${token}`);
-
-      const resendKey = process.env.RESEND_API_KEY;
-      const from = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
-      if (!resendKey) return;
-
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from,
-          to: user.email,
-          subject: "Reset your PotentialPeak password",
-          html: `
-            <p>Hi${user.name ? ` ${user.name}` : ""},</p>
-            <p>Tap the link below to choose a new password:</p>
-            <p><a href="${url}">Reset password</a></p>
-            <p>If you didn't request this, you can ignore this email.</p>
-          `,
-        }),
+    requireEmailVerification: true,
+    sendResetPassword: async ({ user, url }) => {
+      await sendAuthEmail({
+        to: user.email,
+        subject: "Reset your PotentialPeak password",
+        html: `
+          <p>Hi${user.name ? ` ${user.name}` : ""},</p>
+          <p>Tap the link below to choose a new password:</p>
+          <p><a href="${url}">Reset password</a></p>
+          <p>If you didn't request this, you can ignore this email.</p>
+        `,
       });
+    },
+  },
 
-      if (!response.ok) {
-        const body = await response.text();
-        console.error("[password-reset] Resend failed:", response.status, body);
-        throw new Error("Failed to send password reset email");
-      }
+  emailVerification: {
+    sendOnSignUp: true,
+    sendOnSignIn: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, token }) => {
+      const verifyUrl = `${APP_VERIFY_EMAIL_URL}?token=${encodeURIComponent(token)}`;
+      await sendAuthEmail({
+        to: user.email,
+        subject: "Confirm your PotentialPeak email",
+        html: `
+          <p>Hi${user.name ? ` ${user.name}` : ""},</p>
+          <p>Tap the link below to confirm this email belongs to you:</p>
+          <p><a href="${verifyUrl}">Confirm email</a></p>
+          <p>If you didn't create an account, you can ignore this email.</p>
+        `,
+      });
     },
   },
 
@@ -75,11 +105,42 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24,
   },
 
+  // Default Better Auth limiter is production-only and 3 tries / 10s on
+  // sign-in — an attacker can just wait and keep guessing. Always on, stored
+  // in Postgres so Vercel instances share the same counters.
+  advanced: {
+    ipAddress: {
+      ipAddressHeaders: [
+        "x-vercel-forwarded-for",
+        "x-real-ip",
+        "x-forwarded-for",
+      ],
+    },
+  },
+  rateLimit: {
+    enabled: true,
+    storage: "database",
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-in/email": { window: 15 * 60, max: 8 },
+      "/sign-up/email": { window: 15 * 60, max: 5 },
+      "/forget-password*": { window: 15 * 60, max: 5 },
+      "/request-password-reset": { window: 15 * 60, max: 5 },
+      "/send-verification-email": { window: 15 * 60, max: 5 },
+      "/reset-password": { window: 15 * 60, max: 8 },
+    },
+  },
+
   trustedOrigins: [
     "com.exo.fitness://",
     "com.exo.fitness://*",
     "http://localhost:8081",
     "http://localhost:3000",
+    "http://127.0.0.1:8081",
+    "http://127.0.0.1:3000",
+    "http://192.168.1.12:8081",
+    "http://192.168.1.12:3000",
     "https://appleid.apple.com",
     "exp://",
     "https://potentialpeak-app.vercel.app",

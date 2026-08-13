@@ -18,6 +18,9 @@ const config: ExpoConfig = {
   },
   android: {
     package: "com.exo.fitness",
+    // Local API is http://192.168.x.x — without this, Android blocks cleartext
+    // and auth shows a generic "Network request failed".
+    usesCleartextTraffic: true,
     adaptiveIcon: {
       // Foreground is pre-padded (~52%) so the diagonal mark survives
       // circle / squircle / rounded-square masks. Solid near-black plate.

@@ -122,6 +122,9 @@ model UserProfile {
   age             Int?
   gender          Gender?
   daysPerWeek     Int?
+  // Chosen weekdays, Monday-indexed (0=Mon … 6=Sun). Empty falls back to the
+  // default spacing pattern for daysPerWeek — see src/lib/plan-day-selection.ts.
+  trainingDays    Int[]            @default([])
   experience      ExperienceLevel?
   equipment       EquipmentAccess?
   focusAreas      String[]         @default([])
@@ -178,6 +181,17 @@ model Verification {
   updatedAt  DateTime @updatedAt
 
   @@map("verification")
+}
+
+/// Better Auth rate-limit counters (IP + path). Needed so limits survive
+/// serverless instances — in-memory storage would reset on every Vercel invoke.
+model RateLimit {
+  id          String @id @default(cuid())
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rateLimit")
 }
 
 model WorkoutSession {

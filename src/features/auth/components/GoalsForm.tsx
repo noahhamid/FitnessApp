@@ -1,11 +1,10 @@
 import { GoalTile } from "@/src/ui/components/GoalTile";
 import { OnboardingHeader } from "@/src/features/auth/components/OnboardingHeader";
 import { OnboardingNav } from "@/src/features/auth/components/OnboardingNav";
-import { C } from "@/src/ui/tokens";
+import { OnboardingSafeScreen } from "@/src/features/auth/components/OnboardingSafeScreen";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { StatusBar, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, View } from "react-native";
 
 const GOALS = [
   {
@@ -32,48 +31,50 @@ const GOALS = [
 
 export function GoalsForm() {
   const params = useLocalSearchParams();
-  const [selected, setSelected] = useState<string | null>(null);
+  const goalFromParams = Array.isArray(params.goalId)
+    ? params.goalId[0]
+    : params.goalId;
+  const [selected, setSelected] = useState<string | null>(
+    GOALS.some((g) => g.id === goalFromParams) ? goalFromParams! : null,
+  );
 
   return (
-    <SafeAreaView
-      style={[s.safe, { backgroundColor: C.bg }]}
-      edges={["top", "bottom"]}
-    >
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+    <OnboardingSafeScreen>
+      <View style={s.safe}>
+        <OnboardingHeader
+          headline={"YOUR\nGOAL."}
+          sub="What are you training for?"
+          onBack={() => router.back()}
+        />
 
-      <OnboardingHeader
-        headline={"YOUR\nGOAL."}
-        sub="What are you training for?"
-        onBack={() => router.back()}
-      />
+        <View style={s.gridContainer} accessibilityRole="radiogroup">
+          {[0, 1].map((row) => (
+            <View key={row} style={s.gridRow}>
+              {GOALS.slice(row * 2, row * 2 + 2).map((g) => (
+                <GoalTile
+                  key={g.id}
+                  image={g.image}
+                  title={g.title}
+                  isSelected={selected === g.id}
+                  onPress={() => setSelected(g.id)}
+                  style={s.tile}
+                />
+              ))}
+            </View>
+          ))}
+        </View>
 
-      <View style={s.gridContainer} accessibilityRole="radiogroup">
-        {[0, 1].map((row) => (
-          <View key={row} style={s.gridRow}>
-            {GOALS.slice(row * 2, row * 2 + 2).map((g) => (
-              <GoalTile
-                key={g.id}
-                image={g.image}
-                title={g.title}
-                isSelected={selected === g.id}
-                onPress={() => setSelected(g.id)}
-                style={s.tile}
-              />
-            ))}
-          </View>
-        ))}
+        <OnboardingNav
+          nextDisabled={!selected}
+          onNext={() =>
+            router.push({
+              pathname: "/(auth)/onboarding/goal-detail",
+              params: { ...params, goalId: selected! },
+            })
+          }
+        />
       </View>
-
-      <OnboardingNav
-        nextDisabled={!selected}
-        onNext={() =>
-          router.push({
-            pathname: "/(auth)/onboarding/goal-detail",
-            params: { ...params, goalId: selected! },
-          })
-        }
-      />
-    </SafeAreaView>
+    </OnboardingSafeScreen>
   );
 }
 

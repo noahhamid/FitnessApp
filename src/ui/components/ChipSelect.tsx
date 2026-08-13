@@ -1,5 +1,6 @@
 import { GoalTile } from "@/src/ui/components/GoalTile";
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { useEffect, useRef } from "react";
 import {
   Animated,
@@ -61,6 +62,7 @@ function PlainChip({
   onPress: () => void;
   role: "radio" | "checkbox";
 }) {
+  const { styles: s } = useOnboardingStyles(makeStyles);
   const anim = useRef(new Animated.Value(active ? 1 : 0)).current;
 
   useEffect(() => {
@@ -130,10 +132,12 @@ export function ChipSelect({
   exclusiveId,
   selectAllId,
   columns = 2,
-  imageFit = "contain",
+  imageFit = "cover",
   imagePlacement = "inside",
   style,
 }: Props) {
+  const { styles: s } = useOnboardingStyles(makeStyles);
+
   function toggle(id: string) {
     if (!multiple) {
       onChange([id]);
@@ -230,7 +234,8 @@ export function ChipSelect({
   );
 }
 
-const s = StyleSheet.create({
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
   // Rows share the band between the header and the continue button, matching
   // the goals grid.
   grid: {
@@ -273,15 +278,16 @@ const s = StyleSheet.create({
     color: C.accent,
   },
   plainLabelActive: {
-    color: "#FFFFFF",
+    color: C.onAccent,
   },
   plainDesc: {
     fontFamily: FONTS.regular,
     fontSize: 12,
     lineHeight: 16,
-    color: "rgba(255, 255, 255, 0.65)",
+    color: C.muted,
   },
   plainDescActive: {
     color: "rgba(255, 255, 255, 0.9)",
   },
 });
+}

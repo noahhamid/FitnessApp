@@ -51,7 +51,7 @@ export function WelcomeSlides() {
           <Pressable
             accessibilityRole="button"
             style={({ pressed }) => [s.primaryBtn, pressed && s.pressed]}
-            onPress={() => router.push("/(auth)/onboarding/gender")}
+            onPress={() => router.push("/(auth)/onboarding")}
           >
             <Text style={s.primaryBtnText}>BUILD MY PLAN</Text>
           </Pressable>

@@ -26,6 +26,8 @@ export interface ApiWorkoutPlan {
   id: string;
   splitLabel: string;
   daysPerWeek: number;
+  /** Chosen weekdays, Monday-indexed. Empty = default pattern for daysPerWeek. */
+  trainingDays: number[];
   goalId: string;
   experience: string;
   equipment: string;

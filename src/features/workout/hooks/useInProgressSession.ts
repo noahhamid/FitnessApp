@@ -227,7 +227,10 @@ export function useInProgressSession() {
     // Prefer today's plan-day cover for the continue-card hero; else muscle image.
     let coverImage = "";
     if (apiPlan) {
-      const todaysIndex = getTodaysPlanDayIndex(apiPlan.daysPerWeek);
+      const todaysIndex = getTodaysPlanDayIndex(
+        apiPlan.daysPerWeek,
+        apiPlan.trainingDays,
+      );
       if (todaysIndex != null && apiPlan.days[todaysIndex]) {
         coverImage = adaptPlanDay(
           apiPlan.days[todaysIndex],

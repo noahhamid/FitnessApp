@@ -106,8 +106,12 @@ export function isReminderTimeUpcoming(
   return trigger.getTime() > now.getTime();
 }
 
-export function isTrainingDayToday(daysPerWeek: number, now = new Date()): boolean {
-  const schedule = computeWeeklySchedule(daysPerWeek);
+export function isTrainingDayToday(
+  daysPerWeek: number,
+  now = new Date(),
+  trainingDays?: readonly number[] | null,
+): boolean {
+  const schedule = computeWeeklySchedule(daysPerWeek, trainingDays);
   return schedule[getWeekdayMondayIndex(now)] === true;
 }
 
@@ -186,6 +190,8 @@ export type TodayReminderState = {
   workoutCompleted: boolean;
   /** From workout plan; if missing/0, workout reminder is skipped. */
   daysPerWeek: number;
+  /** Chosen weekdays; empty falls back to the default pattern. */
+  trainingDays?: readonly number[] | null;
   /** Used in workout notification body when it's a training day. */
   workoutTitle?: string;
 };
@@ -268,7 +274,8 @@ export async function rescheduleTodayReminders(
   }
 
   const training =
-    state.daysPerWeek > 0 && isTrainingDayToday(state.daysPerWeek);
+    state.daysPerWeek > 0 &&
+    isTrainingDayToday(state.daysPerWeek, new Date(), state.trainingDays);
   if (training && !state.workoutCompleted) {
     await scheduleOne("workout", date, state.workoutTitle);
   }

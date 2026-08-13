@@ -2,7 +2,7 @@ import { OnboardingHeader } from "@/src/features/auth/components/OnboardingHeade
 import { OnboardingNav } from "@/src/features/auth/components/OnboardingNav";
 import { bodyIssueChipImage } from "@/src/features/auth/constants/chip-images";
 import { ChipSelect, type ChipOption } from "@/src/ui/components/ChipSelect";
-import { C } from "@/src/ui/tokens";
+import { useOnboardingColors, useSystemResolvedScheme } from "@/src/ui/tokens";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
@@ -16,6 +16,9 @@ const BASE = [
 ] as const;
 
 export default function OnboardingBodyIssuesScreen() {
+  const C = useOnboardingColors();
+  const resolved = useSystemResolvedScheme();
+
   const params = useLocalSearchParams<{ gender?: string }>();
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -33,7 +36,7 @@ export default function OnboardingBodyIssuesScreen() {
       style={[s.safe, { backgroundColor: C.bg }]}
       edges={["top", "bottom"]}
     >
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <StatusBar barStyle={resolved === "dark" ? "light-content" : "dark-content"} backgroundColor={C.bg} />
 
       <OnboardingHeader
         headline={"ANY OF THESE\nSOUND FAMILIAR?"}

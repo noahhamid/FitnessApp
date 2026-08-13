@@ -91,3 +91,33 @@ export function dayLabel(dateStr: string): string {
     .toLocaleDateString("en-US", { weekday: "short" })
     .toUpperCase();
 }
+
+/** Weekday plus date, e.g. "Wednesday, 12 Aug". Device locale. */
+export function fullDayLabel(dateStr: string): string {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+/** "Today" / "Yesterday" / "Tomorrow" when it applies, else null. */
+export function relativeDayName(
+  dateStr: string,
+  today = localDateOnly(),
+): string | null {
+  if (dateStr === today) return "Today";
+  if (dateStr === shiftDateStr(today, -1)) return "Yesterday";
+  if (dateStr === shiftDateStr(today, 1)) return "Tomorrow";
+  return null;
+}
+
+/**
+ * Caption for a picked day: leads with Today/Yesterday/Tomorrow when relevant,
+ * always spells out the weekday and date behind it.
+ */
+export function dayCaption(dateStr: string, today = localDateOnly()): string {
+  const relative = relativeDayName(dateStr, today);
+  const full = fullDayLabel(dateStr);
+  return relative ? `${relative} · ${full}` : full;
+}

@@ -21,15 +21,18 @@ import {
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
 } from "@expo-google-fonts/plus-jakarta-sans";
-import { DarkTheme, ThemeProvider } from "@react-navigation/native";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
-import { authClient } from "@/src/lib/auth-client";
 import { AppThemeProvider, useTheme } from "@/src/context/ThemeContext";
 import {
   useAuthHydration,
@@ -39,7 +42,6 @@ import { AnimatedSplashScreen } from "@/src/components/AnimatedSplashScreen";
 import { AppSafeAreaChrome } from "@/src/components/AppSafeAreaChrome";
 
 import * as WebBrowser from "expo-web-browser";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/ui/components/LoadingScreen";
 
 SplashScreen.preventAutoHideAsync();
@@ -65,15 +67,31 @@ function useAuthStoreHydrated(): boolean {
 /** Inside providers — waits on theme + auth, then releases the branded splash. */
 function AppWithBrandedSplash() {
   const fontsReady = true; // fonts already gated before this mounts
-  const { hydrated: themeHydrated } = useTheme();
+  const { hydrated: themeHydrated, resolved, theme } = useTheme();
   const authHydrated = useAuthHydration();
   const storeHydrated = useAuthStoreHydrated();
   const ready = fontsReady && themeHydrated && authHydrated && storeHydrated;
 
+  const navigationTheme = useMemo(() => {
+    const base = resolved === "dark" ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: theme.accent,
+        background: theme.bg,
+        card: theme.bg,
+        text: theme.text,
+        border: theme.border,
+        notification: theme.accent,
+      },
+    };
+  }, [resolved, theme]);
+
   return (
     <AppSafeAreaChrome>
       <AnimatedSplashScreen ready={ready}>
-        <ThemeProvider value={DarkTheme}>
+        <ThemeProvider value={navigationTheme}>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" />
@@ -108,11 +126,6 @@ export default function RootLayout() {
     "PlusJakartaSans-SemiBold": PlusJakartaSans_600SemiBold,
     "PlusJakartaSans-Bold": PlusJakartaSans_700Bold,
   });
-
-  useEffect(() => {
-    const cookie = authClient.getCookie?.();
-    console.log("STORED SESSION COOKIE ON APP LOAD:", cookie);
-  }, []);
 
   useEffect(() => {
     WebBrowser.warmUpAsync();

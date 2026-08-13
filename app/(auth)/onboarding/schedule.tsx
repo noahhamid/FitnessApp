@@ -1,7 +1,12 @@
 import { OnboardingHeader } from "@/src/features/auth/components/OnboardingHeader";
 import { OnboardingNav } from "@/src/features/auth/components/OnboardingNav";
 import { ChipSelect, type ChipOption } from "@/src/ui/components/ChipSelect";
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS, useOnboardingColors, type OnboardingColors } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
+import {
+  defaultTrainingDays,
+  WEEKDAY_LABELS_SHORT,
+} from "@/src/lib/plan-day-selection";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
@@ -16,10 +21,36 @@ const REMINDER_BASE = [
 ] as const;
 
 export default function OnboardingScheduleScreen() {
+  const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
+
   const params = useLocalSearchParams<{ gender?: string }>();
   const [days, setDays] = useState<string[]>([]);
+  const [weekdays, setWeekdays] = useState<number[]>([]);
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderHour, setReminderHour] = useState<string[]>(["7"]);
+
+  const targetCount = days.length > 0 ? Number(days[0]) : 0;
+
+  // Picking a frequency reseeds the weekdays with the recommended spacing —
+  // most people keep it, and it guarantees a valid starting selection.
+  const handleDaysChange = (next: string[]) => {
+    setDays(next);
+    const count = next.length > 0 ? Number(next[0]) : 0;
+    setWeekdays(count > 0 ? defaultTrainingDays(count) : []);
+  };
+
+  const toggleWeekday = (index: number) => {
+    setWeekdays((current) => {
+      if (current.includes(index)) {
+        return current.filter((d) => d !== index);
+      }
+      if (current.length >= targetCount) return current;
+      return [...current, index].sort((a, b) => a - b);
+    });
+  };
+
+  const weekdaysComplete = targetCount > 0 && weekdays.length === targetCount;
+  const remaining = targetCount - weekdays.length;
 
   // No photo can honestly depict "4 days a week", so these stay text-only.
   const dayOptions = useMemo<ChipOption[]>(
@@ -38,14 +69,14 @@ export default function OnboardingScheduleScreen() {
   );
 
   const canContinue =
-    days.length > 0 && (!reminderEnabled || reminderHour.length > 0);
+    weekdaysComplete && (!reminderEnabled || reminderHour.length > 0);
 
   return (
     <SafeAreaView
       style={[s.safe, { backgroundColor: C.bg }]}
       edges={["top", "bottom"]}
     >
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <StatusBar barStyle={resolved === "dark" ? "light-content" : "dark-content"} backgroundColor={C.bg} />
 
       <OnboardingHeader
         headline={"YOUR\nSCHEDULE."}
@@ -58,9 +89,48 @@ export default function OnboardingScheduleScreen() {
         <ChipSelect
           options={dayOptions}
           selected={days}
-          onChange={setDays}
+          onChange={handleDaysChange}
           columns={2}
         />
+
+        {targetCount > 0 && (
+          <>
+            <Text style={[s.sectionLabel, s.weekdayLabel]}>
+              {weekdaysComplete
+                ? "WHICH DAYS"
+                : `WHICH DAYS — PICK ${remaining} MORE`}
+            </Text>
+            <View style={s.weekdayRow}>
+              {WEEKDAY_LABELS_SHORT.map((label, index) => {
+                const selected = weekdays.includes(index);
+                const full = !selected && weekdays.length >= targetCount;
+                return (
+                  <Pressable
+                    key={label}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected, disabled: full }}
+                    accessibilityLabel={label}
+                    onPress={() => toggleWeekday(index)}
+                    style={[
+                      s.weekdayChip,
+                      selected && s.weekdayChipActive,
+                      full && s.weekdayChipMuted,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.weekdayChipText,
+                        selected && s.weekdayChipTextActive,
+                      ]}
+                    >
+                      {label.slice(0, 1)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        )}
 
         <View style={s.reminderHeader}>
           <Text style={s.sectionLabel}>TRAINING REMINDER</Text>
@@ -97,6 +167,7 @@ export default function OnboardingScheduleScreen() {
             params: {
               ...params,
               daysPerWeek: days[0],
+              trainingDays: weekdays.join(","),
               reminderEnabled: reminderEnabled ? "1" : "0",
               ...(reminderEnabled ? { reminderHour: reminderHour[0] } : {}),
             },
@@ -107,7 +178,9 @@ export default function OnboardingScheduleScreen() {
   );
 }
 
-const s = StyleSheet.create({
+
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
   safe: {
     flex: 1,
     paddingBottom: 12,
@@ -127,6 +200,36 @@ const s = StyleSheet.create({
     letterSpacing: 1.5,
     color: C.muted,
     marginBottom: 2,
+  },
+  weekdayLabel: {
+    marginTop: 10,
+  },
+  weekdayRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  weekdayChip: {
+    flex: 1,
+    aspectRatio: 1,
+    maxHeight: 46,
+    borderRadius: 12,
+    backgroundColor: C.bg3,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  weekdayChipActive: {
+    backgroundColor: C.accent,
+  },
+  weekdayChipMuted: {
+    opacity: 0.45,
+  },
+  weekdayChipText: {
+    fontFamily: FONTS.bold,
+    fontSize: 13,
+    color: C.muted,
+  },
+  weekdayChipTextActive: {
+    color: "#FFFFFF",
   },
   reminderHeader: {
     marginTop: 10,
@@ -160,3 +263,5 @@ const s = StyleSheet.create({
     color: C.muted,
   },
 });
+}
+

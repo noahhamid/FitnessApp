@@ -140,11 +140,14 @@ function serializePlan(plan: {
       exercise: { id: string; name: string; muscleGroup: string; movementPattern: string };
     }>;
   }>;
-}) {
+}, trainingDays: number[] = []) {
   return {
     id: plan.id,
     splitLabel: plan.splitLabel,
     daysPerWeek: plan.daysPerWeek,
+    // Chosen weekdays live on UserProfile, but every client that maps a date to
+    // a plan day already holds the plan — ship them together.
+    trainingDays,
     goalId: plan.goalId,
     experience: plan.experience,
     equipment: plan.equipment,
@@ -298,7 +301,7 @@ workoutsRouter.get("/progression", async (c) => {
   // suggestion per exercise name, not one per plan-slot).
   const exerciseTargets = new Map<
     string,
-    { targetRepsMin: number; targetRepsMax: number }
+    { targetRepsMin: number; targetRepsMax: number; targetSets: number }
   >();
   for (const day of plan.days) {
     for (const planEx of day.exercises) {
@@ -306,6 +309,7 @@ workoutsRouter.get("/progression", async (c) => {
         exerciseTargets.set(planEx.exercise.name, {
           targetRepsMin: planEx.targetRepsMin,
           targetRepsMax: planEx.targetRepsMax,
+          targetSets: planEx.targetSets,
         });
       }
     }
@@ -334,6 +338,7 @@ workoutsRouter.get("/progression", async (c) => {
         exerciseName,
         targetRepsMin: target.targetRepsMin,
         targetRepsMax: target.targetRepsMax,
+        targetSets: target.targetSets,
         lastSessionSets: lastSetsByExercise.get(exerciseName) ?? [],
       }),
   );
@@ -349,21 +354,27 @@ workoutsRouter.get("/progression", async (c) => {
 workoutsRouter.get("/plan", async (c) => {
   const user = getUser(c);
 
-  const plan = await prisma.workoutPlan.findUnique({
-    where: { userId: user.id },
-    include: {
-      days: {
-        include: {
-          exercises: {
-            include: { exercise: true },
+  const [plan, profile] = await Promise.all([
+    prisma.workoutPlan.findUnique({
+      where: { userId: user.id },
+      include: {
+        days: {
+          include: {
+            exercises: {
+              include: { exercise: true },
+            },
           },
         },
       },
-    },
-  });
+    }),
+    prisma.userProfile.findUnique({
+      where: { userId: user.id },
+      select: { trainingDays: true },
+    }),
+  ]);
 
   if (!plan) return ok(c, null);
-  return ok(c, serializePlan(plan));
+  return ok(c, serializePlan(plan, profile?.trainingDays ?? []));
 });
 
 workoutsRouter.get("/last-performance", async (c) => {

@@ -1,4 +1,5 @@
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import * as Haptics from "expo-haptics";
 import {
   forwardRef,
@@ -39,6 +40,7 @@ export const HorizontalWeightScale = forwardRef<
   HorizontalWeightScaleHandle,
   Props
 >(function HorizontalWeightScale({ min, max, value, onChange }, ref) {
+  const { C, styles: s } = useOnboardingStyles(makeStyles);
   const scrollRef = useRef<ScrollView>(null);
   const lastValue = useRef(value);
   const initialValue = useRef(value).current;
@@ -137,7 +139,9 @@ export const HorizontalWeightScale = forwardRef<
   );
 });
 
-const s = StyleSheet.create({
+
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
   container: {
     width: "100%",
     height: SCALE_HEIGHT,
@@ -181,7 +185,7 @@ const s = StyleSheet.create({
     paddingTop: 22,
   },
   tick: {
-    backgroundColor: "rgba(255,255,255,0.25)",
+    backgroundColor: C.muted2,
     borderRadius: 1,
   },
   tickMinor: {
@@ -191,7 +195,7 @@ const s = StyleSheet.create({
   tickMid: {
     width: 1.5,
     height: 20,
-    backgroundColor: "rgba(255,255,255,0.5)",
+    backgroundColor: C.muted,
   },
   tickMajor: {
     width: 2,
@@ -215,3 +219,5 @@ const s = StyleSheet.create({
     color: C.muted2,
   },
 });
+}
+

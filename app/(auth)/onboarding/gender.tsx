@@ -1,7 +1,7 @@
 import { GoalTile } from "@/src/ui/components/GoalTile";
 import { OnboardingHeader } from "@/src/features/auth/components/OnboardingHeader";
 import { OnboardingNav } from "@/src/features/auth/components/OnboardingNav";
-import { C } from "@/src/ui/tokens";
+import { useOnboardingColors, useSystemResolvedScheme } from "@/src/ui/tokens";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
@@ -27,9 +27,15 @@ const GENDERS: {
 ];
 
 export default function OnboardingGenderScreen() {
+  const C = useOnboardingColors();
+  const resolved = useSystemResolvedScheme();
+
   const params = useLocalSearchParams();
+  const genderParam = Array.isArray(params.gender)
+    ? params.gender[0]
+    : params.gender;
   const [selectedGender, setSelectedGender] = useState<GenderOption | null>(
-    null,
+    genderParam === "male" || genderParam === "female" ? genderParam : null,
   );
 
   const handleNext = () => {
@@ -45,7 +51,7 @@ export default function OnboardingGenderScreen() {
       style={[s.safe, { backgroundColor: C.bg }]}
       edges={["top", "bottom"]}
     >
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <StatusBar barStyle={resolved === "dark" ? "light-content" : "dark-content"} backgroundColor={C.bg} />
 
       <OnboardingHeader
         headline={"YOUR\nGENDER."}

@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { localDateOnly } from "@/src/features/progress/lib/localDate";
+import { dayCaption } from "@/src/lib/week-days";
 import { PressableScale } from "./PressableScale";
 
 type Day = {
@@ -34,6 +35,8 @@ type Props = {
   canGoPrevWeek?: boolean;
   /** When false, hide/disable going to a later week. Default true. */
   canGoNextWeek?: boolean;
+  /** When false, omit the weekday + date caption under the row. Default true. */
+  showSelectedDate?: boolean;
 };
 
 const INDICATOR_INSET = 2;
@@ -47,9 +50,11 @@ export function DaySelector({
   weekLabel,
   canGoPrevWeek = true,
   canGoNextWeek = true,
+  showSelectedDate = true,
 }: Props) {
   const { T, styles } = useThemedStyles(makeStyles);
   const todayKey = localDateOnly();
+  const selectedDate = days[activeIndex]?.date;
   const [rowWidth, setRowWidth] = useState(0);
   const [rowHeight, setRowHeight] = useState(0);
   // Always divide by 7 so a short/empty days array can't inflate cell width.
@@ -262,6 +267,12 @@ export function DaySelector({
           })}
         </View>
       </View>
+
+      {showSelectedDate && selectedDate ? (
+        <Text style={styles.selectedCaption} numberOfLines={1}>
+          {dayCaption(selectedDate, todayKey)}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -364,6 +375,14 @@ function makeStyles(T: AppTheme) {
     dnumActive: { color: T.onAccent },
     dnumToday: { color: T.accent },
     dnumDisabled: { color: T.faint },
+    selectedCaption: {
+      marginTop: 8,
+      textAlign: "center",
+      fontFamily: T.bodyMed,
+      fontSize: 11.5,
+      letterSpacing: 0.1,
+      color: T.muted,
+    },
     logDot: {
       width: 4,
       height: 4,

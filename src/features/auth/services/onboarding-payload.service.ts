@@ -21,6 +21,8 @@ export type OnboardingAuthParams = {
   bodyIssues?: string | string[];
   injuries?: string | string[];
   daysPerWeek?: string | string[];
+  /** Comma-separated Monday-indexed weekdays, e.g. "0,2,4". */
+  trainingDays?: string | string[];
   experience?: string | string[];
   equipment?: string | string[];
   reminderEnabled?: string | string[];
@@ -36,6 +38,15 @@ function single(value: string | string[] | undefined): string | undefined {
 function numberParam(value: string | string[] | undefined): number | undefined {
   const parsed = Number(single(value));
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function numberListParam(
+  value: string | string[] | undefined,
+): number[] | undefined {
+  const list = listParam(value);
+  if (!list) return undefined;
+  const numbers = list.map(Number).filter((n) => Number.isInteger(n));
+  return numbers.length > 0 ? numbers : undefined;
 }
 
 function listParam(value: string | string[] | undefined): string[] | undefined {
@@ -77,6 +88,9 @@ export function onboardingParamsForNavigation(params: OnboardingAuthParams) {
     ...(single(params.injuries) ? { injuries: single(params.injuries)! } : {}),
     ...(single(params.daysPerWeek)
       ? { daysPerWeek: single(params.daysPerWeek)! }
+      : {}),
+    ...(single(params.trainingDays)
+      ? { trainingDays: single(params.trainingDays)! }
       : {}),
     ...(single(params.experience)
       ? { experience: single(params.experience)! }
@@ -140,6 +154,7 @@ export async function saveCompletedOnboardingPayload(
         ? (pace as Pace)
         : undefined,
     daysPerWeek: numberParam(params.daysPerWeek),
+    trainingDays: numberListParam(params.trainingDays),
     experience: experience as ExperienceLevel | undefined,
     equipment: equipment as EquipmentAccess | undefined,
     focusAreas: listParam(params.focusAreas),

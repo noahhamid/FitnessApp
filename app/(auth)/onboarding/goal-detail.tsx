@@ -5,7 +5,7 @@ import {
   resolveChipGender,
 } from "@/src/features/auth/constants/chip-images";
 import { ChipSelect, type ChipOption } from "@/src/ui/components/ChipSelect";
-import { C } from "@/src/ui/tokens";
+import { useOnboardingColors, useSystemResolvedScheme } from "@/src/ui/tokens";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
@@ -35,6 +35,9 @@ const DETAILS_BY_GOAL: Record<string, { id: string; label: string }[]> = {
 };
 
 export default function OnboardingGoalDetailScreen() {
+  const C = useOnboardingColors();
+  const resolved = useSystemResolvedScheme();
+
   const params = useLocalSearchParams<{ goalId?: string; gender?: string }>();
   const goalId = params.goalId ?? "health";
   const gender = resolveChipGender(params.gender);
@@ -53,7 +56,7 @@ export default function OnboardingGoalDetailScreen() {
       style={[s.safe, { backgroundColor: C.bg }]}
       edges={["top", "bottom"]}
     >
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <StatusBar barStyle={resolved === "dark" ? "light-content" : "dark-content"} backgroundColor={C.bg} />
 
       <OnboardingHeader
         headline={"GET MORE\nSPECIFIC."}

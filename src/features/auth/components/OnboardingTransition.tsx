@@ -1,4 +1,5 @@
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { useEffect, useRef, type ComponentType } from "react";
 import {
   Animated,
@@ -39,6 +40,7 @@ export function OnboardingTransition({
   onContinue,
   durationMs,
 }: Props) {
+  const { C, styles, resolved } = useOnboardingStyles(makeStyles);
   const resolvedDuration =
     durationMs ?? (sub ? AUTO_ADVANCE_WITH_SUB_MS : AUTO_ADVANCE_MS);
   const fade = useRef(new Animated.Value(0)).current;
@@ -83,20 +85,26 @@ export function OnboardingTransition({
   });
 
   return (
-    <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+      <StatusBar
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={C.bg}
+      />
 
-      <View style={s.content}>
+      <View style={styles.content}>
         <View style={{ flex: 1 }} />
 
         <Animated.View
-          style={[s.center, { opacity: fade, transform: [{ translateY: rise }] }]}
+          style={[
+            styles.center,
+            { opacity: fade, transform: [{ translateY: rise }] },
+          ]}
         >
-          <View style={s.iconWrap}>
+          <View style={styles.iconWrap}>
             <Icon size={42} color={C.accent} strokeWidth={2.2} />
           </View>
           <Text
-            style={s.headline}
+            style={styles.headline}
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.55}
@@ -105,7 +113,7 @@ export function OnboardingTransition({
             {line}
           </Text>
           {sub ? (
-            <Text style={s.sub} numberOfLines={2}>
+            <Text style={styles.sub} numberOfLines={2}>
               {sub}
             </Text>
           ) : null}
@@ -113,56 +121,58 @@ export function OnboardingTransition({
 
         <View style={{ flex: 1 }} />
 
-        <View style={s.progressTrack}>
-          <Animated.View style={[s.progressFill, { width: barWidth }]} />
+        <View style={styles.progressTrack}>
+          <Animated.View style={[styles.progressFill, { width: barWidth }]} />
         </View>
       </View>
     </SafeAreaView>
   );
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.bg },
-  content: { flex: 1, paddingHorizontal: 24, paddingBottom: 24 },
-  center: {
-    alignItems: "center",
-    width: "100%",
-  },
-  iconWrap: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(229, 57, 53, 0.12)",
-    marginBottom: 22,
-  },
-  headline: {
-    fontFamily: FONTS.blackItalic,
-    fontSize: 34,
-    color: C.text,
-    letterSpacing: -0.5,
-    textAlign: "center",
-    width: "100%",
-    textTransform: "uppercase",
-  },
-  sub: {
-    marginTop: 14,
-    fontFamily: FONTS.regular,
-    fontSize: 15,
-    lineHeight: 22,
-    color: C.muted,
-    textAlign: "center",
-    maxWidth: 340,
-  },
-  progressTrack: {
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: C.bg3,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: C.accent,
-  },
-});
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: C.bg },
+    content: { flex: 1, paddingHorizontal: 24, paddingBottom: 24 },
+    center: {
+      alignItems: "center",
+      width: "100%",
+    },
+    iconWrap: {
+      width: 88,
+      height: 88,
+      borderRadius: 44,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(229, 57, 53, 0.12)",
+      marginBottom: 22,
+    },
+    headline: {
+      fontFamily: FONTS.blackItalic,
+      fontSize: 34,
+      color: C.text,
+      letterSpacing: -0.5,
+      textAlign: "center",
+      width: "100%",
+      textTransform: "uppercase",
+    },
+    sub: {
+      marginTop: 14,
+      fontFamily: FONTS.regular,
+      fontSize: 15,
+      lineHeight: 22,
+      color: C.muted,
+      textAlign: "center",
+      maxWidth: 340,
+    },
+    progressTrack: {
+      height: 3,
+      borderRadius: 2,
+      backgroundColor: C.bg3,
+      overflow: "hidden",
+    },
+    progressFill: {
+      height: "100%",
+      backgroundColor: C.accent,
+    },
+  });
+}

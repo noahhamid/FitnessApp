@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,10 +7,12 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus } from "lucide-react-native";
 import { useLocalSearchParams } from "expo-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useWeightLog,
   useAddWeightLog,
@@ -20,7 +22,6 @@ import {
 } from "../hooks/useProgress";
 import { useWorkoutPlan } from "@/src/features/workout/hooks/useWorkoutPlan";
 import { api } from "@/src/lib/api";
-import { useQuery } from "@tanstack/react-query";
 import { WeightTrendChart } from "../components/WeightTrendChart";
 import { LevelUpSection } from "../components/LevelUpSection";
 import { ConsistencyCard } from "../components/ConsistencyCard";
@@ -40,10 +41,15 @@ import { completedDayKeys, contributionGrid } from "../lib/analytics";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
+import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import { PageHeader } from "@/src/components/PageHeader";
 import { useExerciseLibrary } from "@/src/features/workout/hooks/useExerciseLibrary";
 import { useWorkoutStreak } from "@/src/features/workout/hooks/useWorkoutStreak";
 import { useMealLogRange } from "@/src/features/nutrition/hooks/useNutrition";
+import {
+  invalidateQueryPrefixes,
+  usePullToRefresh,
+} from "@/src/hooks/usePullToRefresh";
 
 const PROGRESS_TABS = ["Body", "Training", "Nutrition", "Records"] as const;
 type ProgressTab = (typeof PROGRESS_TABS)[number];
@@ -72,12 +78,30 @@ function startOfThisWeekMonday(): Date {
 export default function ProgressScreen() {
   const { T, styles: s, resolved } = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const { section } = useLocalSearchParams<{ section?: string }>();
   const scrollRef = useRef<ScrollView>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProgressTab>("Body");
+
+  const refreshProgress = useCallback(
+    () =>
+      invalidateQueryPrefixes(queryClient, [
+        ["weight-log"],
+        ["weight-goal"],
+        ["workout-history"],
+        ["workout-session-count"],
+        ["personal-records"],
+        ["progression"],
+        ["workout-sessions"],
+        ["nutrition"],
+        ["workout-plan"],
+      ]),
+    [queryClient],
+  );
+  const { refreshing, onRefresh } = usePullToRefresh(refreshProgress);
 
   const monthStart = useMemo(
     () =>
@@ -218,9 +242,21 @@ export default function ProgressScreen() {
         ref={scrollRef}
         contentContainerStyle={[
           s.scrollContent,
-          { paddingTop: topInset(insets.top) + T.space.sm },
+          {
+            paddingTop: topInset(insets.top) + T.space.sm,
+            paddingBottom: tabContentBottomPad(insets.bottom),
+          },
         ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={T.accent}
+            colors={[T.accent]}
+            progressBackgroundColor={T.bgElevated}
+          />
+        }
       >
         <PageHeader eyebrow="Overview" title="Progress" />
 
@@ -287,6 +323,7 @@ export default function ProgressScreen() {
                 <AdherenceCard
                   sessions={analyticsSessions ?? []}
                   daysPerWeek={apiPlan.daysPerWeek}
+                  trainingDays={apiPlan.trainingDays}
                 />
               )}
             </View>
@@ -346,7 +383,6 @@ function makeStyles(T: AppTheme) {
     screen: { flex: 1, backgroundColor: T.bg },
     scrollContent: {
       paddingHorizontal: T.space.xl,
-      paddingBottom: 128,
     },
     tabsWrap: {
       marginBottom: T.space.xl,

@@ -5,7 +5,7 @@ import {
   resolveChipGender,
 } from "@/src/features/auth/constants/chip-images";
 import { ChipSelect, type ChipOption } from "@/src/ui/components/ChipSelect";
-import { C } from "@/src/ui/tokens";
+import { useOnboardingColors, useSystemResolvedScheme } from "@/src/ui/tokens";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
@@ -35,10 +35,23 @@ const PACE_COPY: Record<string, { id: string; label: string }[]> = {
 };
 
 export default function OnboardingPaceScreen() {
-  const params = useLocalSearchParams<{ goalId?: string; gender?: string }>();
+  const C = useOnboardingColors();
+  const resolved = useSystemResolvedScheme();
+
+  const params = useLocalSearchParams<{
+    goalId?: string;
+    gender?: string;
+    pace?: string;
+  }>();
   const goalId = params.goalId ?? "health";
   const gender = resolveChipGender(params.gender);
-  const [selected, setSelected] = useState<string[]>(["moderate"]);
+  const savedPace =
+    typeof params.pace === "string" && params.pace.length > 0
+      ? params.pace
+      : null;
+  const [selected, setSelected] = useState<string[]>(
+    savedPace ? [savedPace] : [],
+  );
 
   const options = useMemo<ChipOption[]>(() => {
     const base = PACE_COPY[goalId] ?? PACE_COPY.health;
@@ -53,7 +66,7 @@ export default function OnboardingPaceScreen() {
       style={[s.safe, { backgroundColor: C.bg }]}
       edges={["top", "bottom"]}
     >
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <StatusBar barStyle={resolved === "dark" ? "light-content" : "dark-content"} backgroundColor={C.bg} />
 
       <OnboardingHeader
         headline={"YOUR\nPACE."}
@@ -66,12 +79,14 @@ export default function OnboardingPaceScreen() {
       </View>
 
       <OnboardingNav
-        onNext={() =>
+        nextDisabled={selected.length === 0}
+        onNext={() => {
+          if (!selected[0]) return;
           router.push({
             pathname: "/(auth)/onboarding/predicted-date",
-            params: { ...params, pace: selected[0] ?? "moderate" },
-          })
-        }
+            params: { ...params, pace: selected[0] },
+          });
+        }}
       />
     </SafeAreaView>
   );

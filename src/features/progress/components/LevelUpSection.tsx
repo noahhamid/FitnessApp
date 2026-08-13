@@ -1,7 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { TrendingUp } from "lucide-react-native";
-import type { ProgressionSuggestion } from "../hooks/useProgress";
+import { TrendingUp, Repeat, TrendingDown } from "lucide-react-native";
+import type {
+  ProgressionDirection,
+  ProgressionSuggestion,
+} from "../hooks/useProgress";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 
@@ -9,11 +12,33 @@ interface Props {
   suggestions: ProgressionSuggestion[];
 }
 
+const ACTIONABLE: ProgressionDirection[] = ["increase", "add_reps", "deload"];
+
+const ICON: Record<string, typeof TrendingUp> = {
+  increase: TrendingUp,
+  add_reps: Repeat,
+  deload: TrendingDown,
+};
+
+function subtextFor(sug: ProgressionSuggestion): string {
+  if (sug.direction === "increase") {
+    return "You hit the top of your rep range every set";
+  }
+  if (sug.direction === "deload") {
+    return "Reps fell under target — back off the load and rebuild";
+  }
+  return sug.suggestedReps != null
+    ? `Same weight, chase ${sug.suggestedReps} reps this time`
+    : "Same weight, add a rep this time";
+}
+
 export function LevelUpSection({ suggestions }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
-  const readyToLevelUp = suggestions.filter((s) => s.direction === "increase");
+  const actionable = suggestions.filter((sug) =>
+    ACTIONABLE.includes(sug.direction),
+  );
 
-  if (readyToLevelUp.length === 0) {
+  if (actionable.length === 0) {
     return (
       <View style={s.card}>
         <Text style={s.emptyText}>
@@ -26,24 +51,47 @@ export function LevelUpSection({ suggestions }: Props) {
 
   return (
     <View style={{ gap: 10 }}>
-      {readyToLevelUp.map((sug) => (
-        <View key={sug.exerciseName} style={s.card}>
-          <View style={s.iconWrap}>
-            <TrendingUp size={18} color={T.accent} strokeWidth={2.2} />
+      {actionable.map((sug) => {
+        const Icon = ICON[sug.direction] ?? TrendingUp;
+        const loadChanged =
+          sug.suggestedWeight != null &&
+          sug.lastWeight != null &&
+          sug.suggestedWeight !== sug.lastWeight;
+
+        return (
+          <View key={sug.exerciseName} style={s.card}>
+            <View
+              style={[
+                s.iconWrap,
+                sug.direction === "deload" && s.iconWrapQuiet,
+              ]}
+            >
+              <Icon
+                size={18}
+                color={sug.direction === "deload" ? T.muted : T.accent}
+                strokeWidth={2.2}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.exerciseName}>{sug.exerciseName}</Text>
+              <Text style={s.subtext}>{subtextFor(sug)}</Text>
+            </View>
+            {loadChanged ? (
+              <View style={s.weightWrap}>
+                <Text style={s.oldWeight}>{sug.lastWeight} kg</Text>
+                <Text style={s.arrow}>→</Text>
+                <Text style={s.newWeight}>{sug.suggestedWeight} kg</Text>
+              </View>
+            ) : (
+              <View style={s.weightWrap}>
+                <Text style={s.newWeight}>
+                  {sug.suggestedReps != null ? `${sug.suggestedReps} reps` : "—"}
+                </Text>
+              </View>
+            )}
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.exerciseName}>{sug.exerciseName}</Text>
-            <Text style={s.subtext}>
-              You hit your target reps every set last time
-            </Text>
-          </View>
-          <View style={s.weightWrap}>
-            <Text style={s.oldWeight}>{sug.lastWeight} kg</Text>
-            <Text style={s.arrow}>→</Text>
-            <Text style={s.newWeight}>{sug.suggestedWeight} kg</Text>
-          </View>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
@@ -68,6 +116,9 @@ function makeStyles(T: AppTheme) {
       backgroundColor: T.accentTint,
       alignItems: "center",
       justifyContent: "center",
+    },
+    iconWrapQuiet: {
+      backgroundColor: T.border,
     },
     exerciseName: { fontFamily: T.bodySemi, fontSize: 14, color: T.white },
     subtext: {

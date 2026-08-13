@@ -169,8 +169,9 @@ export function trainingAdherence(
   daysPerWeek: number,
   completedDays: Set<string>,
   weekCount = 4,
+  trainingDays?: readonly number[] | null,
 ): AdherenceStats {
-  const schedule = computeWeeklySchedule(daysPerWeek);
+  const schedule = computeWeeklySchedule(daysPerWeek, trainingDays);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const thisMonday = mondayOnOrBefore(today);

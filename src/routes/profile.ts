@@ -5,6 +5,8 @@ import { ok } from "../lib/response";
 import { parseJson } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
 import { computeNutritionTargets } from "../lib/nutrition-calc";
+import { isOnboardingProfileComplete } from "../lib/onboarding-complete";
+import { normalizeTrainingDays } from "../lib/plan-day-selection";
 import {
   generateWorkoutPlan,
   type FocusArea,
@@ -29,6 +31,8 @@ const profileSchema = z.object({
   age: z.number().int().positive().nullable().optional(),
   gender: genderEnum.nullable().optional(),
   daysPerWeek: z.number().int().min(2).max(7).nullable().optional(),
+  /** Monday-indexed weekdays (0=Mon … 6=Sun); [] restores the default pattern. */
+  trainingDays: z.array(z.number().int().min(0).max(6)).max(7).optional(),
   experience: experienceEnum.nullable().optional(),
   equipment: equipmentEnum.nullable().optional(),
   focusAreas: z.array(z.string()).optional(),
@@ -50,6 +54,7 @@ function serializeProfile(row: {
   age: number | null;
   gender: string | null;
   daysPerWeek: number | null;
+  trainingDays: number[];
   experience: string | null;
   equipment: string | null;
   focusAreas: string[];
@@ -72,6 +77,7 @@ function serializeProfile(row: {
     age: row.age,
     gender: row.gender,
     daysPerWeek: row.daysPerWeek,
+    trainingDays: row.trainingDays,
     experience: row.experience,
     equipment: row.equipment,
     focusAreas: row.focusAreas,
@@ -107,7 +113,27 @@ profileRouter.put("/", async (c) => {
     });
   }
 
+  // `trainingDays` and `daysPerWeek` must agree, since the plan holds exactly
+  // `daysPerWeek` days and each chosen weekday maps to one of them. An explicit
+  // weekday list wins and sets the count; changing only the count drops a stale
+  // list so the default pattern for the new frequency applies.
+  const chosenDays =
+    data.trainingDays !== undefined
+      ? normalizeTrainingDays(data.trainingDays)
+      : undefined;
+
+  const scheduleFields =
+    data.trainingDays !== undefined
+      ? {
+          trainingDays: chosenDays ?? [],
+          ...(chosenDays && { daysPerWeek: chosenDays.length }),
+        }
+      : data.daysPerWeek !== undefined
+        ? { daysPerWeek: data.daysPerWeek, trainingDays: [] }
+        : {};
+
   const fieldsToSet = {
+    ...scheduleFields,
     ...(data.goalId !== undefined && { goalId: data.goalId }),
     ...(data.goalDetail !== undefined && { goalDetail: data.goalDetail }),
     ...(data.weightKg !== undefined && { weightKg: data.weightKg }),
@@ -118,7 +144,6 @@ profileRouter.put("/", async (c) => {
     ...(data.heightCm !== undefined && { heightCm: data.heightCm }),
     ...(data.age !== undefined && { age: data.age }),
     ...(data.gender !== undefined && { gender: data.gender }),
-    ...(data.daysPerWeek !== undefined && { daysPerWeek: data.daysPerWeek }),
     ...(data.experience !== undefined && { experience: data.experience }),
     ...(data.equipment !== undefined && { equipment: data.equipment }),
     ...(data.focusAreas !== undefined && { focusAreas: data.focusAreas }),
@@ -136,13 +161,7 @@ profileRouter.put("/", async (c) => {
     update: fieldsToSet,
   });
 
-  const profileComplete =
-    profile.gender &&
-    profile.weightKg != null &&
-    profile.heightCm != null &&
-    profile.age != null &&
-    profile.goalId &&
-    profile.daysPerWeek != null;
+  const profileComplete = isOnboardingProfileComplete(profile);
 
   // --- Nutrition targets ---
   if (profileComplete) {
@@ -176,10 +195,7 @@ profileRouter.put("/", async (c) => {
     });
   }
 
-  // --- Workout plan (needs experience + equipment too, which nutrition doesn't) ---
-  const workoutInputsComplete = profileComplete && profile.experience && profile.equipment;
-
-  if (workoutInputsComplete) {
+  if (profileComplete) {
     try {
       const plan = await generateWorkoutPlan({
         daysPerWeek: profile.daysPerWeek!,

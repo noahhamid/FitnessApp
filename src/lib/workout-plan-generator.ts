@@ -204,6 +204,11 @@ async function loadExercisesByMuscleGroup(
     });
     map.set(row.muscleGroup as MuscleGroup, list);
   }
+  // Stable order so rotation offsets mean the same thing on every regeneration,
+  // regardless of the order Postgres returned the rows in.
+  for (const list of map.values()) {
+    list.sort((a, b) => a.name.localeCompare(b.name));
+  }
   return map;
 }
 
@@ -224,12 +229,17 @@ function pickExercise(
   userEquipment: EquipmentAccess,
   usedInDay: Set<string>,
   avoidPatterns: Set<MovementPattern>,
+  /**
+   * How many times this muscle group has already been filled anywhere in the
+   * plan. Walking the pool from this offset is what makes Push A and Push B
+   * (or Full Body A/B/C) draw different movements instead of repeating the
+   * same first match every slot.
+   */
+  rotationOffset: number,
 ): { id: string; name: string } {
   const eligible = candidates.filter((c) => canPerform(userEquipment, c.minEquipment));
   const safe = eligible.filter((c) => !avoidPatterns.has(c.movementPattern));
-  const safePool = safe.length > 0 ? safe : eligible;
-  const fresh = safePool.filter((c) => !usedInDay.has(c.id));
-  const pool = fresh.length > 0 ? fresh : safePool;
+  const pool = safe.length > 0 ? safe : eligible;
 
   if (pool.length === 0) {
     throw new Error(
@@ -237,8 +247,18 @@ function pickExercise(
     );
   }
 
-  // Deterministic pick — same inputs always produce the same plan.
-  const chosen = pool[0];
+  // Deterministic rotation — same inputs always produce the same plan, but
+  // consecutive slots for one muscle group advance through the pool.
+  const start = rotationOffset % pool.length;
+  let chosen = pool[start];
+  for (let i = 0; i < pool.length; i++) {
+    const candidate = pool[(start + i) % pool.length];
+    if (!usedInDay.has(candidate.id)) {
+      chosen = candidate;
+      break;
+    }
+  }
+
   usedInDay.add(chosen.id);
   return chosen;
 }
@@ -268,11 +288,23 @@ export async function generateWorkoutPlan(input: WorkoutPlanInput): Promise<Work
   const allMuscleGroups = [...new Set(substitutedDays.flatMap((d) => d.slots))];
   const exercisesByGroup = await loadExercisesByMuscleGroup(allMuscleGroups);
 
+  // Rotation cursor per muscle group, carried across days so a repeated day
+  // template (Push A / Push B) doesn't produce an identical workout.
+  const groupRotation = new Map<MuscleGroup, number>();
+
   const days: PlanDayOut[] = substitutedDays.map((day, dayIndex) => {
     const usedInDay = new Set<string>();
     const exercises: PlanExerciseOut[] = day.slots.map((muscleGroup, i) => {
       const candidates = exercisesByGroup.get(muscleGroup) ?? [];
-      const chosen = pickExercise(candidates, equipment, usedInDay, avoidPatterns);
+      const rotationOffset = groupRotation.get(muscleGroup) ?? 0;
+      groupRotation.set(muscleGroup, rotationOffset + 1);
+      const chosen = pickExercise(
+        candidates,
+        equipment,
+        usedInDay,
+        avoidPatterns,
+        rotationOffset,
+      );
       // Extra volume for muscle groups the user asked to prioritize.
       const targetSets = focusMuscleGroups.has(muscleGroup)
         ? Math.min(5, baseSets + 1)

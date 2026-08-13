@@ -7,15 +7,8 @@ import {
   View,
   type TextInputProps,
 } from "react-native";
-import { FONTS } from "@/src/ui/tokens";
-
-const C = {
-  card: "#1E1E1E",
-  border: "#2A2A2A",
-  accent: "#E53935",
-  text: "#FFFFFF",
-  muted: "#A0A0A0",
-};
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
+import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 
 type Props = Omit<TextInputProps, "secureTextEntry"> & {
   value: string;
@@ -27,6 +20,7 @@ type Props = Omit<TextInputProps, "secureTextEntry"> & {
  * Open eye = password visible; closed eye (EyeOff) = hidden again.
  */
 export function PasswordInput({ value, onChangeText, style, ...rest }: Props) {
+  const { C, styles: s } = useOnboardingStyles(makeStyles);
   const [visible, setVisible] = useState(false);
 
   return (
@@ -60,32 +54,34 @@ export function PasswordInput({ value, onChangeText, style, ...rest }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  wrap: {
-    position: "relative",
-    justifyContent: "center",
-  },
-  input: {
-    backgroundColor: C.card,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    paddingRight: 52,
-    fontFamily: FONTS.regular,
-    fontSize: 15,
-    color: C.text,
-  },
-  eyeBtn: {
-    position: "absolute",
-    right: 14,
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-});
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
+    wrap: {
+      position: "relative",
+      justifyContent: "center",
+    },
+    input: {
+      backgroundColor: C.card,
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: C.border,
+      paddingHorizontal: 18,
+      paddingVertical: 16,
+      paddingRight: 52,
+      fontFamily: FONTS.regular,
+      fontSize: 15,
+      color: C.text,
+    },
+    eyeBtn: {
+      position: "absolute",
+      right: 14,
+      width: 36,
+      height: 36,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+  });
+}

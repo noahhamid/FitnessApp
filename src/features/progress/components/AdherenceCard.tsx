@@ -10,15 +10,16 @@ import { completedDayKeys, trainingAdherence } from "../lib/analytics";
 type Props = {
   sessions: WorkoutSessionSummary[];
   daysPerWeek: number;
+  trainingDays?: readonly number[] | null;
 };
 
-export function AdherenceCard({ sessions, daysPerWeek }: Props) {
+export function AdherenceCard({ sessions, daysPerWeek, trainingDays }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
 
   const stats = useMemo(() => {
     const days = completedDayKeys(sessions);
-    return trainingAdherence(daysPerWeek, days, 4);
-  }, [sessions, daysPerWeek]);
+    return trainingAdherence(daysPerWeek, days, 4, trainingDays);
+  }, [sessions, daysPerWeek, trainingDays]);
 
   const pct = Math.round(stats.rate * 100);
 

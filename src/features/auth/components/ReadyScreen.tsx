@@ -5,7 +5,8 @@ import {
   ExperienceLevel,
 } from "@/src/ui/components/ExperienceIcon";
 import { previewSplitLabel } from "@/src/lib/onboarding-timeline";
-import { FONTS } from "@/src/ui/tokens";
+import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef } from "react";
 import {
@@ -16,15 +17,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const C = {
-  bg: "#111318",
-  card: "#1E1E1E",
-  border: "#2A2A2A",
-  accent: "#E53935",
-  text: "#FFFFFF",
-  muted: "#A0A0A0",
-};
 
 const GOAL_LABELS: Record<string, string> = {
   lose: "Lose Fat",
@@ -63,6 +55,7 @@ const INJURY_LABELS: Record<string, string> = {
 };
 
 export function ReadyScreen() {
+  const { C, styles: s } = useOnboardingStyles(makeStyles);
   const params = useLocalSearchParams<{
     goalId?: string;
     weightKg?: string;
@@ -243,7 +236,8 @@ export function ReadyScreen() {
   );
 }
 
-const s = StyleSheet.create({
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   content: { flex: 1, paddingHorizontal: 24 },
   kicker: {
@@ -303,8 +297,10 @@ const s = StyleSheet.create({
     fontFamily: FONTS.blackItalic,
     fontSize: 15,
     letterSpacing: 1,
-    color: C.bg,
+    color: C.onAccent,
     textTransform: "uppercase",
     textAlign: "center",
   },
 });
+}
+

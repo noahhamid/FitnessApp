@@ -1,25 +1,31 @@
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
+import { PasswordInput } from "@/src/ui/components/PasswordInput";
+import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Dimensions,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { PasswordInput } from "@/src/ui/components/PasswordInput";
-import { FONTS } from "@/src/ui/tokens";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { SocialAuthButtons } from "./SocialAuthButtons";
 import {
   AuthCancelledError,
+  isEmailNotVerifiedError,
   signIn,
   signInWithApple,
   signInWithGoogle,
@@ -31,19 +37,36 @@ import {
   type OnboardingAuthParams,
 } from "../services/onboarding-payload.service";
 
-const C = {
-  bg: "#111318",
-  card: "#1E1E1E",
-  border: "#2A2A2A",
-  accent: "#E53935",
-  text: "#FFFFFF",
-  muted: "#A0A0A0",
-};
-
-const BRAND_FOOTER_SIZE = Math.min(Dimensions.get("window").width * 0.17, 96);
+function heroScrim(bgHex: string, resolved: "light" | "dark") {
+  const hex = bgHex.replace("#", "");
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  if (resolved === "light") {
+    return [
+      `rgba(${r},${g},${b},0.35)`,
+      `rgba(${r},${g},${b},0.82)`,
+      bgHex,
+    ] as const;
+  }
+  return [
+    `rgba(${r},${g},${b},0.55)`,
+    `rgba(${r},${g},${b},0.92)`,
+    bgHex,
+  ] as const;
+}
 
 export function SignInForm() {
+  const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
   const params = useLocalSearchParams<OnboardingAuthParams>();
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const viewportHeight = height - insets.bottom;
+  const scrim = useMemo(
+    () => heroScrim(C.bg, resolved),
+    [C.bg, resolved],
+  );
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,7 +74,7 @@ export function SignInForm() {
   const [appleLoading, setAppleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
-  const canContinue = email.length > 3 && password.length >= 1;
+  const canContinue = email.length > 3 && password.length >= 8;
   const completingOnboarding = hasCompletedOnboardingPayload(params);
   const busy = loading || googleLoading || appleLoading;
 
@@ -67,6 +90,16 @@ export function SignInForm() {
       }
       await navigateAfterAuth(params);
     } catch (e) {
+      if (isEmailNotVerifiedError(e)) {
+        router.replace({
+          pathname: "/(auth)/verify-email",
+          params: {
+            ...onboardingParamsForNavigation(params),
+            email: email.trim(),
+          },
+        });
+        return;
+      }
       setError(
         e instanceof Error
           ? e.message
@@ -117,24 +150,32 @@ export function SignInForm() {
   }
 
   return (
-    <View style={s.root}>
+    <View style={[s.root, { height: viewportHeight, maxHeight: viewportHeight }]}>
+      <StatusBar
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={C.bg}
+      />
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={s.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
-          contentContainerStyle={s.scrollContent}
+          style={s.flex}
+          contentContainerStyle={[
+            s.scrollContent,
+            { minHeight: viewportHeight, paddingBottom: insets.bottom + 24 },
+          ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          bounces={false}
         >
           <ImageBackground
             source={require("../../../../assets/images/welcome-gym.jpg")}
             style={s.photoBand}
             resizeMode="cover"
           >
-            <View style={s.photoShade} />
             <LinearGradient
-              colors={["rgba(17,19,24,0.55)", "rgba(17,19,24,0.92)", C.bg]}
+              colors={[...scrim]}
               locations={[0, 0.55, 1]}
               style={StyleSheet.absoluteFillObject}
             />
@@ -204,7 +245,7 @@ export function SignInForm() {
               </Pressable>
             </View>
 
-            {error && <Text style={s.errorText}>{error}</Text>}
+            {error ? <Text style={s.errorText}>{error}</Text> : null}
 
             <Pressable
               disabled={!canContinue || busy}
@@ -215,7 +256,7 @@ export function SignInForm() {
               onPress={handleContinue}
             >
               {loading ? (
-                <ActivityIndicator color={C.text} size="small" />
+                <ActivityIndicator color={C.onAccent} size="small" />
               ) : (
                 <Text style={s.primaryBtnText}>
                   {authenticated ? "RETRY SAVE" : "SIGN IN & CONTINUE"}
@@ -239,157 +280,123 @@ export function SignInForm() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Oversized brand mark — baseline flush to the screen bottom. */}
-      <View style={s.brandFooter} pointerEvents="none">
-        <Text
-          style={s.brandMark}
-          numberOfLines={1}
-          allowFontScaling={false}
-          {...(Platform.OS === "android"
-            ? { includeFontPadding: false }
-            : null)}
-        >
-          POTENTIAL
-          <Text style={s.brandMarkAccent}>PEAK</Text>
-        </Text>
-      </View>
     </View>
   );
 }
 
-const s = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: C.bg,
-    overflow: "hidden",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: BRAND_FOOTER_SIZE * 0.55,
-  },
-  photoBand: { height: 148, justifyContent: "flex-start" },
-  photoShade: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(8, 9, 12, 0.62)",
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 16,
-    marginTop: 8,
-  },
-  backArrow: { color: C.text, fontSize: 18 },
-  formArea: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 24 },
-  headline: {
-    fontFamily: FONTS.blackItalic,
-    fontSize: 36,
-    lineHeight: 36,
-    letterSpacing: -0.6,
-    color: C.text,
-    marginBottom: 8,
-    textTransform: "uppercase",
-  },
-  sub: {
-    fontFamily: FONTS.regular,
-    fontSize: 13,
-    color: C.muted,
-    marginBottom: 20,
-  },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 18,
-  },
-  dividerLine: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: C.border,
-  },
-  dividerText: {
-    fontFamily: FONTS.bold,
-    fontSize: 11,
-    letterSpacing: 1.5,
-    color: C.muted,
-  },
-  field: { marginBottom: 16 },
-  label: {
-    fontFamily: FONTS.bold,
-    fontSize: 11,
-    letterSpacing: 1.5,
-    color: C.muted,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: C.card,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    fontFamily: FONTS.regular,
-    fontSize: 15,
-    color: C.text,
-  },
-  forgotBtn: {
-    alignSelf: "flex-end",
-    marginTop: 10,
-    paddingVertical: 4,
-  },
-  forgotText: {
-    fontFamily: FONTS.regular,
-    fontSize: 13,
-    color: C.accent,
-  },
-  primaryBtn: {
-    backgroundColor: C.accent,
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: "center",
-    marginTop: 16,
-  },
-  primaryBtnDisabled: { opacity: 0.35 },
-  primaryBtnText: {
-    fontFamily: FONTS.blackItalic,
-    fontSize: 16,
-    color: C.text,
-    letterSpacing: 1,
-  },
-  errorText: {
-    fontFamily: FONTS.regular,
-    fontSize: 13,
-    color: "#FF5C5C",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  linkBtn: { paddingVertical: 16, alignItems: "center" },
-  linkText: { fontFamily: FONTS.regular, fontSize: 13, color: C.muted },
-  brandFooter: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: BRAND_FOOTER_SIZE * 0.72,
-    overflow: "hidden",
-    justifyContent: "flex-end",
-    alignItems: "center",
-  },
-  brandMark: {
-    fontFamily: FONTS.blackItalic,
-    fontSize: BRAND_FOOTER_SIZE,
-    lineHeight: BRAND_FOOTER_SIZE * 0.9,
-    letterSpacing: -2,
-    color: C.text,
-    textAlign: "center",
-    marginBottom: -BRAND_FOOTER_SIZE * 0.18,
-  },
-  brandMarkAccent: {
-    fontFamily: FONTS.blackItalic,
-    color: C.accent,
-  },
-});
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: C.bg,
+      overflow: "hidden",
+    },
+    flex: { flex: 1 },
+    scrollContent: {
+      flexGrow: 1,
+    },
+    photoBand: { height: 148, justifyContent: "flex-start" },
+    backBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: C.card,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: C.border,
+      alignItems: "center",
+      justifyContent: "center",
+      marginLeft: 16,
+      marginTop: 8,
+    },
+    backArrow: { color: C.text, fontSize: 18 },
+    formArea: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 24 },
+    headline: {
+      fontFamily: FONTS.blackItalic,
+      fontSize: 36,
+      lineHeight: 36,
+      letterSpacing: -0.6,
+      color: C.text,
+      marginBottom: 8,
+      textTransform: "uppercase",
+    },
+    sub: {
+      fontFamily: FONTS.regular,
+      fontSize: 13,
+      color: C.muted,
+      marginBottom: 20,
+    },
+    dividerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginBottom: 18,
+    },
+    dividerLine: {
+      flex: 1,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: C.border,
+    },
+    dividerText: {
+      fontFamily: FONTS.bold,
+      fontSize: 11,
+      letterSpacing: 1.5,
+      color: C.muted,
+    },
+    field: { marginBottom: 16 },
+    label: {
+      fontFamily: FONTS.bold,
+      fontSize: 11,
+      letterSpacing: 1.5,
+      color: C.muted,
+      marginBottom: 8,
+    },
+    input: {
+      backgroundColor: C.card,
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: C.border,
+      paddingHorizontal: 18,
+      paddingVertical: 16,
+      fontFamily: FONTS.regular,
+      fontSize: 15,
+      color: C.text,
+    },
+    forgotBtn: {
+      alignSelf: "flex-end",
+      marginTop: 10,
+      paddingVertical: 4,
+    },
+    forgotText: {
+      fontFamily: FONTS.regular,
+      fontSize: 13,
+      color: C.accent,
+    },
+    primaryBtn: {
+      backgroundColor: C.accent,
+      borderRadius: 16,
+      paddingVertical: 18,
+      alignItems: "center",
+      marginTop: 16,
+    },
+    primaryBtnDisabled: { opacity: 0.35 },
+    primaryBtnText: {
+      fontFamily: FONTS.blackItalic,
+      fontSize: 16,
+      color: C.onAccent,
+      letterSpacing: 1,
+    },
+    errorText: {
+      fontFamily: FONTS.regular,
+      fontSize: 13,
+      color: C.red,
+      marginBottom: 12,
+      textAlign: "center",
+    },
+    linkBtn: { paddingVertical: 16, alignItems: "center" },
+    linkText: { fontFamily: FONTS.regular, fontSize: 13, color: C.muted },
+    brandMarkAccent: {
+      fontFamily: FONTS.blackItalic,
+      color: C.accent,
+    },
+  });
+}

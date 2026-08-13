@@ -9,7 +9,14 @@ import {
   ViewStyle,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Dumbbell, ArrowRight, Clock, Flame, Moon } from "lucide-react-native";
+import {
+  Dumbbell,
+  ArrowRight,
+  Clock,
+  Flame,
+  Moon,
+  CheckCircle2,
+} from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
@@ -25,6 +32,8 @@ type WorkoutProps = {
   minutes: number;
   exerciseCount: number;
   imageUrl: string;
+  /** When true, show completed state instead of Start CTA. */
+  completed?: boolean;
   onPress?: () => void;
   onStartPress?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -58,6 +67,7 @@ function UpNextWorkoutCardBase(props: Props) {
   const onStartPress = isRest ? undefined : props.onStartPress;
   const minutes = isRest ? 0 : props.minutes;
   const exerciseCount = isRest ? 0 : props.exerciseCount;
+  const completed = !isRest && !!props.completed;
 
   const [line1, line2] = isRest
     ? (["Rest day", ""] as [string, string])
@@ -75,7 +85,7 @@ function UpNextWorkoutCardBase(props: Props) {
     });
     anim.start();
 
-    if (isRest) {
+    if (isRest || completed) {
       return () => {
         anim.stop();
       };
@@ -106,7 +116,7 @@ function UpNextWorkoutCardBase(props: Props) {
       anim.stop();
       loop.stop();
     };
-  }, [isRest]);
+  }, [isRest, completed]);
 
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">(
     "loading",
@@ -181,7 +191,11 @@ function UpNextWorkoutCardBase(props: Props) {
           {/* eyebrow — plain text on the image, not a pill */}
           <View style={s.eyebrowRow}>
             <View style={s.eyebrowDot} />
-            <Text style={s.eyebrow}>UP NEXT · {tag.toUpperCase()}</Text>
+            <Text style={s.eyebrow}>
+              {completed
+                ? `COMPLETED · ${tag.toUpperCase()}`
+                : `UP NEXT · ${tag.toUpperCase()}`}
+            </Text>
           </View>
 
           {!isRest && (
@@ -206,24 +220,35 @@ function UpNextWorkoutCardBase(props: Props) {
                   </Text>
                 </View>
 
-                <PressableScale
-                  onPress={onStartPress ?? onPress}
-                  scaleTo={0.96}
-                  style={s.ctaPressable}
-                >
-                  <View style={s.cta}>
-                    <Text style={s.ctaText}>Start workout</Text>
-                    <Animated.View
-                      style={{ transform: [{ translateX: arrowX }] }}
-                    >
-                      <ArrowRight
-                        size={15}
-                        color={T.onAccent}
-                        strokeWidth={2.4}
-                      />
-                    </Animated.View>
+                {completed ? (
+                  <View style={s.doneCta}>
+                    <CheckCircle2
+                      size={15}
+                      color={T.accent}
+                      strokeWidth={2.4}
+                    />
+                    <Text style={s.doneCtaText}>Completed</Text>
                   </View>
-                </PressableScale>
+                ) : (
+                  <PressableScale
+                    onPress={onStartPress ?? onPress}
+                    scaleTo={0.96}
+                    style={s.ctaPressable}
+                  >
+                    <View style={s.cta}>
+                      <Text style={s.ctaText}>Start workout</Text>
+                      <Animated.View
+                        style={{ transform: [{ translateX: arrowX }] }}
+                      >
+                        <ArrowRight
+                          size={15}
+                          color={T.onAccent}
+                          strokeWidth={2.4}
+                        />
+                      </Animated.View>
+                    </View>
+                  </PressableScale>
+                )}
               </>
             )}
           </View>
@@ -340,6 +365,19 @@ function makeStyles(T: AppTheme) {
       paddingVertical: 11,
       paddingHorizontal: 18,
     },
+    doneCta: {
+      alignSelf: "flex-start",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+      backgroundColor: "rgba(255,255,255,0.92)",
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: "rgba(255,255,255,0.95)",
+      borderRadius: T.radius.pill,
+      paddingVertical: 11,
+      paddingHorizontal: 18,
+    },
     ctaText: { fontFamily: T.bodyBold, fontSize: 13, color: T.onAccent },
+    doneCtaText: { fontFamily: T.bodyBold, fontSize: 13, color: "#0A0A0A" },
   });
 }

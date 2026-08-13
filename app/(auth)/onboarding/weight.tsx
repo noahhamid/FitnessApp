@@ -4,7 +4,8 @@ import {
   HorizontalWeightScale,
   type HorizontalWeightScaleHandle,
 } from "@/src/ui/components/HorizontalWeightScale";
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS, useOnboardingColors, type OnboardingColors } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import {
@@ -49,7 +50,7 @@ function bmiBand(bmi: number): BmiBand {
     return {
       label: "Underweight",
       range: "Below 18.5",
-      color: C.blue,
+      color: "#2B6CB0",
     };
   }
   if (bmi < 25) {
@@ -63,17 +64,19 @@ function bmiBand(bmi: number): BmiBand {
     return {
       label: "Overweight",
       range: "25 – 29.9",
-      color: C.orange,
+      color: "#E53935",
     };
   }
   return {
     label: "Obese",
     range: "30+",
-    color: C.accent,
+    color: "#E53935",
   };
 }
 
 export default function OnboardingWeightScreen() {
+  const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
+
   const params = useLocalSearchParams<{
     heightCm?: string;
     gender?: string;
@@ -93,9 +96,16 @@ export default function OnboardingWeightScreen() {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
   }, [params.age]);
 
-  const [weightKg, setWeightKg] = useState<number>(defaultKg);
+  const savedWeight = parseInt(String(params.weightKg ?? ""), 10);
+  const hasSavedWeight = Number.isFinite(savedWeight);
+  const [weightKg, setWeightKg] = useState<number>(
+    hasSavedWeight ? clampKg(savedWeight) : defaultKg,
+  );
+  const [chosen, setChosen] = useState(hasSavedWeight);
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(String(defaultKg));
+  const [draft, setDraft] = useState(
+    String(hasSavedWeight ? clampKg(savedWeight) : defaultKg),
+  );
 
   const scaleRef = useRef<HorizontalWeightScaleHandle>(null);
   const inputRef = useRef<TextInput>(null);
@@ -113,6 +123,7 @@ export default function OnboardingWeightScreen() {
     const next = clampKg(parsed);
     setWeightKg(next);
     setDraft(String(next));
+    setChosen(true);
     setEditing(false);
     scaleRef.current?.scrollToValue(next);
   };
@@ -123,7 +134,13 @@ export default function OnboardingWeightScreen() {
     requestAnimationFrame(() => inputRef.current?.focus());
   };
 
+  const handleWeightChange = (next: number) => {
+    setWeightKg(next);
+    setChosen(true);
+  };
+
   const handleNext = () => {
+    if (!chosen) return;
     const nextParams = {
       ...params,
       weightKg: String(weightKg),
@@ -143,7 +160,7 @@ export default function OnboardingWeightScreen() {
       style={[s.safe, { backgroundColor: C.bg }]}
       edges={["top", "bottom"]}
     >
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <StatusBar barStyle={resolved === "dark" ? "light-content" : "dark-content"} backgroundColor={C.bg} />
 
       <KeyboardAvoidingView
         style={s.flex}
@@ -197,7 +214,7 @@ export default function OnboardingWeightScreen() {
               min={MIN_KG}
               max={MAX_KG}
               value={weightKg}
-              onChange={setWeightKg}
+              onChange={handleWeightChange}
             />
           </View>
 
@@ -215,13 +232,15 @@ export default function OnboardingWeightScreen() {
           </View>
         </View>
 
-        <OnboardingNav onNext={handleNext} />
+        <OnboardingNav nextDisabled={!chosen} onNext={handleNext} />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const s = StyleSheet.create({
+
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
   safe: {
     flex: 1,
     paddingBottom: 12,
@@ -249,7 +268,7 @@ const s = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: C.bg3,
     borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.14)",
+    borderColor: C.border,
   },
   scaleSection: {
     width: "100%",
@@ -345,3 +364,5 @@ const s = StyleSheet.create({
     color: C.muted2,
   },
 });
+}
+

@@ -1,4 +1,4 @@
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS, useOnboardingColors } from "@/src/ui/tokens";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { memo, useCallback, useMemo, useRef } from "react";
@@ -25,6 +25,7 @@ type ItemProps = {
   value: number;
   index: number;
   scrollY: Animated.Value;
+  textColor: string;
 };
 
 /**
@@ -35,6 +36,7 @@ const WheelItem = memo(function WheelItem({
   value,
   index,
   scrollY,
+  textColor,
 }: ItemProps) {
   const offset = index * ITEM_HEIGHT;
   
@@ -98,7 +100,7 @@ const WheelItem = memo(function WheelItem({
         },
       ]}
     >
-      <Text style={s.itemText} allowFontScaling={false}>
+      <Text style={[s.itemText, { color: textColor }]} allowFontScaling={false}>
         {value}
       </Text>
     </Animated.View>
@@ -130,9 +132,11 @@ export function NumberWheel({
   onChange,
   step = 1,
   unit,
-  backgroundColor = C.bg,
+  backgroundColor,
   accessibilityLabel,
 }: Props) {
+  const C = useOnboardingColors();
+  const resolvedBg = backgroundColor ?? C.bg;
   const values = useMemo(
     () =>
       Array.from(
@@ -170,7 +174,7 @@ export function NumberWheel({
     [scrollY, handleScroll],
   );
 
-  const fade = edgeFade(backgroundColor);
+  const fade = edgeFade(resolvedBg);
 
   return (
     <View style={s.container}>
@@ -191,7 +195,13 @@ export function NumberWheel({
         accessibilityValue={{ text: `${value}${unit ? ` ${unit}` : ""}` }}
       >
         {values.map((v, i) => (
-          <WheelItem key={v} value={v} index={i} scrollY={scrollY} />
+          <WheelItem
+            key={v}
+            value={v}
+            index={i}
+            scrollY={scrollY}
+            textColor={C.text}
+          />
         ))}
       </Animated.ScrollView>
 
@@ -209,7 +219,7 @@ export function NumberWheel({
       />
 
       {unit ? (
-        <Text pointerEvents="none" style={s.unit}>
+        <Text pointerEvents="none" style={[s.unit, { color: C.muted }]}>
           {unit}
         </Text>
       ) : null}
@@ -248,7 +258,6 @@ const s = StyleSheet.create({
     fontSize: 40,
     lineHeight: 40,
     letterSpacing: -1,
-    color: "#FFFFFF",
     textAlign: "center",
     includeFontPadding: false,
   },
@@ -271,6 +280,5 @@ const s = StyleSheet.create({
     fontFamily: FONTS.bold,
     fontSize: 12,
     letterSpacing: 2,
-    color: "rgba(255, 255, 255, 0.85)",
   },
 });

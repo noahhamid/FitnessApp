@@ -2,82 +2,218 @@
  * Pure helpers for the onboarding prediction screens. No I/O, so this is safe
  * to import from both the RN app (predicted-date, revised-prediction) and,
  * later, from the server if the same math is ever needed there.
+ *
+ * All goals use the body-recomposition simulation in body-recomp-prediction.ts.
+ * Endure/health steer toward the chosen maintain weight the same way lose/build
+ * steer toward a cut/bulk target.
  */
+
+import {
+  MAX_TIMELINE_WEEKS,
+  projectBodyRecomposition,
+  weeksToTargetFromProjection,
+  type ExperienceLevel,
+  type PredictionResult,
+} from "./body-recomp-prediction";
+import type { Gender } from "./nutrition-calc";
 
 export type Pace = "slow" | "moderate" | "aggressive";
 export type WeightGoalId = "lose" | "build";
 export type GoalId = "lose" | "build" | "endure" | "health";
 
-/** kg/week rate per goal + pace. Only "lose"/"build" have a real weight rate. */
-const RATE_KG_PER_WEEK: Record<WeightGoalId, Record<Pace, number>> = {
-  lose: { slow: 0.55, moderate: 0.9, aggressive: 1.35 },
-  build: { slow: 0.25, moderate: 0.4, aggressive: 0.6 },
+export type TimelineEstimate = {
+  type: "weight";
+  weeks: number;
+  targetDate: Date;
+  alreadyThere: boolean;
+  /** Full simulation when demographics were available. */
+  projection?: PredictionResult;
 };
 
-/** Soft ceiling so estimates stay in a short, motivating window. */
-const MAX_TIMELINE_WEEKS = 14;
+export type TimelineInput = {
+  goalId: GoalId;
+  currentKg: number;
+  targetKg: number;
+  pace: Pace;
+  daysPerWeek?: number;
+  gender?: Gender;
+  age?: number;
+  heightCm?: number;
+  experience?: ExperienceLevel;
+};
 
 export function isWeightGoal(goalId: string): goalId is WeightGoalId {
   return goalId === "lose" || goalId === "build";
 }
 
+/** Map any goal + weight delta onto a cut/bulk rate table for linear fallback. */
+function directedGoal(
+  goalId: GoalId,
+  currentKg: number,
+  targetKg: number,
+): WeightGoalId {
+  if (goalId === "lose" || goalId === "build") return goalId;
+  return targetKg < currentKg ? "lose" : "build";
+}
+
+/** @deprecated Prefer estimateTimeline — kept for any leftover call sites. */
 export function paceRateKgPerWeek(
   goalId: WeightGoalId,
   pace: Pace,
 ): number {
-  return RATE_KG_PER_WEEK[goalId][pace];
+  const RATE: Record<WeightGoalId, Record<Pace, number>> = {
+    lose: { slow: 0.55, moderate: 0.9, aggressive: 1.35 },
+    build: { slow: 0.25, moderate: 0.4, aggressive: 0.6 },
+  };
+  return RATE[goalId][pace];
 }
 
-/**
- * More training days per week modestly speeds up the estimate — used only
- * for the post-schedule "revised prediction" screen.
- */
+/** @deprecated Linear boost — recomposition uses daysPerWeek as PAL instead. */
 export function frequencyBoost(daysPerWeek: number): number {
   const clamped = Math.max(2, Math.min(7, Math.round(daysPerWeek)));
   return 0.85 + 0.05 * clamped;
 }
 
-export type TimelineEstimate =
-  | { type: "weight"; weeks: number; targetDate: Date; alreadyThere: boolean }
-  | { type: "generic"; weeksLow: number; weeksHigh: number };
-
-export function estimateTimeline(
+function fallbackLinearWeeks(
   goalId: GoalId,
   currentKg: number,
   targetKg: number,
   pace: Pace,
   daysPerWeek?: number,
-): TimelineEstimate {
-  if (isWeightGoal(goalId)) {
-    const deltaKg = Math.abs(targetKg - currentKg);
-    if (deltaKg < 0.5) {
-      return {
-        type: "weight",
-        weeks: 0,
-        targetDate: new Date(),
-        alreadyThere: true,
-      };
-    }
+): number {
+  const deltaKg = Math.abs(targetKg - currentKg);
+  const base = paceRateKgPerWeek(directedGoal(goalId, currentKg, targetKg), pace);
+  const rate = daysPerWeek ? base * frequencyBoost(daysPerWeek) : base;
+  return rate > 0
+    ? Math.max(1, Math.min(MAX_TIMELINE_WEEKS, Math.ceil(deltaKg / rate)))
+    : 1;
+}
 
-    const baseRate = paceRateKgPerWeek(goalId, pace);
-    const rate = daysPerWeek
-      ? baseRate * frequencyBoost(daysPerWeek)
-      : baseRate;
-    // ceil so we don't under-promise (10.1 weeks → 11, not 10).
-    const weeks =
-      rate > 0
-        ? Math.max(1, Math.min(MAX_TIMELINE_WEEKS, Math.ceil(deltaKg / rate)))
-        : 1;
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + weeks * 7);
-    return { type: "weight", weeks, targetDate, alreadyThere: false };
+/** When the sim never quite hits target, extend from the late daily rate. */
+function extrapolateWeeks(
+  projection: PredictionResult,
+  startKg: number,
+  targetKg: number,
+): number | null {
+  const { timeline } = projection;
+  if (timeline.length < 14) return null;
+  const last = timeline[timeline.length - 1]!;
+  const earlier = timeline[timeline.length - 15]!;
+  const moved = last.projectedWeight - earlier.projectedWeight;
+  const towardTarget =
+    (targetKg - startKg) * moved > 0 ||
+    Math.abs(targetKg - last.projectedWeight) <
+      Math.abs(targetKg - startKg);
+  if (!towardTarget) return null;
+
+  const ratePerDay = Math.abs(moved) / 14;
+  if (ratePerDay < 0.005) return null;
+
+  const remaining = Math.abs(targetKg - last.projectedWeight);
+  const extraDays = remaining / ratePerDay;
+  const totalDays = last.day + extraDays;
+  return Math.max(
+    1,
+    Math.min(MAX_TIMELINE_WEEKS, Math.ceil(totalDays / 7)),
+  );
+}
+
+export function estimateTimeline(
+  goalIdOrInput: GoalId | TimelineInput,
+  currentKg?: number,
+  targetKg?: number,
+  pace?: Pace,
+  daysPerWeek?: number,
+): TimelineEstimate {
+  const input: TimelineInput =
+    typeof goalIdOrInput === "object"
+      ? goalIdOrInput
+      : {
+          goalId: goalIdOrInput,
+          currentKg: currentKg ?? 70,
+          targetKg: targetKg ?? currentKg ?? 70,
+          pace: pace ?? "moderate",
+          daysPerWeek,
+        };
+
+  const {
+    goalId,
+    currentKg: startKg,
+    targetKg: endKg,
+    pace: paceChoice,
+    daysPerWeek: trainingDays,
+    gender,
+    age,
+    heightCm,
+    experience,
+  } = input;
+
+  const deltaKg = Math.abs(endKg - startKg);
+  if (deltaKg < 0.5) {
+    return {
+      type: "weight",
+      weeks: 0,
+      targetDate: new Date(),
+      alreadyThere: true,
+    };
   }
 
-  // Endure/health goals aren't weight-delta driven — give a generic,
-  // pace-flavoured milestone window instead of a fake precise date.
-  const [low, high] =
-    pace === "aggressive" ? [2, 4] : pace === "moderate" ? [3, 6] : [5, 8];
-  return { type: "generic", weeksLow: low, weeksHigh: high };
+  const canSimulate =
+    gender != null &&
+    age != null &&
+    heightCm != null &&
+    Number.isFinite(age) &&
+    Number.isFinite(heightCm);
+
+  let weeks: number;
+  let projection: PredictionResult | undefined;
+
+  if (canSimulate) {
+    projection = projectBodyRecomposition({
+      gender,
+      age: age!,
+      heightCm: heightCm!,
+      weightKg: startKg,
+      targetWeightKg: endKg,
+      goalId,
+      pace: paceChoice,
+      daysPerWeek: trainingDays ?? 3,
+      experience: experience ?? "intermediate",
+      horizonDays: MAX_TIMELINE_WEEKS * 7 + 21,
+    });
+    const fromSim = weeksToTargetFromProjection(projection);
+    if (fromSim != null) {
+      weeks = fromSim;
+    } else {
+      weeks =
+        extrapolateWeeks(projection, startKg, endKg) ??
+        fallbackLinearWeeks(
+          goalId,
+          startKg,
+          endKg,
+          paceChoice,
+          trainingDays,
+        );
+    }
+  } else {
+    weeks = fallbackLinearWeeks(
+      goalId,
+      startKg,
+      endKg,
+      paceChoice,
+      trainingDays,
+    );
+  }
+
+  const targetDate = new Date();
+  targetDate.setDate(targetDate.getDate() + weeks * 7);
+  return {
+    type: "weight",
+    weeks,
+    targetDate,
+    alreadyThere: false,
+    projection,
+  };
 }
 
 export function formatTargetDate(date: Date): string {

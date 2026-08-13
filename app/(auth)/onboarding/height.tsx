@@ -6,7 +6,8 @@ import {
   HEIGHT_METER_VISIBLE,
   type HeightMeterHandle,
 } from "@/src/ui/components/HeightMeter";
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS, useOnboardingColors, type OnboardingColors } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
@@ -35,18 +36,18 @@ const HEIGHT_BY_GENDER = {
  * Full-body photo taller than the frame so legs stay clipped even when the
  * head is pinned to the header (max height).
  */
-const FIGURE_HEIGHT_PCT = 140;
+const FIGURE_HEIGHT_PCT = 120;
 const FIGURE_HEIGHT_MULT = FIGURE_HEIGHT_PCT / 100;
 
 /**
- * At this reading the head sits near the top third so the figure fills most
+ * At this reading the head sits near the top so the figure fills most
  * of the viewport from the start. Same for both genders.
  */
 const REFERENCE_CM = 170;
 const REFERENCE_HEAD_FRAC = 0.08;
 
 /** Keep the head well above mid-frame so the silhouette never sits too low. */
-const MAX_HEAD_FRAC = 0.4;
+const MAX_HEAD_FRAC = 0.35;
 
 /**
  * How far (px) to slide the figure toward the ruler.
@@ -60,6 +61,15 @@ const HEAD_MARKER_INSET = 6;
 
 function clampCm(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, Math.round(n)));
+}
+
+/** Soft bottom dissolve into the active screen background (light or dark). */
+function figureFadeColors(bgHex: string) {
+  const r = parseInt(bgHex.slice(1, 3), 16);
+  const g = parseInt(bgHex.slice(3, 5), 16);
+  const b = parseInt(bgHex.slice(5, 7), 16);
+  const rgba = (a: number) => `rgba(${r}, ${g}, ${b}, ${a})`;
+  return [rgba(0), rgba(0.4), rgba(0.82), bgHex] as const;
 }
 
 /**
@@ -115,14 +125,23 @@ function headYInBody(
 }
 
 export default function OnboardingHeightScreen() {
-  const params = useLocalSearchParams<{ gender?: string }>();
+  const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
+
+  const params = useLocalSearchParams<{ gender?: string; heightCm?: string }>();
   const gender = params.gender === "female" ? "female" : "male";
   const { min: minCm, max: maxCm, default: defaultCm } =
     HEIGHT_BY_GENDER[gender];
 
-  const [heightCm, setHeightCm] = useState<number>(defaultCm);
+  const savedHeight = parseInt(String(params.heightCm ?? ""), 10);
+  const hasSavedHeight = Number.isFinite(savedHeight);
+  const [heightCm, setHeightCm] = useState<number>(
+    hasSavedHeight ? clampCm(savedHeight, minCm, maxCm) : defaultCm,
+  );
+  const [chosen, setChosen] = useState(hasSavedHeight);
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(String(defaultCm));
+  const [draft, setDraft] = useState(
+    String(hasSavedHeight ? clampCm(savedHeight, minCm, maxCm) : defaultCm),
+  );
   const [frameSize, setFrameSize] = useState({ w: 0, h: 0 });
 
   const meterRef = useRef<HeightMeterHandle>(null);
@@ -160,6 +179,7 @@ export default function OnboardingHeightScreen() {
     const next = clampCm(parsed, minCm, maxCm);
     setHeightCm(next);
     setDraft(String(next));
+    setChosen(true);
     setEditing(false);
     meterRef.current?.scrollToValue(next);
   };
@@ -170,7 +190,13 @@ export default function OnboardingHeightScreen() {
     requestAnimationFrame(() => inputRef.current?.focus());
   };
 
+  const handleHeightChange = (next: number) => {
+    setHeightCm(next);
+    setChosen(true);
+  };
+
   const handleNext = () => {
+    if (!chosen) return;
     router.push({
       pathname: "/(auth)/onboarding/weight",
       params: { ...params, heightCm: String(heightCm) },
@@ -182,7 +208,7 @@ export default function OnboardingHeightScreen() {
       style={[s.safe, { backgroundColor: C.bg }]}
       edges={["top", "bottom"]}
     >
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <StatusBar barStyle={resolved === "dark" ? "light-content" : "dark-content"} backgroundColor={C.bg} />
 
       <KeyboardAvoidingView
         style={s.flex}
@@ -214,15 +240,10 @@ export default function OnboardingHeightScreen() {
               ]}
               resizeMode="contain"
             />
-            {/* Heavy bottom fade so clipped legs dissolve into the screen. */}
+            {/* Soft bottom fade so clipped legs dissolve into the screen. */}
             <LinearGradient
               pointerEvents="none"
-              colors={[
-                "rgba(17,19,24,0)",
-                "rgba(17,19,24,0.45)",
-                "rgba(17,19,24,0.88)",
-                C.bg,
-              ]}
+              colors={[...figureFadeColors(C.bg)]}
               locations={[0, 0.35, 0.7, 1]}
               style={s.figureFade}
             />
@@ -272,19 +293,21 @@ export default function OnboardingHeightScreen() {
               min={minCm}
               max={maxCm}
               value={heightCm}
-              onChange={setHeightCm}
+              onChange={handleHeightChange}
               accessibilityLabel="Height meter in centimeters"
             />
           </View>
         </View>
 
-        <OnboardingNav onNext={handleNext} />
+        <OnboardingNav nextDisabled={!chosen} onNext={handleNext} />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const s = StyleSheet.create({
+
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
   safe: {
     flex: 1,
     paddingBottom: 12,
@@ -338,7 +361,7 @@ const s = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: C.bg3,
     borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.14)",
+    borderColor: C.border,
   },
   readoutRow: {
     flexDirection: "row",
@@ -387,3 +410,5 @@ const s = StyleSheet.create({
     zIndex: 3,
   },
 });
+}
+

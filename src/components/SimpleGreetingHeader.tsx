@@ -4,6 +4,8 @@ import { router } from "expo-router";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { getGreeting } from "@/src/lib/greeting";
+import { fullDayLabel } from "@/src/lib/week-days";
+import { localDateOnly } from "@/src/features/progress/lib/localDate";
 
 type Props = {
   name: string;
@@ -11,6 +13,8 @@ type Props = {
   showGreeting?: boolean;
   /** When false, omit initials avatar (Dashboard uses wave emoji instead). Default true. */
   showAvatar?: boolean;
+  /** When false, omit today's weekday + date under the greeting. Default true. */
+  showDate?: boolean;
 };
 
 function initialsFromName(name: string): string {
@@ -35,11 +39,12 @@ export function SimpleGreetingHeader({
   name,
   showGreeting = true,
   showAvatar = true,
+  showDate = true,
 }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
   const displayName = name.trim() || "there";
   const greeting = getGreeting();
-  const leftNeedsGrow = showGreeting;
+  const leftNeedsGrow = showGreeting || showDate;
 
   return (
     <View style={s.row}>
@@ -49,10 +54,19 @@ export function SimpleGreetingHeader({
             <Text style={s.initials}>{initialsFromName(displayName)}</Text>
           </View>
         ) : null}
-        {showGreeting ? (
-          <Text style={s.greeting} numberOfLines={1}>
-            {greeting}, {displayName} 👋
-          </Text>
+        {showGreeting || showDate ? (
+          <View style={s.greetingStack}>
+            {showGreeting ? (
+              <Text style={s.greeting} numberOfLines={1}>
+                {greeting}, {displayName} 👋
+              </Text>
+            ) : null}
+            {showDate ? (
+              <Text style={s.date} numberOfLines={1}>
+                {fullDayLabel(localDateOnly())}
+              </Text>
+            ) : null}
+          </View>
         ) : null}
       </View>
 
@@ -108,12 +122,22 @@ function makeStyles(T: AppTheme) {
       color: T.accent,
       letterSpacing: 0.2,
     },
-    greeting: {
+    greetingStack: {
       flex: 1,
+      minWidth: 0,
+      gap: 1,
+    },
+    greeting: {
       fontFamily: T.displayBold,
       fontSize: 18,
       letterSpacing: -0.3,
       color: T.white,
+    },
+    date: {
+      fontFamily: T.bodyMed,
+      fontSize: 12,
+      letterSpacing: -0.1,
+      color: T.muted,
     },
     logsBtn: {
       width: 40,

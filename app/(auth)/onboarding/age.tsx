@@ -1,7 +1,8 @@
 import { OnboardingHeader } from "@/src/features/auth/components/OnboardingHeader";
 import { OnboardingNav } from "@/src/features/auth/components/OnboardingNav";
 import { NumberWheel } from "@/src/ui/components/NumberWheel";
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS, useOnboardingColors, type OnboardingColors } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { StatusBar, StyleSheet, Text, View } from "react-native";
@@ -12,10 +13,21 @@ const MAX_AGE = 90;
 const DEFAULT_AGE = 25;
 
 export default function OnboardingAgeScreen() {
-  const params = useLocalSearchParams();
-  const [age, setAge] = useState(DEFAULT_AGE);
+  const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
+
+  const params = useLocalSearchParams<{ age?: string }>();
+  const savedAge = parseInt(String(params.age ?? ""), 10);
+  const hasSavedAge = Number.isFinite(savedAge);
+  const [age, setAge] = useState(hasSavedAge ? savedAge : DEFAULT_AGE);
+  const [chosen, setChosen] = useState(hasSavedAge);
+
+  const handleAgeChange = (next: number) => {
+    setAge(next);
+    setChosen(true);
+  };
 
   const handleNext = () => {
+    if (!chosen) return;
     router.push({
       pathname: "/(auth)/onboarding/height",
       params: { ...params, age: String(age) },
@@ -27,7 +39,7 @@ export default function OnboardingAgeScreen() {
       style={[s.safe, { backgroundColor: C.bg }]}
       edges={["top", "bottom"]}
     >
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <StatusBar barStyle={resolved === "dark" ? "light-content" : "dark-content"} backgroundColor={C.bg} />
 
       <OnboardingHeader
         headline={"YOUR\nAGE."}
@@ -40,19 +52,21 @@ export default function OnboardingAgeScreen() {
           min={MIN_AGE}
           max={MAX_AGE}
           value={age}
-          onChange={setAge}
+          onChange={handleAgeChange}
           unit="Y.O."
           accessibilityLabel="Age selector"
         />
         <Text style={s.hint}>SCROLL TO ADJUST</Text>
       </View>
 
-      <OnboardingNav onNext={handleNext} />
+      <OnboardingNav nextDisabled={!chosen} onNext={handleNext} />
     </SafeAreaView>
   );
 }
 
-const s = StyleSheet.create({
+
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
   safe: {
     flex: 1,
     paddingBottom: 12,
@@ -74,3 +88,5 @@ const s = StyleSheet.create({
     color: C.muted2,
   },
 });
+}
+

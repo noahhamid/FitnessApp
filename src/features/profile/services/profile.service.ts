@@ -19,6 +19,7 @@ export type UserProfile = {
   daysPerWeek: number | null;
   experience: ExperienceLevel | null;
   equipment: EquipmentAccess | null;
+  trainingDays: number[];
   focusAreas: string[];
   bodyIssues: string[];
   injuries: string[];
@@ -42,6 +43,8 @@ export async function saveUserProfile(data: {
   heightCm?: number;
   age?: number;
   daysPerWeek?: number;
+  /** Monday-indexed weekdays (0=Mon … 6=Sun); [] restores the default pattern. */
+  trainingDays?: number[];
   experience?: ExperienceLevel;
   equipment?: EquipmentAccess;
   focusAreas?: string[];

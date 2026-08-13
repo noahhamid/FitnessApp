@@ -180,6 +180,7 @@ exports.Prisma.UserProfileScalarFieldEnum = {
   age: 'age',
   gender: 'gender',
   daysPerWeek: 'daysPerWeek',
+  trainingDays: 'trainingDays',
   experience: 'experience',
   equipment: 'equipment',
   focusAreas: 'focusAreas',
@@ -224,6 +225,13 @@ exports.Prisma.VerificationScalarFieldEnum = {
   expiresAt: 'expiresAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.RateLimitScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  count: 'count',
+  lastRequest: 'lastRequest'
 };
 
 exports.Prisma.WorkoutSessionScalarFieldEnum = {
@@ -399,6 +407,7 @@ exports.Prisma.ModelName = {
   Session: 'Session',
   Account: 'Account',
   Verification: 'Verification',
+  RateLimit: 'RateLimit',
   WorkoutSession: 'WorkoutSession',
   WorkoutExercise: 'WorkoutExercise',
   NutritionGoal: 'NutritionGoal',

@@ -13,6 +13,7 @@ import {
   Image,
   Alert,
   Modal,
+  RefreshControl,
 } from "react-native";
 import {
   SafeAreaProvider,
@@ -24,6 +25,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
+import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import { api } from "@/src/lib/api";
 import { WorkoutTabHeader } from "../components/WorkoutTabHeader";
 import { WorkoutPlanCard } from "../components/WorkoutPlanCard";
@@ -35,6 +37,9 @@ import {
   type SetLog,
 } from "../components/ActiveWorkoutScreen";
 import { ExerciseLibrarySection } from "../components/ExerciseLibrarySection";
+import { ConditioningCard } from "../components/ConditioningCard";
+import { planConditioning } from "@/src/lib/conditioning-plan";
+import { useUserProfile } from "@/src/features/profile/hooks/useUserProfile";
 import { ExerciseDetailCard } from "../components/ExerciseDetailCard";
 import {
   useExerciseLibrary,
@@ -68,6 +73,10 @@ import {
 import { useAddToLiveSession } from "../hooks/useAddToLiveSession";
 import type { Exercise, WorkoutPlan } from "../data/workouts";
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
+import {
+  invalidateQueryPrefixes,
+  usePullToRefresh,
+} from "@/src/hooks/usePullToRefresh";
 
 type ViewState = "today" | "fullPlan" | "detail" | "active" | "libraryDetail";
 
@@ -170,6 +179,7 @@ export default function WorkoutScreen() {
 
   const { user } = useAuth();
   const { data: apiPlan, isLoading, error } = useWorkoutPlan();
+  const { data: profile } = useUserProfile();
   const { data: lastPerformance } = useLastPerformance();
   const { data: exerciseLibrary } = useExerciseLibrary();
   const { inProgress, isLoading: inProgressLoading } = useInProgressSession();
@@ -177,6 +187,21 @@ export default function WorkoutScreen() {
   const { data: personalRecords } = usePersonalRecords();
   const startSession = useStartWorkoutSession();
   const completeSession = useCompleteWorkoutSession();
+
+  const refreshWorkout = useCallback(
+    () =>
+      invalidateQueryPrefixes(queryClient, [
+        workoutPlanQueryKey,
+        ["in-progress-session"],
+        ["exercise-library"],
+        ["workout-last-performance"],
+        ["personal-records"],
+        ["today-extras"],
+        ["workout-sessions"],
+      ]),
+    [queryClient],
+  );
+  const { refreshing, onRefresh } = usePullToRefresh(refreshWorkout);
 
   // Streak card only when there's a real multi-day streak (≥2).
   const visibleStreak =
@@ -215,18 +240,34 @@ export default function WorkoutScreen() {
 
   const daysPerWeek = apiPlan?.daysPerWeek ?? uiDays.length;
 
+  const trainingDays = apiPlan?.trainingDays;
+
   const todaysIndex = useMemo(
-    () => getTodaysPlanDayIndex(daysPerWeek),
-    [daysPerWeek],
+    () => getTodaysPlanDayIndex(daysPerWeek, trainingDays),
+    [daysPerWeek, trainingDays],
   );
   const isRestDay = !!apiPlan && todaysIndex === null;
   const baseTodaysWorkout =
     todaysIndex !== null ? (uiDays[todaysIndex] ?? null) : null;
 
   const weekSlots = useMemo(
-    () => (apiPlan ? getWeeklySlots(daysPerWeek) : []),
-    [apiPlan, daysPerWeek],
+    () => (apiPlan ? getWeeklySlots(daysPerWeek, trainingDays) : []),
+    [apiPlan, daysPerWeek, trainingDays],
   );
+
+  // Aerobic side of the week — the plan generator only fills lifting slots.
+  const conditioning = useMemo(() => {
+    if (!apiPlan) return null;
+    return planConditioning({
+      goalId: apiPlan.goalId as "lose" | "build" | "endure" | "health",
+      daysPerWeek,
+      equipment: apiPlan.equipment as
+        | "full_gym"
+        | "home_dumbbells"
+        | "bodyweight",
+      injuries: profile?.injuries,
+    });
+  }, [apiPlan, daysPerWeek, profile?.injuries]);
 
   const todaysWorkout = useMemo(() => {
     if (!baseTodaysWorkout) return null;
@@ -518,9 +559,21 @@ export default function WorkoutScreen() {
           style={s.scroll}
           contentContainerStyle={[
             s.scrollContent,
-            { paddingTop: safeTop + 8 },
+            {
+              paddingTop: safeTop + 8,
+              paddingBottom: tabContentBottomPad(insets.bottom),
+            },
           ]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={T.accent}
+              colors={[T.accent]}
+              progressBackgroundColor={T.bgElevated}
+            />
+          }
         >
           <Reveal delay={0} style={s.fullPlanHeader}>
             <Pressable onPress={() => setView("today")} hitSlop={8}>
@@ -639,8 +692,20 @@ export default function WorkoutScreen() {
       />
       <ScrollView
         style={s.scroll}
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={[
+          s.scrollContent,
+          { paddingBottom: tabContentBottomPad(insets.bottom) },
+        ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={T.accent}
+            colors={[T.accent]}
+            progressBackgroundColor={T.bgElevated}
+          />
+        }
       >
         <Reveal delay={0}>
           <WorkoutTabHeader
@@ -766,7 +831,18 @@ export default function WorkoutScreen() {
               </>
             )}
 
-            <Reveal delay={240} style={s.seeFullPlanWrap}>
+            {conditioning && (
+              <>
+                <Reveal delay={210}>
+                  <Text style={s.sectionTitle}>This week</Text>
+                </Reveal>
+                <Reveal delay={240} style={s.conditioningWrap}>
+                  <ConditioningCard plan={conditioning} />
+                </Reveal>
+              </>
+            )}
+
+            <Reveal delay={280} style={s.seeFullPlanWrap}>
               <Pressable onPress={() => setView("fullPlan")} hitSlop={8}>
                 <Text style={s.seeFullPlanText}>See full plan →</Text>
               </Pressable>
@@ -788,7 +864,7 @@ function makeStyles(T: AppTheme) {
   scroll: { flex: 1 },
   // Top inset is handled by WorkoutTabHeader (and full-plan back link
   // uses its own insets). Keep a small gap under the status-bar padding.
-  scrollContent: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 128 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 8 },
   splitHeader: { marginBottom: 20 },
   splitLabel: {
     color: T.accent,
@@ -841,6 +917,7 @@ function makeStyles(T: AppTheme) {
     borderRadius: 999,
     backgroundColor: T.accentTint,
   },
+  conditioningWrap: { marginBottom: 4 },
   seeFullPlanWrap: { alignItems: "center", marginTop: 20 },
   seeFullPlanText: {
     color: T.accent,

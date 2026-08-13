@@ -1,8 +1,18 @@
-import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useCallback, useMemo, useState } from "react";
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useWaterResync } from "@/src/features/nutrition/hooks/useNutrition";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
@@ -40,6 +50,10 @@ import {
   weekDatesFor,
 } from "@/src/lib/week-days";
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
+import {
+  invalidateQueryPrefixes,
+  usePullToRefresh,
+} from "@/src/hooks/usePullToRefresh";
 
 const WATER_GOAL_GLASSES = 8;
 const MEAL_SLOTS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"];
@@ -74,13 +88,26 @@ function dayNum(dateStr: string): number {
 
 export default function MealScreen() {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const joinDate = signupDateOnly(user?.createdAt);
   const minWeekOffset = minWeekOffsetSince(user?.createdAt);
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [weekOffset, setWeekOffset] = useState(0);
   const [targetsOpen, setTargetsOpen] = useState(false);
+
+  const refreshNutrition = useCallback(
+    () =>
+      invalidateQueryPrefixes(queryClient, [
+        ["nutrition"],
+        ["user", "profile"],
+        ["week-overview", "meals"],
+      ]),
+    [queryClient],
+  );
+  const { refreshing, onRefresh } = usePullToRefresh(refreshNutrition);
 
   const { weekStart, weekEnd, weekDates } = useMemo(
     () => weekDatesFor(weekOffset),
@@ -199,8 +226,20 @@ export default function MealScreen() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: tabContentBottomPad(insets.bottom) },
+        ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={T.accent}
+            colors={[T.accent]}
+            progressBackgroundColor={T.bgElevated}
+          />
+        }
       >
         <DailySummaryCard
           consumed={consumed}
@@ -357,7 +396,6 @@ function makeStyles(T: AppTheme) {
   content: {
     paddingHorizontal: 20,
     paddingTop: 14,
-    paddingBottom: 60,
     gap: 14,
   },
   sectionHeader: {

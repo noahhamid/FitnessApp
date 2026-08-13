@@ -1,4 +1,5 @@
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS, useOnboardingColors, type OnboardingColors } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -21,6 +22,8 @@ const STAGES = [
 const STAGE_DURATION_MS = 650;
 
 export default function CreatingPlanScreen() {
+  const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
+
   const params = useLocalSearchParams();
   const [stageIndex, setStageIndex] = useState(0);
   const fade = useRef(new Animated.Value(1)).current;
@@ -51,7 +54,7 @@ export default function CreatingPlanScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <StatusBar barStyle={resolved === "dark" ? "light-content" : "dark-content"} backgroundColor={C.bg} />
       <View style={s.content}>
         <ActivityIndicator size="large" color={C.accent} />
         <Animated.Text style={[s.stage, { opacity: fade }]}>
@@ -62,7 +65,9 @@ export default function CreatingPlanScreen() {
   );
 }
 
-const s = StyleSheet.create({
+
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   content: {
     flex: 1,
@@ -79,3 +84,5 @@ const s = StyleSheet.create({
     textAlign: "center",
   },
 });
+}
+

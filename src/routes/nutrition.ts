@@ -482,6 +482,10 @@ async function freshAdaptiveSuggestion(userId: string): Promise<
       };
       goalId: GoalId;
       weightKg: number;
+      /** Body-composition inputs so recomputed protein can use lean mass. */
+      gender: "male" | "female" | undefined;
+      age: number | undefined;
+      heightCm: number | undefined;
     }
 > {
   const [profile, nutritionGoal] = await Promise.all([
@@ -533,6 +537,9 @@ async function freshAdaptiveSuggestion(userId: string): Promise<
     nutritionGoal,
     goalId: profile.goalId as GoalId,
     weightKg,
+    gender: (profile.gender as "male" | "female" | null) ?? undefined,
+    age: profile.age ?? undefined,
+    heightCm: profile.heightCm ?? undefined,
   };
 }
 
@@ -574,7 +581,8 @@ nutritionRouter.patch("/goals/apply-suggestion", async (c) => {
     );
   }
 
-  const { suggestion, nutritionGoal, goalId, weightKg } = fresh;
+  const { suggestion, nutritionGoal, goalId, weightKg, gender, age, heightCm } =
+    fresh;
 
   if (!suggestion.eligible) {
     return err(
@@ -613,6 +621,9 @@ nutritionRouter.patch("/goals/apply-suggestion", async (c) => {
     calories: newCalories,
     weightKg,
     goalId,
+    gender,
+    age,
+    heightCm,
   });
 
   const [updated] = await prisma.$transaction([

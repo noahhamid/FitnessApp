@@ -1,4 +1,5 @@
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS, useOnboardingColors, type OnboardingColors } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -65,6 +66,7 @@ type TickProps = {
 };
 
 const Tick = memo(function Tick({ value, onPress }: TickProps) {
+  const { C, styles: s } = useOnboardingStyles(makeStyles);
   const isMajor = value % 10 === 0;
   const isMid = value % 5 === 0;
 
@@ -99,11 +101,14 @@ export const HeightMeter = forwardRef<HeightMeterHandle, Props>(
       max,
       value,
       onChange,
-      backgroundColor = C.bg,
+      backgroundColor,
       accessibilityLabel = "Height meter",
     },
     ref,
   ) {
+    const palette = useOnboardingColors();
+    const { C, styles: s } = useOnboardingStyles(makeStyles);
+    const resolvedBg = backgroundColor ?? palette.bg;
     // Descending so taller cm sits at the top of the scroll content.
     const values = useMemo(
       () => Array.from({ length: max - min + 1 }, (_, i) => max - i),
@@ -143,7 +148,7 @@ export const HeightMeter = forwardRef<HeightMeterHandle, Props>(
       [min, max, emit],
     );
 
-    const fade = edgeFade(backgroundColor);
+    const fade = edgeFade(resolvedBg);
 
     return (
       <View
@@ -190,7 +195,9 @@ export const HeightMeter = forwardRef<HeightMeterHandle, Props>(
   },
 );
 
-const s = StyleSheet.create({
+
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
   container: {
     width: 88,
     height: VISIBLE_HEIGHT,
@@ -241,7 +248,7 @@ const s = StyleSheet.create({
   },
   tick: {
     borderRadius: 1,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: C.muted2,
   },
   tickMinor: {
     width: 10,
@@ -250,7 +257,7 @@ const s = StyleSheet.create({
   tickMid: {
     width: 16,
     height: 1.5,
-    backgroundColor: "rgba(255,255,255,0.35)",
+    backgroundColor: C.muted,
   },
   tickMajor: {
     width: 24,
@@ -271,3 +278,5 @@ const s = StyleSheet.create({
     bottom: 0,
   },
 });
+}
+

@@ -100,13 +100,20 @@ export function usePersonalRecords() {
   });
 }
 
-export type ProgressionDirection = "increase" | "maintain" | "no_data";
+export type ProgressionDirection =
+  | "increase"
+  | "add_reps"
+  | "maintain"
+  | "deload"
+  | "no_data";
 
 export interface ProgressionSuggestion {
   exerciseName: string;
   lastWeight: number | null;
   suggestedWeight: number | null;
   direction: ProgressionDirection;
+  suggestedReps: number | null;
+  lowestReps: number | null;
 }
 
 export function useProgressionSuggestions() {

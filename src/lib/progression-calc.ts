@@ -1,15 +1,18 @@
 /**
  * computeProgressionSuggestion — pure function, no I/O.
  *
- * Rule (v1, deliberately simple):
- *   - Hit the TOP of the target rep range on every logged set last time
- *     → suggest increasing weight next session
- *   - Anything else (missed top, incomplete sets, no history)
- *     → maintain current weight, no suggestion pressure
+ * Double progression: reps climb inside the target range first, load only
+ * moves once the top of the range is earned on every set.
  *
- * v2 candidate (not built): consistently missing the BOTTOM of the range
- * across 2+ sessions → suggest a deload. Left out per current scope —
- * this only handles the "going well" direction for now.
+ *   - Top of range on every completed set     → add load, reset reps to the bottom
+ *   - Inside the range (≥ bottom, < top)      → add reps at the same load
+ *   - Below the bottom of the range           → deload the load
+ *   - Fewer sets logged than prescribed       → repeat the same session
+ *   - No completed history                    → no suggestion
+ *
+ * Load steps scale with the lift: a curl should not jump the same 2.5 kg as a
+ * squat, so the increment is a percentage of working weight with a small
+ * absolute floor (plate reality) and cap.
  */
 
 export interface LoggedSet {
@@ -22,28 +25,60 @@ export interface ProgressionInput {
   exerciseName: string;
   targetRepsMin: number;
   targetRepsMax: number;
+  /** Prescribed set count; used to detect an unfinished session. */
+  targetSets?: number;
   lastSessionSets: LoggedSet[]; // sets from the most recent completed session for this exercise
 }
 
-export type ProgressionDirection = "increase" | "maintain" | "no_data";
+export type ProgressionDirection =
+  | "increase"
+  | "add_reps"
+  | "maintain"
+  | "deload"
+  | "no_data";
 
 export interface ProgressionSuggestion {
   exerciseName: string;
   lastWeight: number | null;
   suggestedWeight: number | null;
   direction: ProgressionDirection;
+  /** Reps to chase next session at `suggestedWeight`. */
+  suggestedReps: number | null;
+  /** Lowest completed rep count last session — what the decision keyed off. */
+  lowestReps: number | null;
 }
 
-// Standard small-plate increment. Could eventually vary by exercise
-// (upper body isolation vs. compound lower body movements often use
-// different increment sizes in real programming), but one flat value
-// is a reasonable v1 default.
-const WEIGHT_INCREMENT_KG = 2.5;
+/**
+ * Load step as a fraction of working weight, bounded by what plates allow.
+ * ~5% keeps a 100 kg squat moving 5 kg while a 10 kg curl moves the minimum.
+ */
+const LOAD_STEP_FRACTION = 0.05;
+const MIN_LOAD_STEP_KG = 1.25;
+const MAX_LOAD_STEP_KG = 5;
+
+/** Deload depth once reps fall under the prescribed range. */
+const DELOAD_FRACTION = 0.1;
+
+/** Round to the nearest half kilo — the smallest increment most gyms have. */
+function roundToPlate(kg: number): number {
+  return Math.round(kg * 2) / 2;
+}
+
+function loadStepKg(weight: number): number {
+  const raw = weight * LOAD_STEP_FRACTION;
+  return Math.min(MAX_LOAD_STEP_KG, Math.max(MIN_LOAD_STEP_KG, raw));
+}
 
 export function computeProgressionSuggestion(
   input: ProgressionInput,
 ): ProgressionSuggestion {
-  const { exerciseName, targetRepsMax, lastSessionSets } = input;
+  const {
+    exerciseName,
+    targetRepsMin,
+    targetRepsMax,
+    targetSets,
+    lastSessionSets,
+  } = input;
 
   const completedSets = lastSessionSets.filter((s) => s.completed);
 
@@ -53,28 +88,69 @@ export function computeProgressionSuggestion(
       lastWeight: null,
       suggestedWeight: null,
       direction: "no_data",
+      suggestedReps: null,
+      lowestReps: null,
     };
   }
 
   const lastWeight = completedSets[completedSets.length - 1].weight ?? null;
+  const repCounts = completedSets.map((s) => s.reps ?? 0);
+  const lowestReps = Math.min(...repCounts);
 
-  const hitTopEverySet = completedSets.every(
-    (s) => (s.reps ?? 0) >= targetRepsMax,
-  );
+  const base = {
+    exerciseName,
+    lastWeight,
+    lowestReps,
+  };
 
-  if (hitTopEverySet && lastWeight !== null) {
+  // Bodyweight / unloaded work has no load to move — progress reps only.
+  if (lastWeight === null || lastWeight <= 0) {
+    const hitTop = lowestReps >= targetRepsMax;
     return {
-      exerciseName,
-      lastWeight,
-      suggestedWeight: Math.round((lastWeight + WEIGHT_INCREMENT_KG) * 2) / 2, // round to nearest 0.5
+      ...base,
+      suggestedWeight: lastWeight,
+      direction: hitTop ? "maintain" : "add_reps",
+      suggestedReps: hitTop ? targetRepsMax : Math.min(targetRepsMax, lowestReps + 1),
+    };
+  }
+
+  // Session cut short — repeat it rather than reading it as a failed set.
+  if (targetSets != null && completedSets.length < targetSets) {
+    return {
+      ...base,
+      suggestedWeight: lastWeight,
+      direction: "maintain",
+      suggestedReps: Math.max(targetRepsMin, lowestReps),
+    };
+  }
+
+  if (lowestReps >= targetRepsMax) {
+    return {
+      ...base,
+      suggestedWeight: roundToPlate(lastWeight + loadStepKg(lastWeight)),
       direction: "increase",
+      // Fresh load starts at the bottom of the range again.
+      suggestedReps: targetRepsMin,
+    };
+  }
+
+  if (lowestReps < targetRepsMin) {
+    const deloaded = roundToPlate(lastWeight * (1 - DELOAD_FRACTION));
+    // Never "deload" into the same or a heavier number after rounding.
+    const step = loadStepKg(lastWeight);
+    const suggestedWeight = Math.max(0, Math.min(deloaded, lastWeight - step));
+    return {
+      ...base,
+      suggestedWeight,
+      direction: "deload",
+      suggestedReps: targetRepsMin,
     };
   }
 
   return {
-    exerciseName,
-    lastWeight,
+    ...base,
     suggestedWeight: lastWeight,
-    direction: "maintain",
+    direction: "add_reps",
+    suggestedReps: Math.min(targetRepsMax, lowestReps + 1),
   };
 }

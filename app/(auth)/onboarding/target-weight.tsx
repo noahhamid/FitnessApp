@@ -1,7 +1,8 @@
 import { OnboardingHeader } from "@/src/features/auth/components/OnboardingHeader";
 import { OnboardingNav } from "@/src/features/auth/components/OnboardingNav";
 import { NumberWheel } from "@/src/ui/components/NumberWheel";
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS, useOnboardingColors, type OnboardingColors } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { StatusBar, StyleSheet, Text, View } from "react-native";
@@ -34,17 +35,30 @@ function clampKg(n: number) {
 }
 
 export default function OnboardingTargetWeightScreen() {
-  const params = useLocalSearchParams<{ weightKg?: string; goalId?: string }>();
+  const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
+
+  const params = useLocalSearchParams<{ weightKg?: string; goalId?: string; targetWeightKg?: string }>();
   const currentKg = clampKg(parseInt(params.weightKg ?? "70", 10) || 70);
   const goalId = params.goalId ?? "health";
   const copy = COPY_BY_GOAL[goalId] ?? COPY_BY_GOAL.health;
 
+  const savedTarget = parseInt(String(params.targetWeightKg ?? ""), 10);
+  const hasSavedTarget = Number.isFinite(savedTarget);
   const defaultTarget = clampKg(
     goalId === "lose" ? currentKg - 5 : goalId === "build" ? currentKg + 5 : currentKg,
   );
-  const [targetKg, setTargetKg] = useState(defaultTarget);
+  const [targetKg, setTargetKg] = useState(
+    hasSavedTarget ? clampKg(savedTarget) : defaultTarget,
+  );
+  const [chosen, setChosen] = useState(hasSavedTarget);
+
+  const handleTargetChange = (next: number) => {
+    setTargetKg(next);
+    setChosen(true);
+  };
 
   const handleNext = () => {
+    if (!chosen) return;
     router.push({
       pathname: "/(auth)/onboarding/pace",
       params: { ...params, targetWeightKg: String(targetKg) },
@@ -56,7 +70,7 @@ export default function OnboardingTargetWeightScreen() {
       style={[s.safe, { backgroundColor: C.bg }]}
       edges={["top", "bottom"]}
     >
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+      <StatusBar barStyle={resolved === "dark" ? "light-content" : "dark-content"} backgroundColor={C.bg} />
 
       <OnboardingHeader
         headline={copy.headline}
@@ -69,19 +83,21 @@ export default function OnboardingTargetWeightScreen() {
           min={MIN_KG}
           max={MAX_KG}
           value={targetKg}
-          onChange={setTargetKg}
+          onChange={handleTargetChange}
           unit="KG"
           accessibilityLabel="Target weight selector"
         />
         <Text style={s.hint}>SCROLL TO ADJUST</Text>
       </View>
 
-      <OnboardingNav onNext={handleNext} />
+      <OnboardingNav nextDisabled={!chosen} onNext={handleNext} />
     </SafeAreaView>
   );
 }
 
-const s = StyleSheet.create({
+
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
   safe: {
     flex: 1,
     paddingBottom: 12,
@@ -101,3 +117,5 @@ const s = StyleSheet.create({
     color: C.muted2,
   },
 });
+}
+

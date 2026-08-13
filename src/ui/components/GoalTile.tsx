@@ -1,7 +1,8 @@
-import { C, FONTS } from "@/src/ui/tokens";
+import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { Image as ExpoImage, type ImageContentPosition } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   Animated,
   Image,
@@ -49,22 +50,15 @@ function bgContentPosition(offsetY: number): ImageContentPosition {
   return { top: `${y}%`, left: "50%" };
 }
 
-// Vertical proportions, expressed as flex weights so everything scales with the
-// card instead of relying on percentage heights (which resolve to 0 for
-// absolutely positioned children of a flex parent).
-const CARD_TOP_WEIGHT = 30; // empty space above the card surface
-const CARD_WEIGHT = 70; // the card surface itself
-const CUTOUT_WEIGHT = 74; // cutout spans this much from the top...
-const CUTOUT_TAIL_WEIGHT = 26; // ...leaving this for the text below
+const CARD_TOP_WEIGHT = 30;
+const CARD_WEIGHT = 70;
+const CUTOUT_WEIGHT = 74;
+const CUTOUT_TAIL_WEIGHT = 26;
+/** Crop the black studio margins so the subject fills an inside chip. */
+const INSIDE_ZOOM = 1.28;
 
-const CARD_COLOR = C.bg3;
 const CARD_COLOR_SELECTED = "#E53935";
 
-/**
- * Ramp from fully transparent to the solid card colour. Using rgba(colour, 0)
- * rather than "transparent" matters: "transparent" is rgba(0, 0, 0, 0), so the
- * ramp blends black through its middle and the seam stays visible.
- */
 function fadeStops(hex: string) {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -73,10 +67,19 @@ function fadeStops(hex: string) {
   return [rgba(0), rgba(0.25), rgba(0.7), rgba(1), rgba(1)] as const;
 }
 
-// Fully opaque before the image's bottom edge, so there is no line to spot.
 const FADE_LOCATIONS = [0, 0.35, 0.68, 0.88, 1] as const;
-const FADE_DEFAULT = fadeStops(CARD_COLOR);
 const FADE_SELECTED = fadeStops(CARD_COLOR_SELECTED);
+
+function scrimFromBg(hex: string) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [
+    `rgba(${r},${g},${b},0.38)`,
+    `rgba(${r},${g},${b},0.22)`,
+    `rgba(${r},${g},${b},0.45)`,
+  ] as const;
+}
 
 export function GoalTile({
   image,
@@ -91,13 +94,17 @@ export function GoalTile({
   imageFit = "contain",
   imageOffsetY = 0,
 }: Props) {
+  const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
   const inside = imagePlacement === "inside";
   const background = imagePlacement === "background";
   const hasDesc = Boolean(desc);
-  // Without a subtitle the label band still needs room for 2-line titles.
   const mediaWeight = hasDesc ? CUTOUT_WEIGHT : 82;
   const bodyWeight = hasDesc ? CUTOUT_TAIL_WEIGHT : 18;
   const anim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
+
+  const fadeDefault = useMemo(() => fadeStops(C.bg3), [C.bg3]);
+  const bgScrim = useMemo(() => scrimFromBg(C.bg), [C.bg]);
+  const showBgShade = resolved === "dark";
 
   useEffect(() => {
     Animated.spring(anim, {
@@ -108,13 +115,12 @@ export function GoalTile({
     }).start();
   }, [isSelected, anim]);
 
-  // Selecting lifts the whole card, cutout included, like a hover state.
   const cardScale = anim.interpolate({
     inputRange: [0, 1],
     outputRange: [1, background ? 1.03 : 1.06],
   });
 
-  const cardColor = isSelected ? CARD_COLOR_SELECTED : CARD_COLOR;
+  const cardColor = isSelected ? CARD_COLOR_SELECTED : C.bg3;
 
   const label = (
     <>
@@ -143,7 +149,7 @@ export function GoalTile({
 
   const fade = (
     <LinearGradient
-      colors={isSelected ? FADE_SELECTED : FADE_DEFAULT}
+      colors={isSelected ? FADE_SELECTED : fadeDefault}
       locations={FADE_LOCATIONS}
       style={s.cutoutFade}
     />
@@ -171,27 +177,20 @@ export function GoalTile({
             },
           ]}
         >
-          {/*
-            Bleed past the clip (-2) so rounded anti-alias doesn't leave a
-            hairline. Reframe with contentPosition — not scale/translate —
-            so cover stays natural zoom.
-          */}
           <ExpoImage
             source={image}
             contentFit={imageFit === "contain" ? "contain" : "cover"}
             contentPosition={bgContentPosition(imageOffsetY)}
             style={[s.bgImage, flipX && s.cutoutFlipped]}
           />
-          <LinearGradient
-            pointerEvents="none"
-            colors={[
-              "rgba(17,19,24,0.38)",
-              "rgba(17,19,24,0.22)",
-              "rgba(17,19,24,0.45)",
-            ]}
-            locations={[0, 0.45, 1]}
-            style={s.bgShade}
-          />
+          {showBgShade ? (
+            <LinearGradient
+              pointerEvents="none"
+              colors={[...bgScrim]}
+              locations={[0, 0.45, 1]}
+              style={s.bgShade}
+            />
+          ) : null}
           <View style={s.bgLabelWrap} pointerEvents="none">
             <Text
               style={[s.bgTitle, isSelected && s.bgTitleSelected]}
@@ -205,27 +204,27 @@ export function GoalTile({
           </View>
         </Animated.View>
       ) : inside ? (
-        // One clipped card, stacked top to bottom: overlaying an absolute
-        // rounded layer on the card leaves a hairline of the layer's own
-        // background along the border.
         <Animated.View
           style={[
             s.insideCard,
             { backgroundColor: cardColor, transform: [{ scale: cardScale }] },
           ]}
         >
-          <View style={[s.insideMedia, { flex: mediaWeight }]} pointerEvents="none">
-            <Image
-              source={image}
-              resizeMode={imageFit}
-              style={[s.cutout, flipX && s.cutoutFlipped]}
-            />
-            {fade}
-          </View>
-          <View
-            style={[s.insideBody, { flex: bodyWeight }]}
-            pointerEvents="none"
-          >
+          <ExpoImage
+            source={image}
+            contentFit={imageFit === "contain" ? "contain" : "cover"}
+            contentPosition={{ top: "6%", left: "50%" }}
+            style={[
+              s.insideFill,
+              {
+                transform: flipX
+                  ? [{ scaleX: -INSIDE_ZOOM }, { scaleY: INSIDE_ZOOM }]
+                  : [{ scale: INSIDE_ZOOM }],
+              },
+            ]}
+          />
+          {fade}
+          <View style={s.insideBody} pointerEvents="none">
             {label}
           </View>
         </Animated.View>
@@ -243,7 +242,6 @@ export function GoalTile({
                 resizeMode="contain"
                 style={[s.cutout, flipX && s.cutoutFlipped]}
               />
-              {/* Dissolves the image into the card surface. */}
               {fade}
             </View>
             <View style={[s.cutoutTail, { flex: bodyWeight }]} />
@@ -258,167 +256,161 @@ export function GoalTile({
   );
 }
 
-const s = StyleSheet.create({
-  slot: {
-    padding: 8,
-  },
-  // Tighter gutters so focus / injury labels get more horizontal room.
-  slotBg: {
-    padding: 5,
-  },
-  slotPressed: {
-    opacity: 0.94,
-  },
-  inner: {
-    flex: 1,
-    position: "relative",
-  },
-
-  topSpacer: {
-    flex: CARD_TOP_WEIGHT,
-  },
-
-  // Card surface occupies the lower portion, so the cutout above it reads as
-  // breaking out over the card's top edge.
-  bgLayer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
-  cardBg: {
-    flex: CARD_WEIGHT,
-    borderRadius: 20,
-  },
-
-  cutoutLayer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 2,
-  },
-  cutoutWrap: {
-    position: "relative",
-  },
-  cutout: {
-    width: "100%",
-    height: "100%",
-  },
-  cutoutFlipped: {
-    transform: [{ scaleX: -1 }],
-  },
-  cutoutFade: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: "62%",
-  },
-  cutoutTail: {},
-
-  body: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-    zIndex: 3,
-  },
-
-  insideCard: {
-    flex: 1,
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  // Artwork fills most of the card; flex weight is set inline from hasDesc.
-  insideMedia: {
-    backgroundColor: "#000000",
-    position: "relative",
-  },
-  insideBody: {
-    justifyContent: "flex-end",
-    paddingHorizontal: 12,
-    paddingTop: 4,
-    paddingBottom: 12,
-  },
-
-  // Full-bleed photo as button atmosphere (focus areas).
-  bgCard: {
-    flex: 1,
-    borderRadius: 20,
-    overflow: "hidden",
-    borderWidth: 2,
-    borderColor: C.border,
-    // Match screen bg, not pure black — pure #000 reads as a bright hairline
-    // against the anti-aliased rounded photo edge on many Android GPUs.
-    backgroundColor: C.bg,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  bgImage: {
-    position: "absolute",
-    // Bleed past the clip so rounded anti-alias doesn't leave a 1px gap.
-    top: -2,
-    left: -2,
-    right: -2,
-    bottom: -2,
-  },
-  bgShade: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  bgLabelWrap: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "stretch",
-    paddingHorizontal: 4,
-    zIndex: 2,
-  },
-  bgTitle: {
-    fontFamily: FONTS.blackItalic,
-    fontSize: 16,
-    lineHeight: 18,
-    letterSpacing: 0.2,
-    textTransform: "uppercase",
-    textAlign: "center",
-    width: "100%",
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.65)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
-  },
-  bgTitleSelected: {
-    color: "#FFFFFF",
-  },
-
-  // Same punch as ChipSelect (goal-detail) labels: black italic, red idle.
-  title: {
-    fontFamily: FONTS.blackItalic,
-    fontSize: 18,
-    lineHeight: 20,
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
-    marginBottom: 2,
-    color: C.accent,
-  },
-  titleSolo: {
-    marginBottom: 0,
-  },
-  titleSelected: {
-    color: "#FFFFFF",
-  },
-  desc: {
-    fontFamily: FONTS.regular,
-    fontSize: 12,
-    lineHeight: 16,
-    color: "rgba(255, 255, 255, 0.65)",
-  },
-  // 65% white is too dim to read once the surface turns accent red.
-  descSelected: {
-    color: "rgba(255, 255, 255, 0.9)",
-  },
-});
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
+    slot: {
+      padding: 8,
+    },
+    slotBg: {
+      padding: 5,
+    },
+    slotPressed: {
+      opacity: 0.94,
+    },
+    inner: {
+      flex: 1,
+      position: "relative",
+    },
+    topSpacer: {
+      flex: CARD_TOP_WEIGHT,
+    },
+    bgLayer: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 1,
+    },
+    cardBg: {
+      flex: CARD_WEIGHT,
+      borderRadius: 20,
+    },
+    cutoutLayer: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 2,
+    },
+    cutoutWrap: {
+      position: "relative",
+    },
+    cutout: {
+      width: "100%",
+      height: "100%",
+    },
+    cutoutFlipped: {
+      transform: [{ scaleX: -1 }],
+    },
+    cutoutFade: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: "48%",
+      zIndex: 2,
+    },
+    cutoutTail: {},
+    body: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      paddingHorizontal: 12,
+      paddingBottom: 12,
+      zIndex: 3,
+    },
+    insideCard: {
+      flex: 1,
+      borderRadius: 20,
+      overflow: "hidden",
+    },
+    insideFill: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+    },
+    insideBody: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: "flex-end",
+      paddingHorizontal: 12,
+      paddingTop: 4,
+      paddingBottom: 12,
+      zIndex: 3,
+    },
+    bgCard: {
+      flex: 1,
+      borderRadius: 20,
+      overflow: "hidden",
+      borderWidth: 2,
+      borderColor: C.border,
+      backgroundColor: C.bg,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    bgImage: {
+      position: "absolute",
+      top: -2,
+      left: -2,
+      right: -2,
+      bottom: -2,
+    },
+    bgShade: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    bgLabelWrap: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: "center",
+      alignItems: "stretch",
+      paddingHorizontal: 4,
+      zIndex: 2,
+    },
+    bgTitle: {
+      fontFamily: FONTS.blackItalic,
+      fontSize: 16,
+      lineHeight: 18,
+      letterSpacing: 0.2,
+      textTransform: "uppercase",
+      textAlign: "center",
+      width: "100%",
+      color: "#FFFFFF",
+      textShadowColor: "rgba(0,0,0,0.65)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 8,
+    },
+    bgTitleSelected: {
+      color: "#FFFFFF",
+    },
+    title: {
+      fontFamily: FONTS.blackItalic,
+      fontSize: 18,
+      lineHeight: 20,
+      letterSpacing: 0.3,
+      textTransform: "uppercase",
+      marginBottom: 2,
+      color: C.accent,
+    },
+    titleSolo: {
+      marginBottom: 0,
+    },
+    titleSelected: {
+      color: "#FFFFFF",
+    },
+    desc: {
+      fontFamily: FONTS.regular,
+      fontSize: 12,
+      lineHeight: 16,
+      color: C.muted,
+    },
+    descSelected: {
+      color: "rgba(255, 255, 255, 0.9)",
+    },
+  });
+}

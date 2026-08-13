@@ -28,6 +28,7 @@ export function AppSafeAreaChrome({ children }: Props) {
   const isDark = resolved === "dark";
   const barStyle = isDark ? "light-content" : "dark-content";
   const chromeBg = theme.bg;
+  const systemNavBg = theme.accent;
 
   useEffect(() => {
     RNStatusBar.setBarStyle(barStyle, true);
@@ -37,7 +38,7 @@ export function AppSafeAreaChrome({ children }: Props) {
     }
 
     void import("expo-system-ui")
-      .then((SystemUI) => SystemUI.setBackgroundColorAsync(chromeBg))
+      .then((SystemUI) => SystemUI.setBackgroundColorAsync(systemNavBg))
       .catch(() => undefined);
 
     const sub = AppState.addEventListener("change", (next) => {
@@ -46,10 +47,13 @@ export function AppSafeAreaChrome({ children }: Props) {
         if (Platform.OS === "android") {
           RNStatusBar.setBackgroundColor(chromeBg, true);
         }
+        void import("expo-system-ui")
+          .then((SystemUI) => SystemUI.setBackgroundColorAsync(systemNavBg))
+          .catch(() => undefined);
       }
     });
     return () => sub.remove();
-  }, [barStyle, chromeBg]);
+  }, [barStyle, chromeBg, systemNavBg]);
 
   return (
     <View style={[styles.root, { backgroundColor: chromeBg }]}>

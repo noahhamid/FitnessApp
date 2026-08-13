@@ -1,7 +1,10 @@
-import { FONTS } from "@/src/ui/tokens";
+import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
+import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { AntDesign } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -52,7 +55,27 @@ export function SocialAuthButtons({
   appleLoading = false,
   disabled = false,
 }: Props) {
+  const { styles: s } = useOnboardingStyles(makeStyles);
   const busy = disabled || googleLoading || appleLoading;
+  const [appleAvailable, setAppleAvailable] = useState(Platform.OS === "ios");
+
+  useEffect(() => {
+    if (Platform.OS !== "ios") return;
+
+    let active = true;
+    void import("expo-apple-authentication")
+      .then((mod) => mod.isAvailableAsync())
+      .then((available) => {
+        if (active) setAppleAvailable(available);
+      })
+      .catch(() => {
+        if (active) setAppleAvailable(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <View style={s.stack}>
@@ -78,72 +101,78 @@ export function SocialAuthButtons({
         )}
       </Pressable>
 
-      <Pressable
-        disabled={busy}
-        style={({ pressed }) => [
-          s.btn,
-          s.appleBtn,
-          busy && s.disabled,
-          pressed && !busy && s.pressed,
-        ]}
-        onPress={onApple}
-        accessibilityRole="button"
-        accessibilityLabel="Continue with Apple"
-      >
-        {appleLoading ? (
-          <ActivityIndicator color="#FFFFFF" size="small" />
-        ) : (
-          <View style={s.row}>
-            <AntDesign name="apple" size={20} color="#FFFFFF" />
-            <Text style={s.appleText}>Continue with Apple</Text>
-          </View>
-        )}
-      </Pressable>
+      {appleAvailable ? (
+        <Pressable
+          disabled={busy}
+          style={({ pressed }) => [
+            s.btn,
+            s.appleBtn,
+            busy && s.disabled,
+            pressed && !busy && s.pressed,
+          ]}
+          onPress={onApple}
+          accessibilityRole="button"
+          accessibilityLabel="Continue with Apple"
+        >
+          {appleLoading ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <View style={s.row}>
+              <AntDesign name="apple" size={20} color="#FFFFFF" />
+              <Text style={s.appleText}>Continue with Apple</Text>
+            </View>
+          )}
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
-const s = StyleSheet.create({
-  stack: {
-    gap: 12,
-    marginBottom: 18,
-  },
-  btn: {
-    height: 52,
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  googleBtn: {
-    backgroundColor: "#FFFFFF",
-  },
-  appleBtn: {
-    backgroundColor: "#000000",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  googleText: {
-    fontFamily: FONTS.semiBold,
-    fontSize: 15,
-    color: "#1F1F1F",
-    letterSpacing: 0.2,
-  },
-  appleText: {
-    fontFamily: FONTS.semiBold,
-    fontSize: 15,
-    color: "#FFFFFF",
-    letterSpacing: 0.2,
-  },
-  disabled: {
-    opacity: 0.45,
-  },
-  pressed: {
-    opacity: 0.88,
-  },
-});
+function makeStyles(C: OnboardingColors) {
+  return StyleSheet.create({
+    stack: {
+      gap: 12,
+      marginBottom: 18,
+    },
+    btn: {
+      height: 52,
+      borderRadius: 999,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 20,
+    },
+    googleBtn: {
+      backgroundColor: "#FFFFFF",
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: C.border,
+    },
+    appleBtn: {
+      backgroundColor: "#000000",
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.12)",
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    googleText: {
+      fontFamily: FONTS.semiBold,
+      fontSize: 15,
+      color: "#1F1F1F",
+      letterSpacing: 0.2,
+    },
+    appleText: {
+      fontFamily: FONTS.semiBold,
+      fontSize: 15,
+      color: "#FFFFFF",
+      letterSpacing: 0.2,
+    },
+    disabled: {
+      opacity: 0.45,
+    },
+    pressed: {
+      opacity: 0.88,
+    },
+  });
+}
