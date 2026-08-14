@@ -13,6 +13,7 @@ import {
   Image,
   Alert,
   Modal,
+  RefreshControl,
 } from "react-native";
 import {
   SafeAreaProvider,
@@ -24,6 +25,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
+import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import { api } from "@/src/lib/api";
 import { WorkoutTabHeader } from "../components/WorkoutTabHeader";
 import { WorkoutPlanCard } from "../components/WorkoutPlanCard";
@@ -35,6 +37,9 @@ import {
   type SetLog,
 } from "../components/ActiveWorkoutScreen";
 import { ExerciseLibrarySection } from "../components/ExerciseLibrarySection";
+import { ConditioningCard } from "../components/ConditioningCard";
+import { planConditioning } from "@/src/lib/conditioning-plan";
+import { useUserProfile } from "@/src/features/profile/hooks/useUserProfile";
 import { ExerciseDetailCard } from "../components/ExerciseDetailCard";
 import {
   useExerciseLibrary,
@@ -49,7 +54,10 @@ import { useLastPerformance } from "../hooks/useLastPerformance";
 import { useInProgressSession } from "../hooks/useInProgressSession";
 import { useWorkoutStreak } from "../hooks/useWorkoutStreak";
 import { useTodayExtras } from "../hooks/useTodayExtras";
-import { usePersonalRecords } from "@/src/features/progress/hooks/useProgress";
+import { useConditioningRun } from "../hooks/useConditioningRun";
+import { CONDITIONING_SESSION_NOTES } from "../services/conditioning-run.service";
+import { usePersonalRecords, useWorkoutHistory } from "@/src/features/progress/hooks/useProgress";
+import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import {
   adaptPlanDay,
   adaptLibraryExercise,
@@ -68,6 +76,10 @@ import {
 import { useAddToLiveSession } from "../hooks/useAddToLiveSession";
 import type { Exercise, WorkoutPlan } from "../data/workouts";
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
+import {
+  invalidateQueryPrefixes,
+  usePullToRefresh,
+} from "@/src/hooks/usePullToRefresh";
 
 type ViewState = "today" | "fullPlan" | "detail" | "active" | "libraryDetail";
 
@@ -164,12 +176,14 @@ export default function WorkoutScreen() {
   const [sessionCreateError, setSessionCreateError] = useState<string | null>(
     null,
   );
+  const [clockStartMs, setClockStartMs] = useState<number | null>(null);
   /** Invalidates in-flight creates when the user cancels mid-setup. */
   const startGenRef = useRef(0);
   const pendingStartPlanRef = useRef<WorkoutPlan | null>(null);
 
   const { user } = useAuth();
   const { data: apiPlan, isLoading, error } = useWorkoutPlan();
+  const { data: profile } = useUserProfile();
   const { data: lastPerformance } = useLastPerformance();
   const { data: exerciseLibrary } = useExerciseLibrary();
   const { inProgress, isLoading: inProgressLoading } = useInProgressSession();
@@ -177,6 +191,25 @@ export default function WorkoutScreen() {
   const { data: personalRecords } = usePersonalRecords();
   const startSession = useStartWorkoutSession();
   const completeSession = useCompleteWorkoutSession();
+  const cardio = useConditioningRun();
+  const todayKey = localDateOnly();
+  const { data: todaySessions } = useWorkoutHistory(todayKey, todayKey);
+
+  const refreshWorkout = useCallback(
+    () =>
+      invalidateQueryPrefixes(queryClient, [
+        workoutPlanQueryKey,
+        ["in-progress-session"],
+        ["exercise-library"],
+        ["workout-last-performance"],
+        ["personal-records"],
+        ["today-extras"],
+        ["workout-sessions"],
+        ["workout-history"],
+      ]),
+    [queryClient],
+  );
+  const { refreshing, onRefresh } = usePullToRefresh(refreshWorkout);
 
   // Streak card only when there's a real multi-day streak (≥2).
   const visibleStreak =
@@ -215,18 +248,64 @@ export default function WorkoutScreen() {
 
   const daysPerWeek = apiPlan?.daysPerWeek ?? uiDays.length;
 
+  const trainingDays = apiPlan?.trainingDays;
+
   const todaysIndex = useMemo(
-    () => getTodaysPlanDayIndex(daysPerWeek),
-    [daysPerWeek],
+    () => getTodaysPlanDayIndex(daysPerWeek, trainingDays),
+    [daysPerWeek, trainingDays],
   );
   const isRestDay = !!apiPlan && todaysIndex === null;
   const baseTodaysWorkout =
     todaysIndex !== null ? (uiDays[todaysIndex] ?? null) : null;
 
   const weekSlots = useMemo(
-    () => (apiPlan ? getWeeklySlots(daysPerWeek) : []),
-    [apiPlan, daysPerWeek],
+    () => (apiPlan ? getWeeklySlots(daysPerWeek, trainingDays) : []),
+    [apiPlan, daysPerWeek, trainingDays],
   );
+
+  // Aerobic side of the week — the plan generator only fills lifting slots.
+  const conditioning = useMemo(() => {
+    if (!apiPlan) return null;
+    return planConditioning({
+      goalId: apiPlan.goalId as "lose" | "build" | "endure" | "health",
+      daysPerWeek,
+      equipment: apiPlan.equipment as
+        | "full_gym"
+        | "home_dumbbells"
+        | "bodyweight",
+      injuries: profile?.injuries,
+    });
+  }, [apiPlan, daysPerWeek, profile?.injuries]);
+
+  const completedCardioIndexes = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const session of todaySessions ?? []) {
+      if (session.notes !== CONDITIONING_SESSION_NOTES) continue;
+      for (const ex of session.exercises ?? []) {
+        counts.set(ex.exerciseName, (counts.get(ex.exerciseName) ?? 0) + 1);
+      }
+    }
+    const seen = new Map<string, number>();
+    const done = new Set<number>();
+    conditioning?.sessions.forEach((session, index) => {
+      const nth = (seen.get(session.label) ?? 0) + 1;
+      seen.set(session.label, nth);
+      if ((counts.get(session.label) ?? 0) >= nth) done.add(index);
+    });
+    for (const index of cardio.justCompletedIndexes) done.add(index);
+    return done;
+  }, [todaySessions, conditioning, cardio.justCompletedIndexes]);
+
+  const handleCardioComplete = useCallback(async () => {
+    try {
+      await cardio.complete();
+    } catch (e) {
+      Alert.alert(
+        "Couldn't save conditioning",
+        e instanceof Error ? e.message : "Try again in a moment.",
+      );
+    }
+  }, [cardio]);
 
   const todaysWorkout = useMemo(() => {
     if (!baseTodaysWorkout) return null;
@@ -308,6 +387,8 @@ export default function WorkoutScreen() {
     setSelectedDay(inProgress.plan);
     setActiveExercises(inProgress.plan.exercises);
     setActiveSessionId(inProgress.sessionId);
+    const resumedAt = Date.parse(inProgress.startedAt);
+    setClockStartMs(Number.isFinite(resumedAt) ? resumedAt : Date.now());
     setView("active");
   };
 
@@ -382,6 +463,7 @@ export default function WorkoutScreen() {
     setSelectedDay(plan);
     setActiveExercises(plan.exercises);
     setActiveSessionId(null);
+    setClockStartMs(Date.now());
     setView("active");
     createSessionInBackground(plan, gen);
   };
@@ -496,6 +578,7 @@ export default function WorkoutScreen() {
             onClose={leaveActiveWorkout}
             onFinish={handleFinish}
             lastPerformance={lastPerformance}
+            sessionStartedAtMs={clockStartMs}
           />
         </SafeAreaProvider>
       </Modal>
@@ -507,7 +590,7 @@ export default function WorkoutScreen() {
     return (
       <View style={s.screen}>
         <LinearGradient
-          colors={["rgba(28,63,46,0.06)", "rgba(28,63,46,0)"]}
+          colors={["rgba(229,57,53,0.06)", "rgba(229,57,53,0)"]}
           style={s.topWash}
           pointerEvents="none"
         />
@@ -518,9 +601,21 @@ export default function WorkoutScreen() {
           style={s.scroll}
           contentContainerStyle={[
             s.scrollContent,
-            { paddingTop: safeTop + 8 },
+            {
+              paddingTop: safeTop + 8,
+              paddingBottom: tabContentBottomPad(insets.bottom),
+            },
           ]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={T.accent}
+              colors={[T.accent]}
+              progressBackgroundColor={T.bgElevated}
+            />
+          }
         >
           <Reveal delay={0} style={s.fullPlanHeader}>
             <Pressable onPress={() => setView("today")} hitSlop={8}>
@@ -639,8 +734,20 @@ export default function WorkoutScreen() {
       />
       <ScrollView
         style={s.scroll}
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={[
+          s.scrollContent,
+          { paddingBottom: tabContentBottomPad(insets.bottom) },
+        ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={T.accent}
+            colors={[T.accent]}
+            progressBackgroundColor={T.bgElevated}
+          />
+        }
       >
         <Reveal delay={0}>
           <WorkoutTabHeader
@@ -766,7 +873,33 @@ export default function WorkoutScreen() {
               </>
             )}
 
-            <Reveal delay={240} style={s.seeFullPlanWrap}>
+            {conditioning && (
+              <>
+                <Reveal delay={210}>
+                  <Text style={s.sectionTitle}>This week</Text>
+                </Reveal>
+                <Reveal delay={240} style={s.conditioningWrap}>
+                  <ConditioningCard
+                    plan={conditioning}
+                    activeIndex={cardio.run?.index}
+                    elapsedSec={cardio.elapsedSec}
+                    saving={cardio.saving}
+                    completedIndexes={completedCardioIndexes}
+                    onStart={(session, index) => {
+                      void cardio.start(session, index);
+                    }}
+                    onComplete={() => {
+                      void handleCardioComplete();
+                    }}
+                    onDiscard={() => {
+                      void cardio.discard();
+                    }}
+                  />
+                </Reveal>
+              </>
+            )}
+
+            <Reveal delay={280} style={s.seeFullPlanWrap}>
               <Pressable onPress={() => setView("fullPlan")} hitSlop={8}>
                 <Text style={s.seeFullPlanText}>See full plan →</Text>
               </Pressable>
@@ -788,7 +921,7 @@ function makeStyles(T: AppTheme) {
   scroll: { flex: 1 },
   // Top inset is handled by WorkoutTabHeader (and full-plan back link
   // uses its own insets). Keep a small gap under the status-bar padding.
-  scrollContent: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 128 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 8 },
   splitHeader: { marginBottom: 20 },
   splitLabel: {
     color: T.accent,
@@ -841,6 +974,7 @@ function makeStyles(T: AppTheme) {
     borderRadius: 999,
     backgroundColor: T.accentTint,
   },
+  conditioningWrap: { marginBottom: 4 },
   seeFullPlanWrap: { alignItems: "center", marginTop: 20 },
   seeFullPlanText: {
     color: T.accent,

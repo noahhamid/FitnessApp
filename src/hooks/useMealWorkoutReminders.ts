@@ -87,7 +87,11 @@ export function useMealWorkoutReminders(enabled: boolean) {
       let workoutTitle: string | undefined;
       const daysPerWeek = plan?.daysPerWeek ?? 0;
       if (plan && daysPerWeek > 0) {
-        const dayIndex = getPlanDayIndexForDate(new Date(), daysPerWeek);
+        const dayIndex = getPlanDayIndexForDate(
+          new Date(),
+          daysPerWeek,
+          plan.trainingDays,
+        );
         if (dayIndex != null) {
           const day = plan.days[dayIndex];
           if (day) {
@@ -101,6 +105,7 @@ export function useMealWorkoutReminders(enabled: boolean) {
         loggedMeals,
         workoutCompleted,
         daysPerWeek,
+        trainingDays: plan?.trainingDays,
         workoutTitle,
       });
     } catch (err) {

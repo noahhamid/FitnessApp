@@ -10,7 +10,7 @@ import Svg, {
 
 const C = {
   card: "#1E1E1E",
-  accent: "#FFC700",
+  accent: "#E53935",
 };
 
 interface WeightScaleProps {
@@ -56,7 +56,7 @@ export function WeightScale({
         <Defs>
           <LinearGradient id="dialGrad" x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor={C.card} />
-            <Stop offset="1" stopColor="#121212" />
+            <Stop offset="1" stopColor="#1A1A1A" />
           </LinearGradient>
         </Defs>
 
@@ -65,7 +65,7 @@ export function WeightScale({
           cy={cy}
           r={radius + 20}
           fill="url(#dialGrad)"
-          stroke="rgba(255,199,0,0.15)"
+          stroke="rgba(229,57,53,0.15)"
           strokeWidth={1}
         />
 

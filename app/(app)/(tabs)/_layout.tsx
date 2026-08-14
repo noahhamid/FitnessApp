@@ -4,54 +4,27 @@ import {
   Animated,
   Platform,
   Pressable,
+  StatusBar,
   StyleSheet,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
-import { LinearGradient } from "expo-linear-gradient";
 import { Home, Dumbbell, UtensilsCrossed, LineChart, User } from "lucide-react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useTheme } from "@/src/context/ThemeContext";
 import type { AppTheme } from "@/src/theme";
 import { bottomInset } from "@/src/lib/safe-area";
+import {
+  TAB_PILL_BOTTOM_GAP,
+  TAB_PILL_H,
+  TAB_PILL_H_MARGIN,
+  tabChromeDockHeight,
+} from "@/src/lib/tab-chrome";
 
-const IS_ANDROID = Platform.OS === "android";
-
-const PILL_H = 64;
-const PILL_H_MARGIN = 20;
-const PILL_BOTTOM_GAP = 10;
-
-/**
- * Pill glass fill tokens — slightly stronger than GlassSurface cards (short
- * surface). Top edge is a SINGLE border on the clip (no stacked highlight
- * strip). Shadow stays neutral black — never T.shadow.lifted.shadowColor
- * (#1C3F2E pine), which reads as a green glow around the pill.
- */
-const PILL_GRADIENT_DARK = [
-  "rgba(255,255,255,0.22)",
-  "rgba(255,255,255,0.02)",
-  "rgba(255,255,255,0.12)",
-] as const;
-const PILL_GRADIENT_LIGHT = [
-  "rgba(255,255,255,0.55)",
-  "rgba(255,255,255,0.15)",
-  "rgba(10,10,10,0.04)",
-] as const;
-
-/** Inactive tab icons — accent at reduced alpha (same family as active, not T.muted gray). */
 const INACTIVE_ICON_ALPHA = 0.78;
 
-function accentAtAlpha(accent: string, alpha: number): string {
-  const hex = accent.replace("#", "");
-  if (hex.length === 6) {
-    const r = parseInt(hex.slice(0, 2), 16);
-    const g = parseInt(hex.slice(2, 4), 16);
-    const b = parseInt(hex.slice(4, 6), 16);
-    return `rgba(${r},${g},${b},${alpha})`;
-  }
-  // Already rgba / named — fall back to accentLine-style soft if unexpected.
-  return accent;
+function whiteAtAlpha(alpha: number): string {
+  return `rgba(255,255,255,${alpha})`;
 }
 
 const TAB_META: Record<
@@ -67,7 +40,6 @@ const TAB_META: Record<
 > = {
   index: { label: "Home", icon: Home },
   train: { label: "Train", icon: Dumbbell },
-  // UtensilsCrossed reads as "meals" at 22px more clearly than Apple (blob) or Salad (busy).
   nutrition: { label: "Nutrition", icon: UtensilsCrossed },
   progress: { label: "Progress", icon: LineChart },
   profile: { label: "Profile", icon: User },
@@ -117,7 +89,6 @@ function TabSlot({
       accessibilityLabel={label}
       style={s.slot}
     >
-      {/* Subtle accent well on every tab — soft presence without fighting the active pill. */}
       <View
         pointerEvents="none"
         style={[s.idleWell, focused && s.idleWellHidden]}
@@ -135,11 +106,7 @@ function TabSlot({
       <Animated.View style={{ transform: [{ scale: iconScale }], zIndex: 1 }}>
         <Icon
           size={22}
-          color={
-            focused
-              ? T.accent
-              : accentAtAlpha(T.accent, INACTIVE_ICON_ALPHA)
-          }
+          color={focused ? "#FFFFFF" : whiteAtAlpha(INACTIVE_ICON_ALPHA)}
           strokeWidth={focused ? 2.2 : 2.6}
         />
       </Animated.View>
@@ -147,74 +114,56 @@ function TabSlot({
   );
 }
 
-/**
- * Android-only pill fill — faux-glass (no BlurView; dimezisBlurView bleeds).
- */
-function AndroidFauxGlassFill({ isDark }: { isDark: boolean }) {
-  const { theme: T } = useTheme();
-  const gradientColors = isDark ? PILL_GRADIENT_DARK : PILL_GRADIENT_LIGHT;
-
-  return (
-    <>
-      <View
-        pointerEvents="none"
-        style={[StyleSheet.absoluteFill, { backgroundColor: T.bgElevated }]}
-      />
-      <LinearGradient
-        colors={[...gradientColors]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
-    </>
-  );
-}
-
-function FloatingGlassTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const { theme: T, resolved } = useTheme();
+  const { theme: T } = useTheme();
   const s = useMemo(() => makeStyles(T), [T]);
-  const bottom = bottomInset(insets.bottom) + PILL_BOTTOM_GAP;
-  const isDark = resolved === "dark";
+  const safeBottom = bottomInset(insets.bottom);
+  const pillBottom = safeBottom + TAB_PILL_BOTTOM_GAP;
+  const dockH = tabChromeDockHeight(insets.bottom);
 
-  const blurTint = isDark ? "dark" : "light";
-  const blurIntensity = isDark ? 68 : 82;
+  useEffect(() => {
+    const accent = T.accent;
+    const restore = T.bg;
+    void import("expo-system-ui")
+      .then((SystemUI) => SystemUI.setBackgroundColorAsync(accent))
+      .catch(() => undefined);
+    if (Platform.OS === "android") {
+      StatusBar.setBackgroundColor(accent, true);
+    }
+    return () => {
+      void import("expo-system-ui")
+        .then((SystemUI) => SystemUI.setBackgroundColorAsync(restore))
+        .catch(() => undefined);
+    };
+  }, [T.accent, T.bg]);
 
-  // Absolute overlay only — no reserved opaque strip. Scene content paints
-  // through the margins around the pill (screens keep their own bottom pad).
   return (
     <View style={s.overlayRoot} pointerEvents="box-none">
+      {/* Solid brand-red dock behind / around / below the pill */}
+      <View
+        pointerEvents="none"
+        style={[
+          s.redDock,
+          {
+            height: dockH,
+            backgroundColor: T.accent,
+          },
+        ]}
+      />
+
       <View
         style={[
           s.pillWrap,
           {
-            bottom,
-            left: PILL_H_MARGIN,
-            right: PILL_H_MARGIN,
+            bottom: pillBottom,
+            left: TAB_PILL_H_MARGIN,
+            right: TAB_PILL_H_MARGIN,
+            height: TAB_PILL_H,
           },
         ]}
       >
-        <View style={s.pillClip}>
-          {IS_ANDROID ? (
-            <AndroidFauxGlassFill isDark={isDark} />
-          ) : (
-            <>
-              <BlurView
-                intensity={blurIntensity}
-                tint={blurTint}
-                style={StyleSheet.absoluteFill}
-              />
-              <View
-                pointerEvents="none"
-                style={[
-                  StyleSheet.absoluteFill,
-                  s.pillVeil,
-                  isDark ? s.pillVeilDark : s.pillVeilLight,
-                ]}
-              />
-            </>
-          )}
+        <View style={[s.pillClip, { backgroundColor: T.accentPressed }]}>
           <View style={s.row}>
             {state.routes.map((route, index) => {
               const focused = state.index === index;
@@ -263,12 +212,10 @@ function FloatingGlassTabBar({ state, descriptors, navigation }: BottomTabBarPro
 export default function AppTabsLayout() {
   return (
     <Tabs
-      tabBar={(props) => <FloatingGlassTabBar {...props} />}
+      tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
-        // Transparent + absolute so the navigator doesn't paint a solid
-        // DarkTheme strip under the floating pill.
         tabBarStyle: {
           position: "absolute",
           backgroundColor: "transparent",
@@ -294,34 +241,30 @@ function makeStyles(T: AppTheme) {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: "transparent",
     },
+    redDock: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      // Slight top radius so the red chrome meets page content cleanly.
+      borderTopLeftRadius: T.radius.xl,
+      borderTopRightRadius: T.radius.xl,
+    },
     pillWrap: {
       position: "absolute",
-      height: PILL_H,
       backgroundColor: "transparent",
-      // Neutral black lift — NOT T.shadow.lifted.shadowColor (#1C3F2E pine).
       shadowColor: "#0A0A0A",
-      shadowOffset: { width: 0, height: 8 },
+      shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.2,
-      shadowRadius: 20,
-      elevation: 12,
+      shadowRadius: 14,
+      elevation: 10,
     },
     pillClip: {
       flex: 1,
       borderRadius: T.radius.pill,
       overflow: "hidden",
-      // One crisp edge — no separate top highlight strip / thicker top border.
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: T.glassBorder,
-      backgroundColor: "transparent",
-    },
-    pillVeil: {
-      borderRadius: T.radius.pill,
-    },
-    pillVeilLight: {
-      backgroundColor: "rgba(247,247,245,0.42)",
-    },
-    pillVeilDark: {
-      backgroundColor: "rgba(14,14,16,0.52)",
+      borderColor: "rgba(255,255,255,0.28)",
     },
     row: {
       flex: 1,
@@ -332,21 +275,19 @@ function makeStyles(T: AppTheme) {
     },
     slot: {
       flex: 1,
-      height: PILL_H - 12,
+      height: TAB_PILL_H - 12,
       alignItems: "center",
       justifyContent: "center",
     },
-    /** Soft accent disc behind every icon — bumped slightly so it keeps up
-     *  with bolder inactive strokes without competing with the active pill. */
     idleWell: {
       position: "absolute",
       width: 36,
       height: 36,
       borderRadius: 18,
-      backgroundColor: T.accentTint,
-      opacity: 0.55,
+      backgroundColor: whiteAtAlpha(0.14),
+      opacity: 1,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: T.accentLine,
+      borderColor: whiteAtAlpha(0.22),
     },
     idleWellHidden: {
       opacity: 0,
@@ -356,9 +297,9 @@ function makeStyles(T: AppTheme) {
       width: 48,
       height: 40,
       borderRadius: T.radius.pill,
-      backgroundColor: T.accentTint,
+      backgroundColor: whiteAtAlpha(0.22),
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: T.accentLine,
+      borderColor: whiteAtAlpha(0.4),
     },
   });
 }

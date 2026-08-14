@@ -237,17 +237,17 @@ export function NotificationHistoryScreen() {
         showsVerticalScrollIndicator={false}
       >
         <PageHeader
-          eyebrow="Inbox"
-          subtitle="Local reminders on this device"
-          title="Notifications"
+          eyebrow="Activity"
+          subtitle="Meal and workout reminder history on this device"
+          title="Reminder logs"
         />
 
         {empty ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>No reminders yet</Text>
+            <Text style={styles.emptyTitle}>No logs yet</Text>
             <Text style={styles.emptyBody}>
-              When meal and workout reminders are scheduled, they'll show up
-              here — including ones you handled before they fired.
+              When meal and workout reminders are scheduled, they'll appear here
+              as a simple log — including ones you handled before they fired.
             </Text>
           </View>
         ) : (

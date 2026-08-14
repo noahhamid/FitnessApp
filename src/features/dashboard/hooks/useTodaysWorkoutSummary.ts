@@ -36,7 +36,11 @@ export function useTodaysWorkoutSummary(dateStr?: string) {
     const targetDate = dateStr
       ? new Date(`${dateStr}T00:00:00`) // local midnight, not UTC midnight
       : new Date();
-    const dayIndex = getPlanDayIndexForDate(targetDate, apiPlan.daysPerWeek);
+    const dayIndex = getPlanDayIndexForDate(
+      targetDate,
+      apiPlan.daysPerWeek,
+      apiPlan.trainingDays,
+    );
 
     if (dayIndex === null) return { kind: "rest" };
 

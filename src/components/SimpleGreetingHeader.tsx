@@ -1,21 +1,20 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Bell } from "lucide-react-native";
+import { ScrollText } from "lucide-react-native";
 import { router } from "expo-router";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { getGreeting } from "@/src/lib/greeting";
+import { fullDayLabel } from "@/src/lib/week-days";
+import { localDateOnly } from "@/src/features/progress/lib/localDate";
 
 type Props = {
   name: string;
-  /**
-   * Visual unread dot matching the reference chrome.
-   * Decorative until unread tracking ships.
-   */
-  showUnreadDot?: boolean;
   /** When false, omit greeting text. Default true. */
   showGreeting?: boolean;
   /** When false, omit initials avatar (Dashboard uses wave emoji instead). Default true. */
   showAvatar?: boolean;
+  /** When false, omit today's weekday + date under the greeting. Default true. */
+  showDate?: boolean;
 };
 
 function initialsFromName(name: string): string {
@@ -28,24 +27,24 @@ function initialsFromName(name: string): string {
     .toUpperCase();
 }
 
-function onBellPress() {
-  router.push("/(app)/notifications");
+function onLogsPress() {
+  router.push("/(app)/logs");
 }
 
 /**
  * Compact greeting header (Dashboard):
- * optional initials avatar · "Good morning, {name} 👋" · bell (+ unread dot).
+ * optional initials avatar · "Good morning, {name} 👋" · reminder logs.
  */
 export function SimpleGreetingHeader({
   name,
-  showUnreadDot = true,
   showGreeting = true,
   showAvatar = true,
+  showDate = true,
 }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
   const displayName = name.trim() || "there";
   const greeting = getGreeting();
-  const leftNeedsGrow = showGreeting;
+  const leftNeedsGrow = showGreeting || showDate;
 
   return (
     <View style={s.row}>
@@ -55,22 +54,30 @@ export function SimpleGreetingHeader({
             <Text style={s.initials}>{initialsFromName(displayName)}</Text>
           </View>
         ) : null}
-        {showGreeting ? (
-          <Text style={s.greeting} numberOfLines={1}>
-            {greeting}, {displayName} 👋
-          </Text>
+        {showGreeting || showDate ? (
+          <View style={s.greetingStack}>
+            {showGreeting ? (
+              <Text style={s.greeting} numberOfLines={1}>
+                {greeting}, {displayName} 👋
+              </Text>
+            ) : null}
+            {showDate ? (
+              <Text style={s.date} numberOfLines={1}>
+                {fullDayLabel(localDateOnly())}
+              </Text>
+            ) : null}
+          </View>
         ) : null}
       </View>
 
       <Pressable
-        onPress={onBellPress}
+        onPress={onLogsPress}
         hitSlop={10}
-        style={s.bellBtn}
+        style={s.logsBtn}
         accessibilityRole="button"
-        accessibilityLabel="Notifications"
+        accessibilityLabel="Reminder logs"
       >
-        <Bell size={20} color={T.white} strokeWidth={2} />
-        {showUnreadDot && <View style={s.unreadDot} pointerEvents="none" />}
+        <ScrollText size={20} color={T.white} strokeWidth={2} />
       </Pressable>
     </View>
   );
@@ -115,31 +122,30 @@ function makeStyles(T: AppTheme) {
       color: T.accent,
       letterSpacing: 0.2,
     },
-    greeting: {
+    greetingStack: {
       flex: 1,
+      minWidth: 0,
+      gap: 1,
+    },
+    greeting: {
       fontFamily: T.displayBold,
       fontSize: 18,
       letterSpacing: -0.3,
       color: T.white,
     },
-    bellBtn: {
+    date: {
+      fontFamily: T.bodyMed,
+      fontSize: 12,
+      letterSpacing: -0.1,
+      color: T.muted,
+    },
+    logsBtn: {
       width: 40,
       height: 40,
       borderRadius: 20,
       alignItems: "center",
       justifyContent: "center",
       flexShrink: 0,
-    },
-    unreadDot: {
-      position: "absolute",
-      top: 8,
-      right: 9,
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: T.badge,
-      borderWidth: 1.5,
-      borderColor: T.bg,
     },
   });
 }

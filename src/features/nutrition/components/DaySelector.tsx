@@ -12,9 +12,17 @@ import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { localDateOnly } from "@/src/features/progress/lib/localDate";
+import { dayCaption } from "@/src/lib/week-days";
 import { PressableScale } from "./PressableScale";
 
-type Day = { label: string; num: number; hasLog?: boolean; date: string };
+type Day = {
+  label: string;
+  num: number;
+  hasLog?: boolean;
+  date: string;
+  /** Days before account creation — shown but not selectable. */
+  disabled?: boolean;
+};
 
 type Props = {
   days: Day[];
@@ -23,6 +31,12 @@ type Props = {
   onPrevWeek: () => void;
   onNextWeek: () => void;
   weekLabel: string;
+  /** When false, hide/disable going to an earlier week. Default true. */
+  canGoPrevWeek?: boolean;
+  /** When false, hide/disable going to a later week. Default true. */
+  canGoNextWeek?: boolean;
+  /** When false, omit the weekday + date caption under the row. Default true. */
+  showSelectedDate?: boolean;
 };
 
 const INDICATOR_INSET = 2;
@@ -34,9 +48,13 @@ export function DaySelector({
   onPrevWeek,
   onNextWeek,
   weekLabel,
+  canGoPrevWeek = true,
+  canGoNextWeek = true,
+  showSelectedDate = true,
 }: Props) {
   const { T, styles } = useThemedStyles(makeStyles);
   const todayKey = localDateOnly();
+  const selectedDate = days[activeIndex]?.date;
   const [rowWidth, setRowWidth] = useState(0);
   const [rowHeight, setRowHeight] = useState(0);
   // Always divide by 7 so a short/empty days array can't inflate cell width.
@@ -130,7 +148,8 @@ export function DaySelector({
     setRowHeight((prev) => (prev === height ? prev : height));
   };
 
-  const handleSelect = (index: number, dateKey: string) => {
+  const handleSelect = (index: number, dateKey: string, disabled?: boolean) => {
+    if (disabled) return;
     onSelect(index);
     pulse(dateKey);
   };
@@ -140,14 +159,34 @@ export function DaySelector({
   return (
     <View style={styles.root}>
       <View style={styles.headerRow}>
-        <Pressable onPress={onPrevWeek} hitSlop={8} style={styles.navBtn}>
-          <ChevronLeft size={18} color={T.white} strokeWidth={2.2} />
+        <Pressable
+          onPress={canGoPrevWeek ? onPrevWeek : undefined}
+          disabled={!canGoPrevWeek}
+          hitSlop={8}
+          style={[styles.navBtn, !canGoPrevWeek && styles.navBtnDisabled]}
+          accessibilityState={{ disabled: !canGoPrevWeek }}
+        >
+          <ChevronLeft
+            size={18}
+            color={canGoPrevWeek ? T.white : T.faint}
+            strokeWidth={2.2}
+          />
         </Pressable>
         <Text style={styles.weekLabel} numberOfLines={1}>
           {weekLabel}
         </Text>
-        <Pressable onPress={onNextWeek} hitSlop={8} style={styles.navBtn}>
-          <ChevronRight size={18} color={T.white} strokeWidth={2.2} />
+        <Pressable
+          onPress={canGoNextWeek ? onNextWeek : undefined}
+          disabled={!canGoNextWeek}
+          hitSlop={8}
+          style={[styles.navBtn, !canGoNextWeek && styles.navBtnDisabled]}
+          accessibilityState={{ disabled: !canGoNextWeek }}
+        >
+          <ChevronRight
+            size={18}
+            color={canGoNextWeek ? T.white : T.faint}
+            strokeWidth={2.2}
+          />
         </Pressable>
       </View>
 
@@ -173,11 +212,12 @@ export function DaySelector({
           {days.map((d, i) => {
             const active = i === activeIndex;
             const isToday = d.date === todayKey;
+            const disabled = !!d.disabled;
             return (
-              <View key={d.date} style={styles.item}>
+              <View key={d.date} style={[styles.item, disabled && styles.itemDisabled]}>
                 {/* Absolutely positioned so today's ring matches the selected
                     pill's geometry without adding border box to the cell. */}
-                {isToday && (
+                {isToday && !disabled && (
                   <View
                     pointerEvents="none"
                     style={[
@@ -187,13 +227,17 @@ export function DaySelector({
                   />
                 )}
                 <PressableScale
-                  onPress={() => handleSelect(i, d.date)}
-                  scaleTo={0.94}
+                  onPress={() => handleSelect(i, d.date, disabled)}
+                  scaleTo={disabled ? 1 : 0.94}
                   style={styles.pressableReset}
                 >
                   <View style={styles.day}>
                     <Text
-                      style={[styles.dname, active && styles.dnameActive]}
+                      style={[
+                        styles.dname,
+                        active && styles.dnameActive,
+                        disabled && styles.dnameDisabled,
+                      ]}
                       numberOfLines={1}
                       adjustsFontSizeToFit
                       minimumFontScale={0.85}
@@ -203,14 +247,15 @@ export function DaySelector({
                     <Animated.Text
                       style={[
                         styles.dnum,
-                        isToday && !active && styles.dnumToday,
+                        isToday && !active && !disabled && styles.dnumToday,
                         active && styles.dnumActive,
+                        disabled && styles.dnumDisabled,
                         { transform: [{ scale: getNumberScale(d.date) }] },
                       ]}
                     >
                       {d.num}
                     </Animated.Text>
-                    {d.hasLog && (
+                    {d.hasLog && !disabled && (
                       <View
                         style={[styles.logDot, active && styles.logDotActive]}
                       />
@@ -222,6 +267,12 @@ export function DaySelector({
           })}
         </View>
       </View>
+
+      {showSelectedDate && selectedDate ? (
+        <Text style={styles.selectedCaption} numberOfLines={1}>
+          {dayCaption(selectedDate, todayKey)}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -248,6 +299,9 @@ function makeStyles(T: AppTheme) {
       alignItems: "center",
       justifyContent: "center",
     },
+    navBtnDisabled: {
+      opacity: 0.35,
+    },
     weekLabel: {
       flex: 1,
       textAlign: "center",
@@ -271,6 +325,9 @@ function makeStyles(T: AppTheme) {
     item: {
       flex: 1,
       minWidth: 0,
+    },
+    itemDisabled: {
+      opacity: 0.35,
     },
     pressableReset: { borderRadius: 15, width: "100%" },
     todayRing: {
@@ -313,9 +370,19 @@ function makeStyles(T: AppTheme) {
       width: "100%",
     },
     dnameActive: { color: T.onAccent },
+    dnameDisabled: { color: T.faint },
     dnum: { fontFamily: T.display, fontSize: 16, color: T.white, marginTop: 3 },
     dnumActive: { color: T.onAccent },
     dnumToday: { color: T.accent },
+    dnumDisabled: { color: T.faint },
+    selectedCaption: {
+      marginTop: 8,
+      textAlign: "center",
+      fontFamily: T.bodyMed,
+      fontSize: 11.5,
+      letterSpacing: 0.1,
+      color: T.muted,
+    },
     logDot: {
       width: 4,
       height: 4,

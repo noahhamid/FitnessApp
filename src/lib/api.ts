@@ -88,6 +88,10 @@ async function handleUnauthorized(): Promise<void> {
   try {
     invalidateAuthHeaderCache();
     await clearSessionStorage();
+    const { useAuthStore } = await import(
+      "@/src/features/auth/hooks/useAuth"
+    );
+    useAuthStore.getState().reset();
     router.replace("/(auth)/welcome");
   } finally {
     handlingUnauthorized = false;

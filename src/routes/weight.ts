@@ -58,7 +58,11 @@ export const weightRouter = new Hono<AppEnv>().use("*", requireAuth);
 
 weightRouter.get("/log", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
+<<<<<<< HEAD
   if (isParseFail(query)) return query.response;
+=======
+  if (query.success === false) return query.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const user = getUser(c);
   const from = query.data.from ? parseLogDate(query.data.from) : null;
@@ -87,7 +91,11 @@ weightRouter.get("/log", async (c) => {
 
 weightRouter.post("/log", async (c) => {
   const parsed = await parseJson(c, weightLogSchema);
+<<<<<<< HEAD
   if (isParseFail(parsed)) return parsed.response;
+=======
+  if (parsed.success === false) return parsed.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const dateStr = parsed.data.logDate ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -107,7 +115,11 @@ weightRouter.post("/log", async (c) => {
 
 weightRouter.patch("/log/:id", async (c) => {
   const parsed = await parseJson(c, weightLogUpdateSchema);
+<<<<<<< HEAD
   if (isParseFail(parsed)) return parsed.response;
+=======
+  if (parsed.success === false) return parsed.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const user = getUser(c);
   const id = c.req.param("id");
@@ -160,7 +172,11 @@ weightRouter.get("/goal", async (c) => {
 
 weightRouter.put("/goal", async (c) => {
   const parsed = await parseJson(c, weightGoalSchema);
+<<<<<<< HEAD
   if (isParseFail(parsed)) return parsed.response;
+=======
+  if (parsed.success === false) return parsed.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const user = getUser(c);
   const goal = await prisma.weightGoal.upsert({

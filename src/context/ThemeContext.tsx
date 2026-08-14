@@ -42,8 +42,14 @@ function resolveScheme(
   return systemScheme === "dark" ? "dark" : "light";
 }
 
+/**
+ * App appearance follows the phone’s system light/dark setting by default
+ * (`mode: "system"`) — including onboarding and auth. Once the user picks
+ * Light or Dark in Profile, that choice applies app-wide.
+ */
 export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();
+  // Always start on system so first paint matches the OS before storage loads.
   const [mode, setModeState] = useState<ThemeMode>("system");
   const [hydrated, setHydrated] = useState(false);
 

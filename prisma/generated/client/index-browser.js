@@ -172,13 +172,22 @@ exports.Prisma.UserProfileScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   goalId: 'goalId',
+  goalDetail: 'goalDetail',
   weightKg: 'weightKg',
+  targetWeightKg: 'targetWeightKg',
+  pace: 'pace',
   heightCm: 'heightCm',
   age: 'age',
   gender: 'gender',
   daysPerWeek: 'daysPerWeek',
+  trainingDays: 'trainingDays',
   experience: 'experience',
   equipment: 'equipment',
+  focusAreas: 'focusAreas',
+  bodyIssues: 'bodyIssues',
+  injuries: 'injuries',
+  reminderEnabled: 'reminderEnabled',
+  reminderHour: 'reminderHour',
   updatedAt: 'updatedAt'
 };
 
@@ -216,6 +225,13 @@ exports.Prisma.VerificationScalarFieldEnum = {
   expiresAt: 'expiresAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.RateLimitScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  count: 'count',
+  lastRequest: 'lastRequest'
 };
 
 exports.Prisma.WorkoutSessionScalarFieldEnum = {
@@ -358,6 +374,12 @@ exports.ExperienceLevel = exports.$Enums.ExperienceLevel = {
   advanced: 'advanced'
 };
 
+exports.Pace = exports.$Enums.Pace = {
+  slow: 'slow',
+  moderate: 'moderate',
+  aggressive: 'aggressive'
+};
+
 exports.Gender = exports.$Enums.Gender = {
   male: 'male',
   female: 'female'
@@ -385,6 +407,7 @@ exports.Prisma.ModelName = {
   Session: 'Session',
   Account: 'Account',
   Verification: 'Verification',
+  RateLimit: 'RateLimit',
   WorkoutSession: 'WorkoutSession',
   WorkoutExercise: 'WorkoutExercise',
   NutritionGoal: 'NutritionGoal',

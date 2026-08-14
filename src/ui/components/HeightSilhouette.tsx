@@ -8,7 +8,7 @@ import Svg, {
 } from "react-native-svg";
 
 const C = {
-  accent: "#FFC700",
+  accent: "#E53935",
 };
 
 interface HeightSilhouetteProps {
@@ -97,6 +97,6 @@ const s = StyleSheet.create({
     height: 1,
     borderStyle: "dashed",
     borderWidth: 1,
-    borderColor: "rgba(255,199,0,0.4)",
+    borderColor: "rgba(229,57,53,0.4)",
   },
 });

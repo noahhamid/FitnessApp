@@ -60,7 +60,7 @@ export function DailySummaryCard({
           Goal: <Text style={styles.footerBold}>{goalLabel}</Text>
         </Text>
         <Text style={styles.footerLink} onPress={onEditGoal}>
-          Edit →
+          Edit
         </Text>
       </View>
     </GlassSurface>

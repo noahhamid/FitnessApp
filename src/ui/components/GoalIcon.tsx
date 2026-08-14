@@ -2,7 +2,7 @@ import { View } from "react-native";
 import Svg, { Path, Circle } from "react-native-svg";
 
 const C = {
-  accent: "#FFC700",
+  accent: "#E53935",
   card: "#1E1E1E",
 };
 
@@ -67,7 +67,7 @@ export function GoalIcon({ name, size = 56 }: GoalIconProps) {
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: "rgba(255,199,0,0.12)",
+        backgroundColor: "rgba(229,57,53,0.12)",
         alignItems: "center",
         justifyContent: "center",
       }}

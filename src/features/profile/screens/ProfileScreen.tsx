@@ -10,7 +10,8 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import {
   ActivityIndicator,
   Alert,
@@ -30,6 +31,12 @@ import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
 import { AppearanceModeControl } from "@/src/features/profile/components/AppearanceModeControl";
 import { PageHeader } from "@/src/components/PageHeader";
 import { weekDatesFor } from "@/src/lib/week-days";
+import {
+  defaultTrainingDays,
+  normalizeTrainingDays,
+  WEEKDAY_LABELS_SHORT,
+} from "@/src/lib/plan-day-selection";
+import { workoutPlanQueryKey } from "@/src/features/workout/hooks/useWorkoutPlan";
 
 const SUPPORT_EMAIL = "support@fitnessapp.com";
 
@@ -61,6 +68,12 @@ const SETTINGS = [
     label: "Fitness Goal",
     sub: null,
     icon: "trending-up-outline" as const,
+  },
+  {
+    id: "schedule",
+    label: "Training Schedule",
+    sub: null,
+    icon: "calendar-outline" as const,
   },
   {
     id: "help",
@@ -123,6 +136,7 @@ function SignOutButton({
 
 export default function ProfileScreen() {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { user, isPending: authPending } = useAuth();
   const signOutMutation = useSignOut();
   const qc = useQueryClient();
@@ -143,6 +157,7 @@ export default function ProfileScreen() {
   const [heightInput, setHeightInput] = useState("");
   const [ageInput, setAgeInput] = useState("");
   const [goalInput, setGoalInput] = useState<GoalId>("health");
+  const [daysInput, setDaysInput] = useState<number[]>([]);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -162,6 +177,14 @@ export default function ProfileScreen() {
       ? profile.age
       : 0;
   const activeGoal = GOALS.find((g) => g.id === profile?.goalId) ?? GOALS[3];
+  // Stored picks win; otherwise show the default pattern for their frequency so
+  // the editor always opens on the schedule they're actually training.
+  const scheduledDays = useMemo(
+    () =>
+      normalizeTrainingDays(profile?.trainingDays) ??
+      defaultTrainingDays(profile?.daysPerWeek ?? 0),
+    [profile?.trainingDays, profile?.daysPerWeek],
+  );
   const initials = (user?.name?.trim() ?? "A")
     .split(" ")
     .map((w) => w[0])
@@ -186,7 +209,27 @@ export default function ProfileScreen() {
         ? (profile!.goalId as GoalId)
         : "health",
     );
-  }, [ageYears, editMode, heightCm, name, profile?.goalId, weightKg]);
+    setDaysInput(scheduledDays);
+  }, [
+    ageYears,
+    editMode,
+    heightCm,
+    name,
+    profile?.goalId,
+    scheduledDays,
+    weightKg,
+  ]);
+
+  /** Two sessions is the floor the plan generator supports. */
+  const toggleTrainingDay = (index: number) => {
+    setDaysInput((current) => {
+      if (current.includes(index)) {
+        if (current.length <= 2) return current;
+        return current.filter((d) => d !== index);
+      }
+      return [...current, index].sort((a, b) => a - b);
+    });
+  };
 
   useEffect(() => {
     return () => {
@@ -218,18 +261,27 @@ export default function ProfileScreen() {
 
     setSaveState("saving");
     try {
+      const scheduleChanged =
+        daysInput.length >= 2 &&
+        daysInput.join(",") !== scheduledDays.join(",");
+
       await saveUserProfile({
         name: nextName,
         goalId: goalInput,
         weightKg: savedWeight,
         heightCm: savedHeight,
         age: savedAge,
+        ...(scheduleChanged && { trainingDays: daysInput }),
       });
       await qc.invalidateQueries({ queryKey: ["auth", "session"] });
       await qc.invalidateQueries({ queryKey: ["user", "profile"] });
       // Server PUT /api/profile already upserts NutritionGoal via
       // computeNutritionTargets — refresh clients; do not recompute here.
       await qc.invalidateQueries({ queryKey: ["nutrition", "goals"] });
+      if (scheduleChanged) {
+        // A new day count regenerates the split server-side.
+        await qc.invalidateQueries({ queryKey: workoutPlanQueryKey });
+      }
       setSaveState("saved");
       saveTimeoutRef.current = setTimeout(() => {
         setSaveState("idle");
@@ -247,7 +299,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView edges={["top"]} style={styles.safe}>
       <LinearGradient
-        colors={["rgba(28,63,46,0.06)", "rgba(28,63,46,0)"]}
+        colors={["rgba(229,57,53,0.06)", "rgba(229,57,53,0)"]}
         style={styles.topWash}
         pointerEvents="none"
       />
@@ -258,7 +310,10 @@ export default function ProfileScreen() {
       />
       <View style={styles.screen}>
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={[
+            styles.scroll,
+            { paddingBottom: tabContentBottomPad(insets.bottom) },
+          ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -436,6 +491,40 @@ export default function ProfileScreen() {
                   );
                 })}
               </View>
+
+              <Text style={styles.editFieldLabel}>Training Days</Text>
+              <View style={styles.weekdayRow}>
+                {WEEKDAY_LABELS_SHORT.map((label, index) => {
+                  const active = daysInput.includes(index);
+                  return (
+                    <TouchableOpacity
+                      key={label}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: active }}
+                      accessibilityLabel={label}
+                      onPress={() => toggleTrainingDay(index)}
+                      activeOpacity={0.75}
+                      style={[
+                        styles.weekdayChip,
+                        active && styles.weekdayChipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.weekdayChipText,
+                          active && { color: T.accent },
+                        ]}
+                      >
+                        {label.slice(0, 1)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={styles.weekdayHint}>
+                {daysInput.length} days a week. Changing this rebuilds your
+                split, so today's workout may differ.
+              </Text>
             </GlassSurface>
           )}
 
@@ -470,7 +559,15 @@ export default function ProfileScreen() {
           <GlassSurface style={styles.settingsCard}>
             {SETTINGS.map((setting) => {
               const rightValue =
-                setting.id === "goal" ? activeGoal.label : null;
+                setting.id === "goal"
+                  ? activeGoal.label
+                  : setting.id === "schedule"
+                    ? scheduledDays.length > 0
+                      ? scheduledDays
+                          .map((d) => WEEKDAY_LABELS_SHORT[d])
+                          .join(" · ")
+                      : "Not set"
+                    : null;
 
               return (
                 <TouchableOpacity
@@ -478,7 +575,11 @@ export default function ProfileScreen() {
                   style={styles.settingRow}
                   activeOpacity={0.7}
                   onPress={() => {
-                    if (setting.id === "body" || setting.id === "goal") {
+                    if (
+                      setting.id === "body" ||
+                      setting.id === "goal" ||
+                      setting.id === "schedule"
+                    ) {
                       setEditMode(true);
                     } else if (setting.id === "help") {
                       void Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
@@ -564,7 +665,6 @@ function makeStyles(T: AppTheme) {
     scroll: {
       paddingHorizontal: T.space.xl,
       paddingTop: 8,
-      paddingBottom: 32,
     },
 
     editBtn: {
@@ -744,6 +844,36 @@ function makeStyles(T: AppTheme) {
       fontFamily: T.bodyMed,
       fontSize: 12,
       color: T.muted,
+    },
+    weekdayRow: {
+      flexDirection: "row",
+      gap: 6,
+      marginTop: 2,
+    },
+    weekdayChip: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: T.accentTint,
+      borderRadius: T.radius.sm,
+      borderWidth: 0.5,
+      borderColor: T.border,
+      paddingVertical: 10,
+    },
+    weekdayChipActive: {
+      borderColor: T.accent,
+    },
+    weekdayChipText: {
+      fontFamily: T.bodySemi,
+      fontSize: 12,
+      color: T.muted,
+    },
+    weekdayHint: {
+      fontFamily: T.bodyMed,
+      fontSize: 11,
+      lineHeight: 15,
+      color: T.muted,
+      marginTop: 6,
     },
 
     sectionLabel: {

@@ -99,19 +99,3 @@ export function usePersonalRecords() {
     queryFn: () => api.get<PersonalRecord[]>("/api/workouts/personal-records"),
   });
 }
-
-export type ProgressionDirection = "increase" | "maintain" | "no_data";
-
-export interface ProgressionSuggestion {
-  exerciseName: string;
-  lastWeight: number | null;
-  suggestedWeight: number | null;
-  direction: ProgressionDirection;
-}
-
-export function useProgressionSuggestions() {
-  return useQuery({
-    queryKey: ["progression"],
-    queryFn: () => api.get<ProgressionSuggestion[]>("/api/workouts/progression"),
-  });
-}

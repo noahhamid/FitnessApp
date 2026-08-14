@@ -1,10 +1,17 @@
-import { useMemo, useState } from "react";
-import { ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useCallback, useMemo, useState } from "react";
+import {
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useMealLog } from "@/src/features/nutrition/hooks/useNutrition";
-import { ChallengeReminderCard } from "../components/ChallengeReminderCard";
 
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
@@ -13,28 +20,43 @@ import { LinearGradient } from "expo-linear-gradient";
 import { DaySelector } from "@/src/features/nutrition/components/DaySelector";
 import { useWorkoutHistory } from "@/src/features/progress/hooks/useProgress";
 import { localDateOnly } from "@/src/features/progress/lib/localDate";
+import { weekScheduleStats } from "@/src/features/progress/lib/analytics";
 import {
   dayLabel,
   formatWeekLabel,
+  minWeekOffsetSince,
   shiftDateStr,
+  signupDateOnly,
   weekDatesFor,
 } from "@/src/lib/week-days";
-import {
-  TodaySnapshotRow,
-  SNAPSHOT_ICONS,
-} from "../components/TodaySnapshotRow";
 import { ProgressCoachCard } from "../components/ProgressCoachCard";
-
 import { UpNextWorkoutCard } from "../components/UpNextWorkoutCard";
+import { TodayPulseRow } from "../components/TodayPulseRow";
+import { WeekAdherenceBar } from "../components/WeekAdherenceBar";
+import {
+  TodayChecklistCard,
+  nextChecklistAction,
+} from "../components/TodayChecklistCard";
+import { HomeFloatingActionBar } from "../components/HomeFloatingActionBar";
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { useCoachCard } from "../hooks/useCoachCard";
 import { useTodaysWorkoutSummary } from "../hooks/useTodaysWorkoutSummary";
 import { useInProgressSession } from "@/src/features/workout/hooks/useInProgressSession";
+import { useWorkoutStreak } from "@/src/features/workout/hooks/useWorkoutStreak";
+import { useWorkoutPlan } from "@/src/features/workout/hooks/useWorkoutPlan";
 import {
-  useDailyTotals,
+  useAdjustWater,
   useWater,
 } from "@/src/features/nutrition/hooks/useNutrition";
+import {
+  invalidateQueryPrefixes,
+  usePullToRefresh,
+} from "@/src/hooks/usePullToRefresh";
+import {
+  HOME_FLOATING_BAR_H,
+  tabContentBottomPad,
+} from "@/src/lib/tab-chrome";
 
 function SectionSkeleton({
   height,
@@ -64,29 +86,72 @@ function makeSkeletonStyles(T: AppTheme) {
   });
 }
 
+function sessionMinutes(
+  startedAt: string,
+  completedAt: string | null,
+): number | null {
+  if (!completedAt) return null;
+  const ms =
+    new Date(completedAt).getTime() - new Date(startedAt).getTime();
+  if (!Number.isFinite(ms) || ms <= 0) return null;
+  return Math.max(1, Math.round(ms / 60000));
+}
+
 export default function DashboardScreen() {
-  const { T, styles, resolved } = useThemedStyles(makeStyles);
+  const { T, styles } = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const today = localDateOnly();
   const [selectedDate, setSelectedDate] = useState(today);
   const [weekOffset, setWeekOffset] = useState(0);
 
   const { user } = useAuth();
-  // Mount shared hook so past-day in-progress sessions auto-complete even
-  // if the user never opens the Workout tab this session.
+  const joinDate = signupDateOnly(user?.createdAt);
+  const minWeekOffset = minWeekOffsetSince(user?.createdAt);
   useInProgressSession();
+
+  const refreshDashboard = useCallback(
+    () =>
+      invalidateQueryPrefixes(queryClient, [
+        ["workout-history"],
+        ["nutrition"],
+        ["dashboard-coach"],
+        ["in-progress-session"],
+        ["week-overview"],
+        ["user", "profile"],
+        ["workout-sessions", "streak"],
+        ["workout-plan"],
+      ]),
+    [queryClient],
+  );
+  const { refreshing, onRefresh } = usePullToRefresh(refreshDashboard);
 
   const { weekStart, weekEnd, weekDates } = useMemo(
     () => weekDatesFor(weekOffset),
     [weekOffset],
   );
 
+  const canGoPrevWeek =
+    minWeekOffset == null ? true : weekOffset > minWeekOffset;
+  const canGoNextWeek = weekOffset < 0;
+
   const shiftWeek = (delta: number) => {
-    setWeekOffset((o) => o + delta);
-    setSelectedDate((prev) => shiftDateStr(prev, delta * 7));
+    const next = weekOffset + delta;
+    if (minWeekOffset != null && next < minWeekOffset) return;
+    if (next > 0) return;
+    setWeekOffset(next);
+    setSelectedDate((prev) => {
+      const shifted = shiftDateStr(prev, delta * 7);
+      if (joinDate && shifted < joinDate) return joinDate;
+      if (shifted > today) return today;
+      return shifted;
+    });
   };
 
   const { data: weekSessions } = useWorkoutHistory(weekStart, weekEnd);
-  const { data: todaySessions } = useWorkoutHistory(today, today);
+  const { data: daySessions } = useWorkoutHistory(selectedDate, selectedDate);
+  const { streakDays } = useWorkoutStreak();
+  const { data: apiPlan } = useWorkoutPlan();
 
   const workoutDates = useMemo(() => {
     const set = new Set<string>();
@@ -95,6 +160,17 @@ export default function DashboardScreen() {
     }
     return set;
   }, [weekSessions]);
+
+  const weekStats = useMemo(
+    () =>
+      weekScheduleStats(
+        apiPlan?.daysPerWeek ?? 0,
+        workoutDates,
+        apiPlan?.trainingDays,
+        weekDates[0],
+      ),
+    [apiPlan?.daysPerWeek, apiPlan?.trainingDays, workoutDates, weekDates],
+  );
 
   const days = useMemo(
     () =>
@@ -105,18 +181,18 @@ export default function DashboardScreen() {
           num: d.getDate(),
           hasLog: workoutDates.has(date),
           date,
+          disabled: joinDate ? date < joinDate : false,
         };
       }),
-    [weekDates, workoutDates],
+    [weekDates, workoutDates, joinDate],
   );
 
   const activeDayIndex = days.findIndex((d) => d.date === selectedDate);
-
   const isToday = selectedDate === today;
 
-  const { data: totals } = useDailyTotals(selectedDate);
   const { data: water } = useWater(selectedDate);
   const { data: mealsForDay } = useMealLog(selectedDate);
+  const adjustWater = useAdjustWater(selectedDate);
 
   const loggedMealTypes = new Set((mealsForDay ?? []).map((m) => m.meal));
   const breakfastDone = loggedMealTypes.has("Breakfast");
@@ -125,27 +201,14 @@ export default function DashboardScreen() {
 
   const workoutCompletedForDay = workoutDates.has(selectedDate);
 
+  const completedMinutes = useMemo(() => {
+    const finished = (daySessions ?? []).find((s) => !!s.completedAt);
+    if (!finished) return null;
+    return sessionMinutes(finished.startedAt, finished.completedAt);
+  }, [daySessions]);
+
   const dayKind: "today" | "past" | "future" =
     selectedDate === today ? "today" : selectedDate < today ? "past" : "future";
-
-  const challengeIncomplete =
-    !workoutCompletedForDay || !breakfastDone || !lunchDone || !dinnerDone;
-
-  function handleChallengePress() {
-    if (dayKind !== "today") return;
-    if (!workoutCompletedForDay) router.push("/(app)/(tabs)/train");
-    else router.push("/log-meal");
-  }
-
-  const todayWorkoutDone = useMemo(
-    () =>
-      (todaySessions ?? []).some(
-        (s) =>
-          !!s.completedAt &&
-          localDateOnly(new Date(s.completedAt)) === today,
-      ),
-    [todaySessions, today],
-  );
 
   const {
     isLoading: coachLoading,
@@ -158,16 +221,57 @@ export default function DashboardScreen() {
 
   const {
     day: todaysWorkoutDay,
-    summary: todaysWorkout,
     isLoading: workoutSummaryLoading,
   } = useTodaysWorkoutSummary(selectedDate);
 
-  const caloriesConsumed = totals ? totals.cal : null;
+  const isRestDay = todaysWorkoutDay?.kind === "rest";
+  const plannedMinutes =
+    todaysWorkoutDay?.kind === "workout" ? todaysWorkoutDay.minutes : null;
+
+  const nextAction = nextChecklistAction({
+    workoutDone: workoutCompletedForDay || !!isRestDay,
+    breakfastDone,
+    lunchDone,
+    dinnerDone,
+    isRestDay,
+  });
+
+  const floatingComplete = isToday && nextAction.key === "complete";
+  const showFloatingBar = isToday;
+
+  function handlePrimaryAction() {
+    if (nextAction.key === "workout") {
+      router.push("/(app)/(tabs)/train");
+      return;
+    }
+    if (nextAction.key !== "complete") {
+      router.push("/log-meal");
+    }
+  }
+
+  function handleChecklistPress() {
+    if (dayKind !== "today") return;
+    handlePrimaryAction();
+  }
+
+  const contentPadBottom = tabContentBottomPad(
+    insets.bottom,
+    showFloatingBar ? HOME_FLOATING_BAR_H : 0,
+  );
+
+  let floatingDetail: string | undefined;
+  if (floatingComplete) {
+    floatingDetail = "Nice work — you’re caught up";
+  } else if (nextAction.key === "workout" && plannedMinutes != null) {
+    floatingDetail = `${plannedMinutes} min planned`;
+  } else if (nextAction.key !== "complete") {
+    floatingDetail = "Next on today’s list";
+  }
 
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
       <LinearGradient
-        colors={["rgba(28,63,46,0.06)", "rgba(28,63,46,0)"]}
+        colors={["rgba(229,57,53,0.06)", "rgba(229,57,53,0)"]}
         style={styles.topWash}
         pointerEvents="none"
       />
@@ -185,56 +289,42 @@ export default function DashboardScreen() {
           activeIndex={activeDayIndex}
           onSelect={(i) => {
             const picked = days[i];
-            if (picked) setSelectedDate(picked.date);
+            if (picked && !picked.disabled) setSelectedDate(picked.date);
           }}
           onPrevWeek={() => shiftWeek(-1)}
           onNextWeek={() => shiftWeek(1)}
           weekLabel={formatWeekLabel(weekStart, weekEnd, weekOffset)}
+          canGoPrevWeek={canGoPrevWeek}
+          canGoNextWeek={canGoNextWeek}
         />
       </View>
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: contentPadBottom }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={T.accent}
+            colors={[T.accent]}
+            progressBackgroundColor={T.bgElevated}
+          />
+        }
       >
-        <ChallengeReminderCard
-          dayKind={dayKind}
+        <TodayPulseRow
+          plannedMinutes={plannedMinutes}
+          completedMinutes={completedMinutes}
           workoutDone={workoutCompletedForDay}
-          breakfastDone={breakfastDone}
-          lunchDone={lunchDone}
-          dinnerDone={dinnerDone}
-          onPress={
-            dayKind === "today" && challengeIncomplete
-              ? handleChallengePress
-              : undefined
-          }
+          isRestDay={!!isRestDay}
+          streakDays={streakDays}
         />
 
-        <TodaySnapshotRow
-          items={[
-            {
-              icon: SNAPSHOT_ICONS.calories,
-              value: caloriesConsumed != null ? String(caloriesConsumed) : "—",
-              label: "Calories",
-            },
-            {
-              icon: SNAPSHOT_ICONS.workout,
-              value: isToday
-                ? todayWorkoutDone
-                  ? "Done"
-                  : "Not yet"
-                : todaysWorkout
-                  ? "Done"
-                  : "—",
-              label: "Workout",
-            },
-            {
-              icon: SNAPSHOT_ICONS.water,
-              value: water ? `${water.glasses}/8` : "0/8",
-              label: "Water",
-            },
-          ]}
+        <WeekAdherenceBar
+          completed={weekStats.completed}
+          target={weekStats.target}
+          onPressOverview={() => router.push("/(app)/(tabs)/progress")}
         />
 
         {workoutSummaryLoading ? (
@@ -250,7 +340,11 @@ export default function DashboardScreen() {
           <>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
-                {isToday ? "Up next" : "Workout"}
+                {isToday
+                  ? workoutCompletedForDay
+                    ? "Today’s workout"
+                    : "Up next"
+                  : "Workout"}
               </Text>
               <Text
                 style={styles.sectionLink}
@@ -272,12 +366,36 @@ export default function DashboardScreen() {
                 minutes={todaysWorkoutDay.minutes}
                 exerciseCount={todaysWorkoutDay.exerciseCount}
                 imageUrl={todaysWorkoutDay.imageUrl}
+                completed={workoutCompletedForDay}
                 onPress={() => router.push("/(app)/(tabs)/train")}
-                onStartPress={() => router.push("/(app)/(tabs)/train")}
+                onStartPress={
+                  workoutCompletedForDay
+                    ? undefined
+                    : () => router.push("/(app)/(tabs)/train")
+                }
               />
             )}
           </>
         ) : null}
+
+        <TodayChecklistCard
+          dayKind={dayKind}
+          workoutDone={workoutCompletedForDay || !!isRestDay}
+          breakfastDone={breakfastDone}
+          lunchDone={lunchDone}
+          dinnerDone={dinnerDone}
+          waterGlasses={water?.glasses ?? 0}
+          onStepPress={
+            dayKind === "today" && nextAction.key !== "complete"
+              ? handleChecklistPress
+              : undefined
+          }
+          onWaterAdjust={
+            dayKind === "today"
+              ? (delta) => adjustWater.mutate(delta)
+              : undefined
+          }
+        />
 
         {coachLoading ? (
           <SectionSkeleton height={168} />
@@ -291,6 +409,15 @@ export default function DashboardScreen() {
           />
         ) : null}
       </ScrollView>
+
+      {showFloatingBar ? (
+        <HomeFloatingActionBar
+          label={nextAction.label}
+          detail={floatingDetail}
+          complete={floatingComplete}
+          onPress={floatingComplete ? undefined : handlePrimaryAction}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -302,9 +429,8 @@ function makeStyles(T: AppTheme) {
     scroll: { flex: 1 },
     content: {
       paddingHorizontal: 20,
-      paddingTop: 14,
-      paddingBottom: 110,
-      gap: 16,
+      paddingTop: 12,
+      gap: 12,
     },
     topWash: {
       position: "absolute",

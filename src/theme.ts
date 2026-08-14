@@ -53,7 +53,9 @@ const shadow = {
     elevation: 1,
   },
   lifted: {
-    shadowColor: "#1C3F2E",
+    // Neutral near-black, deliberately NOT the accent — a tinted lift reads as
+    // a colored glow around cards and pills rather than elevation.
+    shadowColor: "#0A0A0A",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.16,
     shadowRadius: 14,
@@ -70,17 +72,19 @@ const motion = {
 // Absolute immersive-dark values (formerly top-level on T). Kept on both
 // themes under the legacy key names so ActiveWorkoutScreen's T.darkBg /
 // T.accentOnDark usages keep working until that screen is migrated.
+// Surface values mirror the onboarding tokens in src/ui/tokens/colors.ts so the
+// signup flow and the app proper read as one product.
 const immersiveDark = {
-  darkBg: "#0E0E10",
-  darkPanel: "#17181B",
-  darkPanelBorder: "rgba(255,255,255,0.08)",
-  darkGlass: "rgba(255,255,255,0.05)",
-  darkGlassBorder: "rgba(255,255,255,0.10)",
-  onDark: "#FFFFFF",
-  onDarkMuted: "#9DA3AA",
-  accentOnDark: "#7FD9AE",
-  accentOnDarkSoft: "#B9EBD2",
-  accentOnDarkText: "#0A1F15", // ink text sitting on the bright accent
+  darkBg: "#111318",
+  darkPanel: "#202020",
+  darkPanelBorder: "#333333",
+  darkGlass: "rgba(255,255,255,0.06)",
+  darkGlassBorder: "rgba(255,255,255,0.12)",
+  onDark: "#F5F5F0",
+  onDarkMuted: "#8A8A8A",
+  accentOnDark: "#E53935",
+  accentOnDarkSoft: "#FF6F6C",
+  accentOnDarkText: "#FFFFFF", // text sitting on an accent-filled control
 } as const;
 
 export const lightTheme = {
@@ -91,14 +95,14 @@ export const lightTheme = {
   white: "#0A0A0A", // primary text — kept name for drop-in compatibility
   faint: "#ADADA8",
   secondary: "#0A0A0A", // reused as the "meal logged" dot fill
-  accent: "#1C3F2E",
-  accentTint: "#F4F7F5",
+  accent: "#E53935",
+  accentTint: "rgba(229,57,53,0.08)",
   bgElevated: "#FFFFFF", // alias, same as glass — kept for drop-in compatibility
-  accentSoft: "#F4F7F5", // alias, same as accentTint
+  accentSoft: "rgba(229,57,53,0.08)", // alias, same as accentTint
   muted: "#ADADA8", // alias of faint
 
-  ringGlass: "#F4F7F5", // alias of accentSoft
-  ringBorder: "#EBEBEB", // alias of border
+  ringGlass: "rgba(229,57,53,0.08)", // alias of accentSoft
+  ringBorder: "rgba(229,57,53,0.35)",
   onImage: "#FFFFFF",
   text: "#0A0A0A", // alias of white
   badge: "#E5484D", // muted alert-red, reserved for notification dots only
@@ -106,8 +110,8 @@ export const lightTheme = {
   onImageBorder: "rgba(255,255,255,0.22)",
   onImageMuted: "#D8D8D3",
 
-  accentPressed: "#132D21",
-  accentLine: "rgba(28,63,46,0.14)",
+  accentPressed: "#C62828",
+  accentLine: "rgba(229,57,53,0.14)",
   // Ink sitting on an accent-filled control (CTA, chip, pill).
   onAccent: "#FFFFFF",
 
@@ -128,17 +132,16 @@ export const darkTheme = {
   white: immersiveDark.onDark, // primary text on dark
   faint: immersiveDark.onDarkMuted,
   secondary: immersiveDark.onDark, // meal-logged / secondary fill
-  // Soft warm ivory accent — minimal/editorial on near-black.
-  // Legacy accentOnDark* below stay mint for ActiveWorkoutScreen.
-  accent: "#F2EFE9",
-  accentTint: "rgba(242,239,233,0.10)",
+  // Single red accent, same value the onboarding flow uses.
+  accent: immersiveDark.accentOnDark,
+  accentTint: "rgba(229,57,53,0.14)",
   // Solid elevated surface → darkPanel (glass is translucent)
   bgElevated: immersiveDark.darkPanel,
-  accentSoft: "rgba(242,239,233,0.10)", // alias of accentTint
+  accentSoft: "rgba(229,57,53,0.14)", // alias of accentTint
   muted: immersiveDark.onDarkMuted,
 
-  ringGlass: "rgba(242,239,233,0.10)",
-  ringBorder: immersiveDark.darkPanelBorder,
+  ringGlass: "rgba(229,57,53,0.14)",
+  ringBorder: "rgba(229,57,53,0.65)",
   onImage: "#FFFFFF", // still white over photo scrims
   text: immersiveDark.onDark,
   badge: "#E5484D", // same semantic alert red
@@ -146,10 +149,9 @@ export const darkTheme = {
   onImageBorder: "rgba(255,255,255,0.22)",
   onImageMuted: "#D8D8D3",
 
-  accentPressed: "#D9D5CC",
-  accentLine: "rgba(242,239,233,0.14)",
-  // Near-black ink on ivory fills (must not use onImage / white here).
-  onAccent: immersiveDark.darkBg,
+  accentPressed: "#C62828",
+  accentLine: "rgba(229,57,53,0.22)",
+  onAccent: "#FFFFFF",
 
   ...fonts,
   space,
@@ -162,4 +164,17 @@ export const darkTheme = {
 /** Default export — light palette. Unchanged for existing `import { T }` call sites. */
 export const T = lightTheme;
 
+<<<<<<< HEAD
 export type AppTheme = typeof lightTheme | typeof darkTheme;
+=======
+/**
+ * Shared shape of both palettes. Color/font tokens are widened to `string` so
+ * darkTheme's literals stay assignable — `typeof lightTheme` alone would pin
+ * every token to the light palette's exact hex value.
+ */
+export type AppTheme = {
+  readonly [K in keyof typeof lightTheme]: (typeof lightTheme)[K] extends string
+    ? string
+    : (typeof lightTheme)[K];
+};
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8

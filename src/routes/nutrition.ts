@@ -118,7 +118,11 @@ nutritionRouter.get("/goals", async (c) => {
 
 nutritionRouter.put("/goals", async (c) => {
   const parsed = await parseJson(c, goalsSchema);
+<<<<<<< HEAD
   if (isParseFail(parsed)) return parsed.response;
+=======
+  if (parsed.success === false) return parsed.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const user = getUser(c);
   const goal = await prisma.nutritionGoal.upsert({
@@ -144,7 +148,11 @@ nutritionRouter.delete("/goals", async (c) => {
 
 nutritionRouter.get("/log", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
+<<<<<<< HEAD
   if (isParseFail(query)) return query.response;
+=======
+  if (query.success === false) return query.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const user = getUser(c);
   const { from: fromStr, to: toStr, date: dateStr } = query.data;
@@ -191,7 +199,11 @@ nutritionRouter.get("/log", async (c) => {
  */
 nutritionRouter.post("/meal-photo", async (c) => {
   const parsed = await parseJson(c, mealPhotoSchema);
+<<<<<<< HEAD
   if (isParseFail(parsed)) return parsed.response;
+=======
+  if (parsed.success === false) return parsed.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const user = getUser(c);
   const mime = parsed.data.mimeType.toLowerCase();
@@ -217,7 +229,11 @@ nutritionRouter.post("/meal-photo", async (c) => {
 
 nutritionRouter.post("/log", async (c) => {
   const parsed = await parseJson(c, mealLogSchema);
+<<<<<<< HEAD
   if (isParseFail(parsed)) return parsed.response;
+=======
+  if (parsed.success === false) return parsed.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const logDate = parseLogDate(parsed.data.logDate);
   if (!logDate) return err(c, "Invalid logDate", 400);
@@ -243,7 +259,11 @@ nutritionRouter.post("/log", async (c) => {
 
 nutritionRouter.patch("/log/:id", async (c) => {
   const parsed = await parseJson(c, mealLogUpdateSchema);
+<<<<<<< HEAD
   if (isParseFail(parsed)) return parsed.response;
+=======
+  if (parsed.success === false) return parsed.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const user = getUser(c);
   const id = c.req.param("id");
@@ -294,7 +314,11 @@ nutritionRouter.delete("/log/:id", async (c) => {
 
 nutritionRouter.get("/totals", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
+<<<<<<< HEAD
   if (isParseFail(query)) return query.response;
+=======
+  if (query.success === false) return query.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const dateStr = query.data.date ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -318,7 +342,11 @@ nutritionRouter.get("/totals", async (c) => {
 
 nutritionRouter.get("/water", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
+<<<<<<< HEAD
   if (isParseFail(query)) return query.response;
+=======
+  if (query.success === false) return query.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const dateStr = query.data.date ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -334,7 +362,11 @@ nutritionRouter.get("/water", async (c) => {
 
 nutritionRouter.post("/water", async (c) => {
   const parsed = await parseJson(c, waterAdjustSchema);
+<<<<<<< HEAD
   if (isParseFail(parsed)) return parsed.response;
+=======
+  if (parsed.success === false) return parsed.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const dateStr = parsed.data.logDate ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -362,7 +394,11 @@ function isoDate(d: Date) {
 
 nutritionRouter.get("/weekly", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
+<<<<<<< HEAD
   if (isParseFail(query)) return query.response;
+=======
+  if (query.success === false) return query.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const endStr = query.data.date ?? todayLogDate();
   const end = parseLogDate(endStr);
@@ -412,7 +448,11 @@ nutritionRouter.get("/weekly", async (c) => {
 
 nutritionRouter.get("/suggestions", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
+<<<<<<< HEAD
   if (isParseFail(query)) return query.response;
+=======
+  if (query.success === false) return query.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const dateStr = query.data.date ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -482,6 +522,10 @@ async function freshAdaptiveSuggestion(userId: string): Promise<
       };
       goalId: GoalId;
       weightKg: number;
+      /** Body-composition inputs so recomputed protein can use lean mass. */
+      gender: "male" | "female" | undefined;
+      age: number | undefined;
+      heightCm: number | undefined;
     }
 > {
   const [profile, nutritionGoal] = await Promise.all([
@@ -533,6 +577,9 @@ async function freshAdaptiveSuggestion(userId: string): Promise<
     nutritionGoal,
     goalId: profile.goalId as GoalId,
     weightKg,
+    gender: (profile.gender as "male" | "female" | null) ?? undefined,
+    age: profile.age ?? undefined,
+    heightCm: profile.heightCm ?? undefined,
   };
 }
 
@@ -559,7 +606,11 @@ nutritionRouter.get("/adaptive-suggestion", async (c) => {
  */
 nutritionRouter.patch("/goals/apply-suggestion", async (c) => {
   const parsed = await parseJson(c, applySuggestionSchema);
+<<<<<<< HEAD
   if (isParseFail(parsed)) return parsed.response;
+=======
+  if (parsed.success === false) return parsed.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   const user = getUser(c);
   const clientSuggested = parsed.data.suggestedCalories;
@@ -575,7 +626,8 @@ nutritionRouter.patch("/goals/apply-suggestion", async (c) => {
     );
   }
 
-  const { suggestion, nutritionGoal, goalId, weightKg } = fresh;
+  const { suggestion, nutritionGoal, goalId, weightKg, gender, age, heightCm } =
+    fresh;
 
   if (suggestion.eligible === false) {
     return err(
@@ -614,6 +666,9 @@ nutritionRouter.patch("/goals/apply-suggestion", async (c) => {
     calories: newCalories,
     weightKg,
     goalId,
+    gender,
+    age,
+    heightCm,
   });
 
   const [updated] = await prisma.$transaction([

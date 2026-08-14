@@ -8,14 +8,14 @@ import {
   View,
 } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
-import { darkTheme } from "@/src/theme";
 
-const NEAR_BLACK = "#0A0A0A";
-/** Ivory accent matching darkTheme.accent — splash sits before theme resolve. */
-const ACCENT = darkTheme.accent;
-const SETTLE = darkTheme.motion.settle;
+/** Brand red — matches app.config splash + potentialpeak_logo.jpg plate. */
+const BRAND_RED = "#C91923";
+const LOGO = require("../../assets/images/potentialpeak_logo.jpg");
 
-const MARK = require("../../assets/images/icon.png");
+/** Minimum time the logo stays visible before the outro can start. */
+const MIN_HOLD_MS = 1000;
+const OUTRO_MS = 520;
 
 type Props = {
   /** True when fonts + auth + theme (and any other critical gates) are ready. */
@@ -24,32 +24,19 @@ type Props = {
 };
 
 /**
- * Branded in-app splash shown the moment the native splash hides.
- *
- * Note: In Expo Go (SDK 52+), the *native* splash is always Expo Go's own
- * loading view / app icon — app.config splash-icon is ignored there. This
- * component is the branded experience you can actually see in Expo Go;
- * native splash config only applies in a real build.
- *
- * Exit waits for the entrance animation to finish *and* `ready`, so a
- * fast auth hydrate doesn't wipe the overlay before the mark appears.
+ * Branded boot splash: PotentialPeak logo on red, held ~1s, then animated out
+ * into welcome / the signed-in app.
  */
 export function AnimatedSplashScreen({ ready, children }: Props) {
   const [exited, setExited] = useState(false);
-  const [entranceDone, setEntranceDone] = useState(false);
+  const [holdDone, setHoldDone] = useState(false);
   const overlayOpacity = useRef(new Animated.Value(1)).current;
   const markOpacity = useRef(new Animated.Value(0)).current;
-  const markScale = useRef(new Animated.Value(0.88)).current;
-  const breath = useRef(new Animated.Value(1)).current;
-  const glow = useRef(new Animated.Value(0.35)).current;
-  const dotA = useRef(new Animated.Value(0.35)).current;
-  const dotB = useRef(new Animated.Value(0.35)).current;
-  const dotC = useRef(new Animated.Value(0.35)).current;
+  const markScale = useRef(new Animated.Value(0.92)).current;
+  const markTranslateY = useRef(new Animated.Value(10)).current;
   const nativeHidden = useRef(false);
   const exitStarted = useRef(false);
 
-  // Hide OS/Expo splash only after this layer has painted (avoids a flash of
-  // the real app underneath before the overlay is on screen).
   useEffect(() => {
     if (nativeHidden.current) return;
     nativeHidden.current = true;
@@ -59,104 +46,76 @@ export function AnimatedSplashScreen({ ready, children }: Props) {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // Entrance + breathing loop.
+  // Entrance, then hold at least MIN_HOLD_MS from mount.
   useEffect(() => {
+    const holdTimer = setTimeout(() => setHoldDone(true), MIN_HOLD_MS);
+
     Animated.parallel([
       Animated.timing(markOpacity, {
         toValue: 1,
-        duration: 420,
+        duration: 380,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.spring(markScale, {
         toValue: 1,
-        ...SETTLE,
+        friction: 7,
+        tension: 80,
+        useNativeDriver: true,
+      }),
+      Animated.timing(markTranslateY, {
+        toValue: 0,
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    return () => clearTimeout(holdTimer);
+  }, [markOpacity, markScale, markTranslateY]);
+
+  // Outro once the app is ready and the minimum hold has elapsed.
+  useEffect(() => {
+    if (!ready || !holdDone || exitStarted.current || exited) return;
+    exitStarted.current = true;
+
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: OUTRO_MS,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(markOpacity, {
+        toValue: 0,
+        duration: OUTRO_MS * 0.85,
+        easing: Easing.in(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(markScale, {
+        toValue: 1.12,
+        duration: OUTRO_MS,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(markTranslateY, {
+        toValue: -18,
+        duration: OUTRO_MS,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
       }),
     ]).start(({ finished }) => {
-      if (finished) setEntranceDone(true);
-    });
-
-    const breathLoop = Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(breath, {
-            toValue: 1.045,
-            duration: 1100,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(glow, {
-            toValue: 0.7,
-            duration: 1100,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(breath, {
-            toValue: 1,
-            duration: 1100,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(glow, {
-            toValue: 0.35,
-            duration: 1100,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-        ]),
-      ]),
-    );
-    breathLoop.start();
-
-    const pulseDot = (v: Animated.Value, delay: number) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.timing(v, {
-            toValue: 1,
-            duration: 380,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(v, {
-            toValue: 0.3,
-            duration: 380,
-            easing: Easing.in(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ]),
-      );
-
-    const d1 = pulseDot(dotA, 0);
-    const d2 = pulseDot(dotB, 140);
-    const d3 = pulseDot(dotC, 280);
-    d1.start();
-    d2.start();
-    d3.start();
-
-    return () => {
-      breathLoop.stop();
-      d1.stop();
-      d2.stop();
-      d3.stop();
-    };
-  }, [breath, glow, markOpacity, markScale, dotA, dotB, dotC]);
-
-  // Exit only after entrance finished AND app is ready — no extra fake hold.
-  useEffect(() => {
-    if (!ready || !entranceDone || exitStarted.current || exited) return;
-    exitStarted.current = true;
-    Animated.timing(overlayOpacity, {
-      toValue: 0,
-      duration: 360,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
       if (finished) setExited(true);
     });
-  }, [ready, entranceDone, exited, overlayOpacity]);
+  }, [
+    ready,
+    holdDone,
+    exited,
+    overlayOpacity,
+    markOpacity,
+    markScale,
+    markTranslateY,
+  ]);
 
   return (
     <View style={styles.root}>
@@ -167,30 +126,16 @@ export function AnimatedSplashScreen({ ready, children }: Props) {
           style={[styles.overlay, { opacity: overlayOpacity }]}
         >
           <Animated.View
-            style={[
-              styles.glow,
-              {
-                opacity: glow,
-                transform: [{ scale: breath }],
-              },
-            ]}
-          />
-          <Animated.View
             style={{
               opacity: markOpacity,
-              transform: [{ scale: markScale }, { scale: breath }],
+              transform: [
+                { translateY: markTranslateY },
+                { scale: markScale },
+              ],
             }}
           >
-            <Image source={MARK} style={styles.mark} resizeMode="contain" />
+            <Image source={LOGO} style={styles.mark} resizeMode="contain" />
           </Animated.View>
-          <View style={styles.dots}>
-            {[dotA, dotB, dotC].map((v, i) => (
-              <Animated.View
-                key={i}
-                style={[styles.dot, { opacity: v, transform: [{ scale: v }] }]}
-              />
-            ))}
-          </View>
         </Animated.View>
       ) : null}
     </View>
@@ -200,38 +145,19 @@ export function AnimatedSplashScreen({ ready, children }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: NEAR_BLACK,
+    backgroundColor: BRAND_RED,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: NEAR_BLACK,
+    backgroundColor: BRAND_RED,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 999,
     ...(Platform.OS === "android" ? { elevation: 999 } : null),
   },
-  glow: {
-    position: "absolute",
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: "rgba(242, 239, 233, 0.12)",
-  },
   mark: {
-    width: 148,
-    height: 148,
-  },
-  dots: {
-    position: "absolute",
-    bottom: "22%",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: ACCENT,
+    width: 200,
+    height: 200,
+    borderRadius: 40,
   },
 });

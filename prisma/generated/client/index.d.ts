@@ -59,6 +59,12 @@ export type Account = $Result.DefaultSelection<Prisma.$AccountPayload>
  */
 export type Verification = $Result.DefaultSelection<Prisma.$VerificationPayload>
 /**
+ * Model RateLimit
+ * Better Auth rate-limit counters (IP + path). Needed so limits survive
+ * serverless instances — in-memory storage would reset on every Vercel invoke.
+ */
+export type RateLimit = $Result.DefaultSelection<Prisma.$RateLimitPayload>
+/**
  * Model WorkoutSession
  * 
  */
@@ -75,7 +81,7 @@ export type WorkoutExercise = $Result.DefaultSelection<Prisma.$WorkoutExercisePa
 export type NutritionGoal = $Result.DefaultSelection<Prisma.$NutritionGoalPayload>
 /**
  * Model NutritionAdjustmentLog
- * History of adaptive calorie-target changes (accept/apply flow).
+ * 
  */
 export type NutritionAdjustmentLog = $Result.DefaultSelection<Prisma.$NutritionAdjustmentLogPayload>
 /**
@@ -178,6 +184,15 @@ export const EquipmentAccess: {
 
 export type EquipmentAccess = (typeof EquipmentAccess)[keyof typeof EquipmentAccess]
 
+
+export const Pace: {
+  slow: 'slow',
+  moderate: 'moderate',
+  aggressive: 'aggressive'
+};
+
+export type Pace = (typeof Pace)[keyof typeof Pace]
+
 }
 
 export type MuscleGroup = $Enums.MuscleGroup
@@ -207,6 +222,10 @@ export const ExperienceLevel: typeof $Enums.ExperienceLevel
 export type EquipmentAccess = $Enums.EquipmentAccess
 
 export const EquipmentAccess: typeof $Enums.EquipmentAccess
+
+export type Pace = $Enums.Pace
+
+export const Pace: typeof $Enums.Pace
 
 /**
  * ##  Prisma Client ʲˢ
@@ -418,6 +437,16 @@ export class PrismaClient<
     * ```
     */
   get verification(): Prisma.VerificationDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.rateLimit`: Exposes CRUD operations for the **RateLimit** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RateLimits
+    * const rateLimits = await prisma.rateLimit.findMany()
+    * ```
+    */
+  get rateLimit(): Prisma.RateLimitDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.workoutSession`: Exposes CRUD operations for the **WorkoutSession** model.
@@ -951,6 +980,7 @@ export namespace Prisma {
     Session: 'Session',
     Account: 'Account',
     Verification: 'Verification',
+    RateLimit: 'RateLimit',
     WorkoutSession: 'WorkoutSession',
     WorkoutExercise: 'WorkoutExercise',
     NutritionGoal: 'NutritionGoal',
@@ -975,7 +1005,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "exercise" | "workoutPlan" | "workoutPlanDay" | "workoutPlanExercise" | "user" | "userProfile" | "session" | "account" | "verification" | "workoutSession" | "workoutExercise" | "nutritionGoal" | "nutritionAdjustmentLog" | "mealLog" | "waterLog" | "weightLog" | "weightGoal" | "plannedExtraExercise"
+      modelProps: "exercise" | "workoutPlan" | "workoutPlanDay" | "workoutPlanExercise" | "user" | "userProfile" | "session" | "account" | "verification" | "rateLimit" | "workoutSession" | "workoutExercise" | "nutritionGoal" | "nutritionAdjustmentLog" | "mealLog" | "waterLog" | "weightLog" | "weightGoal" | "plannedExtraExercise"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1642,6 +1672,80 @@ export namespace Prisma {
           count: {
             args: Prisma.VerificationCountArgs<ExtArgs>
             result: $Utils.Optional<VerificationCountAggregateOutputType> | number
+          }
+        }
+      }
+      RateLimit: {
+        payload: Prisma.$RateLimitPayload<ExtArgs>
+        fields: Prisma.RateLimitFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RateLimitFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RateLimitPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RateLimitFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RateLimitPayload>
+          }
+          findFirst: {
+            args: Prisma.RateLimitFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RateLimitPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RateLimitFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RateLimitPayload>
+          }
+          findMany: {
+            args: Prisma.RateLimitFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RateLimitPayload>[]
+          }
+          create: {
+            args: Prisma.RateLimitCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RateLimitPayload>
+          }
+          createMany: {
+            args: Prisma.RateLimitCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.RateLimitCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RateLimitPayload>[]
+          }
+          delete: {
+            args: Prisma.RateLimitDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RateLimitPayload>
+          }
+          update: {
+            args: Prisma.RateLimitUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RateLimitPayload>
+          }
+          deleteMany: {
+            args: Prisma.RateLimitDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RateLimitUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.RateLimitUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RateLimitPayload>[]
+          }
+          upsert: {
+            args: Prisma.RateLimitUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RateLimitPayload>
+          }
+          aggregate: {
+            args: Prisma.RateLimitAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRateLimit>
+          }
+          groupBy: {
+            args: Prisma.RateLimitGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RateLimitGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RateLimitCountArgs<ExtArgs>
+            result: $Utils.Optional<RateLimitCountAggregateOutputType> | number
           }
         }
       }
@@ -2428,6 +2532,7 @@ export namespace Prisma {
     session?: SessionOmit
     account?: AccountOmit
     verification?: VerificationOmit
+    rateLimit?: RateLimitOmit
     workoutSession?: WorkoutSessionOmit
     workoutExercise?: WorkoutExerciseOmit
     nutritionGoal?: NutritionGoalOmit
@@ -8661,29 +8766,40 @@ export namespace Prisma {
 
   export type UserProfileAvgAggregateOutputType = {
     weightKg: Decimal | null
+    targetWeightKg: Decimal | null
     heightCm: number | null
     age: number | null
     daysPerWeek: number | null
+    trainingDays: number | null
+    reminderHour: number | null
   }
 
   export type UserProfileSumAggregateOutputType = {
     weightKg: Decimal | null
+    targetWeightKg: Decimal | null
     heightCm: number | null
     age: number | null
     daysPerWeek: number | null
+    trainingDays: number[]
+    reminderHour: number | null
   }
 
   export type UserProfileMinAggregateOutputType = {
     id: string | null
     userId: string | null
     goalId: string | null
+    goalDetail: string | null
     weightKg: Decimal | null
+    targetWeightKg: Decimal | null
+    pace: $Enums.Pace | null
     heightCm: number | null
     age: number | null
     gender: $Enums.Gender | null
     daysPerWeek: number | null
     experience: $Enums.ExperienceLevel | null
     equipment: $Enums.EquipmentAccess | null
+    reminderEnabled: boolean | null
+    reminderHour: number | null
     updatedAt: Date | null
   }
 
@@ -8691,13 +8807,18 @@ export namespace Prisma {
     id: string | null
     userId: string | null
     goalId: string | null
+    goalDetail: string | null
     weightKg: Decimal | null
+    targetWeightKg: Decimal | null
+    pace: $Enums.Pace | null
     heightCm: number | null
     age: number | null
     gender: $Enums.Gender | null
     daysPerWeek: number | null
     experience: $Enums.ExperienceLevel | null
     equipment: $Enums.EquipmentAccess | null
+    reminderEnabled: boolean | null
+    reminderHour: number | null
     updatedAt: Date | null
   }
 
@@ -8705,13 +8826,22 @@ export namespace Prisma {
     id: number
     userId: number
     goalId: number
+    goalDetail: number
     weightKg: number
+    targetWeightKg: number
+    pace: number
     heightCm: number
     age: number
     gender: number
     daysPerWeek: number
+    trainingDays: number
     experience: number
     equipment: number
+    focusAreas: number
+    bodyIssues: number
+    injuries: number
+    reminderEnabled: number
+    reminderHour: number
     updatedAt: number
     _all: number
   }
@@ -8719,29 +8849,40 @@ export namespace Prisma {
 
   export type UserProfileAvgAggregateInputType = {
     weightKg?: true
+    targetWeightKg?: true
     heightCm?: true
     age?: true
     daysPerWeek?: true
+    trainingDays?: true
+    reminderHour?: true
   }
 
   export type UserProfileSumAggregateInputType = {
     weightKg?: true
+    targetWeightKg?: true
     heightCm?: true
     age?: true
     daysPerWeek?: true
+    trainingDays?: true
+    reminderHour?: true
   }
 
   export type UserProfileMinAggregateInputType = {
     id?: true
     userId?: true
     goalId?: true
+    goalDetail?: true
     weightKg?: true
+    targetWeightKg?: true
+    pace?: true
     heightCm?: true
     age?: true
     gender?: true
     daysPerWeek?: true
     experience?: true
     equipment?: true
+    reminderEnabled?: true
+    reminderHour?: true
     updatedAt?: true
   }
 
@@ -8749,13 +8890,18 @@ export namespace Prisma {
     id?: true
     userId?: true
     goalId?: true
+    goalDetail?: true
     weightKg?: true
+    targetWeightKg?: true
+    pace?: true
     heightCm?: true
     age?: true
     gender?: true
     daysPerWeek?: true
     experience?: true
     equipment?: true
+    reminderEnabled?: true
+    reminderHour?: true
     updatedAt?: true
   }
 
@@ -8763,13 +8909,22 @@ export namespace Prisma {
     id?: true
     userId?: true
     goalId?: true
+    goalDetail?: true
     weightKg?: true
+    targetWeightKg?: true
+    pace?: true
     heightCm?: true
     age?: true
     gender?: true
     daysPerWeek?: true
+    trainingDays?: true
     experience?: true
     equipment?: true
+    focusAreas?: true
+    bodyIssues?: true
+    injuries?: true
+    reminderEnabled?: true
+    reminderHour?: true
     updatedAt?: true
     _all?: true
   }
@@ -8864,13 +9019,22 @@ export namespace Prisma {
     id: string
     userId: string
     goalId: string | null
+    goalDetail: string | null
     weightKg: Decimal | null
+    targetWeightKg: Decimal | null
+    pace: $Enums.Pace | null
     heightCm: number | null
     age: number | null
     gender: $Enums.Gender | null
     daysPerWeek: number | null
+    trainingDays: number[]
     experience: $Enums.ExperienceLevel | null
     equipment: $Enums.EquipmentAccess | null
+    focusAreas: string[]
+    bodyIssues: string[]
+    injuries: string[]
+    reminderEnabled: boolean | null
+    reminderHour: number | null
     updatedAt: Date
     _count: UserProfileCountAggregateOutputType | null
     _avg: UserProfileAvgAggregateOutputType | null
@@ -8897,13 +9061,22 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     goalId?: boolean
+    goalDetail?: boolean
     weightKg?: boolean
+    targetWeightKg?: boolean
+    pace?: boolean
     heightCm?: boolean
     age?: boolean
     gender?: boolean
     daysPerWeek?: boolean
+    trainingDays?: boolean
     experience?: boolean
     equipment?: boolean
+    focusAreas?: boolean
+    bodyIssues?: boolean
+    injuries?: boolean
+    reminderEnabled?: boolean
+    reminderHour?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["userProfile"]>
@@ -8912,13 +9085,22 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     goalId?: boolean
+    goalDetail?: boolean
     weightKg?: boolean
+    targetWeightKg?: boolean
+    pace?: boolean
     heightCm?: boolean
     age?: boolean
     gender?: boolean
     daysPerWeek?: boolean
+    trainingDays?: boolean
     experience?: boolean
     equipment?: boolean
+    focusAreas?: boolean
+    bodyIssues?: boolean
+    injuries?: boolean
+    reminderEnabled?: boolean
+    reminderHour?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["userProfile"]>
@@ -8927,13 +9109,22 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     goalId?: boolean
+    goalDetail?: boolean
     weightKg?: boolean
+    targetWeightKg?: boolean
+    pace?: boolean
     heightCm?: boolean
     age?: boolean
     gender?: boolean
     daysPerWeek?: boolean
+    trainingDays?: boolean
     experience?: boolean
     equipment?: boolean
+    focusAreas?: boolean
+    bodyIssues?: boolean
+    injuries?: boolean
+    reminderEnabled?: boolean
+    reminderHour?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["userProfile"]>
@@ -8942,17 +9133,26 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     goalId?: boolean
+    goalDetail?: boolean
     weightKg?: boolean
+    targetWeightKg?: boolean
+    pace?: boolean
     heightCm?: boolean
     age?: boolean
     gender?: boolean
     daysPerWeek?: boolean
+    trainingDays?: boolean
     experience?: boolean
     equipment?: boolean
+    focusAreas?: boolean
+    bodyIssues?: boolean
+    injuries?: boolean
+    reminderEnabled?: boolean
+    reminderHour?: boolean
     updatedAt?: boolean
   }
 
-  export type UserProfileOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "goalId" | "weightKg" | "heightCm" | "age" | "gender" | "daysPerWeek" | "experience" | "equipment" | "updatedAt", ExtArgs["result"]["userProfile"]>
+  export type UserProfileOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "goalId" | "goalDetail" | "weightKg" | "targetWeightKg" | "pace" | "heightCm" | "age" | "gender" | "daysPerWeek" | "trainingDays" | "experience" | "equipment" | "focusAreas" | "bodyIssues" | "injuries" | "reminderEnabled" | "reminderHour" | "updatedAt", ExtArgs["result"]["userProfile"]>
   export type UserProfileInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -8972,13 +9172,22 @@ export namespace Prisma {
       id: string
       userId: string
       goalId: string | null
+      goalDetail: string | null
       weightKg: Prisma.Decimal | null
+      targetWeightKg: Prisma.Decimal | null
+      pace: $Enums.Pace | null
       heightCm: number | null
       age: number | null
       gender: $Enums.Gender | null
       daysPerWeek: number | null
+      trainingDays: number[]
       experience: $Enums.ExperienceLevel | null
       equipment: $Enums.EquipmentAccess | null
+      focusAreas: string[]
+      bodyIssues: string[]
+      injuries: string[]
+      reminderEnabled: boolean | null
+      reminderHour: number | null
       updatedAt: Date
     }, ExtArgs["result"]["userProfile"]>
     composites: {}
@@ -9407,13 +9616,22 @@ export namespace Prisma {
     readonly id: FieldRef<"UserProfile", 'String'>
     readonly userId: FieldRef<"UserProfile", 'String'>
     readonly goalId: FieldRef<"UserProfile", 'String'>
+    readonly goalDetail: FieldRef<"UserProfile", 'String'>
     readonly weightKg: FieldRef<"UserProfile", 'Decimal'>
+    readonly targetWeightKg: FieldRef<"UserProfile", 'Decimal'>
+    readonly pace: FieldRef<"UserProfile", 'Pace'>
     readonly heightCm: FieldRef<"UserProfile", 'Int'>
     readonly age: FieldRef<"UserProfile", 'Int'>
     readonly gender: FieldRef<"UserProfile", 'Gender'>
     readonly daysPerWeek: FieldRef<"UserProfile", 'Int'>
+    readonly trainingDays: FieldRef<"UserProfile", 'Int[]'>
     readonly experience: FieldRef<"UserProfile", 'ExperienceLevel'>
     readonly equipment: FieldRef<"UserProfile", 'EquipmentAccess'>
+    readonly focusAreas: FieldRef<"UserProfile", 'String[]'>
+    readonly bodyIssues: FieldRef<"UserProfile", 'String[]'>
+    readonly injuries: FieldRef<"UserProfile", 'String[]'>
+    readonly reminderEnabled: FieldRef<"UserProfile", 'Boolean'>
+    readonly reminderHour: FieldRef<"UserProfile", 'Int'>
     readonly updatedAt: FieldRef<"UserProfile", 'DateTime'>
   }
     
@@ -13113,6 +13331,1031 @@ export namespace Prisma {
      * Omit specific fields from the Verification
      */
     omit?: VerificationOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model RateLimit
+   */
+
+  export type AggregateRateLimit = {
+    _count: RateLimitCountAggregateOutputType | null
+    _avg: RateLimitAvgAggregateOutputType | null
+    _sum: RateLimitSumAggregateOutputType | null
+    _min: RateLimitMinAggregateOutputType | null
+    _max: RateLimitMaxAggregateOutputType | null
+  }
+
+  export type RateLimitAvgAggregateOutputType = {
+    count: number | null
+    lastRequest: number | null
+  }
+
+  export type RateLimitSumAggregateOutputType = {
+    count: number | null
+    lastRequest: bigint | null
+  }
+
+  export type RateLimitMinAggregateOutputType = {
+    id: string | null
+    key: string | null
+    count: number | null
+    lastRequest: bigint | null
+  }
+
+  export type RateLimitMaxAggregateOutputType = {
+    id: string | null
+    key: string | null
+    count: number | null
+    lastRequest: bigint | null
+  }
+
+  export type RateLimitCountAggregateOutputType = {
+    id: number
+    key: number
+    count: number
+    lastRequest: number
+    _all: number
+  }
+
+
+  export type RateLimitAvgAggregateInputType = {
+    count?: true
+    lastRequest?: true
+  }
+
+  export type RateLimitSumAggregateInputType = {
+    count?: true
+    lastRequest?: true
+  }
+
+  export type RateLimitMinAggregateInputType = {
+    id?: true
+    key?: true
+    count?: true
+    lastRequest?: true
+  }
+
+  export type RateLimitMaxAggregateInputType = {
+    id?: true
+    key?: true
+    count?: true
+    lastRequest?: true
+  }
+
+  export type RateLimitCountAggregateInputType = {
+    id?: true
+    key?: true
+    count?: true
+    lastRequest?: true
+    _all?: true
+  }
+
+  export type RateLimitAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RateLimit to aggregate.
+     */
+    where?: RateLimitWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RateLimits to fetch.
+     */
+    orderBy?: RateLimitOrderByWithRelationInput | RateLimitOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RateLimitWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RateLimits from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RateLimits.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RateLimits
+    **/
+    _count?: true | RateLimitCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: RateLimitAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RateLimitSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RateLimitMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RateLimitMaxAggregateInputType
+  }
+
+  export type GetRateLimitAggregateType<T extends RateLimitAggregateArgs> = {
+        [P in keyof T & keyof AggregateRateLimit]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRateLimit[P]>
+      : GetScalarType<T[P], AggregateRateLimit[P]>
+  }
+
+
+
+
+  export type RateLimitGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RateLimitWhereInput
+    orderBy?: RateLimitOrderByWithAggregationInput | RateLimitOrderByWithAggregationInput[]
+    by: RateLimitScalarFieldEnum[] | RateLimitScalarFieldEnum
+    having?: RateLimitScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RateLimitCountAggregateInputType | true
+    _avg?: RateLimitAvgAggregateInputType
+    _sum?: RateLimitSumAggregateInputType
+    _min?: RateLimitMinAggregateInputType
+    _max?: RateLimitMaxAggregateInputType
+  }
+
+  export type RateLimitGroupByOutputType = {
+    id: string
+    key: string
+    count: number
+    lastRequest: bigint
+    _count: RateLimitCountAggregateOutputType | null
+    _avg: RateLimitAvgAggregateOutputType | null
+    _sum: RateLimitSumAggregateOutputType | null
+    _min: RateLimitMinAggregateOutputType | null
+    _max: RateLimitMaxAggregateOutputType | null
+  }
+
+  type GetRateLimitGroupByPayload<T extends RateLimitGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RateLimitGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RateLimitGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RateLimitGroupByOutputType[P]>
+            : GetScalarType<T[P], RateLimitGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RateLimitSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    key?: boolean
+    count?: boolean
+    lastRequest?: boolean
+  }, ExtArgs["result"]["rateLimit"]>
+
+  export type RateLimitSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    key?: boolean
+    count?: boolean
+    lastRequest?: boolean
+  }, ExtArgs["result"]["rateLimit"]>
+
+  export type RateLimitSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    key?: boolean
+    count?: boolean
+    lastRequest?: boolean
+  }, ExtArgs["result"]["rateLimit"]>
+
+  export type RateLimitSelectScalar = {
+    id?: boolean
+    key?: boolean
+    count?: boolean
+    lastRequest?: boolean
+  }
+
+  export type RateLimitOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "key" | "count" | "lastRequest", ExtArgs["result"]["rateLimit"]>
+
+  export type $RateLimitPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RateLimit"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      key: string
+      count: number
+      lastRequest: bigint
+    }, ExtArgs["result"]["rateLimit"]>
+    composites: {}
+  }
+
+  type RateLimitGetPayload<S extends boolean | null | undefined | RateLimitDefaultArgs> = $Result.GetResult<Prisma.$RateLimitPayload, S>
+
+  type RateLimitCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<RateLimitFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: RateLimitCountAggregateInputType | true
+    }
+
+  export interface RateLimitDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RateLimit'], meta: { name: 'RateLimit' } }
+    /**
+     * Find zero or one RateLimit that matches the filter.
+     * @param {RateLimitFindUniqueArgs} args - Arguments to find a RateLimit
+     * @example
+     * // Get one RateLimit
+     * const rateLimit = await prisma.rateLimit.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RateLimitFindUniqueArgs>(args: SelectSubset<T, RateLimitFindUniqueArgs<ExtArgs>>): Prisma__RateLimitClient<$Result.GetResult<Prisma.$RateLimitPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one RateLimit that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {RateLimitFindUniqueOrThrowArgs} args - Arguments to find a RateLimit
+     * @example
+     * // Get one RateLimit
+     * const rateLimit = await prisma.rateLimit.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RateLimitFindUniqueOrThrowArgs>(args: SelectSubset<T, RateLimitFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RateLimitClient<$Result.GetResult<Prisma.$RateLimitPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first RateLimit that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RateLimitFindFirstArgs} args - Arguments to find a RateLimit
+     * @example
+     * // Get one RateLimit
+     * const rateLimit = await prisma.rateLimit.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RateLimitFindFirstArgs>(args?: SelectSubset<T, RateLimitFindFirstArgs<ExtArgs>>): Prisma__RateLimitClient<$Result.GetResult<Prisma.$RateLimitPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first RateLimit that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RateLimitFindFirstOrThrowArgs} args - Arguments to find a RateLimit
+     * @example
+     * // Get one RateLimit
+     * const rateLimit = await prisma.rateLimit.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RateLimitFindFirstOrThrowArgs>(args?: SelectSubset<T, RateLimitFindFirstOrThrowArgs<ExtArgs>>): Prisma__RateLimitClient<$Result.GetResult<Prisma.$RateLimitPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more RateLimits that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RateLimitFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RateLimits
+     * const rateLimits = await prisma.rateLimit.findMany()
+     * 
+     * // Get first 10 RateLimits
+     * const rateLimits = await prisma.rateLimit.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const rateLimitWithIdOnly = await prisma.rateLimit.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RateLimitFindManyArgs>(args?: SelectSubset<T, RateLimitFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RateLimitPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a RateLimit.
+     * @param {RateLimitCreateArgs} args - Arguments to create a RateLimit.
+     * @example
+     * // Create one RateLimit
+     * const RateLimit = await prisma.rateLimit.create({
+     *   data: {
+     *     // ... data to create a RateLimit
+     *   }
+     * })
+     * 
+     */
+    create<T extends RateLimitCreateArgs>(args: SelectSubset<T, RateLimitCreateArgs<ExtArgs>>): Prisma__RateLimitClient<$Result.GetResult<Prisma.$RateLimitPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many RateLimits.
+     * @param {RateLimitCreateManyArgs} args - Arguments to create many RateLimits.
+     * @example
+     * // Create many RateLimits
+     * const rateLimit = await prisma.rateLimit.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RateLimitCreateManyArgs>(args?: SelectSubset<T, RateLimitCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many RateLimits and returns the data saved in the database.
+     * @param {RateLimitCreateManyAndReturnArgs} args - Arguments to create many RateLimits.
+     * @example
+     * // Create many RateLimits
+     * const rateLimit = await prisma.rateLimit.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many RateLimits and only return the `id`
+     * const rateLimitWithIdOnly = await prisma.rateLimit.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends RateLimitCreateManyAndReturnArgs>(args?: SelectSubset<T, RateLimitCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RateLimitPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a RateLimit.
+     * @param {RateLimitDeleteArgs} args - Arguments to delete one RateLimit.
+     * @example
+     * // Delete one RateLimit
+     * const RateLimit = await prisma.rateLimit.delete({
+     *   where: {
+     *     // ... filter to delete one RateLimit
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RateLimitDeleteArgs>(args: SelectSubset<T, RateLimitDeleteArgs<ExtArgs>>): Prisma__RateLimitClient<$Result.GetResult<Prisma.$RateLimitPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one RateLimit.
+     * @param {RateLimitUpdateArgs} args - Arguments to update one RateLimit.
+     * @example
+     * // Update one RateLimit
+     * const rateLimit = await prisma.rateLimit.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RateLimitUpdateArgs>(args: SelectSubset<T, RateLimitUpdateArgs<ExtArgs>>): Prisma__RateLimitClient<$Result.GetResult<Prisma.$RateLimitPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more RateLimits.
+     * @param {RateLimitDeleteManyArgs} args - Arguments to filter RateLimits to delete.
+     * @example
+     * // Delete a few RateLimits
+     * const { count } = await prisma.rateLimit.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RateLimitDeleteManyArgs>(args?: SelectSubset<T, RateLimitDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RateLimits.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RateLimitUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RateLimits
+     * const rateLimit = await prisma.rateLimit.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RateLimitUpdateManyArgs>(args: SelectSubset<T, RateLimitUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RateLimits and returns the data updated in the database.
+     * @param {RateLimitUpdateManyAndReturnArgs} args - Arguments to update many RateLimits.
+     * @example
+     * // Update many RateLimits
+     * const rateLimit = await prisma.rateLimit.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more RateLimits and only return the `id`
+     * const rateLimitWithIdOnly = await prisma.rateLimit.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends RateLimitUpdateManyAndReturnArgs>(args: SelectSubset<T, RateLimitUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RateLimitPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one RateLimit.
+     * @param {RateLimitUpsertArgs} args - Arguments to update or create a RateLimit.
+     * @example
+     * // Update or create a RateLimit
+     * const rateLimit = await prisma.rateLimit.upsert({
+     *   create: {
+     *     // ... data to create a RateLimit
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RateLimit we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RateLimitUpsertArgs>(args: SelectSubset<T, RateLimitUpsertArgs<ExtArgs>>): Prisma__RateLimitClient<$Result.GetResult<Prisma.$RateLimitPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of RateLimits.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RateLimitCountArgs} args - Arguments to filter RateLimits to count.
+     * @example
+     * // Count the number of RateLimits
+     * const count = await prisma.rateLimit.count({
+     *   where: {
+     *     // ... the filter for the RateLimits we want to count
+     *   }
+     * })
+    **/
+    count<T extends RateLimitCountArgs>(
+      args?: Subset<T, RateLimitCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RateLimitCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RateLimit.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RateLimitAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RateLimitAggregateArgs>(args: Subset<T, RateLimitAggregateArgs>): Prisma.PrismaPromise<GetRateLimitAggregateType<T>>
+
+    /**
+     * Group by RateLimit.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RateLimitGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RateLimitGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RateLimitGroupByArgs['orderBy'] }
+        : { orderBy?: RateLimitGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RateLimitGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRateLimitGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RateLimit model
+   */
+  readonly fields: RateLimitFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RateLimit.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RateLimitClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RateLimit model
+   */
+  interface RateLimitFieldRefs {
+    readonly id: FieldRef<"RateLimit", 'String'>
+    readonly key: FieldRef<"RateLimit", 'String'>
+    readonly count: FieldRef<"RateLimit", 'Int'>
+    readonly lastRequest: FieldRef<"RateLimit", 'BigInt'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RateLimit findUnique
+   */
+  export type RateLimitFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RateLimit
+     */
+    select?: RateLimitSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RateLimit
+     */
+    omit?: RateLimitOmit<ExtArgs> | null
+    /**
+     * Filter, which RateLimit to fetch.
+     */
+    where: RateLimitWhereUniqueInput
+  }
+
+  /**
+   * RateLimit findUniqueOrThrow
+   */
+  export type RateLimitFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RateLimit
+     */
+    select?: RateLimitSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RateLimit
+     */
+    omit?: RateLimitOmit<ExtArgs> | null
+    /**
+     * Filter, which RateLimit to fetch.
+     */
+    where: RateLimitWhereUniqueInput
+  }
+
+  /**
+   * RateLimit findFirst
+   */
+  export type RateLimitFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RateLimit
+     */
+    select?: RateLimitSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RateLimit
+     */
+    omit?: RateLimitOmit<ExtArgs> | null
+    /**
+     * Filter, which RateLimit to fetch.
+     */
+    where?: RateLimitWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RateLimits to fetch.
+     */
+    orderBy?: RateLimitOrderByWithRelationInput | RateLimitOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RateLimits.
+     */
+    cursor?: RateLimitWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RateLimits from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RateLimits.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RateLimits.
+     */
+    distinct?: RateLimitScalarFieldEnum | RateLimitScalarFieldEnum[]
+  }
+
+  /**
+   * RateLimit findFirstOrThrow
+   */
+  export type RateLimitFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RateLimit
+     */
+    select?: RateLimitSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RateLimit
+     */
+    omit?: RateLimitOmit<ExtArgs> | null
+    /**
+     * Filter, which RateLimit to fetch.
+     */
+    where?: RateLimitWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RateLimits to fetch.
+     */
+    orderBy?: RateLimitOrderByWithRelationInput | RateLimitOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RateLimits.
+     */
+    cursor?: RateLimitWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RateLimits from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RateLimits.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RateLimits.
+     */
+    distinct?: RateLimitScalarFieldEnum | RateLimitScalarFieldEnum[]
+  }
+
+  /**
+   * RateLimit findMany
+   */
+  export type RateLimitFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RateLimit
+     */
+    select?: RateLimitSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RateLimit
+     */
+    omit?: RateLimitOmit<ExtArgs> | null
+    /**
+     * Filter, which RateLimits to fetch.
+     */
+    where?: RateLimitWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RateLimits to fetch.
+     */
+    orderBy?: RateLimitOrderByWithRelationInput | RateLimitOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RateLimits.
+     */
+    cursor?: RateLimitWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RateLimits from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RateLimits.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RateLimits.
+     */
+    distinct?: RateLimitScalarFieldEnum | RateLimitScalarFieldEnum[]
+  }
+
+  /**
+   * RateLimit create
+   */
+  export type RateLimitCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RateLimit
+     */
+    select?: RateLimitSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RateLimit
+     */
+    omit?: RateLimitOmit<ExtArgs> | null
+    /**
+     * The data needed to create a RateLimit.
+     */
+    data: XOR<RateLimitCreateInput, RateLimitUncheckedCreateInput>
+  }
+
+  /**
+   * RateLimit createMany
+   */
+  export type RateLimitCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RateLimits.
+     */
+    data: RateLimitCreateManyInput | RateLimitCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RateLimit createManyAndReturn
+   */
+  export type RateLimitCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RateLimit
+     */
+    select?: RateLimitSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the RateLimit
+     */
+    omit?: RateLimitOmit<ExtArgs> | null
+    /**
+     * The data used to create many RateLimits.
+     */
+    data: RateLimitCreateManyInput | RateLimitCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RateLimit update
+   */
+  export type RateLimitUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RateLimit
+     */
+    select?: RateLimitSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RateLimit
+     */
+    omit?: RateLimitOmit<ExtArgs> | null
+    /**
+     * The data needed to update a RateLimit.
+     */
+    data: XOR<RateLimitUpdateInput, RateLimitUncheckedUpdateInput>
+    /**
+     * Choose, which RateLimit to update.
+     */
+    where: RateLimitWhereUniqueInput
+  }
+
+  /**
+   * RateLimit updateMany
+   */
+  export type RateLimitUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RateLimits.
+     */
+    data: XOR<RateLimitUpdateManyMutationInput, RateLimitUncheckedUpdateManyInput>
+    /**
+     * Filter which RateLimits to update
+     */
+    where?: RateLimitWhereInput
+    /**
+     * Limit how many RateLimits to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * RateLimit updateManyAndReturn
+   */
+  export type RateLimitUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RateLimit
+     */
+    select?: RateLimitSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the RateLimit
+     */
+    omit?: RateLimitOmit<ExtArgs> | null
+    /**
+     * The data used to update RateLimits.
+     */
+    data: XOR<RateLimitUpdateManyMutationInput, RateLimitUncheckedUpdateManyInput>
+    /**
+     * Filter which RateLimits to update
+     */
+    where?: RateLimitWhereInput
+    /**
+     * Limit how many RateLimits to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * RateLimit upsert
+   */
+  export type RateLimitUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RateLimit
+     */
+    select?: RateLimitSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RateLimit
+     */
+    omit?: RateLimitOmit<ExtArgs> | null
+    /**
+     * The filter to search for the RateLimit to update in case it exists.
+     */
+    where: RateLimitWhereUniqueInput
+    /**
+     * In case the RateLimit found by the `where` argument doesn't exist, create a new RateLimit with this data.
+     */
+    create: XOR<RateLimitCreateInput, RateLimitUncheckedCreateInput>
+    /**
+     * In case the RateLimit was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RateLimitUpdateInput, RateLimitUncheckedUpdateInput>
+  }
+
+  /**
+   * RateLimit delete
+   */
+  export type RateLimitDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RateLimit
+     */
+    select?: RateLimitSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RateLimit
+     */
+    omit?: RateLimitOmit<ExtArgs> | null
+    /**
+     * Filter which RateLimit to delete.
+     */
+    where: RateLimitWhereUniqueInput
+  }
+
+  /**
+   * RateLimit deleteMany
+   */
+  export type RateLimitDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RateLimits to delete
+     */
+    where?: RateLimitWhereInput
+    /**
+     * Limit how many RateLimits to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * RateLimit without action
+   */
+  export type RateLimitDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RateLimit
+     */
+    select?: RateLimitSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RateLimit
+     */
+    omit?: RateLimitOmit<ExtArgs> | null
   }
 
 
@@ -23177,13 +24420,22 @@ export namespace Prisma {
     id: 'id',
     userId: 'userId',
     goalId: 'goalId',
+    goalDetail: 'goalDetail',
     weightKg: 'weightKg',
+    targetWeightKg: 'targetWeightKg',
+    pace: 'pace',
     heightCm: 'heightCm',
     age: 'age',
     gender: 'gender',
     daysPerWeek: 'daysPerWeek',
+    trainingDays: 'trainingDays',
     experience: 'experience',
     equipment: 'equipment',
+    focusAreas: 'focusAreas',
+    bodyIssues: 'bodyIssues',
+    injuries: 'injuries',
+    reminderEnabled: 'reminderEnabled',
+    reminderHour: 'reminderHour',
     updatedAt: 'updatedAt'
   };
 
@@ -23233,6 +24485,16 @@ export namespace Prisma {
   };
 
   export type VerificationScalarFieldEnum = (typeof VerificationScalarFieldEnum)[keyof typeof VerificationScalarFieldEnum]
+
+
+  export const RateLimitScalarFieldEnum: {
+    id: 'id',
+    key: 'key',
+    count: 'count',
+    lastRequest: 'lastRequest'
+  };
+
+  export type RateLimitScalarFieldEnum = (typeof RateLimitScalarFieldEnum)[keyof typeof RateLimitScalarFieldEnum]
 
 
   export const WorkoutSessionScalarFieldEnum: {
@@ -23510,6 +24772,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Pace'
+   */
+  export type EnumPaceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Pace'>
+    
+
+
+  /**
+   * Reference to a field of type 'Pace[]'
+   */
+  export type ListEnumPaceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Pace[]'>
+    
+
+
+  /**
    * Reference to a field of type 'Gender'
    */
   export type EnumGenderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Gender'>
@@ -23520,6 +24796,20 @@ export namespace Prisma {
    * Reference to a field of type 'Gender[]'
    */
   export type ListEnumGenderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Gender[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'BigInt'
+   */
+  export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt'>
+    
+
+
+  /**
+   * Reference to a field of type 'BigInt[]'
+   */
+  export type ListBigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt[]'>
     
 
 
@@ -23952,13 +25242,22 @@ export namespace Prisma {
     id?: StringFilter<"UserProfile"> | string
     userId?: StringFilter<"UserProfile"> | string
     goalId?: StringNullableFilter<"UserProfile"> | string | null
+    goalDetail?: StringNullableFilter<"UserProfile"> | string | null
     weightKg?: DecimalNullableFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: DecimalNullableFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    pace?: EnumPaceNullableFilter<"UserProfile"> | $Enums.Pace | null
     heightCm?: IntNullableFilter<"UserProfile"> | number | null
     age?: IntNullableFilter<"UserProfile"> | number | null
     gender?: EnumGenderNullableFilter<"UserProfile"> | $Enums.Gender | null
     daysPerWeek?: IntNullableFilter<"UserProfile"> | number | null
+    trainingDays?: IntNullableListFilter<"UserProfile">
     experience?: EnumExperienceLevelNullableFilter<"UserProfile"> | $Enums.ExperienceLevel | null
     equipment?: EnumEquipmentAccessNullableFilter<"UserProfile"> | $Enums.EquipmentAccess | null
+    focusAreas?: StringNullableListFilter<"UserProfile">
+    bodyIssues?: StringNullableListFilter<"UserProfile">
+    injuries?: StringNullableListFilter<"UserProfile">
+    reminderEnabled?: BoolNullableFilter<"UserProfile"> | boolean | null
+    reminderHour?: IntNullableFilter<"UserProfile"> | number | null
     updatedAt?: DateTimeFilter<"UserProfile"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }
@@ -23967,13 +25266,22 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     goalId?: SortOrderInput | SortOrder
+    goalDetail?: SortOrderInput | SortOrder
     weightKg?: SortOrderInput | SortOrder
+    targetWeightKg?: SortOrderInput | SortOrder
+    pace?: SortOrderInput | SortOrder
     heightCm?: SortOrderInput | SortOrder
     age?: SortOrderInput | SortOrder
     gender?: SortOrderInput | SortOrder
     daysPerWeek?: SortOrderInput | SortOrder
+    trainingDays?: SortOrder
     experience?: SortOrderInput | SortOrder
     equipment?: SortOrderInput | SortOrder
+    focusAreas?: SortOrder
+    bodyIssues?: SortOrder
+    injuries?: SortOrder
+    reminderEnabled?: SortOrderInput | SortOrder
+    reminderHour?: SortOrderInput | SortOrder
     updatedAt?: SortOrder
     user?: UserOrderByWithRelationInput
   }
@@ -23985,13 +25293,22 @@ export namespace Prisma {
     OR?: UserProfileWhereInput[]
     NOT?: UserProfileWhereInput | UserProfileWhereInput[]
     goalId?: StringNullableFilter<"UserProfile"> | string | null
+    goalDetail?: StringNullableFilter<"UserProfile"> | string | null
     weightKg?: DecimalNullableFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: DecimalNullableFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    pace?: EnumPaceNullableFilter<"UserProfile"> | $Enums.Pace | null
     heightCm?: IntNullableFilter<"UserProfile"> | number | null
     age?: IntNullableFilter<"UserProfile"> | number | null
     gender?: EnumGenderNullableFilter<"UserProfile"> | $Enums.Gender | null
     daysPerWeek?: IntNullableFilter<"UserProfile"> | number | null
+    trainingDays?: IntNullableListFilter<"UserProfile">
     experience?: EnumExperienceLevelNullableFilter<"UserProfile"> | $Enums.ExperienceLevel | null
     equipment?: EnumEquipmentAccessNullableFilter<"UserProfile"> | $Enums.EquipmentAccess | null
+    focusAreas?: StringNullableListFilter<"UserProfile">
+    bodyIssues?: StringNullableListFilter<"UserProfile">
+    injuries?: StringNullableListFilter<"UserProfile">
+    reminderEnabled?: BoolNullableFilter<"UserProfile"> | boolean | null
+    reminderHour?: IntNullableFilter<"UserProfile"> | number | null
     updatedAt?: DateTimeFilter<"UserProfile"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }, "id" | "userId">
@@ -24000,13 +25317,22 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     goalId?: SortOrderInput | SortOrder
+    goalDetail?: SortOrderInput | SortOrder
     weightKg?: SortOrderInput | SortOrder
+    targetWeightKg?: SortOrderInput | SortOrder
+    pace?: SortOrderInput | SortOrder
     heightCm?: SortOrderInput | SortOrder
     age?: SortOrderInput | SortOrder
     gender?: SortOrderInput | SortOrder
     daysPerWeek?: SortOrderInput | SortOrder
+    trainingDays?: SortOrder
     experience?: SortOrderInput | SortOrder
     equipment?: SortOrderInput | SortOrder
+    focusAreas?: SortOrder
+    bodyIssues?: SortOrder
+    injuries?: SortOrder
+    reminderEnabled?: SortOrderInput | SortOrder
+    reminderHour?: SortOrderInput | SortOrder
     updatedAt?: SortOrder
     _count?: UserProfileCountOrderByAggregateInput
     _avg?: UserProfileAvgOrderByAggregateInput
@@ -24022,13 +25348,22 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"UserProfile"> | string
     userId?: StringWithAggregatesFilter<"UserProfile"> | string
     goalId?: StringNullableWithAggregatesFilter<"UserProfile"> | string | null
+    goalDetail?: StringNullableWithAggregatesFilter<"UserProfile"> | string | null
     weightKg?: DecimalNullableWithAggregatesFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: DecimalNullableWithAggregatesFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    pace?: EnumPaceNullableWithAggregatesFilter<"UserProfile"> | $Enums.Pace | null
     heightCm?: IntNullableWithAggregatesFilter<"UserProfile"> | number | null
     age?: IntNullableWithAggregatesFilter<"UserProfile"> | number | null
     gender?: EnumGenderNullableWithAggregatesFilter<"UserProfile"> | $Enums.Gender | null
     daysPerWeek?: IntNullableWithAggregatesFilter<"UserProfile"> | number | null
+    trainingDays?: IntNullableListFilter<"UserProfile">
     experience?: EnumExperienceLevelNullableWithAggregatesFilter<"UserProfile"> | $Enums.ExperienceLevel | null
     equipment?: EnumEquipmentAccessNullableWithAggregatesFilter<"UserProfile"> | $Enums.EquipmentAccess | null
+    focusAreas?: StringNullableListFilter<"UserProfile">
+    bodyIssues?: StringNullableListFilter<"UserProfile">
+    injuries?: StringNullableListFilter<"UserProfile">
+    reminderEnabled?: BoolNullableWithAggregatesFilter<"UserProfile"> | boolean | null
+    reminderHour?: IntNullableWithAggregatesFilter<"UserProfile"> | number | null
     updatedAt?: DateTimeWithAggregatesFilter<"UserProfile"> | Date | string
   }
 
@@ -24252,6 +25587,55 @@ export namespace Prisma {
     expiresAt?: DateTimeWithAggregatesFilter<"Verification"> | Date | string
     createdAt?: DateTimeWithAggregatesFilter<"Verification"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Verification"> | Date | string
+  }
+
+  export type RateLimitWhereInput = {
+    AND?: RateLimitWhereInput | RateLimitWhereInput[]
+    OR?: RateLimitWhereInput[]
+    NOT?: RateLimitWhereInput | RateLimitWhereInput[]
+    id?: StringFilter<"RateLimit"> | string
+    key?: StringFilter<"RateLimit"> | string
+    count?: IntFilter<"RateLimit"> | number
+    lastRequest?: BigIntFilter<"RateLimit"> | bigint | number
+  }
+
+  export type RateLimitOrderByWithRelationInput = {
+    id?: SortOrder
+    key?: SortOrder
+    count?: SortOrder
+    lastRequest?: SortOrder
+  }
+
+  export type RateLimitWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    key?: string
+    AND?: RateLimitWhereInput | RateLimitWhereInput[]
+    OR?: RateLimitWhereInput[]
+    NOT?: RateLimitWhereInput | RateLimitWhereInput[]
+    count?: IntFilter<"RateLimit"> | number
+    lastRequest?: BigIntFilter<"RateLimit"> | bigint | number
+  }, "id" | "key">
+
+  export type RateLimitOrderByWithAggregationInput = {
+    id?: SortOrder
+    key?: SortOrder
+    count?: SortOrder
+    lastRequest?: SortOrder
+    _count?: RateLimitCountOrderByAggregateInput
+    _avg?: RateLimitAvgOrderByAggregateInput
+    _max?: RateLimitMaxOrderByAggregateInput
+    _min?: RateLimitMinOrderByAggregateInput
+    _sum?: RateLimitSumOrderByAggregateInput
+  }
+
+  export type RateLimitScalarWhereWithAggregatesInput = {
+    AND?: RateLimitScalarWhereWithAggregatesInput | RateLimitScalarWhereWithAggregatesInput[]
+    OR?: RateLimitScalarWhereWithAggregatesInput[]
+    NOT?: RateLimitScalarWhereWithAggregatesInput | RateLimitScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"RateLimit"> | string
+    key?: StringWithAggregatesFilter<"RateLimit"> | string
+    count?: IntWithAggregatesFilter<"RateLimit"> | number
+    lastRequest?: BigIntWithAggregatesFilter<"RateLimit"> | bigint | number
   }
 
   export type WorkoutSessionWhereInput = {
@@ -25216,13 +26600,22 @@ export namespace Prisma {
   export type UserProfileCreateInput = {
     id?: string
     goalId?: string | null
+    goalDetail?: string | null
     weightKg?: Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: Decimal | DecimalJsLike | number | string | null
+    pace?: $Enums.Pace | null
     heightCm?: number | null
     age?: number | null
     gender?: $Enums.Gender | null
     daysPerWeek?: number | null
+    trainingDays?: UserProfileCreatetrainingDaysInput | number[]
     experience?: $Enums.ExperienceLevel | null
     equipment?: $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileCreatefocusAreasInput | string[]
+    bodyIssues?: UserProfileCreatebodyIssuesInput | string[]
+    injuries?: UserProfileCreateinjuriesInput | string[]
+    reminderEnabled?: boolean | null
+    reminderHour?: number | null
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutProfileInput
   }
@@ -25231,26 +26624,44 @@ export namespace Prisma {
     id?: string
     userId: string
     goalId?: string | null
+    goalDetail?: string | null
     weightKg?: Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: Decimal | DecimalJsLike | number | string | null
+    pace?: $Enums.Pace | null
     heightCm?: number | null
     age?: number | null
     gender?: $Enums.Gender | null
     daysPerWeek?: number | null
+    trainingDays?: UserProfileCreatetrainingDaysInput | number[]
     experience?: $Enums.ExperienceLevel | null
     equipment?: $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileCreatefocusAreasInput | string[]
+    bodyIssues?: UserProfileCreatebodyIssuesInput | string[]
+    injuries?: UserProfileCreateinjuriesInput | string[]
+    reminderEnabled?: boolean | null
+    reminderHour?: number | null
     updatedAt?: Date | string
   }
 
   export type UserProfileUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     goalId?: NullableStringFieldUpdateOperationsInput | string | null
+    goalDetail?: NullableStringFieldUpdateOperationsInput | string | null
     weightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    pace?: NullableEnumPaceFieldUpdateOperationsInput | $Enums.Pace | null
     heightCm?: NullableIntFieldUpdateOperationsInput | number | null
     age?: NullableIntFieldUpdateOperationsInput | number | null
     gender?: NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
     daysPerWeek?: NullableIntFieldUpdateOperationsInput | number | null
+    trainingDays?: UserProfileUpdatetrainingDaysInput | number[]
     experience?: NullableEnumExperienceLevelFieldUpdateOperationsInput | $Enums.ExperienceLevel | null
     equipment?: NullableEnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileUpdatefocusAreasInput | string[]
+    bodyIssues?: UserProfileUpdatebodyIssuesInput | string[]
+    injuries?: UserProfileUpdateinjuriesInput | string[]
+    reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutProfileNestedInput
   }
@@ -25259,13 +26670,22 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     goalId?: NullableStringFieldUpdateOperationsInput | string | null
+    goalDetail?: NullableStringFieldUpdateOperationsInput | string | null
     weightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    pace?: NullableEnumPaceFieldUpdateOperationsInput | $Enums.Pace | null
     heightCm?: NullableIntFieldUpdateOperationsInput | number | null
     age?: NullableIntFieldUpdateOperationsInput | number | null
     gender?: NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
     daysPerWeek?: NullableIntFieldUpdateOperationsInput | number | null
+    trainingDays?: UserProfileUpdatetrainingDaysInput | number[]
     experience?: NullableEnumExperienceLevelFieldUpdateOperationsInput | $Enums.ExperienceLevel | null
     equipment?: NullableEnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileUpdatefocusAreasInput | string[]
+    bodyIssues?: UserProfileUpdatebodyIssuesInput | string[]
+    injuries?: UserProfileUpdateinjuriesInput | string[]
+    reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -25273,26 +26693,44 @@ export namespace Prisma {
     id?: string
     userId: string
     goalId?: string | null
+    goalDetail?: string | null
     weightKg?: Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: Decimal | DecimalJsLike | number | string | null
+    pace?: $Enums.Pace | null
     heightCm?: number | null
     age?: number | null
     gender?: $Enums.Gender | null
     daysPerWeek?: number | null
+    trainingDays?: UserProfileCreatetrainingDaysInput | number[]
     experience?: $Enums.ExperienceLevel | null
     equipment?: $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileCreatefocusAreasInput | string[]
+    bodyIssues?: UserProfileCreatebodyIssuesInput | string[]
+    injuries?: UserProfileCreateinjuriesInput | string[]
+    reminderEnabled?: boolean | null
+    reminderHour?: number | null
     updatedAt?: Date | string
   }
 
   export type UserProfileUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     goalId?: NullableStringFieldUpdateOperationsInput | string | null
+    goalDetail?: NullableStringFieldUpdateOperationsInput | string | null
     weightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    pace?: NullableEnumPaceFieldUpdateOperationsInput | $Enums.Pace | null
     heightCm?: NullableIntFieldUpdateOperationsInput | number | null
     age?: NullableIntFieldUpdateOperationsInput | number | null
     gender?: NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
     daysPerWeek?: NullableIntFieldUpdateOperationsInput | number | null
+    trainingDays?: UserProfileUpdatetrainingDaysInput | number[]
     experience?: NullableEnumExperienceLevelFieldUpdateOperationsInput | $Enums.ExperienceLevel | null
     equipment?: NullableEnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileUpdatefocusAreasInput | string[]
+    bodyIssues?: UserProfileUpdatebodyIssuesInput | string[]
+    injuries?: UserProfileUpdateinjuriesInput | string[]
+    reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -25300,13 +26738,22 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     goalId?: NullableStringFieldUpdateOperationsInput | string | null
+    goalDetail?: NullableStringFieldUpdateOperationsInput | string | null
     weightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    pace?: NullableEnumPaceFieldUpdateOperationsInput | $Enums.Pace | null
     heightCm?: NullableIntFieldUpdateOperationsInput | number | null
     age?: NullableIntFieldUpdateOperationsInput | number | null
     gender?: NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
     daysPerWeek?: NullableIntFieldUpdateOperationsInput | number | null
+    trainingDays?: UserProfileUpdatetrainingDaysInput | number[]
     experience?: NullableEnumExperienceLevelFieldUpdateOperationsInput | $Enums.ExperienceLevel | null
     equipment?: NullableEnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileUpdatefocusAreasInput | string[]
+    bodyIssues?: UserProfileUpdatebodyIssuesInput | string[]
+    injuries?: UserProfileUpdateinjuriesInput | string[]
+    reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -25558,6 +27005,55 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RateLimitCreateInput = {
+    id?: string
+    key: string
+    count: number
+    lastRequest: bigint | number
+  }
+
+  export type RateLimitUncheckedCreateInput = {
+    id?: string
+    key: string
+    count: number
+    lastRequest: bigint | number
+  }
+
+  export type RateLimitUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    count?: IntFieldUpdateOperationsInput | number
+    lastRequest?: BigIntFieldUpdateOperationsInput | bigint | number
+  }
+
+  export type RateLimitUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    count?: IntFieldUpdateOperationsInput | number
+    lastRequest?: BigIntFieldUpdateOperationsInput | bigint | number
+  }
+
+  export type RateLimitCreateManyInput = {
+    id?: string
+    key: string
+    count: number
+    lastRequest: bigint | number
+  }
+
+  export type RateLimitUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    count?: IntFieldUpdateOperationsInput | number
+    lastRequest?: BigIntFieldUpdateOperationsInput | bigint | number
+  }
+
+  export type RateLimitUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    count?: IntFieldUpdateOperationsInput | number
+    lastRequest?: BigIntFieldUpdateOperationsInput | bigint | number
   }
 
   export type WorkoutSessionCreateInput = {
@@ -26665,6 +28161,13 @@ export namespace Prisma {
     not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
   }
 
+  export type EnumPaceNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.Pace | EnumPaceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumPaceNullableFilter<$PrismaModel> | $Enums.Pace | null
+  }
+
   export type IntNullableFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
@@ -26683,6 +28186,14 @@ export namespace Prisma {
     not?: NestedEnumGenderNullableFilter<$PrismaModel> | $Enums.Gender | null
   }
 
+  export type IntNullableListFilter<$PrismaModel = never> = {
+    equals?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    has?: number | IntFieldRefInput<$PrismaModel> | null
+    hasEvery?: number[] | ListIntFieldRefInput<$PrismaModel>
+    hasSome?: number[] | ListIntFieldRefInput<$PrismaModel>
+    isEmpty?: boolean
+  }
+
   export type EnumExperienceLevelNullableFilter<$PrismaModel = never> = {
     equals?: $Enums.ExperienceLevel | EnumExperienceLevelFieldRefInput<$PrismaModel> | null
     in?: $Enums.ExperienceLevel[] | ListEnumExperienceLevelFieldRefInput<$PrismaModel> | null
@@ -26697,38 +28208,68 @@ export namespace Prisma {
     not?: NestedEnumEquipmentAccessNullableFilter<$PrismaModel> | $Enums.EquipmentAccess | null
   }
 
+  export type StringNullableListFilter<$PrismaModel = never> = {
+    equals?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    has?: string | StringFieldRefInput<$PrismaModel> | null
+    hasEvery?: string[] | ListStringFieldRefInput<$PrismaModel>
+    hasSome?: string[] | ListStringFieldRefInput<$PrismaModel>
+    isEmpty?: boolean
+  }
+
+  export type BoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
   export type UserProfileCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
     goalId?: SortOrder
+    goalDetail?: SortOrder
     weightKg?: SortOrder
+    targetWeightKg?: SortOrder
+    pace?: SortOrder
     heightCm?: SortOrder
     age?: SortOrder
     gender?: SortOrder
     daysPerWeek?: SortOrder
+    trainingDays?: SortOrder
     experience?: SortOrder
     equipment?: SortOrder
+    focusAreas?: SortOrder
+    bodyIssues?: SortOrder
+    injuries?: SortOrder
+    reminderEnabled?: SortOrder
+    reminderHour?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type UserProfileAvgOrderByAggregateInput = {
     weightKg?: SortOrder
+    targetWeightKg?: SortOrder
     heightCm?: SortOrder
     age?: SortOrder
     daysPerWeek?: SortOrder
+    trainingDays?: SortOrder
+    reminderHour?: SortOrder
   }
 
   export type UserProfileMaxOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
     goalId?: SortOrder
+    goalDetail?: SortOrder
     weightKg?: SortOrder
+    targetWeightKg?: SortOrder
+    pace?: SortOrder
     heightCm?: SortOrder
     age?: SortOrder
     gender?: SortOrder
     daysPerWeek?: SortOrder
     experience?: SortOrder
     equipment?: SortOrder
+    reminderEnabled?: SortOrder
+    reminderHour?: SortOrder
     updatedAt?: SortOrder
   }
 
@@ -26736,21 +28277,29 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     goalId?: SortOrder
+    goalDetail?: SortOrder
     weightKg?: SortOrder
+    targetWeightKg?: SortOrder
+    pace?: SortOrder
     heightCm?: SortOrder
     age?: SortOrder
     gender?: SortOrder
     daysPerWeek?: SortOrder
     experience?: SortOrder
     equipment?: SortOrder
+    reminderEnabled?: SortOrder
+    reminderHour?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type UserProfileSumOrderByAggregateInput = {
     weightKg?: SortOrder
+    targetWeightKg?: SortOrder
     heightCm?: SortOrder
     age?: SortOrder
     daysPerWeek?: SortOrder
+    trainingDays?: SortOrder
+    reminderHour?: SortOrder
   }
 
   export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -26767,6 +28316,16 @@ export namespace Prisma {
     _sum?: NestedDecimalNullableFilter<$PrismaModel>
     _min?: NestedDecimalNullableFilter<$PrismaModel>
     _max?: NestedDecimalNullableFilter<$PrismaModel>
+  }
+
+  export type EnumPaceNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.Pace | EnumPaceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumPaceNullableWithAggregatesFilter<$PrismaModel> | $Enums.Pace | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumPaceNullableFilter<$PrismaModel>
+    _max?: NestedEnumPaceNullableFilter<$PrismaModel>
   }
 
   export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -26813,6 +28372,14 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedEnumEquipmentAccessNullableFilter<$PrismaModel>
     _max?: NestedEnumEquipmentAccessNullableFilter<$PrismaModel>
+  }
+
+  export type BoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
   export type SessionCountOrderByAggregateInput = {
@@ -26946,6 +28513,64 @@ export namespace Prisma {
     expiresAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type BigIntFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    in?: bigint[] | number[] | ListBigIntFieldRefInput<$PrismaModel>
+    notIn?: bigint[] | number[] | ListBigIntFieldRefInput<$PrismaModel>
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntFilter<$PrismaModel> | bigint | number
+  }
+
+  export type RateLimitCountOrderByAggregateInput = {
+    id?: SortOrder
+    key?: SortOrder
+    count?: SortOrder
+    lastRequest?: SortOrder
+  }
+
+  export type RateLimitAvgOrderByAggregateInput = {
+    count?: SortOrder
+    lastRequest?: SortOrder
+  }
+
+  export type RateLimitMaxOrderByAggregateInput = {
+    id?: SortOrder
+    key?: SortOrder
+    count?: SortOrder
+    lastRequest?: SortOrder
+  }
+
+  export type RateLimitMinOrderByAggregateInput = {
+    id?: SortOrder
+    key?: SortOrder
+    count?: SortOrder
+    lastRequest?: SortOrder
+  }
+
+  export type RateLimitSumOrderByAggregateInput = {
+    count?: SortOrder
+    lastRequest?: SortOrder
+  }
+
+  export type BigIntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    in?: bigint[] | number[] | ListBigIntFieldRefInput<$PrismaModel>
+    notIn?: bigint[] | number[] | ListBigIntFieldRefInput<$PrismaModel>
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntWithAggregatesFilter<$PrismaModel> | bigint | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedBigIntFilter<$PrismaModel>
+    _min?: NestedBigIntFilter<$PrismaModel>
+    _max?: NestedBigIntFilter<$PrismaModel>
   }
 
   export type WorkoutExerciseListRelationFilter = {
@@ -28085,6 +29710,22 @@ export namespace Prisma {
     deleteMany?: NutritionAdjustmentLogScalarWhereInput | NutritionAdjustmentLogScalarWhereInput[]
   }
 
+  export type UserProfileCreatetrainingDaysInput = {
+    set: number[]
+  }
+
+  export type UserProfileCreatefocusAreasInput = {
+    set: string[]
+  }
+
+  export type UserProfileCreatebodyIssuesInput = {
+    set: string[]
+  }
+
+  export type UserProfileCreateinjuriesInput = {
+    set: string[]
+  }
+
   export type UserCreateNestedOneWithoutProfileInput = {
     create?: XOR<UserCreateWithoutProfileInput, UserUncheckedCreateWithoutProfileInput>
     connectOrCreate?: UserCreateOrConnectWithoutProfileInput
@@ -28099,6 +29740,10 @@ export namespace Prisma {
     divide?: Decimal | DecimalJsLike | number | string
   }
 
+  export type NullableEnumPaceFieldUpdateOperationsInput = {
+    set?: $Enums.Pace | null
+  }
+
   export type NullableIntFieldUpdateOperationsInput = {
     set?: number | null
     increment?: number
@@ -28111,12 +29756,36 @@ export namespace Prisma {
     set?: $Enums.Gender | null
   }
 
+  export type UserProfileUpdatetrainingDaysInput = {
+    set?: number[]
+    push?: number | number[]
+  }
+
   export type NullableEnumExperienceLevelFieldUpdateOperationsInput = {
     set?: $Enums.ExperienceLevel | null
   }
 
   export type NullableEnumEquipmentAccessFieldUpdateOperationsInput = {
     set?: $Enums.EquipmentAccess | null
+  }
+
+  export type UserProfileUpdatefocusAreasInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
+  export type UserProfileUpdatebodyIssuesInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
+  export type UserProfileUpdateinjuriesInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
+  export type NullableBoolFieldUpdateOperationsInput = {
+    set?: boolean | null
   }
 
   export type UserUpdateOneRequiredWithoutProfileNestedInput = {
@@ -28157,6 +29826,14 @@ export namespace Prisma {
     upsert?: UserUpsertWithoutAccountsInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutAccountsInput, UserUpdateWithoutAccountsInput>, UserUncheckedUpdateWithoutAccountsInput>
+  }
+
+  export type BigIntFieldUpdateOperationsInput = {
+    set?: bigint | number
+    increment?: bigint | number
+    decrement?: bigint | number
+    multiply?: bigint | number
+    divide?: bigint | number
   }
 
   export type UserCreateNestedOneWithoutWorkoutSessionsInput = {
@@ -28571,6 +30248,13 @@ export namespace Prisma {
     not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
   }
 
+  export type NestedEnumPaceNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.Pace | EnumPaceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumPaceNullableFilter<$PrismaModel> | $Enums.Pace | null
+  }
+
   export type NestedEnumGenderNullableFilter<$PrismaModel = never> = {
     equals?: $Enums.Gender | EnumGenderFieldRefInput<$PrismaModel> | null
     in?: $Enums.Gender[] | ListEnumGenderFieldRefInput<$PrismaModel> | null
@@ -28592,6 +30276,11 @@ export namespace Prisma {
     not?: NestedEnumEquipmentAccessNullableFilter<$PrismaModel> | $Enums.EquipmentAccess | null
   }
 
+  export type NestedBoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
   export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
     in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
@@ -28606,6 +30295,16 @@ export namespace Prisma {
     _sum?: NestedDecimalNullableFilter<$PrismaModel>
     _min?: NestedDecimalNullableFilter<$PrismaModel>
     _max?: NestedDecimalNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumPaceNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.Pace | EnumPaceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.Pace[] | ListEnumPaceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumPaceNullableWithAggregatesFilter<$PrismaModel> | $Enums.Pace | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumPaceNullableFilter<$PrismaModel>
+    _max?: NestedEnumPaceNullableFilter<$PrismaModel>
   }
 
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -28665,6 +30364,14 @@ export namespace Prisma {
     _max?: NestedEnumEquipmentAccessNullableFilter<$PrismaModel>
   }
 
+  export type NestedBoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
   export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -28688,6 +30395,33 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedBigIntFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    in?: bigint[] | number[] | ListBigIntFieldRefInput<$PrismaModel>
+    notIn?: bigint[] | number[] | ListBigIntFieldRefInput<$PrismaModel>
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntFilter<$PrismaModel> | bigint | number
+  }
+
+  export type NestedBigIntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    in?: bigint[] | number[] | ListBigIntFieldRefInput<$PrismaModel>
+    notIn?: bigint[] | number[] | ListBigIntFieldRefInput<$PrismaModel>
+    lt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    lte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gt?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    gte?: bigint | number | BigIntFieldRefInput<$PrismaModel>
+    not?: NestedBigIntWithAggregatesFilter<$PrismaModel> | bigint | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedBigIntFilter<$PrismaModel>
+    _min?: NestedBigIntFilter<$PrismaModel>
+    _max?: NestedBigIntFilter<$PrismaModel>
   }
   export type NestedJsonFilter<$PrismaModel = never> =
     | PatchUndefined<
@@ -29284,26 +31018,44 @@ export namespace Prisma {
   export type UserProfileCreateWithoutUserInput = {
     id?: string
     goalId?: string | null
+    goalDetail?: string | null
     weightKg?: Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: Decimal | DecimalJsLike | number | string | null
+    pace?: $Enums.Pace | null
     heightCm?: number | null
     age?: number | null
     gender?: $Enums.Gender | null
     daysPerWeek?: number | null
+    trainingDays?: UserProfileCreatetrainingDaysInput | number[]
     experience?: $Enums.ExperienceLevel | null
     equipment?: $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileCreatefocusAreasInput | string[]
+    bodyIssues?: UserProfileCreatebodyIssuesInput | string[]
+    injuries?: UserProfileCreateinjuriesInput | string[]
+    reminderEnabled?: boolean | null
+    reminderHour?: number | null
     updatedAt?: Date | string
   }
 
   export type UserProfileUncheckedCreateWithoutUserInput = {
     id?: string
     goalId?: string | null
+    goalDetail?: string | null
     weightKg?: Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: Decimal | DecimalJsLike | number | string | null
+    pace?: $Enums.Pace | null
     heightCm?: number | null
     age?: number | null
     gender?: $Enums.Gender | null
     daysPerWeek?: number | null
+    trainingDays?: UserProfileCreatetrainingDaysInput | number[]
     experience?: $Enums.ExperienceLevel | null
     equipment?: $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileCreatefocusAreasInput | string[]
+    bodyIssues?: UserProfileCreatebodyIssuesInput | string[]
+    injuries?: UserProfileCreateinjuriesInput | string[]
+    reminderEnabled?: boolean | null
+    reminderHour?: number | null
     updatedAt?: Date | string
   }
 
@@ -29629,26 +31381,44 @@ export namespace Prisma {
   export type UserProfileUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     goalId?: NullableStringFieldUpdateOperationsInput | string | null
+    goalDetail?: NullableStringFieldUpdateOperationsInput | string | null
     weightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    pace?: NullableEnumPaceFieldUpdateOperationsInput | $Enums.Pace | null
     heightCm?: NullableIntFieldUpdateOperationsInput | number | null
     age?: NullableIntFieldUpdateOperationsInput | number | null
     gender?: NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
     daysPerWeek?: NullableIntFieldUpdateOperationsInput | number | null
+    trainingDays?: UserProfileUpdatetrainingDaysInput | number[]
     experience?: NullableEnumExperienceLevelFieldUpdateOperationsInput | $Enums.ExperienceLevel | null
     equipment?: NullableEnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileUpdatefocusAreasInput | string[]
+    bodyIssues?: UserProfileUpdatebodyIssuesInput | string[]
+    injuries?: UserProfileUpdateinjuriesInput | string[]
+    reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type UserProfileUncheckedUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     goalId?: NullableStringFieldUpdateOperationsInput | string | null
+    goalDetail?: NullableStringFieldUpdateOperationsInput | string | null
     weightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    targetWeightKg?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    pace?: NullableEnumPaceFieldUpdateOperationsInput | $Enums.Pace | null
     heightCm?: NullableIntFieldUpdateOperationsInput | number | null
     age?: NullableIntFieldUpdateOperationsInput | number | null
     gender?: NullableEnumGenderFieldUpdateOperationsInput | $Enums.Gender | null
     daysPerWeek?: NullableIntFieldUpdateOperationsInput | number | null
+    trainingDays?: UserProfileUpdatetrainingDaysInput | number[]
     experience?: NullableEnumExperienceLevelFieldUpdateOperationsInput | $Enums.ExperienceLevel | null
     equipment?: NullableEnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess | null
+    focusAreas?: UserProfileUpdatefocusAreasInput | string[]
+    bodyIssues?: UserProfileUpdatebodyIssuesInput | string[]
+    injuries?: UserProfileUpdateinjuriesInput | string[]
+    reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

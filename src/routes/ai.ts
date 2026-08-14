@@ -136,11 +136,15 @@ aiRouter.post("/food-scan", async (c) => {
   }
 
   const parsedBody = await parseJson(c, foodScanSchema);
+<<<<<<< HEAD
   if (isParseFail(parsedBody)) {
     return parsedBody.response;
   }
 
   const { base64, mimeType } = parsedBody.data;
+=======
+  if (parsedBody.success === false) return parsedBody.response;
+>>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 
   try {
     const payload = await requestGemini(

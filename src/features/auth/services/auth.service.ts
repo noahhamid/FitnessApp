@@ -1,46 +1,276 @@
 // src/features/auth/services/auth.service.ts
 
 import { authClient } from "@/src/lib/auth";
+import {
+  DISPLAY_NAME_MAX_LENGTH,
+  normalizeDisplayFirstName,
+} from "@/src/lib/display-name";
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
+import { Platform } from "react-native";
+
+/** Thrown when the user dismisses the Google sheet — UI should ignore quietly. */
+export class AuthCancelledError extends Error {
+  constructor(message = "Sign-in cancelled") {
+    super(message);
+    this.name = "AuthCancelledError";
+  }
+}
+
+// Same iOS client as app.config.ts google-signin plugin.
+const IOS_CLIENT_ID =
+  "571605491186-kd1lt4933dp1a60hvuvegu2rn9cteodo.apps.googleusercontent.com";
+
+let googleConfigured = false;
+
+function configureGoogleSignIn() {
+  if (googleConfigured) return;
+
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  if (!webClientId) {
+    throw new Error(
+      "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is not set. Use your Google Cloud Web client ID (same as GOOGLE_CLIENT_ID).",
+    );
+  }
+
+  GoogleSignin.configure({
+    webClientId,
+    iosClientId: IOS_CLIENT_ID,
+    offlineAccess: false,
+  });
+  googleConfigured = true;
+}
 
 // ── Sign in ───────────────────────────────────────────────────────────────────
 
+type AuthClientError = {
+  message?: string | null;
+  status?: number;
+} | null;
+
+function throwIfAuthError(error: AuthClientError): void {
+  if (!error) return;
+  if (error.status === 429 || /too many requests/i.test(error.message ?? "")) {
+    throw new Error("Too many tries. Wait a few minutes and try again.");
+  }
+  throw new Error(error.message || "Something went wrong.");
+}
+
 export async function signIn(email: string, password: string): Promise<void> {
   const { error } = await authClient.signIn.email({ email, password });
-  if (error) throw new Error(error.message);
+  throwIfAuthError(error);
 }
 
 // ── Sign up ───────────────────────────────────────────────────────────────────
 
+/** @deprecated Use DISPLAY_NAME_MAX_LENGTH — kept for existing imports. */
+export const SIGN_UP_NAME_MAX_LENGTH = DISPLAY_NAME_MAX_LENGTH;
+
+/** Keep the first given name only (no family names) and clamp length. */
+export function normalizeSignUpFirstName(raw: string): string {
+  return normalizeDisplayFirstName(raw);
+}
+
 export async function signUp(
-  email:    string,
+  email: string,
   password: string,
-  name?:    string
+  name?: string,
 ): Promise<void> {
+  const firstName = name ? normalizeDisplayFirstName(name) : "";
   const { error } = await authClient.signUp.email({
     email,
     password,
-    name: name ?? email.split("@")[0],
+    name: firstName || email.split("@")[0],
   });
-  if (error) throw new Error(error.message);
+  throwIfAuthError(error);
+}
+
+export function isEmailNotVerifiedError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /not verified/i.test(message);
+}
+
+export async function sendVerificationEmail(email: string): Promise<void> {
+  const { error } = await authClient.sendVerificationEmail({
+    email,
+    callbackURL: "com.exo.fitness://verify-email",
+  });
+  throwIfAuthError(error);
+}
+
+export async function verifyEmail(token: string): Promise<void> {
+  const { error } = await authClient.verifyEmail({
+    query: { token },
+  });
+  throwIfAuthError(error);
+}
+
+/**
+ * OAuth providers often send "First Last". Persist first name only so greetings
+ * match email sign-up. Prefer an explicit given name when the native SDK has one.
+ */
+async function ensureOAuthFirstName(
+  preferredGivenName?: string | null,
+): Promise<void> {
+  const preferred = preferredGivenName
+    ? normalizeDisplayFirstName(preferredGivenName)
+    : "";
+
+  const { data } = await authClient.getSession();
+  const current = data?.user?.name ?? "";
+  const next =
+    preferred || (current ? normalizeDisplayFirstName(current) : "");
+
+  if (!next || next === current) return;
+
+  const { error } = await authClient.updateUser({ name: next });
+  if (error) {
+    console.log("oauth: failed to trim display name", error.message);
+  }
 }
 
 // ── OAuth ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Drop any cached Google account so the next `signIn()` always shows the
+ * account picker instead of silently reusing the last account.
+ */
+async function clearGoogleSessionForAccountPicker(): Promise<void> {
+  try {
+    if (GoogleSignin.hasPreviousSignIn()) {
+      await GoogleSignin.signOut();
+    }
+  } catch {
+    // No active Google session — picker will still appear.
+  }
+}
+
+/**
+ * Native Google Sign-In → Better Auth idToken verification.
+ * Requires a development / production build (not Expo Go).
+ */
 export async function signInWithGoogle(): Promise<void> {
-  const { error } = await authClient.signIn.social({ provider: "google" });
-  if (error) throw new Error(error.message);
+  configureGoogleSignIn();
+
+  try {
+    if (Platform.OS === "android") {
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+    }
+
+    await clearGoogleSessionForAccountPicker();
+
+    const response = await GoogleSignin.signIn();
+    if (response.type === "cancelled") {
+      throw new AuthCancelledError();
+    }
+
+    let idToken = response.data.idToken;
+    if (!idToken) {
+      const tokens = await GoogleSignin.getTokens();
+      idToken = tokens.idToken;
+    }
+    if (!idToken) {
+      throw new Error("Google did not return an ID token. Check webClientId.");
+    }
+
+    const givenName = response.data.user.givenName;
+
+    const { error } = await authClient.signIn.social({
+      provider: "google",
+      idToken: { token: idToken },
+    });
+    throwIfAuthError(error);
+
+    await ensureOAuthFirstName(givenName);
+  } catch (e) {
+    if (e instanceof AuthCancelledError) throw e;
+    if (isErrorWithCode(e)) {
+      if (
+        e.code === statusCodes.SIGN_IN_CANCELLED ||
+        e.code === statusCodes.IN_PROGRESS
+      ) {
+        throw new AuthCancelledError();
+      }
+      if (e.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        throw new Error("Google Play Services is missing or out of date.");
+      }
+    }
+    throw e instanceof Error ? e : new Error("Google sign-in failed");
+  }
 }
 
 export async function signInWithApple(): Promise<void> {
-  const { error } = await authClient.signIn.social({ provider: "apple" });
-  if (error) throw new Error(error.message);
+  const AppleAuthentication = await import("expo-apple-authentication");
+  const Crypto = await import("expo-crypto");
+
+  const available = await AppleAuthentication.isAvailableAsync();
+  if (!available) {
+    throw new Error(
+      "Sign in with Apple is only available on Apple devices with iOS 13+.",
+    );
+  }
+
+  const rawNonce = Crypto.randomUUID();
+  const hashedNonce = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    rawNonce,
+  );
+
+  try {
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+      nonce: hashedNonce,
+    });
+
+    if (!credential.identityToken) {
+      throw new Error("Apple did not return an identity token.");
+    }
+
+    const { error } = await authClient.signIn.social({
+      provider: "apple",
+      idToken: {
+        token: credential.identityToken,
+        nonce: rawNonce,
+      },
+    });
+    throwIfAuthError(error);
+
+    await ensureOAuthFirstName(credential.fullName?.givenName);
+  } catch (e) {
+    if (e instanceof AuthCancelledError) throw e;
+    if (
+      e &&
+      typeof e === "object" &&
+      "code" in e &&
+      (e as { code?: string }).code === "ERR_REQUEST_CANCELED"
+    ) {
+      throw new AuthCancelledError();
+    }
+    throw e instanceof Error ? e : new Error("Apple sign-in failed");
+  }
 }
 
 // ── Sign out ──────────────────────────────────────────────────────────────────
 
 export async function signOut(): Promise<void> {
+  try {
+    if (GoogleSignin.hasPreviousSignIn()) {
+      await GoogleSignin.signOut();
+    }
+  } catch {
+    // Best-effort; Better Auth session is what matters.
+  }
+
   const { error } = await authClient.signOut();
-  if (error) throw new Error(error.message);
+  throwIfAuthError(error);
 }
 
 // ── Get current session ───────────────────────────────────────────────────────
@@ -48,4 +278,28 @@ export async function signOut(): Promise<void> {
 export async function getSession() {
   const { data } = await authClient.getSession();
   return data;
+}
+
+// ── Password reset ────────────────────────────────────────────────────────────
+
+export async function requestPasswordReset(
+  email: string,
+  redirectTo: string,
+): Promise<void> {
+  const { error } = await authClient.requestPasswordReset({
+    email,
+    redirectTo,
+  });
+  throwIfAuthError(error);
+}
+
+export async function resetPassword(
+  newPassword: string,
+  token: string,
+): Promise<void> {
+  const { error } = await authClient.resetPassword({
+    newPassword,
+    token,
+  });
+  throwIfAuthError(error);
 }

@@ -1,5 +1,11 @@
-import { TrainingSetupForm } from "@/src/features/auth";
+import { Redirect, useLocalSearchParams } from "expo-router";
 
-export default function TrainingSetupRoute() {
-  return <TrainingSetupForm />;
+/** Legacy route — training is now split across experience / equipment / schedule. */
+export default function TrainingSetupRedirect() {
+  const params = useLocalSearchParams();
+  return (
+    <Redirect
+      href={{ pathname: "/(auth)/onboarding/experience", params }}
+    />
+  );
 }

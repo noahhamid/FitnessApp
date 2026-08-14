@@ -51,6 +51,7 @@ import {
 import { topInset } from "@/src/lib/safe-area";
 import { imageForMuscleGroup } from "@/src/lib/workout-plan-adapter";
 import type { LibraryExercise } from "../hooks/useExerciseLibrary";
+import { useWallClockElapsed } from "@/src/hooks/useWallClockElapsed";
 
 /** Hero photo band — image is clipped here, not full-screen absoluteFill.
  *  Panel starts just below with a slight overlap so the sheet sits on the
@@ -96,6 +97,8 @@ type Props = {
    * session — the person may want to see what's done before deciding
    * what to do next). Defaults to "list".
    */
+  /** Wall-clock origin so elapsed survives screen-off / background. */
+  sessionStartedAtMs?: number | null;
   initialMode?: "list" | "auto";
 };
 
@@ -383,6 +386,7 @@ export function ActiveWorkoutScreen({
   exercises: exercisesProp,
   onExercisesChange,
   onAppendExercise,
+  sessionStartedAtMs = null,
   initialMode = "list",
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -495,7 +499,11 @@ export function ActiveWorkoutScreen({
   );
   const [phase, setPhase] = useState<Phase>("exercise");
   const [paused, setPaused] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
+  const [clockOriginMs] = useState(() =>
+    typeof sessionStartedAtMs === "number" && Number.isFinite(sessionStartedAtMs)
+      ? sessionStartedAtMs
+      : Date.now(),
+  );
   const [secsLeft, setSecsLeft] = useState<number | null>(null);
 
   const selected =
@@ -505,6 +513,12 @@ export function ActiveWorkoutScreen({
   const selectedComplete = selected
     ? doneForSelected >= selected.sets
     : false;
+  const elapsed = useWallClockElapsed(
+    typeof sessionStartedAtMs === "number" && Number.isFinite(sessionStartedAtMs)
+      ? sessionStartedAtMs
+      : clockOriginMs,
+    paused || phase === "done",
+  );
 
   const setsDoneRef = useRef(setsDone);
   setsDoneRef.current = setsDone;
@@ -597,12 +611,6 @@ export function ActiveWorkoutScreen({
       useNativeDriver: false,
     }).start();
   }, [doneSets, totalSets]);
-
-  useEffect(() => {
-    if (paused || phase === "done") return;
-    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
-    return () => clearInterval(t);
-  }, [paused, phase]);
 
   useEffect(() => {
     if (screenMode !== "focus" || !selected) {
@@ -763,6 +771,50 @@ export function ActiveWorkoutScreen({
           e instanceof Error ? e.message : e,
         );
       });
+  };
+
+  const markExerciseComplete = (ex: Exercise) => {
+    if (!guardSessionReady("marking complete")) return;
+    if (isExComplete(ex)) return;
+
+    const remaining = Math.max(0, ex.sets - (setsDoneRef.current[ex.id] ?? 0));
+    if (remaining <= 0) return;
+
+    const apply = () => {
+      const logged = logsRef.current.filter((l) => l.exerciseName === ex.name);
+      const lastLog = logged[logged.length - 1];
+      const last = lastPerformance?.[ex.name];
+      const reps = lastLog?.reps ?? last?.reps ?? ex.reps ?? 8;
+      const weight = lastLog?.weight ?? last?.weight ?? 0;
+      const durationSec = Math.max(
+        1,
+        lastLog?.durationSec ?? ex.durationSec ?? 30,
+      );
+
+      for (let i = 0; i < remaining; i++) {
+        logsRef.current.push({
+          exerciseName: ex.name,
+          reps: ex.type === "reps" ? reps : undefined,
+          weight: ex.type === "reps" ? weight : undefined,
+          durationSec: ex.type === "duration" ? durationSec : undefined,
+          completed: true,
+        });
+      }
+      setSetsDone({ ...setsDoneRef.current, [ex.id]: ex.sets });
+      syncExerciseSets(ex);
+      if (selectedId === ex.id) returnToList();
+    };
+
+    Alert.alert(
+      "Mark complete?",
+      remaining < ex.sets
+        ? `Save the remaining ${remaining} set${remaining === 1 ? "" : "s"} of ${ex.name} as done.`
+        : `Mark ${ex.name} done without logging each set.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Mark done", onPress: apply },
+      ],
+    );
   };
 
   const returnToList = () => {
@@ -1083,19 +1135,21 @@ export function ActiveWorkoutScreen({
                     const done = setsDone[ex.id] ?? 0;
                     const complete = done >= ex.sets;
                     return (
-                      <TouchableOpacity
+                      <View
                         key={ex.id}
                         style={[
                           s.exListRow,
                           complete && s.exListRowDone,
                           !sessionReady && !complete && s.actionDisabled,
                         ]}
-                        activeOpacity={complete ? 1 : 0.85}
-                        onPress={() => openExerciseManual(ex)}
-                        disabled={complete}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${ex.name}, ${done} of ${ex.sets} sets`}
                       >
+                        <Pressable
+                          style={s.exListMain}
+                          onPress={() => openExerciseManual(ex)}
+                          disabled={complete || !sessionReady}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${ex.name}, ${done} of ${ex.sets} sets`}
+                        >
                         <View
                           style={[
                             s.exThumbWrap,
@@ -1136,7 +1190,23 @@ export function ActiveWorkoutScreen({
                               : ` · ${ex.durationSec}s`}
                           </Text>
                         </View>
-                      </TouchableOpacity>
+                        </Pressable>
+                        {!complete ? (
+                          <Pressable
+                            onPress={() => markExerciseComplete(ex)}
+                            hitSlop={8}
+                            style={s.markDoneBtn}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Mark ${ex.name} complete`}
+                          >
+                            <Check
+                              size={16}
+                              color={T.accentOnDark}
+                              strokeWidth={2.6}
+                            />
+                          </Pressable>
+                        ) : null}
+                      </View>
                     );
                   })}
                 </View>
@@ -1321,6 +1391,16 @@ export function ActiveWorkoutScreen({
                       </TouchableOpacity>
                     </Animated.View>
                   )}
+
+                  <TouchableOpacity
+                    style={s.secondaryLink}
+                    onPress={() => markExerciseComplete(selected)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Mark ${selected.name} complete`}
+                  >
+                    <Text style={s.secondaryLinkText}>Mark exercise complete</Text>
+                  </TouchableOpacity>
 
                   <TouchableOpacity
                     style={s.secondaryLink}
@@ -1552,6 +1632,12 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
   },
+  exListMain: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
   exListRowDone: { opacity: 0.72 },
   exThumbWrap: {
     width: 36,
@@ -1585,6 +1671,16 @@ const s = StyleSheet.create({
     fontFamily: T.bodyMed,
     fontSize: 11.5,
     marginTop: 2,
+  },
+  markDoneBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(127,217,174,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(127,217,174,0.35)",
   },
 
   startBtn: {
