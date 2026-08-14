@@ -118,7 +118,7 @@ nutritionRouter.get("/goals", async (c) => {
 
 nutritionRouter.put("/goals", async (c) => {
   const parsed = await parseJson(c, goalsSchema);
-  if (!parsed.success) return parsed.response;
+  if (parsed.success === false) return parsed.response;
 
   const user = getUser(c);
   const goal = await prisma.nutritionGoal.upsert({
@@ -144,7 +144,7 @@ nutritionRouter.delete("/goals", async (c) => {
 
 nutritionRouter.get("/log", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
-  if (!query.success) return query.response;
+  if (query.success === false) return query.response;
 
   const user = getUser(c);
   const { from: fromStr, to: toStr, date: dateStr } = query.data;
@@ -191,7 +191,7 @@ nutritionRouter.get("/log", async (c) => {
  */
 nutritionRouter.post("/meal-photo", async (c) => {
   const parsed = await parseJson(c, mealPhotoSchema);
-  if (!parsed.success) return parsed.response;
+  if (parsed.success === false) return parsed.response;
 
   const user = getUser(c);
   const mime = parsed.data.mimeType.toLowerCase();
@@ -217,7 +217,7 @@ nutritionRouter.post("/meal-photo", async (c) => {
 
 nutritionRouter.post("/log", async (c) => {
   const parsed = await parseJson(c, mealLogSchema);
-  if (!parsed.success) return parsed.response;
+  if (parsed.success === false) return parsed.response;
 
   const logDate = parseLogDate(parsed.data.logDate);
   if (!logDate) return err(c, "Invalid logDate", 400);
@@ -243,7 +243,7 @@ nutritionRouter.post("/log", async (c) => {
 
 nutritionRouter.patch("/log/:id", async (c) => {
   const parsed = await parseJson(c, mealLogUpdateSchema);
-  if (!parsed.success) return parsed.response;
+  if (parsed.success === false) return parsed.response;
 
   const user = getUser(c);
   const id = c.req.param("id");
@@ -294,7 +294,7 @@ nutritionRouter.delete("/log/:id", async (c) => {
 
 nutritionRouter.get("/totals", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
-  if (!query.success) return query.response;
+  if (query.success === false) return query.response;
 
   const dateStr = query.data.date ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -318,7 +318,7 @@ nutritionRouter.get("/totals", async (c) => {
 
 nutritionRouter.get("/water", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
-  if (!query.success) return query.response;
+  if (query.success === false) return query.response;
 
   const dateStr = query.data.date ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -334,7 +334,7 @@ nutritionRouter.get("/water", async (c) => {
 
 nutritionRouter.post("/water", async (c) => {
   const parsed = await parseJson(c, waterAdjustSchema);
-  if (!parsed.success) return parsed.response;
+  if (parsed.success === false) return parsed.response;
 
   const dateStr = parsed.data.logDate ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -362,7 +362,7 @@ function isoDate(d: Date) {
 
 nutritionRouter.get("/weekly", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
-  if (!query.success) return query.response;
+  if (query.success === false) return query.response;
 
   const endStr = query.data.date ?? todayLogDate();
   const end = parseLogDate(endStr);
@@ -412,7 +412,7 @@ nutritionRouter.get("/weekly", async (c) => {
 
 nutritionRouter.get("/suggestions", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
-  if (!query.success) return query.response;
+  if (query.success === false) return query.response;
 
   const dateStr = query.data.date ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -565,7 +565,7 @@ nutritionRouter.get("/adaptive-suggestion", async (c) => {
  */
 nutritionRouter.patch("/goals/apply-suggestion", async (c) => {
   const parsed = await parseJson(c, applySuggestionSchema);
-  if (!parsed.success) return parsed.response;
+  if (parsed.success === false) return parsed.response;
 
   const user = getUser(c);
   const clientSuggested = parsed.data.suggestedCalories;

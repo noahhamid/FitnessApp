@@ -6,7 +6,10 @@ import { parseJson } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
 import { computeNutritionTargets } from "../lib/nutrition-calc";
 import { isOnboardingProfileComplete } from "../lib/onboarding-complete";
-import { normalizeTrainingDays } from "../lib/plan-day-selection";
+import {
+  adaptTrainingDaysToCount,
+  normalizeTrainingDays,
+} from "../lib/plan-day-selection";
 import {
   generateWorkoutPlan,
   type FocusArea,
@@ -101,7 +104,7 @@ profileRouter.get("/", async (c) => {
 
 profileRouter.put("/", async (c) => {
   const parsed = await parseJson(c, profileSchema);
-  if (!parsed.success) return parsed.response;
+  if (parsed.success === false) return parsed.response;
   const data = parsed.data;
 
   const user = getUser(c);
@@ -115,8 +118,13 @@ profileRouter.put("/", async (c) => {
 
   // `trainingDays` and `daysPerWeek` must agree, since the plan holds exactly
   // `daysPerWeek` days and each chosen weekday maps to one of them. An explicit
-  // weekday list wins and sets the count; changing only the count drops a stale
-  // list so the default pattern for the new frequency applies.
+  // weekday list wins and sets the count. Changing only the count resizes a
+  // custom list — it does not wipe Tue/Thu/Sat back to the default pattern.
+  const existing = await prisma.userProfile.findUnique({
+    where: { userId: user.id },
+    select: { trainingDays: true },
+  });
+
   const chosenDays =
     data.trainingDays !== undefined
       ? normalizeTrainingDays(data.trainingDays)
@@ -128,9 +136,21 @@ profileRouter.put("/", async (c) => {
           trainingDays: chosenDays ?? [],
           ...(chosenDays && { daysPerWeek: chosenDays.length }),
         }
-      : data.daysPerWeek !== undefined
-        ? { daysPerWeek: data.daysPerWeek, trainingDays: [] }
-        : {};
+      : data.daysPerWeek != null
+        ? {
+            daysPerWeek: data.daysPerWeek,
+            ...(normalizeTrainingDays(existing?.trainingDays)
+              ? {
+                  trainingDays: adaptTrainingDaysToCount(
+                    existing?.trainingDays,
+                    data.daysPerWeek,
+                  ),
+                }
+              : {}),
+          }
+        : data.daysPerWeek === null
+          ? { daysPerWeek: null }
+          : {};
 
   const fieldsToSet = {
     ...scheduleFields,

@@ -196,3 +196,49 @@ export function trainingAdherence(
     rate: scheduled === 0 ? 0 : completed / scheduled,
   };
 }
+
+export type WeekScheduleStats = {
+  /** Scheduled training days in this Mon–Sun week. */
+  target: number;
+  /** Those scheduled days that already have a completed session. */
+  completed: number;
+  /** Mon=0 … Sun=6 */
+  scheduled: boolean[];
+  /** Scheduled days before today with no session. */
+  missed: number;
+};
+
+/**
+ * This week's scheduled-day hits. Rest-day sessions do not count.
+ * `weekMonday` defaults to this week's Monday (local).
+ */
+export function weekScheduleStats(
+  daysPerWeek: number,
+  completedDays: ReadonlySet<string>,
+  trainingDays?: readonly number[] | null,
+  weekMonday?: Date,
+): WeekScheduleStats {
+  const scheduled = computeWeeklySchedule(daysPerWeek, trainingDays);
+  const monday = weekMonday
+    ? new Date(weekMonday)
+    : mondayOnOrBefore(new Date());
+  monday.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let target = 0;
+  let completed = 0;
+  let missed = 0;
+  for (let d = 0; d < 7; d++) {
+    if (!scheduled[d]) continue;
+    target += 1;
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + d);
+    const hit = completedDays.has(localDateOnly(day));
+    if (hit) completed += 1;
+    else if (day < today) missed += 1;
+  }
+
+  return { target, completed, scheduled, missed };
+}

@@ -12,18 +12,15 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus } from "lucide-react-native";
 import { useLocalSearchParams } from "expo-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useWeightLog,
   useAddWeightLog,
-  useProgressionSuggestions,
   useWorkoutHistory,
   usePersonalRecords,
 } from "../hooks/useProgress";
 import { useWorkoutPlan } from "@/src/features/workout/hooks/useWorkoutPlan";
-import { api } from "@/src/lib/api";
 import { WeightTrendChart } from "../components/WeightTrendChart";
-import { LevelUpSection } from "../components/LevelUpSection";
 import { ConsistencyCard } from "../components/ConsistencyCard";
 import { WeightLogSheet } from "../components/WeightLogSheet";
 import { WorkoutCalendar } from "../components/WorkoutCalendar";
@@ -37,7 +34,11 @@ import { MealHistoryCard } from "../components/MealHistoryCard";
 import { ProgressSnapshotStrip } from "../components/ProgressSnapshotStrip";
 import { CategoryFilter } from "@/src/features/workout/components/CategoryFilter";
 import { localDateOnly, parseLocalDateKey } from "../lib/localDate";
-import { completedDayKeys, contributionGrid } from "../lib/analytics";
+import {
+  completedDayKeys,
+  contributionGrid,
+  weekScheduleStats,
+} from "../lib/analytics";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
@@ -66,15 +67,6 @@ function thirtyDaysAgo(): string {
   return localDateOnly(d);
 }
 
-function startOfThisWeekMonday(): Date {
-  const d = new Date();
-  const day = d.getDay(); // 0 = Sunday
-  const diff = (day + 6) % 7; // days since Monday
-  d.setDate(d.getDate() - diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
 export default function ProgressScreen() {
   const { T, styles: s, resolved } = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
@@ -94,7 +86,6 @@ export default function ProgressScreen() {
         ["workout-history"],
         ["workout-session-count"],
         ["personal-records"],
-        ["progression"],
         ["workout-sessions"],
         ["nutrition"],
         ["workout-plan"],
@@ -153,34 +144,36 @@ export default function ProgressScreen() {
   const { data: weightEntries, isLoading: weightLoading } =
     useWeightLog(eightWeeksAgo());
   const { data: apiPlan } = useWorkoutPlan();
-  const { data: suggestions, isLoading: suggestionsLoading } =
-    useProgressionSuggestions();
   const addWeight = useAddWeightLog();
 
-  // Sessions completed this week, for the consistency card. Reuses the
-  // existing GET /api/workouts?completed=true endpoint rather than adding
-  // a new one — filters client-side since there's no date-range param there.
-  const { data: recentSessions } = useQuery({
-    queryKey: ["workout-sessions", "recent-for-progress"],
-    queryFn: () =>
-      api.get<{ completedAt: string | null }[]>(
-        "/api/workouts?completed=true&limit=30",
+  const completedDays = useMemo(
+    () => completedDayKeys(analyticsSessions ?? []),
+    [analyticsSessions],
+  );
+
+  const weekStats = useMemo(
+    () =>
+      weekScheduleStats(
+        apiPlan?.daysPerWeek ?? 0,
+        completedDays,
+        apiPlan?.trainingDays,
       ),
-  });
+    [apiPlan?.daysPerWeek, apiPlan?.trainingDays, completedDays],
+  );
 
-  const completedThisWeek = useMemo(() => {
-    if (!recentSessions) return 0;
-    const monday = startOfThisWeekMonday();
-    return recentSessions.filter(
-      (s) => s.completedAt && new Date(s.completedAt) >= monday,
-    ).length;
-  }, [recentSessions]);
-
-  // Mon→Sun filled cells for ConsistencyCard's week dots.
+  // Mon→Sun cells for ConsistencyCard — scheduled days use the real weekdays.
   const thisWeekDays = useMemo(() => {
-    const days = completedDayKeys(analyticsSessions ?? []);
-    return contributionGrid(days, 1)[0] ?? [];
-  }, [analyticsSessions]);
+    const row = contributionGrid(completedDays, 1)[0] ?? [];
+    return row.map((day, i) => ({
+      ...day,
+      scheduled: weekStats.scheduled[i] ?? false,
+    }));
+  }, [completedDays, weekStats.scheduled]);
+
+  const sessionsThisWeek = useMemo(
+    () => thisWeekDays.filter((d) => d.filled).length,
+    [thisWeekDays],
+  );
 
   // Same first→last delta WeightTrendChart shows — null until ≥2 logs.
   const weightDeltaKg = useMemo(() => {
@@ -262,7 +255,7 @@ export default function ProgressScreen() {
 
         <ProgressSnapshotStrip
           streakDays={streakDays}
-          sessionsThisWeek={completedThisWeek}
+          sessionsThisWeek={sessionsThisWeek}
           weightDeltaKg={weightDeltaKg}
         />
 
@@ -303,8 +296,8 @@ export default function ProgressScreen() {
 
             {apiPlan && (
               <ConsistencyCard
-                completedThisWeek={completedThisWeek}
-                targetPerWeek={apiPlan.daysPerWeek}
+                completedThisWeek={weekStats.completed}
+                targetPerWeek={weekStats.target}
                 weekDays={thisWeekDays}
               />
             )}
@@ -344,17 +337,6 @@ export default function ProgressScreen() {
             <View>
               <Text style={s.sectionTitle}>Personal records</Text>
               <PersonalRecordsSection records={personalRecords ?? []} />
-            </View>
-
-            <View>
-              <Text style={s.sectionTitle}>Ready to level up</Text>
-              {suggestionsLoading ? (
-                <View style={s.centerState}>
-                  <ActivityIndicator color={T.accent} />
-                </View>
-              ) : (
-                <LevelUpSection suggestions={suggestions ?? []} />
-              )}
             </View>
           </View>
         )}

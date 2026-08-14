@@ -1,6 +1,6 @@
 import type { ExpoConfig } from "expo/config";
 
-const NEAR_BLACK = "#0A0A0A";
+const BRAND_RED = "#C91923";
 
 const config: ExpoConfig = {
   name: "PotentialPeak",
@@ -22,10 +22,9 @@ const config: ExpoConfig = {
     // and auth shows a generic "Network request failed".
     usesCleartextTraffic: true,
     adaptiveIcon: {
-      // Foreground is pre-padded (~52%) so the diagonal mark survives
-      // circle / squircle / rounded-square masks. Solid near-black plate.
+      // potentialpeak_logo.jpg, inset so the figure survives circle masks.
       foregroundImage: "./assets/images/android-icon-foreground.png",
-      backgroundColor: NEAR_BLACK,
+      backgroundColor: BRAND_RED,
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },

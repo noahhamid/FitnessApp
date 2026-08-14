@@ -20,6 +20,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { DaySelector } from "@/src/features/nutrition/components/DaySelector";
 import { useWorkoutHistory } from "@/src/features/progress/hooks/useProgress";
 import { localDateOnly } from "@/src/features/progress/lib/localDate";
+import { weekScheduleStats } from "@/src/features/progress/lib/analytics";
 import {
   dayLabel,
   formatWeekLabel,
@@ -160,8 +161,16 @@ export default function DashboardScreen() {
     return set;
   }, [weekSessions]);
 
-  const completedThisWeek = workoutDates.size;
-  const daysPerWeek = apiPlan?.daysPerWeek ?? 0;
+  const weekStats = useMemo(
+    () =>
+      weekScheduleStats(
+        apiPlan?.daysPerWeek ?? 0,
+        workoutDates,
+        apiPlan?.trainingDays,
+        weekDates[0],
+      ),
+    [apiPlan?.daysPerWeek, apiPlan?.trainingDays, workoutDates, weekDates],
+  );
 
   const days = useMemo(
     () =>
@@ -313,8 +322,8 @@ export default function DashboardScreen() {
         />
 
         <WeekAdherenceBar
-          completed={completedThisWeek}
-          target={daysPerWeek}
+          completed={weekStats.completed}
+          target={weekStats.target}
           onPressOverview={() => router.push("/(app)/(tabs)/progress")}
         />
 

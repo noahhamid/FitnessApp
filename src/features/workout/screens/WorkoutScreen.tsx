@@ -54,7 +54,10 @@ import { useLastPerformance } from "../hooks/useLastPerformance";
 import { useInProgressSession } from "../hooks/useInProgressSession";
 import { useWorkoutStreak } from "../hooks/useWorkoutStreak";
 import { useTodayExtras } from "../hooks/useTodayExtras";
-import { usePersonalRecords } from "@/src/features/progress/hooks/useProgress";
+import { useConditioningRun } from "../hooks/useConditioningRun";
+import { CONDITIONING_SESSION_NOTES } from "../services/conditioning-run.service";
+import { usePersonalRecords, useWorkoutHistory } from "@/src/features/progress/hooks/useProgress";
+import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import {
   adaptPlanDay,
   adaptLibraryExercise,
@@ -173,6 +176,7 @@ export default function WorkoutScreen() {
   const [sessionCreateError, setSessionCreateError] = useState<string | null>(
     null,
   );
+  const [clockStartMs, setClockStartMs] = useState<number | null>(null);
   /** Invalidates in-flight creates when the user cancels mid-setup. */
   const startGenRef = useRef(0);
   const pendingStartPlanRef = useRef<WorkoutPlan | null>(null);
@@ -187,6 +191,9 @@ export default function WorkoutScreen() {
   const { data: personalRecords } = usePersonalRecords();
   const startSession = useStartWorkoutSession();
   const completeSession = useCompleteWorkoutSession();
+  const cardio = useConditioningRun();
+  const todayKey = localDateOnly();
+  const { data: todaySessions } = useWorkoutHistory(todayKey, todayKey);
 
   const refreshWorkout = useCallback(
     () =>
@@ -198,6 +205,7 @@ export default function WorkoutScreen() {
         ["personal-records"],
         ["today-extras"],
         ["workout-sessions"],
+        ["workout-history"],
       ]),
     [queryClient],
   );
@@ -268,6 +276,36 @@ export default function WorkoutScreen() {
       injuries: profile?.injuries,
     });
   }, [apiPlan, daysPerWeek, profile?.injuries]);
+
+  const completedCardioIndexes = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const session of todaySessions ?? []) {
+      if (session.notes !== CONDITIONING_SESSION_NOTES) continue;
+      for (const ex of session.exercises ?? []) {
+        counts.set(ex.exerciseName, (counts.get(ex.exerciseName) ?? 0) + 1);
+      }
+    }
+    const seen = new Map<string, number>();
+    const done = new Set<number>();
+    conditioning?.sessions.forEach((session, index) => {
+      const nth = (seen.get(session.label) ?? 0) + 1;
+      seen.set(session.label, nth);
+      if ((counts.get(session.label) ?? 0) >= nth) done.add(index);
+    });
+    for (const index of cardio.justCompletedIndexes) done.add(index);
+    return done;
+  }, [todaySessions, conditioning, cardio.justCompletedIndexes]);
+
+  const handleCardioComplete = useCallback(async () => {
+    try {
+      await cardio.complete();
+    } catch (e) {
+      Alert.alert(
+        "Couldn't save conditioning",
+        e instanceof Error ? e.message : "Try again in a moment.",
+      );
+    }
+  }, [cardio]);
 
   const todaysWorkout = useMemo(() => {
     if (!baseTodaysWorkout) return null;
@@ -349,6 +387,8 @@ export default function WorkoutScreen() {
     setSelectedDay(inProgress.plan);
     setActiveExercises(inProgress.plan.exercises);
     setActiveSessionId(inProgress.sessionId);
+    const resumedAt = Date.parse(inProgress.startedAt);
+    setClockStartMs(Number.isFinite(resumedAt) ? resumedAt : Date.now());
     setView("active");
   };
 
@@ -423,6 +463,7 @@ export default function WorkoutScreen() {
     setSelectedDay(plan);
     setActiveExercises(plan.exercises);
     setActiveSessionId(null);
+    setClockStartMs(Date.now());
     setView("active");
     createSessionInBackground(plan, gen);
   };
@@ -537,6 +578,7 @@ export default function WorkoutScreen() {
             onClose={leaveActiveWorkout}
             onFinish={handleFinish}
             lastPerformance={lastPerformance}
+            sessionStartedAtMs={clockStartMs}
           />
         </SafeAreaProvider>
       </Modal>
@@ -837,7 +879,22 @@ export default function WorkoutScreen() {
                   <Text style={s.sectionTitle}>This week</Text>
                 </Reveal>
                 <Reveal delay={240} style={s.conditioningWrap}>
-                  <ConditioningCard plan={conditioning} />
+                  <ConditioningCard
+                    plan={conditioning}
+                    activeIndex={cardio.run?.index}
+                    elapsedSec={cardio.elapsedSec}
+                    saving={cardio.saving}
+                    completedIndexes={completedCardioIndexes}
+                    onStart={(session, index) => {
+                      void cardio.start(session, index);
+                    }}
+                    onComplete={() => {
+                      void handleCardioComplete();
+                    }}
+                    onDiscard={() => {
+                      void cardio.discard();
+                    }}
+                  />
                 </Reveal>
               </>
             )}

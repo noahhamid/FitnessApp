@@ -5,7 +5,6 @@ import { err, ok } from "../lib/response";
 import { parseJson, parseQuery } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
 import type { AppEnv } from "../types/hono";
-import { computeProgressionSuggestion } from "../lib/progression-calc";
 
 interface PersonalRecord {
   exerciseName: string;
@@ -187,7 +186,7 @@ export const workoutsRouter = new Hono<AppEnv>().use("*", requireAuth);
 /** POST/GET session root — register both '' and '/' so clients match /api/workouts (no trailing slash). */
 const createSession = async (c: Context<AppEnv>) => {
   const parsed = await parseJson(c, startSessionSchema);
-  if (!parsed.success) return parsed.response;
+  if (parsed.success === false) return parsed.response;
 
   const user = getUser(c);
   const { notes, exercises } = parsed.data;
@@ -221,7 +220,7 @@ const createSession = async (c: Context<AppEnv>) => {
 
 const listSessions = async (c: Context<AppEnv>) => {
   const query = parseQuery(c, listQuerySchema);
-  if (!query.success) return query.response;
+  if (query.success === false) return query.response;
  
   const user = getUser(c);
  
@@ -263,7 +262,7 @@ const countQuerySchema = z.object({
 /** Cheap lifetime count — avoids hauling session rows just to measure length. */
 workoutsRouter.get("/count", async (c) => {
   const query = parseQuery(c, countQuerySchema);
-  if (!query.success) return query.response;
+  if (query.success === false) return query.response;
 
   const user = getUser(c);
   const count = await prisma.workoutSession.count({
@@ -280,77 +279,6 @@ workoutsRouter.get("/count", async (c) => {
   return ok(c, { count });
 });
 
-workoutsRouter.get("/progression", async (c) => {
-  const user = getUser(c);
- 
-  const plan = await prisma.workoutPlan.findUnique({
-    where: { userId: user.id },
-    include: {
-      days: {
-        include: {
-          exercises: { include: { exercise: true } },
-        },
-      },
-    },
-  });
- 
-  if (!plan) return ok(c, []);
- 
-  // Unique exercises across the whole plan (a Push/Pull/Legs split can
-  // repeat the same exercise across weeks, but we only need one
-  // suggestion per exercise name, not one per plan-slot).
-  const exerciseTargets = new Map<
-    string,
-    { targetRepsMin: number; targetRepsMax: number; targetSets: number }
-  >();
-  for (const day of plan.days) {
-    for (const planEx of day.exercises) {
-      if (!exerciseTargets.has(planEx.exercise.name)) {
-        exerciseTargets.set(planEx.exercise.name, {
-          targetRepsMin: planEx.targetRepsMin,
-          targetRepsMax: planEx.targetRepsMax,
-          targetSets: planEx.targetSets,
-        });
-      }
-    }
-  }
- 
-  // Most recent completed session's sets, per exercise name.
-  const recentSessions = await prisma.workoutSession.findMany({
-    where: { userId: user.id, completedAt: { not: null } },
-    include: { exercises: true },
-    orderBy: { completedAt: "desc" },
-    take: 50,
-  });
- 
-  const lastSetsByExercise = new Map<string, any[]>();
-  for (const session of recentSessions) {
-    for (const ex of session.exercises) {
-      if (!exerciseTargets.has(ex.exerciseName)) continue; // not in current plan
-      if (lastSetsByExercise.has(ex.exerciseName)) continue; // already found most recent
-      lastSetsByExercise.set(ex.exerciseName, ex.sets as any[]);
-    }
-  }
- 
-  const suggestions = Array.from(exerciseTargets.entries()).map(
-    ([exerciseName, target]) =>
-      computeProgressionSuggestion({
-        exerciseName,
-        targetRepsMin: target.targetRepsMin,
-        targetRepsMax: target.targetRepsMax,
-        targetSets: target.targetSets,
-        lastSessionSets: lastSetsByExercise.get(exerciseName) ?? [],
-      }),
-  );
- 
-  // Only surface exercises that actually have something to report —
-  // "increase" suggestions are the interesting ones for the UI; skip
-  // "no_data" entries so the list isn't cluttered with exercises never
-  // yet performed.
-  const actionable = suggestions.filter((s) => s.direction !== "no_data");
- 
-  return ok(c, actionable);
-});
 workoutsRouter.get("/plan", async (c) => {
   const user = getUser(c);
 
@@ -416,7 +344,7 @@ workoutsRouter.get("/last-performance", async (c) => {
 
 workoutsRouter.get("/exercises", async (c) => {
   const query = parseQuery(c, exerciseLibraryQuerySchema);
-  if (!query.success) return query.response;
+  if (query.success === false) return query.response;
 
   const user = getUser(c);
 
@@ -512,7 +440,7 @@ workoutsRouter.get("/personal-records", async (c) => {
 
 workoutsRouter.get("/today-extras", async (c) => {
   const query = parseQuery(c, todayExtrasQuerySchema);
-  if (!query.success) return query.response;
+  if (query.success === false) return query.response;
 
   const user = getUser(c);
   const logDate = new Date(query.data.date);
@@ -527,7 +455,7 @@ workoutsRouter.get("/today-extras", async (c) => {
 
 workoutsRouter.post("/today-extras", async (c) => {
   const parsed = await parseJson(c, plannedExtraSchema);
-  if (!parsed.success) return parsed.response;
+  if (parsed.success === false) return parsed.response;
 
   const user = getUser(c);
   const logDate = new Date(parsed.data.date);
@@ -583,7 +511,7 @@ workoutsRouter.get("/:id", async (c) => {
 
 workoutsRouter.patch("/:id", async (c) => {
   const parsed = await parseJson(c, updateSessionSchema);
-  if (!parsed.success) return parsed.response;
+  if (parsed.success === false) return parsed.response;
 
   const user = getUser(c);
   const sessionId = c.req.param("id");
@@ -611,7 +539,7 @@ workoutsRouter.patch("/:id", async (c) => {
 
 workoutsRouter.post("/:id/complete", async (c) => {
   const parsed = await parseJson(c, completeSessionSchema);
-  if (!parsed.success) return parsed.response;
+  if (parsed.success === false) return parsed.response;
 
   const user = getUser(c);
   const sessionId = c.req.param("id");
@@ -662,7 +590,7 @@ workoutsRouter.delete("/:id", async (c) => {
 
 workoutsRouter.post("/:id/exercises", async (c) => {
   const parsed = await parseJson(c, exerciseCreateBodySchema);
-  if (!parsed.success) return parsed.response;
+  if (parsed.success === false) return parsed.response;
 
   const user = getUser(c);
   const sessionId = c.req.param("id");
@@ -685,7 +613,7 @@ workoutsRouter.post("/:id/exercises", async (c) => {
 
 workoutsRouter.patch("/:id/exercises/:exerciseId", async (c) => {
   const parsed = await parseJson(c, exerciseUpdateSchema);
-  if (!parsed.success) return parsed.response;
+  if (parsed.success === false) return parsed.response;
 
   const user = getUser(c);
   const sessionId = c.req.param("id");

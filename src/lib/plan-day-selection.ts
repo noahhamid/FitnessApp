@@ -70,6 +70,33 @@ export function defaultTrainingDays(daysPerWeek: number): number[] {
 }
 
 /**
+ * Resize a custom weekday list to a new frequency without dropping it.
+ * Shrink keeps the earliest weekdays; grow fills from the default pattern,
+ * then any leftover weekdays.
+ */
+export function adaptTrainingDaysToCount(
+  existing: readonly number[] | null | undefined,
+  daysPerWeek: number,
+): number[] {
+  const n = clampDaysPerWeek(daysPerWeek);
+  if (n <= 0) return [];
+  const custom = normalizeTrainingDays(existing);
+  if (!custom) return defaultTrainingDays(n);
+  if (custom.length === n) return custom;
+  if (custom.length > n) return custom.slice(0, n);
+
+  const next = [...custom];
+  for (const day of defaultTrainingDays(n)) {
+    if (next.length >= n) break;
+    if (!next.includes(day)) next.push(day);
+  }
+  for (let day = 0; day < 7 && next.length < n; day++) {
+    if (!next.includes(day)) next.push(day);
+  }
+  return next.sort((a, b) => a - b);
+}
+
+/**
  * Clean a user-supplied weekday list: integers 0–6, de-duplicated and sorted.
  * Returns null when nothing usable is left, so callers fall back to defaults.
  */

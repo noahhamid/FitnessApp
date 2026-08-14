@@ -10,10 +10,12 @@ const WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 type WeekDay = {
   date: string;
   filled: boolean;
+  /** Planned training day (Tue/Thu/Sat), not just "any weekday". */
+  scheduled?: boolean;
 };
 
 type Props = {
-  /** Completed session count this calendar week (Mon→today window). */
+  /** Scheduled training days hit this calendar week. */
   completedThisWeek: number;
   targetPerWeek: number;
   /** Mon→Sun cells for the current week (from contributionGrid). */
@@ -34,7 +36,7 @@ export function ConsistencyCard({
         <Text style={s.label}>THIS WEEK</Text>
         <Text style={s.count}>
           {completedThisWeek}
-          <Text style={s.countDim}> / {targetPerWeek} sessions</Text>
+          <Text style={s.countDim}> / {targetPerWeek} scheduled</Text>
         </Text>
       </View>
 
@@ -42,13 +44,16 @@ export function ConsistencyCard({
         {WEEKDAY_LABELS.map((label, i) => {
           const day = weekDays[i];
           const filled = day?.filled ?? false;
+          const scheduled = day?.scheduled ?? true;
           const isToday = day?.date === todayKey;
           return (
             <View key={`${label}-${i}`} style={s.dotCol}>
               <View
                 style={[
                   s.dot,
-                  filled && s.dotFilled,
+                  !scheduled && s.dotRest,
+                  filled && scheduled && s.dotFilled,
+                  filled && !scheduled && s.dotBonus,
                   isToday && s.dotToday,
                 ]}
               />
@@ -106,6 +111,14 @@ function makeStyles(T: AppTheme) {
     },
     dotFilled: {
       backgroundColor: T.accent,
+    },
+    dotRest: {
+      backgroundColor: T.border,
+      opacity: 0.45,
+    },
+    dotBonus: {
+      backgroundColor: T.muted,
+      opacity: 0.7,
     },
     dotToday: {
       borderWidth: 1.5,

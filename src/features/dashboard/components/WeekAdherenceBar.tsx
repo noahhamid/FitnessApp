@@ -19,7 +19,7 @@ export function WeekAdherenceBar({
   const ratio = Math.min(1, Math.max(0, completed / safeTarget));
   const label =
     target > 0
-      ? `${completed} of ${target} sessions`
+      ? `${completed} of ${target} training days`
       : `${completed} sessions`;
 
   return (

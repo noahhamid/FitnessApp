@@ -8,7 +8,6 @@ export {
   useWeightGoal,
   useWorkoutHistory,
   usePersonalRecords,
-  useProgressionSuggestions,
 } from "./hooks/useProgress";
 
 export type {
@@ -16,6 +15,4 @@ export type {
   WeightGoalEntry,
   WorkoutSessionSummary,
   PersonalRecord,
-  ProgressionSuggestion,
-  ProgressionDirection,
 } from "./hooks/useProgress";

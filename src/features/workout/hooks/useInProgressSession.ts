@@ -21,6 +21,7 @@ import {
 import { dayTitleFromMuscleGroups } from "@/src/lib/plan-day-title";
 import { getTodaysPlanDayIndex } from "@/src/lib/plan-day-selection";
 import type { ExerciseLoggedSet, WorkoutPlan } from "../data/workouts";
+import { CONDITIONING_SESSION_NOTES } from "../services/conditioning-run.service";
 
 type RawSet = ExerciseLoggedSet;
 
@@ -35,8 +36,24 @@ interface RawSession {
 
 export const inProgressSessionQueryKey = ["in-progress-session"] as const;
 
-export function fetchInProgressSessions() {
-  return api.get<RawSession[]>("/api/workouts?completed=false&limit=1");
+const STALE_CARDIO_MS = 15_000;
+
+export async function fetchInProgressSessions() {
+  const sessions = await api.get<RawSession[]>(
+    "/api/workouts?completed=false&limit=10",
+  );
+  const lifting: RawSession[] = [];
+  for (const session of sessions) {
+    if (session.notes === CONDITIONING_SESSION_NOTES) {
+      const age = Date.now() - new Date(session.startedAt).getTime();
+      if (age > STALE_CARDIO_MS) {
+        void api.delete(`/api/workouts/${session.id}`).catch(() => {});
+      }
+      continue;
+    }
+    lifting.push(session);
+  }
+  return lifting;
 }
 
 /** Cold-start prefetch — call once auth/onboarding is ready so Train/Dashboard
@@ -271,6 +288,7 @@ export function useInProgressSession() {
 
     return {
       sessionId: session.id,
+      startedAt: session.startedAt,
       plan,
       percent,
       minutesLeft,
