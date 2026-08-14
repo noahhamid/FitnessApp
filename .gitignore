@@ -27,6 +27,12 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
+# This project uses npm (package-lock.json). Ignore pnpm artifacts so Vercel
+# does not auto-switch to a stale pnpm-lock.yaml.
+pnpm-lock.yaml
+pnpm-workspace.yaml
+.pnpm-store/
+
 # macOS
 .DS_Store
 *.pem
