@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { err, ok } from "../lib/response";
-import { parseJson } from "../lib/validate";
+import { isParseFail, parseJson } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
 import type { AppEnv } from "../types/hono";
 
@@ -136,13 +136,17 @@ aiRouter.post("/food-scan", async (c) => {
   }
 
   const parsedBody = await parseJson(c, foodScanSchema);
-  if (!parsedBody.success) return parsedBody.response;
+  if (isParseFail(parsedBody)) {
+    return parsedBody.response;
+  }
+
+  const { base64, mimeType } = parsedBody.data;
 
   try {
     const payload = await requestGemini(
       [
         { text: FOOD_SCAN_PROMPT },
-        { inlineData: { mimeType: parsedBody.data.mimeType, data: parsedBody.data.base64 } },
+        { inlineData: { mimeType, data: base64 } },
       ],
       {
         temperature: 0.1,

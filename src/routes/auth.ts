@@ -1,6 +1,9 @@
 import { Hono } from "hono";
-import { auth } from "../lib/auth.server";
+import { getAuth } from "../lib/auth.server";
 
 export const authRouter = new Hono();
 
-authRouter.on(["GET", "POST"], "/*", (c) => auth.handler(c.req.raw));
+authRouter.on(["GET", "POST"], "/*", async (c) => {
+  const auth = await getAuth();
+  return auth.handler(c.req.raw);
+});

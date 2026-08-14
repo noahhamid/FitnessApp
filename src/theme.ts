@@ -162,4 +162,4 @@ export const darkTheme = {
 /** Default export — light palette. Unchanged for existing `import { T }` call sites. */
 export const T = lightTheme;
 
-export type AppTheme = typeof lightTheme;
+export type AppTheme = typeof lightTheme | typeof darkTheme;

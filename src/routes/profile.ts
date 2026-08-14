@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { ok } from "../lib/response";
-import { parseJson } from "../lib/validate";
+import { isParseFail, parseJson } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
 import { computeNutritionTargets } from "../lib/nutrition-calc";
 import { generateWorkoutPlan } from "../lib/workout-plan-generator";
@@ -65,7 +65,7 @@ profileRouter.get("/", async (c) => {
 
 profileRouter.put("/", async (c) => {
   const parsed = await parseJson(c, profileSchema);
-  if (!parsed.success) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
   const data = parsed.data;
 
   const user = getUser(c);

@@ -45,11 +45,12 @@ const REST_SEC_BY_GOAL: Record<string, number> = {
 };
 
 // Shared local placeholder — do not use dataset GIFs/images (copyrighted).
-// Resolved to a packager URI so existing `{ uri: imageUrl }` call sites work.
-const EXERCISE_PLACEHOLDER_URI = Image.resolveAssetSource(
-  // User-provided asset (assets/images/icon.jfif).
-  require("../../assets/images/icon.jpg"),
-).uri;
+// `require` at module scope is fine (Metro static asset); resolving to a URI
+// must be lazy — Image.resolveAssetSource is unavailable during
+// `expo export:embed` (Node bundling), which evaluates modules on import.
+const EXERCISE_PLACEHOLDER = require("../../assets/images/exercise-placeholder.jpg");
+
+let exercisePlaceholderUri: string | undefined;
 
 const COVER_BY_LABEL_HINT: { match: RegExp; url: string }[] = [
   { match: /push|chest|triceps|shoulder/i, url: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=80" },
@@ -62,7 +63,10 @@ const DEFAULT_COVER = "https://muscleevo.net/wp-content/uploads/2020/08/full-bod
 
 /** Single shared local placeholder for every exercise / muscle-group tile. */
 export function imageForMuscleGroup(_muscleGroup?: string): string {
-  return EXERCISE_PLACEHOLDER_URI;
+  if (exercisePlaceholderUri === undefined) {
+    exercisePlaceholderUri = Image.resolveAssetSource(EXERCISE_PLACEHOLDER).uri;
+  }
+  return exercisePlaceholderUri;
 }
 
 function coverImageForDay(title: string, storedLabel: string): string {

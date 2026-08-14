@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "hono",
-  "buildCommand": "npx prisma generate",
+  "buildCommand": "npx tsc --noEmit -p tsconfig.server.json && npx prisma generate",
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
 }

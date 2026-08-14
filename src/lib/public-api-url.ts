@@ -2,7 +2,7 @@
  * Canonical public API origin for the mobile client + absolute URL helpers.
  * Prefer EXPO_PUBLIC_* / BETTER_AUTH_URL from env; fall back to Vercel prod.
  */
-export const PRODUCTION_API_URL = "https://potentialpeak-app.vercel.app";
+export const PRODUCTION_API_URL = "https://potential-peak.vercel.app";
 
 export function publicApiBase(): string {
   return (

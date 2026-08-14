@@ -29,15 +29,17 @@ function formatGroup(g: string): string {
 }
 
 export function dayTitleFromMuscleGroups(
-  exercises: { muscleGroup: string }[],
+  exercises: { muscleGroup?: string | null }[],
 ): string {
   if (exercises.length === 0) return "Workout";
 
   const counts = new Map<string, number>();
   for (const ex of exercises) {
+    if (!ex.muscleGroup) continue;
     const g = ex.muscleGroup.toLowerCase();
     counts.set(g, (counts.get(g) ?? 0) + 1);
   }
+  if (counts.size === 0) return "Workout";
 
   const total = exercises.length;
   const ranked = [...counts.entries()].sort((a, b) => {

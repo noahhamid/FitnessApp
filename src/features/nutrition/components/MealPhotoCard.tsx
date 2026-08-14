@@ -14,8 +14,17 @@ import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
+// `require` is fine at module scope; resolveAssetSource must stay lazy —
+// export:embed evaluates modules in Node without RN Image natives.
 const MANUAL_MEAL_ASSET = require("../../../../assets/images/meal.png");
-const MANUAL_MEAL_URI = Image.resolveAssetSource(MANUAL_MEAL_ASSET).uri;
+let manualMealUri: string | undefined;
+
+function getManualMealUri(): string {
+  if (manualMealUri === undefined) {
+    manualMealUri = Image.resolveAssetSource(MANUAL_MEAL_ASSET).uri;
+  }
+  return manualMealUri;
+}
 
 export type MealMacros = { carbs: number; protein: number; fat: number };
 
@@ -59,7 +68,7 @@ function MealPhotoCardBase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const displayUri = imageUrl?.trim() ? imageUrl : MANUAL_MEAL_URI;
+  const displayUri = imageUrl?.trim() ? imageUrl : getManualMealUri();
   const isRemoteScan = Boolean(imageUrl?.trim());
 
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">(
