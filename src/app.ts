@@ -37,8 +37,8 @@ app.route("/api/weight", weightRouter);
 app.route("/api/workouts", workoutsRouter);
 
 /**
- * Meal-scan photos — local disk only. Vercel ignores Hono serveStatic
- * (use public/ or blob storage for production uploads).
+ * Local-only static files for meal photos when BLOB_READ_WRITE_TOKEN is unset.
+ * On Vercel, meal photos go to Vercel Blob (see src/lib/meal-photo-storage.ts).
  */
 if (!process.env.VERCEL) {
   app.use(

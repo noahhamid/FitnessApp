@@ -27,6 +27,7 @@
     "src/lib/validate.ts",
     "src/lib/dates.ts",
     "src/lib/public-api-url.ts",
+    "src/lib/meal-photo-storage.ts",
     "src/lib/gymFoods.ts",
     "src/lib/adaptive-nutrition.ts",
     "src/lib/nutrition-calc.ts",
