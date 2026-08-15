@@ -1,4 +1,4 @@
-import { useAuth, useSignOut } from "@/src/features/auth/hooks/useAuth";
+import { useAuth, useSignOut, useDeleteAccount } from "@/src/features/auth/hooks/useAuth";
 import {
   fetchUserProfile,
   saveUserProfile,
@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import {
   ActivityIndicator,
@@ -134,11 +135,45 @@ function SignOutButton({
   );
 }
 
+function DeleteAccountButton({
+  onConfirm,
+  pending,
+}: {
+  onConfirm: () => void;
+  pending: boolean;
+}) {
+  const { T, styles } = useThemedStyles(makeStyles);
+  const [pressed, setPressed] = useState(false);
+
+  return (
+    <TouchableOpacity
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
+      onPress={onConfirm}
+      activeOpacity={0.85}
+      disabled={pending}
+      accessibilityRole="button"
+      accessibilityLabel="Delete account"
+      style={[styles.deleteAccountBtn, pressed && styles.deleteAccountBtnPressed]}
+    >
+      {pending ? (
+        <ActivityIndicator size="small" color={T.badge} />
+      ) : (
+        <>
+          <Ionicons name="trash-outline" size={16} color={T.badge} />
+          <Text style={styles.deleteAccountText}>Delete Account</Text>
+        </>
+      )}
+    </TouchableOpacity>
+  );
+}
+
 export default function ProfileScreen() {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { user, isPending: authPending } = useAuth();
   const signOutMutation = useSignOut();
+  const deleteAccountMutation = useDeleteAccount();
   const qc = useQueryClient();
 
   const { data: profile, isPending: profilePending } = useQuery({
@@ -638,6 +673,45 @@ export default function ProfileScreen() {
             }
           />
 
+          <DeleteAccountButton
+            pending={deleteAccountMutation.isPending}
+            onConfirm={() =>
+              Alert.alert(
+                "Delete account permanently?",
+                "This cannot be undone. It permanently removes your account and all of your data on PotentialPeak — workout history, meal logs, weight logs, water logs, nutrition goals, and profile settings.\n\nMeal scan photos stored in the cloud may also become inaccessible.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Delete Account",
+                    style: "destructive",
+                    onPress: () => {
+                      deleteAccountMutation.mutate(undefined, {
+                        onSuccess: (result) => {
+                          if (result.verificationEmailSent) {
+                            Alert.alert(
+                              "Check your email",
+                              "We sent a confirmation link to finish deleting your account. Open that link on this device while you are still signed in. Your account stays active until you confirm.",
+                            );
+                            return;
+                          }
+                          router.replace("/(auth)/welcome");
+                        },
+                        onError: (err) => {
+                          Alert.alert(
+                            "Couldn't delete account",
+                            err instanceof Error
+                              ? err.message
+                              : "Something went wrong. Check your connection and try again — your account was not deleted.",
+                          );
+                        },
+                      });
+                    },
+                  },
+                ],
+              )
+            }
+          />
+
           <View style={{ height: 40 }} />
         </ScrollView>
       </View>
@@ -971,6 +1045,27 @@ function makeStyles(T: AppTheme) {
       fontFamily: T.displaySemi,
       fontSize: 15,
       letterSpacing: -0.2,
+    },
+    deleteAccountBtn: {
+      marginTop: 10,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      borderWidth: 1,
+      borderColor: T.badge,
+      backgroundColor: "transparent",
+      borderRadius: T.radius.md,
+      paddingVertical: 14,
+    },
+    deleteAccountBtnPressed: {
+      opacity: 0.75,
+    },
+    deleteAccountText: {
+      fontFamily: T.displaySemi,
+      fontSize: 15,
+      letterSpacing: -0.2,
+      color: T.badge,
     },
   });
 }
