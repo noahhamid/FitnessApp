@@ -104,3 +104,8 @@ export function useTheme(): ThemeContextValue {
   }
   return ctx;
 }
+
+/** Safe for screens that may render during boot / error recovery. */
+export function useOptionalTheme(): ThemeContextValue | null {
+  return useContext(ThemeContext);
+}

@@ -1,6 +1,7 @@
 import { useAuth, useAuthHydration } from "@/src/features/auth/hooks/useAuth";
 import { useAuthStore } from "@/src/features/auth/hooks/useAuth";
 import { fetchUserProfile } from "@/src/features/profile/services/profile.service";
+import { shouldRedirectToVerifyEmail } from "@/src/lib/email-verification";
 import { isOnboardingProfileComplete } from "@/src/lib/onboarding-complete";
 import { LoadingScreen } from "@/src/ui/components/LoadingScreen";
 import { useQueryClient } from "@tanstack/react-query";
@@ -60,7 +61,7 @@ export default function Index() {
 
   if (!hydrated) return <LoadingScreen />;
   if (!hasSession) return <Redirect href="/(auth)/welcome" />;
-  if (user?.emailVerified === false) {
+  if (shouldRedirectToVerifyEmail(user)) {
     return (
       <Redirect
         href={{

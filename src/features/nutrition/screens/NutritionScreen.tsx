@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import {
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -65,6 +66,18 @@ const RECOMMENDED_RANGE: Record<MealType, string> = {
 };
 /** Display-only fallback when NutritionGoal row is missing (see STEP 4 note). */
 const FALLBACK_CALORIE_GOAL = 2400;
+
+// `require` at module scope is fine; resolveAssetSource must stay lazy
+// (breaks `expo export:embed` if called at import time).
+const NUTRITION_SUGGESTION = require("../../../../assets/images/nutrition-suggestion.jpg");
+let nutritionSuggestionUri: string | undefined;
+
+function getNutritionSuggestionUri(): string {
+  if (nutritionSuggestionUri === undefined) {
+    nutritionSuggestionUri = Image.resolveAssetSource(NUTRITION_SUGGESTION).uri;
+  }
+  return nutritionSuggestionUri;
+}
 
 function todayStr(): string {
   const n = new Date();
@@ -337,7 +350,7 @@ export default function MealScreen() {
           <AiSuggestionCard
             headline={suggestion.headline}
             body={suggestion.body}
-            imageUrl="https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&h=500&fit=crop"
+            imageUrl={getNutritionSuggestionUri()}
             suggestions={suggestion.suggestions}
             onSelect={() => {}}
           />

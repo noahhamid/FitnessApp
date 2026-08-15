@@ -29,11 +29,7 @@ function formatGroup(g: string): string {
 }
 
 export function dayTitleFromMuscleGroups(
-<<<<<<< HEAD
   exercises: { muscleGroup?: string | null }[],
-=======
-  exercises: { muscleGroup?: string }[],
->>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
 ): string {
   // Session-derived exercises can carry no muscle group at all, so drop those
   // rather than letting them skew (or crash) the tally.
@@ -44,13 +40,7 @@ export function dayTitleFromMuscleGroups(
   if (groups.length === 0) return "Workout";
 
   const counts = new Map<string, number>();
-<<<<<<< HEAD
-  for (const ex of exercises) {
-    if (!ex.muscleGroup) continue;
-    const g = ex.muscleGroup.toLowerCase();
-=======
   for (const g of groups) {
->>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
     counts.set(g, (counts.get(g) ?? 0) + 1);
   }
   if (counts.size === 0) return "Workout";

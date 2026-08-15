@@ -86,6 +86,18 @@ type ViewState = "today" | "fullPlan" | "detail" | "active" | "libraryDetail";
 /** Flip to `true` in __DEV__ to verify failed background session UX (banner + Alert). */
 const FORCE_SESSION_CREATE_FAIL = false;
 
+// `require` at module scope is fine; resolveAssetSource must stay lazy
+// (breaks `expo export:embed` if called at import time).
+const AVATAR_PLACEHOLDER = require("../../../../assets/images/avatar-placeholder.jpg");
+let avatarPlaceholderUri: string | undefined;
+
+function getAvatarPlaceholderUri(): string {
+  if (avatarPlaceholderUri === undefined) {
+    avatarPlaceholderUri = Image.resolveAssetSource(AVATAR_PLACEHOLDER).uri;
+  }
+  return avatarPlaceholderUri;
+}
+
 /** Resolve a plan exercise to LibraryExercise shape for ExerciseDetailCard. */
 function toLibraryExercise(
   exercise: { id: string; name: string; muscleGroup?: string },
@@ -752,7 +764,7 @@ export default function WorkoutScreen() {
         <Reveal delay={0}>
           <WorkoutTabHeader
             name={user?.name ?? "there"}
-            avatarUrl="https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=200&q=80"
+            avatarUrl={getAvatarPlaceholderUri()}
           />
         </Reveal>
 

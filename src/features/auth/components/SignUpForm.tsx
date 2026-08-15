@@ -37,6 +37,7 @@ import {
   onboardingParamsForNavigation,
   type OnboardingAuthParams,
 } from "../services/onboarding-payload.service";
+import { clientRequiresEmailVerification } from "@/src/lib/email-verification";
 
 function heroScrim(bgHex: string, resolved: "light" | "dark") {
   const hex = bgHex.replace("#", "");
@@ -92,13 +93,17 @@ export function SignUpForm() {
         await signUp(email, password, firstName);
         setAccountCreated(true);
       }
-      router.replace({
-        pathname: "/(auth)/verify-email",
-        params: {
-          ...onboardingParamsForNavigation(params),
-          email: email.trim(),
-        },
-      });
+      if (clientRequiresEmailVerification()) {
+        router.replace({
+          pathname: "/(auth)/verify-email",
+          params: {
+            ...onboardingParamsForNavigation(params),
+            email: email.trim(),
+          },
+        });
+        return;
+      }
+      await navigateAfterAuth(params);
     } catch (e) {
       setError(
         e instanceof Error

@@ -46,36 +46,46 @@ const REST_SEC_BY_GOAL: Record<string, number> = {
   health: 60,
 };
 
-// Shared local placeholder — do not use dataset GIFs/images (copyrighted).
-// `require` at module scope is fine (Metro static asset); resolving to a URI
-// must be lazy — Image.resolveAssetSource is unavailable during
-// `expo export:embed` (Node bundling), which evaluates modules on import.
+// Local assets: `require` at module scope is fine (Metro static).
+// Resolving to a URI must be lazy — Image.resolveAssetSource is unavailable
+// during `expo export:embed` (Node bundling), which evaluates modules on import.
 const EXERCISE_PLACEHOLDER = require("../../assets/images/exercise-placeholder.jpg");
+const PUSH_DAY_COVER = require("../../assets/images/push-day-cover.jpg");
+const PULL_DAY_COVER = require("../../assets/images/pull-day-cover.jpg");
+const LEGS_DAY_COVER = require("../../assets/images/legs-day-cover.jpg");
+const UPPER_DAY_COVER = require("../../assets/images/upper-day-cover.jpg");
+const FULL_BODY_COVER = require("../../assets/images/full-body-cover.jpg");
 
-let exercisePlaceholderUri: string | undefined;
+type LazyAssetUri = { asset: number; uri?: string };
 
-const COVER_BY_LABEL_HINT: { match: RegExp; url: string }[] = [
-  { match: /push|chest|triceps|shoulder/i, url: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=80" },
-  { match: /pull|back|biceps/i, url: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&q=80" },
-  { match: /leg|quad|hamstring|glute|calf|lower/i, url: "https://hips.hearstapps.com/hmg-prod/images/muscular-shirtless-man-exercising-with-weights-in-royalty-free-image-1700572250.jpg?crop=0.88847xw:1xh;center,top&resize=1200:*" },
-  { match: /upper/i, url: "https://i.pinimg.com/736x/22/72/88/2272887bd04a94150dc8f84bddd4d87a.jpg" },
-  { match: /full body/i, url: "https://muscleevo.net/wp-content/uploads/2020/08/full-body-workout.jpg" },
+function resolveLazyAssetUri(slot: LazyAssetUri): string {
+  if (slot.uri === undefined) {
+    slot.uri = Image.resolveAssetSource(slot.asset).uri;
+  }
+  return slot.uri;
+}
+
+const exercisePlaceholder: LazyAssetUri = { asset: EXERCISE_PLACEHOLDER };
+const defaultCover: LazyAssetUri = { asset: FULL_BODY_COVER };
+
+const COVER_BY_LABEL_HINT: { match: RegExp; slot: LazyAssetUri }[] = [
+  { match: /push|chest|triceps|shoulder/i, slot: { asset: PUSH_DAY_COVER } },
+  { match: /pull|back|biceps/i, slot: { asset: PULL_DAY_COVER } },
+  { match: /leg|quad|hamstring|glute|calf|lower/i, slot: { asset: LEGS_DAY_COVER } },
+  { match: /upper/i, slot: { asset: UPPER_DAY_COVER } },
+  { match: /full body/i, slot: { asset: FULL_BODY_COVER } },
 ];
-const DEFAULT_COVER = "https://muscleevo.net/wp-content/uploads/2020/08/full-body-workout.jpg";
 
 /** Single shared local placeholder for every exercise / muscle-group tile. */
 export function imageForMuscleGroup(_muscleGroup?: string): string {
-  if (exercisePlaceholderUri === undefined) {
-    exercisePlaceholderUri = Image.resolveAssetSource(EXERCISE_PLACEHOLDER).uri;
-  }
-  return exercisePlaceholderUri;
+  return resolveLazyAssetUri(exercisePlaceholder);
 }
 
 function coverImageForDay(title: string, storedLabel: string): string {
   const hit = COVER_BY_LABEL_HINT.find(
     (h) => h.match.test(title) || h.match.test(storedLabel),
   );
-  return hit?.url ?? DEFAULT_COVER;
+  return resolveLazyAssetUri(hit?.slot ?? defaultCover);
 }
 
 // Generic form cues by movement pattern — used when Exercise.instructions is null.

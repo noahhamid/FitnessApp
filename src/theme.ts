@@ -164,9 +164,6 @@ export const darkTheme = {
 /** Default export — light palette. Unchanged for existing `import { T }` call sites. */
 export const T = lightTheme;
 
-<<<<<<< HEAD
-export type AppTheme = typeof lightTheme | typeof darkTheme;
-=======
 /**
  * Shared shape of both palettes. Color/font tokens are widened to `string` so
  * darkTheme's literals stay assignable — `typeof lightTheme` alone would pin
@@ -177,4 +174,3 @@ export type AppTheme = {
     ? string
     : (typeof lightTheme)[K];
 };
->>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8

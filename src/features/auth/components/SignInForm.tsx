@@ -36,6 +36,7 @@ import {
   onboardingParamsForNavigation,
   type OnboardingAuthParams,
 } from "../services/onboarding-payload.service";
+import { clientRequiresEmailVerification } from "@/src/lib/email-verification";
 
 function heroScrim(bgHex: string, resolved: "light" | "dark") {
   const hex = bgHex.replace("#", "");
@@ -90,7 +91,7 @@ export function SignInForm() {
       }
       await navigateAfterAuth(params);
     } catch (e) {
-      if (isEmailNotVerifiedError(e)) {
+      if (isEmailNotVerifiedError(e) && clientRequiresEmailVerification()) {
         router.replace({
           pathname: "/(auth)/verify-email",
           params: {

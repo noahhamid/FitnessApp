@@ -151,7 +151,7 @@ function MealPhotoCardBase({
           ) : (
             <View style={s.imageFallback}>
               <Image
-                source={{ uri: MANUAL_MEAL_URI }}
+                source={{ uri: getManualMealUri() }}
                 style={s.manualFallbackImage}
                 resizeMode="contain"
                 accessibilityIgnoresInvertColors

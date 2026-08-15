@@ -1,4 +1,8 @@
-import { useTheme, type ResolvedScheme } from "@/src/context/ThemeContext";
+import { useColorScheme } from "react-native";
+import {
+  useOptionalTheme,
+  type ResolvedScheme,
+} from "@/src/context/ThemeContext";
 
 export type OnboardingColors = {
   accent: string;
@@ -103,9 +107,14 @@ export function getOnboardingColors(
 /**
  * App-wide resolved scheme from ThemeContext.
  * Defaults to the phone OS (`mode: "system"`); Profile Light/Dark overrides it.
+ * Falls back to RN Appearance if somehow rendered outside AppThemeProvider
+ * (boot / Fast Refresh recovery) so auth layouts don't crash.
  */
 export function useSystemResolvedScheme(): ResolvedScheme {
-  return useTheme().resolved;
+  const ctx = useOptionalTheme();
+  const systemScheme = useColorScheme();
+  if (ctx) return ctx.resolved;
+  return systemScheme === "dark" ? "dark" : "light";
 }
 
 /** Onboarding / auth palette — same light/dark decision as the rest of the app. */

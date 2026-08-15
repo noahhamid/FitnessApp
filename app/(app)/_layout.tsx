@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useAuth, useAuthHydration } from "@/src/features/auth/hooks/useAuth";
 import { prefetchWorkoutBootQueries } from "@/src/features/workout/hooks/useInProgressSession";
 import { useMealWorkoutReminders } from "@/src/hooks/useMealWorkoutReminders";
+import { shouldRedirectToVerifyEmail } from "@/src/lib/email-verification";
 import { LoadingScreen } from "@/src/ui/components/LoadingScreen";
 import { useQueryClient } from "@tanstack/react-query";
 import { Redirect, Stack } from "expo-router";
@@ -25,7 +26,7 @@ export default function AppGroupLayout() {
 
   if (!hydrated) return <LoadingScreen />;
   if (!hasSession) return <Redirect href="/(auth)/welcome" />;
-  if (user?.emailVerified === false) {
+  if (shouldRedirectToVerifyEmail(user)) {
     return (
       <Redirect
         href={{

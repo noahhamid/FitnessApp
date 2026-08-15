@@ -104,11 +104,7 @@ profileRouter.get("/", async (c) => {
 
 profileRouter.put("/", async (c) => {
   const parsed = await parseJson(c, profileSchema);
-<<<<<<< HEAD
   if (isParseFail(parsed)) return parsed.response;
-=======
-  if (parsed.success === false) return parsed.response;
->>>>>>> fe017fc43e2de198e5fb2563785c32322b8f5fd8
   const data = parsed.data;
 
   const user = getUser(c);
