@@ -15,12 +15,18 @@ const config: ExpoConfig = {
     supportsTablet: true,
     bundleIdentifier: "com.exo.fitness",
     usesAppleSignIn: true,
+    infoPlist: {
+      NSCameraUsageDescription:
+        "PotentialPeak uses the camera so you can photograph meals for calorie and macro estimates.",
+      NSPhotoLibraryUsageDescription:
+        "PotentialPeak accesses your photo library when you pick an existing meal photo or progress photo to save in the app.",
+    },
   },
   android: {
     package: "com.exo.fitness",
-    // Local API is http://192.168.x.x — without this, Android blocks cleartext
-    // and auth shows a generic "Network request failed".
-    usesCleartextTraffic: true,
+    // HTTP cleartext only for local/dev and non-production EAS profiles
+    // (LAN API). Store builds must use HTTPS (Vercel).
+    usesCleartextTraffic: process.env.EAS_BUILD_PROFILE !== "production",
     adaptiveIcon: {
       // potentialpeak_logo.jpg, inset so the figure survives circle masks.
       foregroundImage: "./assets/images/android-icon-foreground.png",
