@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
   Pressable,
@@ -8,6 +8,9 @@ import {
   StyleSheet,
   Text,
   View,
+  Alert,
+  Platform,
+  ActionSheetIOS,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { tabContentBottomPad } from "@/src/lib/tab-chrome";
@@ -40,6 +43,10 @@ import {
   useAdjustWater,
   useWeeklyTrend,
   useSuggestion,
+  useDeleteMeal,
+  useAddMeal,
+  useAdaptiveSuggestion,
+  useApplyAdaptiveSuggestion,
 } from "../hooks/useNutrition";
 import type { MealLogEntry, MealType } from "../types/nutrition.types";
 import {
@@ -50,11 +57,13 @@ import {
   signupDateOnly,
   weekDatesFor,
 } from "@/src/lib/week-days";
+import { suggestMealSlotForQuickAdd } from "@/src/lib/meal-workout-reminders";
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import {
   invalidateQueryPrefixes,
   usePullToRefresh,
 } from "@/src/hooks/usePullToRefresh";
+import { AdaptiveSuggestionCard } from "../components/AdaptiveSuggestionCard";
 
 const WATER_GOAL_GLASSES = 8;
 const MEAL_SLOTS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"];
@@ -158,6 +167,18 @@ export default function MealScreen() {
   // API returns end-6…end inclusive (7 days), so Sunday is included.
   const { data: weekDots } = useWeeklyTrend(weekEnd);
   const { data: suggestion } = useSuggestion(selectedDate);
+  const deleteMeal = useDeleteMeal(selectedDate);
+  const addMeal = useAddMeal();
+  const { data: adaptive } = useAdaptiveSuggestion();
+  const applyAdaptive = useApplyAdaptiveSuggestion();
+  const [adaptiveStaleNotice, setAdaptiveStaleNotice] = useState<string | null>(
+    null,
+  );
+
+  // Clear stale banner once a fresh adaptive payload arrives.
+  useEffect(() => {
+    if (adaptive) setAdaptiveStaleNotice(null);
+  }, [adaptive]);
 
   const mealsBySlot = useMemo(() => {
     const map: Partial<Record<MealType, MealLogEntry>> = {};
@@ -166,6 +187,59 @@ export default function MealScreen() {
     }
     return map;
   }, [meals]);
+
+  const openMealActions = useCallback(
+    (entry: MealLogEntry) => {
+      const goEdit = () => {
+        router.push({
+          pathname: "/log-meal",
+          params: {
+            id: entry.id,
+            slot: entry.meal,
+            date: entry.log_date,
+            name: entry.name,
+            cal: String(entry.cal),
+            protein: String(entry.protein),
+            carbs: String(entry.carbs),
+            fat: String(entry.fat),
+          },
+        });
+      };
+
+      const confirmDelete = () => {
+        Alert.alert("Delete this meal log?", "This cannot be undone.", [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => deleteMeal.mutate(entry.id),
+          },
+        ]);
+      };
+
+      if (Platform.OS === "ios") {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ["Cancel", "Edit", "Delete"],
+            cancelButtonIndex: 0,
+            destructiveButtonIndex: 2,
+          },
+          (index) => {
+            if (index === 1) goEdit();
+            if (index === 2) confirmDelete();
+          },
+        );
+        return;
+      }
+
+      Alert.alert(entry.name, undefined, [
+        { text: "Cancel", style: "cancel" },
+        { text: "Edit", onPress: goEdit },
+        { text: "Delete", style: "destructive", onPress: confirmDelete },
+      ]);
+    },
+    [deleteMeal, router],
+  );
 
   const loggedByDate = useMemo(() => {
     const set = new Set<string>();
@@ -264,6 +338,51 @@ export default function MealScreen() {
           onEditGoal={() => setTargetsOpen(true)}
         />
 
+        {adaptive?.eligible === true &&
+          adaptive.adjustmentNeeded === true && (
+            <AdaptiveSuggestionCard
+              explanation={adaptive.explanation}
+              currentCalories={adaptive.currentCalories}
+              suggestedCalories={adaptive.suggestedCalories}
+              delta={adaptive.delta}
+              accepting={applyAdaptive.isPending}
+              staleNotice={adaptiveStaleNotice}
+              onAccept={() => {
+                setAdaptiveStaleNotice(null);
+                applyAdaptive.mutate(adaptive.suggestedCalories, {
+                  onSuccess: () => {
+                    setAdaptiveStaleNotice(null);
+                    Alert.alert(
+                      "Target updated",
+                      `Your daily target is now ${adaptive.suggestedCalories} kcal.`,
+                    );
+                  },
+                  onError: (err) => {
+                    const msg =
+                      err instanceof Error ? err.message : String(err);
+                    const stale =
+                      /stale|no longer eligible|no adjustment needed|Fetch a fresh/i.test(
+                        msg,
+                      );
+                    if (stale) {
+                      setAdaptiveStaleNotice(
+                        "Your data changed — recalculating a fresh suggestion…",
+                      );
+                      void queryClient.invalidateQueries({
+                        queryKey: ["nutrition", "adaptive-suggestion"],
+                      });
+                      return;
+                    }
+                    Alert.alert(
+                      "Couldn't apply",
+                      msg || "Something went wrong. Try again.",
+                    );
+                  },
+                });
+              }}
+            />
+          )}
+
         <WaterTracker
           glasses={water?.glasses ?? 0}
           total={WATER_GOAL_GLASSES}
@@ -327,7 +446,7 @@ export default function MealScreen() {
                     fat: entry.fat,
                   }}
                   imageUrl={entry.image_url ?? undefined}
-                  onPress={() => {}}
+                  onPress={() => openMealActions(entry)}
                   entranceDelay={0}
                 />
               ) : (
@@ -352,7 +471,25 @@ export default function MealScreen() {
             body={suggestion.body}
             imageUrl={getNutritionSuggestionUri()}
             suggestions={suggestion.suggestions}
-            onSelect={() => {}}
+            pendingLabel={
+              addMeal.isPending ? addMeal.variables?.name ?? null : null
+            }
+            onSelect={async (chip) => {
+              const slot = suggestMealSlotForQuickAdd(mealsBySlot);
+              await addMeal.mutateAsync({
+                log_date: selectedDate,
+                meal: slot,
+                name: chip.label,
+                cal: chip.calories,
+                protein: chip.protein,
+                carbs: chip.carbs,
+                fat: chip.fat,
+                quantity: 1,
+                unit: "serving",
+                image_url: null,
+                source: "manual",
+              });
+            }}
           />
         )}
 

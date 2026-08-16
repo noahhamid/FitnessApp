@@ -450,7 +450,13 @@ nutritionRouter.get("/suggestions", async (c) => {
   return ok(c, {
     headline,
     body,
-    suggestions: picks.map((f) => ({ label: f.name, calories: f.cal })),
+    suggestions: picks.map((f) => ({
+      label: f.name,
+      calories: f.cal,
+      protein: f.protein,
+      carbs: f.carbs,
+      fat: f.fat,
+    })),
   });
 });
 

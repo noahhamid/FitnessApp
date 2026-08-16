@@ -60,6 +60,41 @@ export function mealTypeToSlot(meal: MealType): ReminderSlot {
   }
 }
 
+const MEAL_TYPE_ORDER: MealType[] = [
+  "Breakfast",
+  "Lunch",
+  "Snack",
+  "Dinner",
+];
+
+/**
+ * Pick a meal slot for quick-add (suggestion chips, etc.).
+ * Uses reminder clock windows: current window if empty, else next empty
+ * in chronological order, else Snack as last resort.
+ */
+export function suggestMealSlotForQuickAdd(
+  filled: Partial<Record<MealType, unknown>>,
+  now: Date = new Date(),
+): MealType {
+  const minutes = now.getHours() * 60 + now.getMinutes();
+
+  let current: MealType = "Breakfast";
+  for (const meal of MEAL_TYPE_ORDER) {
+    const { hour, minute } = REMINDER_TIMES[mealTypeToSlot(meal)];
+    if (hour * 60 + minute <= minutes) current = meal;
+  }
+
+  if (!filled[current]) return current;
+
+  const start = MEAL_TYPE_ORDER.indexOf(current);
+  for (let i = 1; i < MEAL_TYPE_ORDER.length; i++) {
+    const meal = MEAL_TYPE_ORDER[(start + i) % MEAL_TYPE_ORDER.length];
+    if (!filled[meal]) return meal;
+  }
+
+  return "Snack";
+}
+
 function copyFor(
   slot: ReminderSlot,
   workoutTitle?: string,

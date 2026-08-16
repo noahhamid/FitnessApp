@@ -3,6 +3,7 @@ import {
   fetchUserProfile,
   saveUserProfile,
 } from "@/src/features/profile/services/profile.service";
+import { Sentry, sentryEnabled } from "@/src/lib/sentry";
 import {
   useCompletedSessionCount,
   useWorkoutHistory,
@@ -405,11 +406,37 @@ export default function ProfileScreen() {
           )}
 
           <GlassSurface style={styles.userCard}>
-            <View style={styles.avatarRing}>
-              <View style={styles.avatar}>
-                <Text style={styles.initials}>{initials}</Text>
+            {/* TEMPORARY — Sentry wiring check. Long-press avatar to fire a
+                test event. Remove once the issue appears in the Sentry dashboard. */}
+            <TouchableOpacity
+              activeOpacity={1}
+              delayLongPress={800}
+              onLongPress={() => {
+                const err = new Error(
+                  "Test error - remove before production",
+                );
+                if (sentryEnabled) {
+                  Sentry.captureException(err);
+                  Alert.alert(
+                    "Sentry test sent",
+                    "Captured a test exception. Check your Sentry Issues feed (may take ~30s).",
+                  );
+                } else {
+                  Alert.alert(
+                    "Sentry disabled",
+                    "EXPO_PUBLIC_SENTRY_DSN is missing from this build — sentryEnabled is false.",
+                  );
+                }
+              }}
+              accessibilityRole="button"
+              accessibilityHint="Long press to send a temporary Sentry test error"
+            >
+              <View style={styles.avatarRing}>
+                <View style={styles.avatar}>
+                  <Text style={styles.initials}>{initials}</Text>
+                </View>
               </View>
-            </View>
+            </TouchableOpacity>
 
             <View style={styles.userInfo}>
               <Text style={styles.userName} numberOfLines={1}>

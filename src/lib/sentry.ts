@@ -4,8 +4,8 @@ const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN?.trim();
 
 /**
  * Crash reporting only — product analytics stays out of scope for launch.
- * Set EXPO_PUBLIC_SENTRY_DSN from your Sentry project settings
- * (Settings → Client Keys / DSN). Leave unset to disable in local Expo Go.
+ * Set EXPO_PUBLIC_SENTRY_DSN (EAS env / .env.local). `sentryEnabled` is
+ * `Boolean(dsn)` — true only when that var is a non-empty string after trim.
  */
 export const sentryEnabled = Boolean(dsn);
 

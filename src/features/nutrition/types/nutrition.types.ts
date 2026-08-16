@@ -53,7 +53,13 @@ export type MealLogEntry = {
 export type NutritionSuggestion = {
   headline: string;
   body: string;
-  suggestions: { label: string; calories: number }[];
+  suggestions: {
+    label: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  }[];
 };
 
 /** Local food catalog item (seed + device AsyncStorage custom foods). */

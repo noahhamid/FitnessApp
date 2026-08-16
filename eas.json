@@ -21,7 +21,8 @@
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
         "EXPO_PUBLIC_API_URL": "https://potential-peak.vercel.app",
-        "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potential-peak.vercel.app"
+        "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potential-peak.vercel.app",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://f8139614f0bbc1d1ec4a8f8881e558f9@o4511916203769856.ingest.de.sentry.io/4511916250759248"
       }
     },
     "production": {
@@ -32,7 +33,8 @@
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
         "EXPO_PUBLIC_API_URL": "https://potential-peak.vercel.app",
-        "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potential-peak.vercel.app"
+        "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potential-peak.vercel.app",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://f8139614f0bbc1d1ec4a8f8881e558f9@o4511916203769856.ingest.de.sentry.io/4511916250759248"
       }
     }
   },

@@ -1,6 +1,7 @@
 // src/features/nutrition/services/nutrition.service.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "@/src/lib/api";
+import type { AdaptiveSuggestion } from "@/src/lib/adaptive-nutrition";
 import type {
   DailyTotals,
   FoodLibraryItem,
@@ -161,6 +162,11 @@ export async function applyAdaptiveSuggestion(
   return toNutritionGoals(row);
 }
 
+/** Weight-trend calorie adjustment suggestion (read-only). */
+export async function fetchAdaptiveSuggestion(): Promise<AdaptiveSuggestion> {
+  return api.get<AdaptiveSuggestion>("/api/nutrition/adaptive-suggestion");
+}
+
 export async function fetchMealLog(date?: string): Promise<MealLogEntry[]> {
   const logDate = date ?? todayLocal();
   const rows = await api.get<ApiMealLog[]>(
@@ -193,6 +199,30 @@ export async function addMealEntry(
     fat: entry.fat,
     imageUrl: entry.image_url ?? undefined,
     source: entry.source ?? "manual",
+  });
+  return toMealLogEntry(row);
+}
+
+export async function updateMealEntry(
+  id: string,
+  patch: Partial<{
+    log_date: string;
+    meal: MealLogEntry["meal"];
+    name: string;
+    cal: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  }>,
+): Promise<MealLogEntry> {
+  const row = await api.patch<ApiMealLog>(`/api/nutrition/log/${id}`, {
+    ...(patch.log_date !== undefined && { logDate: patch.log_date }),
+    ...(patch.meal !== undefined && { meal: patch.meal }),
+    ...(patch.name !== undefined && { name: patch.name }),
+    ...(patch.cal !== undefined && { cal: patch.cal }),
+    ...(patch.protein !== undefined && { protein: patch.protein }),
+    ...(patch.carbs !== undefined && { carbs: patch.carbs }),
+    ...(patch.fat !== undefined && { fat: patch.fat }),
   });
   return toMealLogEntry(row);
 }

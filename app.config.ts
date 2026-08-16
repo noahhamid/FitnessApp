@@ -75,6 +75,8 @@ const config: ExpoConfig = {
         defaultChannel: "meal-workout-reminders",
       },
     ],
+    // Native crash hooks + source-map upload wiring for @sentry/react-native.
+    "@sentry/react-native/expo",
   ],
   experiments: {
     typedRoutes: false,

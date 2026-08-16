@@ -24,6 +24,8 @@ import {
   fetchWeeklyTrend,
   upsertNutritionGoals,
   applyAdaptiveSuggestion,
+  updateMealEntry,
+  fetchAdaptiveSuggestion,
 } from "../services/nutrition.service";
 import {
   cancelReminder,
@@ -99,8 +101,38 @@ export function useAddMeal() {
       qc.invalidateQueries({ queryKey: ["nutrition", "weekly"] });
       qc.invalidateQueries({ queryKey: ["nutrition", "log-range"] });
       qc.invalidateQueries({ queryKey: ["week-overview", "meals"] });
+      qc.invalidateQueries({ queryKey: ["nutrition", "suggestion"] });
       // Drop the matching local reminder so a logged meal never nags.
       void cancelReminder(mealTypeToSlot(vars.meal), vars.log_date);
+    },
+  });
+}
+
+export function useUpdateMeal(date = today()) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...patch
+    }: {
+      id: string;
+    } & Partial<{
+      log_date: string;
+      meal: MealLogEntry["meal"];
+      name: string;
+      cal: number;
+      protein: number;
+      carbs: number;
+      fat: number;
+    }>) => updateMealEntry(id, patch),
+    onSuccess: (updated) => {
+      const logDate = updated.log_date || date;
+      qc.invalidateQueries({ queryKey: KEYS.log(logDate) });
+      qc.invalidateQueries({ queryKey: KEYS.totals(logDate) });
+      qc.invalidateQueries({ queryKey: ["nutrition", "weekly"] });
+      qc.invalidateQueries({ queryKey: ["nutrition", "log-range"] });
+      qc.invalidateQueries({ queryKey: ["week-overview", "meals"] });
+      qc.invalidateQueries({ queryKey: ["nutrition", "suggestion"] });
     },
   });
 }
@@ -115,6 +147,7 @@ export function useDeleteMeal(date = today()) {
       qc.invalidateQueries({ queryKey: ["nutrition", "weekly"] });
       qc.invalidateQueries({ queryKey: ["nutrition", "log-range"] });
       qc.invalidateQueries({ queryKey: ["week-overview", "meals"] });
+      qc.invalidateQueries({ queryKey: ["nutrition", "suggestion"] });
     },
   });
 }
@@ -197,6 +230,13 @@ export function useSuggestion(date = today()) {
   return useQuery<NutritionSuggestion | null>({
     queryKey: ["nutrition", "suggestion", date],
     queryFn: () => fetchSuggestion(date),
+  });
+}
+
+export function useAdaptiveSuggestion() {
+  return useQuery({
+    queryKey: KEYS.adaptive,
+    queryFn: fetchAdaptiveSuggestion,
   });
 }
 
