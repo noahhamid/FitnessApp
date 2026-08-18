@@ -1,6 +1,14 @@
 /**
  * Transactional auth mail via Resend. Throws if mail is not configured
  * or the provider rejects the send — callers must not pretend it worked.
+ *
+ * PRE-LAUNCH BLOCKER — Resend is in sandbox mode for this project:
+ *   - Use FROM `onboarding@resend.dev` (not beth.t@example.com).
+ *   - Sandbox only delivers to the Resend account owner's email
+ *     (currently fitsumfg03@gmail.com). Real user addresses will NOT
+ *     receive verification / password-reset / delete-confirmation mail
+ *     until a domain is verified at https://resend.com/domains and
+ *     RESEND_FROM_EMAIL is updated to that domain before public launch.
  */
 export async function sendAuthEmail(input: {
   to: string;

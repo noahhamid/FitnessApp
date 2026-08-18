@@ -296,6 +296,27 @@
     "instructions": "Stand with your feet shoulder-width apart and your knees slightly bent. Keep your left hand up to protect your face and your right hand by your chin. Rotate your hips and pivot on your left foot as you extend your left arm forward in a punching motion. Twist your torso and engage your core muscles to generate power in the punch. Snap your arm back to the starting position and repeat for the desired number of repetitions."
   },
   {
+    "name": "Handstand Push-up",
+    "muscleGroup": "shoulders",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Find a wall and face away from it, standing a few feet away. Place your hands on the ground shoulder-width apart and kick your feet up against the wall, coming into a handstand position. Bend your elbows and lower your head towards the ground, keeping your body in a straight line. Push through your hands and extend your arms to return to the starting position. Repeat for the desired number of repetitions."
+  },
+  {
+    "name": "Pike-to-cobra Push-up",
+    "muscleGroup": "shoulders",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Start in a push-up position with your hands slightly wider than shoulder-width apart and your feet together. Engage your core and lift your hips up towards the ceiling, forming an inverted V shape with your body. Lower your upper body towards the ground by bending your elbows, keeping them close to your body. As you lower down, shift your weight forward and transition into a cobra pose by straightening your arms and lifting your chest up. Reverse the movement by bending your elbows and lowering your chest back down towards the ground. Push through your hands to return to the inverted V position. Continue the movement by lowering your hips back down towards the ground, returning to the starting push-up position. Repeat for the desired number of repetitions."
+  },
+  {
+    "name": "Shoulder Tap",
+    "muscleGroup": "shoulders",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Start in a high plank position with your hands directly under your shoulders and your body in a straight line. Engage your core and lift your right hand off the ground, reaching across to tap your left shoulder. Place your right hand back on the ground and repeat with your left hand tapping your right shoulder. Continue alternating shoulder taps while keeping your hips and torso stable. Repeat for the desired number of repetitions."
+  },
+  {
     "name": "Dumbbell Incline Raise",
     "muscleGroup": "shoulders",
     "movementPattern": "push",

@@ -15,6 +15,12 @@ const config: ExpoConfig = {
     supportsTablet: true,
     bundleIdentifier: "com.exo.fitness",
     usesAppleSignIn: true,
+    infoPlist: {
+      NSCameraUsageDescription:
+        "PotentialPeak uses the camera so you can photograph meals for calorie and macro estimates.",
+      NSPhotoLibraryUsageDescription:
+        "PotentialPeak accesses your photo library when you pick an existing meal photo or progress photo to save in the app.",
+    },
   },
   android: {
     package: "com.exo.fitness",
@@ -73,6 +79,18 @@ const config: ExpoConfig = {
         defaultChannel: "meal-workout-reminders",
       },
     ],
+    // HTTP cleartext only for local/dev and non-production EAS profiles
+    // (LAN API). Store builds must use HTTPS (Vercel).
+    [
+      "expo-build-properties",
+      {
+        android: {
+          usesCleartextTraffic: process.env.EAS_BUILD_PROFILE !== "production",
+        },
+      },
+    ],
+    // Native crash hooks + source-map upload wiring for @sentry/react-native.
+    "@sentry/react-native/expo",
   ],
   experiments: {
     typedRoutes: false,

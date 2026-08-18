@@ -166,6 +166,11 @@ export async function applyAdaptiveSuggestion(
   return toNutritionGoals(row);
 }
 
+/** Weight-trend calorie adjustment suggestion (read-only). */
+export async function fetchAdaptiveSuggestion(): Promise<AdaptiveSuggestion> {
+  return api.get<AdaptiveSuggestion>("/api/nutrition/adaptive-suggestion");
+}
+
 export async function fetchMealLog(date?: string): Promise<MealLogEntry[]> {
   const logDate = date ?? todayLocal();
   const rows = await api.get<ApiMealLog[]>(

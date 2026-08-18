@@ -14,6 +14,8 @@ import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
+// `require` is fine at module scope; resolveAssetSource must stay lazy —
+// export:embed evaluates modules in Node without RN Image natives.
 const MANUAL_MEAL_ASSET = require("../../../../assets/images/meal.png");
 const MANUAL_MEAL_URI =
   typeof Image.resolveAssetSource === "function"
@@ -62,7 +64,7 @@ function MealPhotoCardBase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const displayUri = imageUrl?.trim() ? imageUrl : MANUAL_MEAL_URI;
+  const displayUri = imageUrl?.trim() ? imageUrl : getManualMealUri();
   const isRemoteScan = Boolean(imageUrl?.trim());
 
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">(
@@ -145,7 +147,7 @@ function MealPhotoCardBase({
           ) : (
             <View style={s.imageFallback}>
               <Image
-                source={{ uri: MANUAL_MEAL_URI }}
+                source={{ uri: getManualMealUri() }}
                 style={s.manualFallbackImage}
                 resizeMode="contain"
                 accessibilityIgnoresInvertColors

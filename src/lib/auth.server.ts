@@ -1,50 +1,58 @@
-import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
-import { expo } from "@better-auth/expo";
-import { normalizeDisplayFirstName } from "./display-name";
 import { prisma } from "./prisma";
+import { normalizeDisplayFirstName } from "./display-name";
 import { sendAuthEmail } from "./send-auth-email";
 
 const APP_VERIFY_EMAIL_URL = "com.exo.fitness://verify-email";
 
-export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL,
-  secret: process.env.BETTER_AUTH_SECRET,
+/**
+ * better-auth (and @better-auth/expo) are ESM-only. Root package.json is
+ * "type": "commonjs", so Vercel's Hono preset compiles this file to CJS and a
+ * static `import`/`require` of better-auth crashes with ERR_REQUIRE_ESM.
+ *
+ * Dynamic `import()` works from CJS and loads the ESM package correctly.
+ * Keep all better-auth imports inside this async factory — never top-level.
+ */
+async function createAuth() {
+  const [{ betterAuth }, { prismaAdapter }, { expo }] = await Promise.all([
+    import("better-auth"),
+    import("better-auth/adapters/prisma"),
+    import("@better-auth/expo"),
+  ]);
 
-  plugins: [expo()],
+  return betterAuth({
+    baseURL: process.env.BETTER_AUTH_URL,
+    secret: process.env.BETTER_AUTH_SECRET,
 
-  database: prismaAdapter(prisma, {
-    provider: "postgresql",
-  }),
+    plugins: [expo()],
 
-  databaseHooks: {
+    database: prismaAdapter(prisma, {
+      provider: "postgresql",
+    }),
+
     user: {
-      create: {
-        async before(user) {
-          if (typeof user.name !== "string" || !user.name.trim()) {
-            return { data: user };
-          }
-          return {
-            data: {
-              ...user,
-              name: normalizeDisplayFirstName(user.name),
-            },
-          };
-        },
-      },
-      update: {
-        async before(user) {
-          if (typeof user.name !== "string") return { data: user };
-          return {
-            data: {
-              ...user,
-              name: normalizeDisplayFirstName(user.name),
-            },
-          };
+      deleteUser: {
+        enabled: true,
+        // OAuth users have no password — email confirm is required for them.
+        // Password users can also delete with a fresh session (default 1 day).
+        sendDeleteAccountVerification: async ({ user, token }) => {
+          // Mobile app deep link — Better Auth's default web callback URL requires
+          // a browser session cookie on the API host, which email clients don't have.
+          // Opening this link in the app (still signed in) completes deletion via token.
+          const confirmUrl = `com.exo.fitness://delete-account?token=${encodeURIComponent(token)}`;
+          await sendAuthEmail({
+            to: user.email,
+            subject: "Confirm deleting your PotentialPeak account",
+            html: `
+      <p>Hi${user.name ? ` ${user.name}` : ""},</p>
+      <p>We received a request to permanently delete your PotentialPeak account and all associated data (workouts, meals, weight logs, and profile).</p>
+      <p>This cannot be undone. Open the link below on the device where you are signed in to PotentialPeak:</p>
+      <p><a href="${confirmUrl}">Delete my account permanently</a></p>
+      <p>If you didn't request this, you can ignore this email — your account will stay active.</p>
+    `,
+          });
         },
       },
     },
-  },
 
   emailAndPassword: {
     enabled: true,
@@ -62,7 +70,6 @@ export const auth = betterAuth({
         `,
       });
     },
-  },
 
   emailVerification: {
     sendOnSignUp: true,
@@ -81,56 +88,38 @@ export const auth = betterAuth({
         `,
       });
     },
-  },
 
-  socialProviders: {
-    google: {
-      // Must be the Google Cloud *Web* client ID + secret (not Android/iOS).
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    session: {
+      expiresIn: 60 * 60 * 24 * 30,
+      updateAge: 60 * 60 * 24,
     },
-    apple: {
-      // Service ID for web OAuth; native idToken aud is the App ID / bundle.
-      clientId: process.env.APPLE_CLIENT_ID ?? "com.exo.fitness",
-      // Required by the provider shape. Native idToken verify uses
-      // appBundleIdentifier; set a real JWT secret when enabling web Apple OAuth.
-      clientSecret: process.env.APPLE_CLIENT_SECRET ?? "native-idtoken-only",
-      appBundleIdentifier:
-        process.env.APPLE_APP_BUNDLE_IDENTIFIER ?? "com.exo.fitness",
-    },
-  },
 
-  session: {
-    expiresIn: 60 * 60 * 24 * 30,
-    updateAge: 60 * 60 * 24,
-  },
-
-  // Default Better Auth limiter is production-only and 3 tries / 10s on
-  // sign-in — an attacker can just wait and keep guessing. Always on, stored
-  // in Postgres so Vercel instances share the same counters.
-  advanced: {
-    ipAddress: {
-      ipAddressHeaders: [
-        "x-vercel-forwarded-for",
-        "x-real-ip",
-        "x-forwarded-for",
-      ],
+    // Default Better Auth limiter is production-only and 3 tries / 10s on
+    // sign-in — an attacker can just wait and keep guessing. Always on, stored
+    // in Postgres so Vercel instances share the same counters.
+    advanced: {
+      ipAddress: {
+        ipAddressHeaders: [
+          "x-vercel-forwarded-for",
+          "x-real-ip",
+          "x-forwarded-for",
+        ],
+      },
     },
-  },
-  rateLimit: {
-    enabled: true,
-    storage: "database",
-    window: 60,
-    max: 100,
-    customRules: {
-      "/sign-in/email": { window: 15 * 60, max: 8 },
-      "/sign-up/email": { window: 15 * 60, max: 5 },
-      "/forget-password*": { window: 15 * 60, max: 5 },
-      "/request-password-reset": { window: 15 * 60, max: 5 },
-      "/send-verification-email": { window: 15 * 60, max: 5 },
-      "/reset-password": { window: 15 * 60, max: 8 },
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+      window: 60,
+      max: 100,
+      customRules: {
+        "/sign-in/email": { window: 15 * 60, max: 8 },
+        "/sign-up/email": { window: 15 * 60, max: 5 },
+        "/forget-password*": { window: 15 * 60, max: 5 },
+        "/request-password-reset": { window: 15 * 60, max: 5 },
+        "/send-verification-email": { window: 15 * 60, max: 5 },
+        "/reset-password": { window: 15 * 60, max: 8 },
+      },
     },
-  },
 
   trustedOrigins: [
     "com.exo.fitness://",
@@ -150,5 +139,21 @@ export const auth = betterAuth({
   ],
 });
 
-export type Auth = typeof auth;
-export type AuthUser = typeof auth.$Infer.Session.user;
+type AuthInstance = Awaited<ReturnType<typeof createAuth>>;
+
+let authInstance: AuthInstance | undefined;
+let authInit: Promise<AuthInstance> | undefined;
+
+export async function getAuth(): Promise<AuthInstance> {
+  if (authInstance) return authInstance;
+  if (!authInit) {
+    authInit = createAuth().then((instance) => {
+      authInstance = instance;
+      return instance;
+    });
+  }
+  return authInit;
+}
+
+export type Auth = AuthInstance;
+export type AuthUser = Auth["$Infer"]["Session"]["user"];

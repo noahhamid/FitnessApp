@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "src/app.ts",
+    "src/index.ts",
+    "src/routes/**/*.ts",
+    "src/middleware/**/*.ts",
+    "src/lib/auth.server.ts",
+    "src/lib/prisma.ts",
+    "src/lib/response.ts",
+    "src/lib/validate.ts",
+    "src/lib/dates.ts",
+    "src/lib/public-api-url.ts",
+    "src/lib/meal-photo-storage.ts",
+    "src/lib/gymFoods.ts",
+    "src/lib/adaptive-nutrition.ts",
+    "src/lib/nutrition-calc.ts",
+    "src/lib/progression-calc.ts",
+    "src/lib/workout-plan-generator.ts",
+    "src/lib/plan-day-title.ts",
+    "src/lib/equipment-rank.ts",
+    "src/types/**/*.ts",
+    "api/**/*.ts",
+    "prisma.config.ts"
+  ],
+  "exclude": ["node_modules"]
+}

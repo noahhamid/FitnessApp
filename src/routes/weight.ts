@@ -3,7 +3,7 @@ import { z } from "zod";
 import { parseLogDate, todayLogDate } from "../lib/dates";
 import { prisma } from "../lib/prisma";
 import { err, ok } from "../lib/response";
-import { parseJson, parseQuery } from "../lib/validate";
+import { isParseFail, parseJson, parseQuery } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
 import type { AppEnv } from "../types/hono";
 
@@ -58,7 +58,7 @@ export const weightRouter = new Hono<AppEnv>().use("*", requireAuth);
 
 weightRouter.get("/log", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
-  if (query.success === false) return query.response;
+  if (isParseFail(query)) return query.response;
 
   const user = getUser(c);
   const from = query.data.from ? parseLogDate(query.data.from) : null;
@@ -87,7 +87,7 @@ weightRouter.get("/log", async (c) => {
 
 weightRouter.post("/log", async (c) => {
   const parsed = await parseJson(c, weightLogSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const dateStr = parsed.data.logDate ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -107,7 +107,7 @@ weightRouter.post("/log", async (c) => {
 
 weightRouter.patch("/log/:id", async (c) => {
   const parsed = await parseJson(c, weightLogUpdateSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const user = getUser(c);
   const id = c.req.param("id");
@@ -160,7 +160,7 @@ weightRouter.get("/goal", async (c) => {
 
 weightRouter.put("/goal", async (c) => {
   const parsed = await parseJson(c, weightGoalSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const user = getUser(c);
   const goal = await prisma.weightGoal.upsert({

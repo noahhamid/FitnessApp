@@ -27,7 +27,7 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
 };
 
 config.resolver.sourceExts.push('mjs');
-// User exercise placeholder (assets/images/icon.jfif).
+// Allow .jfif if any local assets use that extension.
 config.resolver.assetExts.push("jfif");
 
 module.exports = config;

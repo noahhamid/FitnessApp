@@ -2,6 +2,7 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "skipLibCheck": true,
     "types": ["node"],
     "paths": {
       "@/*": [
@@ -13,21 +14,23 @@
     "**/*.ts",
     "**/*.tsx",
     "**/*.js",
-    "**/*.jsx"
+    "**/*.jsx",
+    "src/routes/**/*.ts",
+    "src/middleware/**/*.ts",
+    "src/lib/**/*.ts",
+    "src/types/**/*.ts",
+    "api/**/*.ts",
+    "src/app.ts",
+    "src/index.ts"
   ],
   "exclude": [
     "node_modules",
     "__tests__",
-    "src/index.ts",
-    "src/routes/**",
-    "src/lib/auth.server.ts",
-    "src/lib/prisma.ts",
-    "src/lib/response.ts",
-    "src/lib/validate.ts",
-    "src/lib/dates.ts",
-    "src/types/hono.ts",
-    "src/middleware/**",
+    "src/lib/workout-split.ts",
     "prisma/**",
-    "prisma.config.ts"
+    "prisma.config.ts",
+    ".expo",
+    ".expo-web-test",
+    ".expo-web-test2"
   ]
 }

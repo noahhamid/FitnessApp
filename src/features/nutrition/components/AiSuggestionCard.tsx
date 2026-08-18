@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react-native";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -5,14 +6,22 @@ import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
-type Suggestion = { label: string; calories: number };
+export type SuggestionChip = {
+  label: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
 
 type Props = {
   headline: string;
   body: string;
   imageUrl: string;
-  suggestions: Suggestion[];
-  onSelect: (s: Suggestion) => void;
+  suggestions: SuggestionChip[];
+  onSelect: (s: SuggestionChip) => void | Promise<void>;
+  /** Label of the chip currently being quick-added (disables others). */
+  pendingLabel?: string | null;
 };
 
 export function AiSuggestionCard({
@@ -21,8 +30,29 @@ export function AiSuggestionCard({
   imageUrl,
   suggestions,
   onSelect,
+  pendingLabel = null,
 }: Props) {
   const { T, styles } = useThemedStyles(makeStyles);
+  const [addedLabel, setAddedLabel] = useState<string | null>(null);
+  const clearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (clearTimer.current) clearTimeout(clearTimer.current);
+    };
+  }, []);
+
+  const handleSelect = async (s: SuggestionChip) => {
+    if (pendingLabel || addedLabel) return;
+    try {
+      await onSelect(s);
+      setAddedLabel(s.label);
+      if (clearTimer.current) clearTimeout(clearTimer.current);
+      clearTimer.current = setTimeout(() => setAddedLabel(null), 2200);
+    } catch {
+      // Parent surfaces errors; leave chip idle.
+    }
+  };
 
   return (
     <View style={styles.card}>
@@ -37,13 +67,6 @@ export function AiSuggestionCard({
         style={StyleSheet.absoluteFillObject}
       />
 
-      {/*
-        Content sits in normal flow (not absolutely positioned from the
-        bottom) so the card's minHeight grows to fit however much text
-        there is. A fixed card height + bottom-pinned absolute content
-        was clipping long headlines/bodies/wrapped chips against the top
-        edge via overflow:hidden — this removes that ceiling entirely.
-      */}
       <View style={styles.content}>
         <View style={styles.eyebrowRow}>
           <Sparkles size={12} color={T.accent} strokeWidth={2.2} />
@@ -53,20 +76,37 @@ export function AiSuggestionCard({
         <Text style={styles.body}>{body}</Text>
 
         <View style={styles.row}>
-          {suggestions.map((s) => (
-            <PressableScale
-              key={s.label}
-              onPress={() => onSelect(s)}
-              scaleTo={0.96}
-              style={styles.chipPressable}
-            >
-              <View style={styles.chip}>
-                <Text style={styles.chipText}>
-                  {s.label} · {s.calories} Cal
-                </Text>
-              </View>
-            </PressableScale>
-          ))}
+          {suggestions.map((s) => {
+            const isAdded = addedLabel === s.label;
+            const isPending = pendingLabel === s.label;
+            return (
+              <PressableScale
+                key={s.label}
+                onPress={() => void handleSelect(s)}
+                disabled={Boolean(pendingLabel) || Boolean(addedLabel)}
+                scaleTo={0.96}
+                style={styles.chipPressable}
+              >
+                <View
+                  style={[
+                    styles.chip,
+                    isAdded && styles.chipAdded,
+                    isPending && styles.chipPending,
+                  ]}
+                >
+                  <Text
+                    style={[styles.chipText, isAdded && styles.chipTextAdded]}
+                  >
+                    {isAdded
+                      ? "Added ✓"
+                      : isPending
+                        ? "Adding…"
+                        : `${s.label} · ${s.calories} Cal`}
+                  </Text>
+                </View>
+              </PressableScale>
+            );
+          })}
         </View>
       </View>
     </View>
@@ -133,6 +173,12 @@ function makeStyles(T: AppTheme) {
       paddingVertical: 8,
       paddingHorizontal: 13,
     },
+    chipPending: { opacity: 0.7 },
+    chipAdded: {
+      backgroundColor: T.accent,
+      borderColor: T.accent,
+    },
     chipText: { fontFamily: T.bodySemi, fontSize: 11, color: T.onImage },
+    chipTextAdded: { color: T.onAccent },
   });
 }

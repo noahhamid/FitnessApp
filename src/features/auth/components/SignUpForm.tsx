@@ -37,6 +37,7 @@ import {
   onboardingParamsForNavigation,
   type OnboardingAuthParams,
 } from "../services/onboarding-payload.service";
+import { clientRequiresEmailVerification } from "@/src/lib/email-verification";
 
 function heroScrim(bgHex: string, resolved: "light" | "dark") {
   const hex = bgHex.replace("#", "");
@@ -197,6 +198,24 @@ export function SignUpForm() {
                 : "Create your account, then build a plan around your goals."}
             </Text>
 
+            <Text style={s.legalLine}>
+              By continuing, you agree to our{" "}
+              <Text
+                style={s.legalLink}
+                onPress={() => router.push("/(auth)/terms")}
+              >
+                Terms of Service
+              </Text>
+              {" "}and{" "}
+              <Text
+                style={s.legalLink}
+                onPress={() => router.push("/(auth)/privacy-policy")}
+              >
+                Privacy Policy
+              </Text>
+              .
+            </Text>
+
             <SocialAuthButtons
               onGoogle={handleGoogle}
               onApple={handleApple}
@@ -328,7 +347,19 @@ function makeStyles(C: OnboardingColors) {
       fontFamily: FONTS.regular,
       fontSize: 13,
       color: C.muted,
+      marginBottom: 12,
+    },
+    legalLine: {
+      fontFamily: FONTS.regular,
+      fontSize: 12,
+      lineHeight: 18,
+      color: C.muted,
       marginBottom: 20,
+    },
+    legalLink: {
+      fontFamily: FONTS.bold,
+      fontSize: 12,
+      color: C.accent,
     },
     dividerRow: {
       flexDirection: "row",

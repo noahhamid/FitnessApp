@@ -38,6 +38,7 @@ import { AppSafeAreaChrome } from "@/src/components/AppSafeAreaChrome";
 
 import * as WebBrowser from "expo-web-browser";
 import { LoadingScreen } from "@/src/ui/components/LoadingScreen";
+import { Sentry, sentryEnabled } from "@/src/lib/sentry";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -76,7 +77,7 @@ function AppShell() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   // Keys must match fontFamily strings in src/theme.ts (and legacy
   // Barlow/DMSans call sites). Plus Jakarta package exports use
   // PlusJakartaSans_400Regular etc.; theme.ts references hyphenated
@@ -124,3 +125,5 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+export default sentryEnabled ? Sentry.wrap(RootLayout) : RootLayout;

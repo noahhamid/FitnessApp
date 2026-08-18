@@ -26,6 +26,8 @@ import {
   fetchWeeklyTrend,
   upsertNutritionGoals,
   applyAdaptiveSuggestion,
+  updateMealEntry,
+  fetchAdaptiveSuggestion,
 } from "../services/nutrition.service";
 import {
   cancelReminder,
@@ -108,6 +110,7 @@ export function useAddMeal() {
       qc.invalidateQueries({ queryKey: ["nutrition", "weekly"] });
       qc.invalidateQueries({ queryKey: ["nutrition", "log-range"] });
       qc.invalidateQueries({ queryKey: ["week-overview", "meals"] });
+      qc.invalidateQueries({ queryKey: ["nutrition", "suggestion"] });
       // Drop the matching local reminder so a logged meal never nags.
       void cancelReminder(mealTypeToSlot(vars.meal), vars.log_date);
     },
@@ -143,6 +146,7 @@ export function useDeleteMeal(date = today()) {
       qc.invalidateQueries({ queryKey: ["nutrition", "weekly"] });
       qc.invalidateQueries({ queryKey: ["nutrition", "log-range"] });
       qc.invalidateQueries({ queryKey: ["week-overview", "meals"] });
+      qc.invalidateQueries({ queryKey: ["nutrition", "suggestion"] });
     },
   });
 }
@@ -225,6 +229,13 @@ export function useSuggestion(date = today()) {
   return useQuery<NutritionSuggestion | null>({
     queryKey: ["nutrition", "suggestion", date],
     queryFn: () => fetchSuggestion(date),
+  });
+}
+
+export function useAdaptiveSuggestion() {
+  return useQuery({
+    queryKey: KEYS.adaptive,
+    queryFn: fetchAdaptiveSuggestion,
   });
 }
 

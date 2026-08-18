@@ -15,6 +15,7 @@ import {
   signInWithGoogle,
   signInWithApple,
   getSession,
+  deleteAccount,
 } from "../services/auth.service";
 
 // ── Auth Store (replaces missing authStore.ts) ────────────────────────────────
@@ -137,6 +138,21 @@ export function useSignOut() {
   return useMutation({
     mutationFn: signOut,
     onSuccess: async () => {
+      invalidateAuthHeaderCache();
+      queryClient.clear();
+      await queryClient.resetQueries();
+      useAuthStore.getState().reset();
+    },
+  });
+}
+
+export function useDeleteAccount() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (token?: string) => deleteAccount(token),
+    onSuccess: async (result) => {
+      if (!result.deleted) return;
       invalidateAuthHeaderCache();
       queryClient.clear();
       await queryClient.resetQueries();

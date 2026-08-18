@@ -2,7 +2,7 @@ import { Hono, type Context } from "hono";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { err, ok } from "../lib/response";
-import { parseJson, parseQuery } from "../lib/validate";
+import { isParseFail, parseJson, parseQuery } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
 import type { AppEnv } from "../types/hono";
 
@@ -190,7 +190,7 @@ export const workoutsRouter = new Hono<AppEnv>().use("*", requireAuth);
 /** POST/GET session root — register both '' and '/' so clients match /api/workouts (no trailing slash). */
 const createSession = async (c: Context<AppEnv>) => {
   const parsed = await parseJson(c, startSessionSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const user = getUser(c);
   const { notes, exercises } = parsed.data;
@@ -224,7 +224,7 @@ const createSession = async (c: Context<AppEnv>) => {
 
 const listSessions = async (c: Context<AppEnv>) => {
   const query = parseQuery(c, listQuerySchema);
-  if (query.success === false) return query.response;
+  if (isParseFail(query)) return query.response;
  
   const user = getUser(c);
  
@@ -266,7 +266,7 @@ const countQuerySchema = z.object({
 /** Cheap lifetime count — avoids hauling session rows just to measure length. */
 workoutsRouter.get("/count", async (c) => {
   const query = parseQuery(c, countQuerySchema);
-  if (query.success === false) return query.response;
+  if (isParseFail(query)) return query.response;
 
   const user = getUser(c);
   const count = await prisma.workoutSession.count({
@@ -348,7 +348,7 @@ workoutsRouter.get("/last-performance", async (c) => {
 
 workoutsRouter.get("/exercises", async (c) => {
   const query = parseQuery(c, exerciseLibraryQuerySchema);
-  if (query.success === false) return query.response;
+  if (isParseFail(query)) return query.response;
 
   const user = getUser(c);
 
@@ -450,7 +450,7 @@ workoutsRouter.get("/personal-records", async (c) => {
 
 workoutsRouter.get("/today-extras", async (c) => {
   const query = parseQuery(c, todayExtrasQuerySchema);
-  if (query.success === false) return query.response;
+  if (isParseFail(query)) return query.response;
 
   const user = getUser(c);
   const logDate = new Date(query.data.date);
@@ -465,7 +465,7 @@ workoutsRouter.get("/today-extras", async (c) => {
 
 workoutsRouter.post("/today-extras", async (c) => {
   const parsed = await parseJson(c, plannedExtraSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const user = getUser(c);
   const logDate = new Date(parsed.data.date);
@@ -521,7 +521,7 @@ workoutsRouter.get("/:id", async (c) => {
 
 workoutsRouter.patch("/:id", async (c) => {
   const parsed = await parseJson(c, updateSessionSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const user = getUser(c);
   const sessionId = c.req.param("id");
@@ -549,7 +549,7 @@ workoutsRouter.patch("/:id", async (c) => {
 
 workoutsRouter.post("/:id/complete", async (c) => {
   const parsed = await parseJson(c, completeSessionSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const user = getUser(c);
   const sessionId = c.req.param("id");
@@ -600,7 +600,7 @@ workoutsRouter.delete("/:id", async (c) => {
 
 workoutsRouter.post("/:id/exercises", async (c) => {
   const parsed = await parseJson(c, exerciseCreateBodySchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const user = getUser(c);
   const sessionId = c.req.param("id");
@@ -623,7 +623,7 @@ workoutsRouter.post("/:id/exercises", async (c) => {
 
 workoutsRouter.patch("/:id/exercises/:exerciseId", async (c) => {
   const parsed = await parseJson(c, exerciseUpdateSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const user = getUser(c);
   const sessionId = c.req.param("id");

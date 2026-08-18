@@ -1,6 +1,6 @@
-import type { auth } from "../lib/auth.server";
+import type { AuthUser } from "../lib/auth.server";
 
-export type AuthUser = typeof auth.$Infer.Session.user;
+export type { AuthUser };
 
 export type AppEnv = {
   Variables: {

@@ -294,6 +294,43 @@ export async function signOut(): Promise<void> {
   throwIfAuthError(error);
 }
 
+
+/**
+ * Permanently delete the signed-in user via Better Auth.
+ * Without a token: requests deletion (sends confirmation email when configured).
+ * With a token: completes deletion after the user opens the email deep link.
+ */
+export async function deleteAccount(token?: string): Promise<{
+  /** True when deletion completed in this call (session should be gone). */
+  deleted: boolean;
+  /** True when Better Auth sent a confirmation email instead of deleting now. */
+  verificationEmailSent: boolean;
+}> {
+  const { data, error } = await authClient.deleteUser(
+    token
+      ? { token }
+      : { callbackURL: "com.exo.fitness://" },
+  );
+  throwIfAuthError(error);
+
+  const message =
+    data && typeof data === "object" && "message" in data
+      ? String((data as { message?: string }).message ?? "")
+      : "";
+
+  if (message === "Verification email sent") {
+    return { deleted: false, verificationEmailSent: true };
+  }
+
+  try {
+    await authClient.signOut();
+  } catch {
+    // Session may already be invalidated server-side.
+  }
+
+  return { deleted: true, verificationEmailSent: false };
+}
+
 // ── Get current session ───────────────────────────────────────────────────────
 
 export async function getSession() {

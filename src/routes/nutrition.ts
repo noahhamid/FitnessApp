@@ -1,12 +1,10 @@
-import { randomBytes } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { Hono } from "hono";
 import { z } from "zod";
 import { parseLogDate, todayLogDate } from "../lib/dates";
+import { storeMealPhoto } from "../lib/meal-photo-storage";
 import { prisma } from "../lib/prisma";
 import { err, ok } from "../lib/response";
-import { parseJson, parseQuery } from "../lib/validate";
+import { isParseFail, parseJson, parseQuery } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
 import type { AppEnv } from "../types/hono";
 import { GYM_FOODS } from "../lib/gymFoods";
@@ -20,8 +18,6 @@ import {
   macrosForCalorieTarget,
   type GoalId,
 } from "../lib/nutrition-calc";
-import { publicApiBase } from "../lib/public-api-url";
-
 const mealEnum = z.enum(["Breakfast", "Lunch", "Dinner", "Snack"]);
 
 const goalsSchema = z.object({
@@ -118,7 +114,7 @@ nutritionRouter.get("/goals", async (c) => {
 
 nutritionRouter.put("/goals", async (c) => {
   const parsed = await parseJson(c, goalsSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const user = getUser(c);
   const goal = await prisma.nutritionGoal.upsert({
@@ -144,7 +140,7 @@ nutritionRouter.delete("/goals", async (c) => {
 
 nutritionRouter.get("/log", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
-  if (query.success === false) return query.response;
+  if (isParseFail(query)) return query.response;
 
   const user = getUser(c);
   const { from: fromStr, to: toStr, date: dateStr } = query.data;
@@ -184,40 +180,35 @@ nutritionRouter.get("/log", async (c) => {
 });
 
 /**
- * Persist a meal-scan photo to disk and return a fetchable URL for MealLog.imageUrl.
- * No cloud storage in this app — files live under /uploads/meals and are served
- * statically from the API host (unguessable filenames; GET is public so <Image>
- * can load without auth headers).
+ * Persist a meal-scan photo and return a fetchable URL for MealLog.imageUrl.
+ * Production uses Vercel Blob; local/dev falls back to ./uploads/meals.
  */
 nutritionRouter.post("/meal-photo", async (c) => {
   const parsed = await parseJson(c, mealPhotoSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const user = getUser(c);
-  const mime = parsed.data.mimeType.toLowerCase();
-  const ext =
-    mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg";
-  const filename = `${user.id.slice(0, 8)}-${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
-  const dir = path.join(process.cwd(), "uploads", "meals");
 
   try {
-    await mkdir(dir, { recursive: true });
-    await writeFile(
-      path.join(dir, filename),
-      Buffer.from(parsed.data.base64, "base64"),
-    );
+    const url = await storeMealPhoto({
+      userId: user.id,
+      base64: parsed.data.base64,
+      mimeType: parsed.data.mimeType,
+    });
+    return ok(c, { url }, 201);
   } catch (e) {
-    console.error("[meal-photo] write failed:", e);
-    return err(c, "Could not save photo", 500);
+    console.error("[meal-photo] store failed:", e);
+    return err(
+      c,
+      e instanceof Error ? e.message : "Could not save photo",
+      500,
+    );
   }
-
-  const url = `${publicApiBase()}/uploads/meals/${filename}`;
-  return ok(c, { url }, 201);
 });
 
 nutritionRouter.post("/log", async (c) => {
   const parsed = await parseJson(c, mealLogSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const logDate = parseLogDate(parsed.data.logDate);
   if (!logDate) return err(c, "Invalid logDate", 400);
@@ -243,7 +234,7 @@ nutritionRouter.post("/log", async (c) => {
 
 nutritionRouter.patch("/log/:id", async (c) => {
   const parsed = await parseJson(c, mealLogUpdateSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const user = getUser(c);
   const id = c.req.param("id");
@@ -294,7 +285,7 @@ nutritionRouter.delete("/log/:id", async (c) => {
 
 nutritionRouter.get("/totals", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
-  if (query.success === false) return query.response;
+  if (isParseFail(query)) return query.response;
 
   const dateStr = query.data.date ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -318,7 +309,7 @@ nutritionRouter.get("/totals", async (c) => {
 
 nutritionRouter.get("/water", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
-  if (query.success === false) return query.response;
+  if (isParseFail(query)) return query.response;
 
   const dateStr = query.data.date ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -334,7 +325,7 @@ nutritionRouter.get("/water", async (c) => {
 
 nutritionRouter.post("/water", async (c) => {
   const parsed = await parseJson(c, waterAdjustSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const dateStr = parsed.data.logDate ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -362,7 +353,7 @@ function isoDate(d: Date) {
 
 nutritionRouter.get("/weekly", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
-  if (query.success === false) return query.response;
+  if (isParseFail(query)) return query.response;
 
   const endStr = query.data.date ?? todayLogDate();
   const end = parseLogDate(endStr);
@@ -412,7 +403,7 @@ nutritionRouter.get("/weekly", async (c) => {
 
 nutritionRouter.get("/suggestions", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
-  if (query.success === false) return query.response;
+  if (isParseFail(query)) return query.response;
 
   const dateStr = query.data.date ?? todayLogDate();
   const logDate = parseLogDate(dateStr);
@@ -459,7 +450,13 @@ nutritionRouter.get("/suggestions", async (c) => {
   return ok(c, {
     headline,
     body,
-    suggestions: picks.map((f) => ({ label: f.name, calories: f.cal })),
+    suggestions: picks.map((f) => ({
+      label: f.name,
+      calories: f.cal,
+      protein: f.protein,
+      carbs: f.carbs,
+      fat: f.fat,
+    })),
   });
 });
 
@@ -570,7 +567,7 @@ nutritionRouter.get("/adaptive-suggestion", async (c) => {
  */
 nutritionRouter.patch("/goals/apply-suggestion", async (c) => {
   const parsed = await parseJson(c, applySuggestionSchema);
-  if (parsed.success === false) return parsed.response;
+  if (isParseFail(parsed)) return parsed.response;
 
   const user = getUser(c);
   const clientSuggested = parsed.data.suggestedCalories;
@@ -605,7 +602,7 @@ nutritionRouter.patch("/goals/apply-suggestion", async (c) => {
     );
   }
 
-  if (!suggestion.adjustmentNeeded) {
+  if (suggestion.adjustmentNeeded === false) {
     return err(
       c,
       "No adjustment needed with current weight trend. Fetch a fresh adaptive suggestion.",

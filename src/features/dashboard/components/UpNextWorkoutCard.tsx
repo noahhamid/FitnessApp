@@ -7,6 +7,7 @@ import {
   Easing,
   StyleProp,
   ViewStyle,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -21,9 +22,18 @@ import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
-/** Calm stretch / recovery — same Unsplash URL pattern as plan covers. */
-export const REST_DAY_IMAGE_URL =
-  "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80";
+// `require` at module scope is fine; resolveAssetSource must stay lazy
+// (breaks `expo export:embed` if called at import time).
+const REST_DAY_COVER = require("../../../../assets/images/rest-day-cover.jpg");
+let restDayCoverUri: string | undefined;
+
+/** Local rest-day / recovery cover URI. */
+export function getRestDayImageUrl(): string {
+  if (restDayCoverUri === undefined) {
+    restDayCoverUri = Image.resolveAssetSource(REST_DAY_COVER).uri;
+  }
+  return restDayCoverUri;
+}
 
 type WorkoutProps = {
   variant?: "workout";
@@ -62,7 +72,7 @@ function UpNextWorkoutCardBase(props: Props) {
 
   const title = isRest ? "Rest day" : props.title;
   const tag = isRest ? "Recovery" : props.tag;
-  const imageUrl = isRest ? REST_DAY_IMAGE_URL : props.imageUrl;
+  const imageUrl = isRest ? getRestDayImageUrl() : props.imageUrl;
   const onPress = props.onPress;
   const onStartPress = isRest ? undefined : props.onStartPress;
   const minutes = isRest ? 0 : props.minutes;

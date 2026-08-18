@@ -66,6 +66,41 @@ const INJURY_AVOID_MUSCLE_GROUPS: Record<Injury, MuscleGroup | null> = {
   wrists: null,
 };
 
+/**
+ * Extra targetSets from goalDetail (applied on every slot, then capped).
+ * Stacks with the focus-area +1 for prioritized muscle groups.
+ */
+const GOAL_DETAIL_VOLUME_BONUS: Record<string, number> = {
+  aggressive_cut: 1,
+  bulk: 1,
+};
+
+/**
+ * Soft pattern preference from goalDetail — sorts candidates so these
+ * patterns are tried first. Not a hard filter (unlike injury avoidance).
+ */
+const GOAL_DETAIL_PATTERN_BIAS: Record<string, MovementPattern[]> = {
+  strength: ["squat", "hinge", "push", "pull"],
+  conditioning: ["carry"],
+  stamina: ["carry"],
+};
+
+/**
+ * Soft pattern preference from bodyIssues.
+ * "diet" has no entry — nutrition-domain signal, out of scope for workout gen.
+ */
+const BODY_ISSUE_PATTERN_BIAS: Record<string, MovementPattern[]> = {
+  sitting: ["hinge"],
+};
+
+/**
+ * Additive targetSets delta from bodyIssues (can be negative).
+ * "diet" intentionally omitted — nutrition-domain, not workout generation.
+ */
+const BODY_ISSUE_VOLUME_ADJUSTMENT: Record<string, number> = {
+  sleep: -1,
+};
+
 export interface PlanExerciseOut {
   orderIndex: number;
   exerciseId: string;
@@ -253,6 +288,8 @@ function pickExercise(
    * same first match every slot.
    */
   rotationOffset: number,
+  /** Soft preference — tried first after injury hard-filter; never excludes. */
+  preferredPatterns: Set<MovementPattern> = new Set(),
 ): { id: string; name: string } {
   // A bodyweight plan must be doable in an empty room, so prop moves are cut
   // here rather than in the injury filter below — that one relaxes when it
@@ -263,12 +300,26 @@ function pickExercise(
       (userEquipment !== "bodyweight" || !c.needsProp),
   );
   const safe = eligible.filter((c) => !avoidPatterns.has(c.movementPattern));
-  const pool = safe.length > 0 ? safe : eligible;
+  let pool = safe.length > 0 ? safe : eligible;
 
   if (pool.length === 0) {
     throw new Error(
       `No exercises available for this muscle group at equipment tier "${userEquipment}". Check Exercise seed data.`,
     );
+  }
+
+  // Soft pattern bias (goalDetail / bodyIssues): preferred patterns first,
+  // then the rest. Injury hard-filter already applied above and wins.
+  if (preferredPatterns.size > 0) {
+    const preferred = pool.filter((c) =>
+      preferredPatterns.has(c.movementPattern),
+    );
+    if (preferred.length > 0) {
+      const rest = pool.filter(
+        (c) => !preferredPatterns.has(c.movementPattern),
+      );
+      pool = [...preferred, ...rest];
+    }
   }
 
   // Deterministic rotation — same inputs always produce the same plan, but
@@ -287,7 +338,27 @@ function pickExercise(
   return chosen;
 }
 
-export async function generateWorkoutPlan(input: WorkoutPlanInput): Promise<WorkoutPlanOut> {
+/**
+ * Combined set prescription: base → focus (+1) → goalDetail bonus →
+ * bodyIssue delta → clamp to [2, 5]. Additive; order does not change the
+ * net before clamp (focus +1 and sleep −1 cancel to baseSets).
+ */
+export function computeTargetSets(
+  baseSets: number,
+  focusBonus: boolean,
+  goalDetailBonus: number,
+  bodyIssueVolumeDelta: number,
+): number {
+  let sets = baseSets;
+  if (focusBonus) sets += 1;
+  sets += goalDetailBonus;
+  sets += bodyIssueVolumeDelta;
+  return Math.min(5, Math.max(2, sets));
+}
+
+export async function generateWorkoutPlan(
+  input: WorkoutPlanInput,
+): Promise<WorkoutPlanOut> {
   const { experience, equipment, goalId } = input;
   const injuries = (input.injuries ?? []).filter((i) => i !== "none");
   const focusAreas = (input.focusAreas ?? []).filter((f) => f !== "full_body");
@@ -297,6 +368,20 @@ export async function generateWorkoutPlan(input: WorkoutPlanInput): Promise<Work
   const avoidPatterns = new Set(
     injuries.flatMap((i) => INJURY_AVOID_PATTERNS[i] ?? []),
   );
+
+  const goalDetail = input.goalDetail?.trim() || "";
+  const goalDetailBonus = GOAL_DETAIL_VOLUME_BONUS[goalDetail] ?? 0;
+  const bodyIssues = (input.bodyIssues ?? []).filter((i) => i !== "none");
+  // "diet" is a nutrition-domain signal — no BODY_ISSUE_* mapping on purpose.
+  const bodyIssueVolumeDelta = bodyIssues.reduce(
+    (sum, id) => sum + (BODY_ISSUE_VOLUME_ADJUSTMENT[id] ?? 0),
+    0,
+  );
+
+  const preferredPatterns = new Set<MovementPattern>([
+    ...(GOAL_DETAIL_PATTERN_BIAS[goalDetail] ?? []),
+    ...bodyIssues.flatMap((id) => BODY_ISSUE_PATTERN_BIAS[id] ?? []),
+  ]);
 
   const template = getSplitTemplate(input.daysPerWeek, experience);
   const tuning = goalDetailTuning(input.goalDetail);
@@ -349,11 +434,14 @@ export async function generateWorkoutPlan(input: WorkoutPlanInput): Promise<Work
         usedInDay,
         avoidPatterns,
         rotationOffset,
+        preferredPatterns,
       );
-      // Extra volume for muscle groups the user asked to prioritize.
-      const targetSets = focusMuscleGroups.has(muscleGroup)
-        ? Math.min(5, baseSets + 1)
-        : baseSets;
+      const targetSets = computeTargetSets(
+        baseSets,
+        focusMuscleGroups.has(muscleGroup),
+        goalDetailBonus,
+        bodyIssueVolumeDelta,
+      );
       return {
         orderIndex: i,
         exerciseId: chosen.id,
@@ -396,5 +484,9 @@ export async function generateWorkoutPlan(input: WorkoutPlanInput): Promise<Work
     };
   });
 
-  return { splitLabel: template.splitLabel, daysPerWeek: clampDays(input.daysPerWeek), days };
+  return {
+    splitLabel: template.splitLabel,
+    daysPerWeek: clampDays(input.daysPerWeek),
+    days,
+  };
 }

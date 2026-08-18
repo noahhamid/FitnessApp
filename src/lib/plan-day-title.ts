@@ -29,7 +29,7 @@ function formatGroup(g: string): string {
 }
 
 export function dayTitleFromMuscleGroups(
-  exercises: { muscleGroup?: string }[],
+  exercises: { muscleGroup?: string | null }[],
 ): string {
   // Session-derived exercises can carry no muscle group at all, so drop those
   // rather than letting them skew (or crash) the tally.
@@ -43,6 +43,7 @@ export function dayTitleFromMuscleGroups(
   for (const g of groups) {
     counts.set(g, (counts.get(g) ?? 0) + 1);
   }
+  if (counts.size === 0) return "Workout";
 
   const total = groups.length;
   const ranked = [...counts.entries()].sort((a, b) => {

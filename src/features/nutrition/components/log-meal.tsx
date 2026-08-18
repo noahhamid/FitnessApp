@@ -34,7 +34,7 @@ function firstParam(value?: string | string[]): string | undefined {
 }
 
 export default function LogMealScreen() {
-  const { T, styles, resolved } = useThemedStyles(makeStyles);
+  const { T, styles } = useThemedStyles(makeStyles);
   const router = useRouter();
   const params = useLocalSearchParams<{
     slot?: string;

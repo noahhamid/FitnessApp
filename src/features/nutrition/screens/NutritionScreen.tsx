@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -7,6 +8,9 @@ import {
   StyleSheet,
   Text,
   View,
+  Alert,
+  Platform,
+  ActionSheetIOS,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { tabContentBottomPad } from "@/src/lib/tab-chrome";
@@ -53,11 +57,13 @@ import {
   signupDateOnly,
   weekDatesFor,
 } from "@/src/lib/week-days";
+import { suggestMealSlotForQuickAdd } from "@/src/lib/meal-workout-reminders";
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import {
   invalidateQueryPrefixes,
   usePullToRefresh,
 } from "@/src/hooks/usePullToRefresh";
+import { AdaptiveSuggestionCard } from "../components/AdaptiveSuggestionCard";
 
 const WATER_GOAL_GLASSES = 8;
 const MEAL_SLOTS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"];
@@ -69,6 +75,18 @@ const RECOMMENDED_RANGE: Record<MealType, string> = {
 };
 /** Display-only fallback when NutritionGoal row is missing (see STEP 4 note). */
 const FALLBACK_CALORIE_GOAL = 2400;
+
+// `require` at module scope is fine; resolveAssetSource must stay lazy
+// (breaks `expo export:embed` if called at import time).
+const NUTRITION_SUGGESTION = require("../../../../assets/images/nutrition-suggestion.jpg");
+let nutritionSuggestionUri: string | undefined;
+
+function getNutritionSuggestionUri(): string {
+  if (nutritionSuggestionUri === undefined) {
+    nutritionSuggestionUri = Image.resolveAssetSource(NUTRITION_SUGGESTION).uri;
+  }
+  return nutritionSuggestionUri;
+}
 
 function todayStr(): string {
   const n = new Date();
@@ -160,6 +178,59 @@ export default function MealScreen() {
     }
     return map;
   }, [meals]);
+
+  const openMealActions = useCallback(
+    (entry: MealLogEntry) => {
+      const goEdit = () => {
+        router.push({
+          pathname: "/log-meal",
+          params: {
+            id: entry.id,
+            slot: entry.meal,
+            date: entry.log_date,
+            name: entry.name,
+            cal: String(entry.cal),
+            protein: String(entry.protein),
+            carbs: String(entry.carbs),
+            fat: String(entry.fat),
+          },
+        });
+      };
+
+      const confirmDelete = () => {
+        Alert.alert("Delete this meal log?", "This cannot be undone.", [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => deleteMeal.mutate(entry.id),
+          },
+        ]);
+      };
+
+      if (Platform.OS === "ios") {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ["Cancel", "Edit", "Delete"],
+            cancelButtonIndex: 0,
+            destructiveButtonIndex: 2,
+          },
+          (index) => {
+            if (index === 1) goEdit();
+            if (index === 2) confirmDelete();
+          },
+        );
+        return;
+      }
+
+      Alert.alert(entry.name, undefined, [
+        { text: "Cancel", style: "cancel" },
+        { text: "Edit", onPress: goEdit },
+        { text: "Delete", style: "destructive", onPress: confirmDelete },
+      ]);
+    },
+    [deleteMeal, router],
+  );
 
   const loggedByDate = useMemo(() => {
     const set = new Set<string>();
@@ -376,7 +447,7 @@ export default function MealScreen() {
           <AiSuggestionCard
             headline={suggestion.headline}
             body={suggestion.body}
-            imageUrl="https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&h=500&fit=crop"
+            imageUrl={getNutritionSuggestionUri()}
             suggestions={suggestion.suggestions}
             onSelect={(s) => {
               const food = GYM_FOODS.find((f) => f.name === s.label);
