@@ -3,7 +3,6 @@ import {
   fetchUserProfile,
   saveUserProfile,
 } from "@/src/features/profile/services/profile.service";
-import { Sentry, sentryEnabled } from "@/src/lib/sentry";
 import {
   useCompletedSessionCount,
   useWorkoutHistory,
@@ -17,7 +16,6 @@ import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import {
   ActivityIndicator,
   Alert,
-  Linking,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -39,8 +37,6 @@ import {
   WEEKDAY_LABELS_SHORT,
 } from "@/src/lib/plan-day-selection";
 import { workoutPlanQueryKey } from "@/src/features/workout/hooks/useWorkoutPlan";
-
-const SUPPORT_EMAIL = "support@fitnessapp.com";
 
 const GOALS = [
   { id: "lose", label: "Lose Weight", icon: "trending-down-outline" as const },
@@ -76,12 +72,6 @@ const SETTINGS = [
     label: "Training Schedule",
     sub: null,
     icon: "calendar-outline" as const,
-  },
-  {
-    id: "help",
-    label: "Help & Support",
-    sub: "FAQ · Contact us",
-    icon: "help-circle-outline" as const,
   },
   {
     id: "privacy",
@@ -352,8 +342,8 @@ export default function ProfileScreen() {
         pointerEvents="none"
       />
       <StatusBar
-        barStyle="light-content"
-        backgroundColor="#000000"
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={T.bg}
         translucent={false}
       />
       <View style={styles.screen}>
@@ -418,37 +408,11 @@ export default function ProfileScreen() {
           )}
 
           <GlassSurface style={styles.userCard}>
-            {/* TEMPORARY — Sentry wiring check. Long-press avatar to fire a
-                test event. Remove once the issue appears in the Sentry dashboard. */}
-            <TouchableOpacity
-              activeOpacity={1}
-              delayLongPress={800}
-              onLongPress={() => {
-                const err = new Error(
-                  "Test error - remove before production",
-                );
-                if (sentryEnabled) {
-                  Sentry.captureException(err);
-                  Alert.alert(
-                    "Sentry test sent",
-                    "Captured a test exception. Check your Sentry Issues feed (may take ~30s).",
-                  );
-                } else {
-                  Alert.alert(
-                    "Sentry disabled",
-                    "EXPO_PUBLIC_SENTRY_DSN is missing from this build — sentryEnabled is false.",
-                  );
-                }
-              }}
-              accessibilityRole="button"
-              accessibilityHint="Long press to send a temporary Sentry test error"
-            >
-              <View style={styles.avatarRing}>
-                <View style={styles.avatar}>
-                  <Text style={styles.initials}>{initials}</Text>
-                </View>
+            <View style={styles.avatarRing}>
+              <View style={styles.avatar}>
+                <Text style={styles.initials}>{initials}</Text>
               </View>
-            </TouchableOpacity>
+            </View>
 
             <View style={styles.userInfo}>
               <Text style={styles.userName} numberOfLines={1}>
@@ -655,8 +619,6 @@ export default function ProfileScreen() {
                       setting.id === "schedule"
                     ) {
                       setEditMode(true);
-                    } else if (setting.id === "help") {
-                      void Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
                     } else if (setting.id === "privacy") {
                       router.push("/(app)/privacy-policy");
                     } else if (setting.id === "terms") {
@@ -721,7 +683,7 @@ export default function ProfileScreen() {
             onConfirm={() =>
               Alert.alert(
                 "Delete account permanently?",
-                "This cannot be undone. It permanently removes your account and all of your data on PotentialPeak — workout history, meal logs, weight logs, water logs, nutrition goals, and profile settings.\n\nMeal scan photos stored in the cloud may also become inaccessible.",
+                "This cannot be undone. It permanently removes your account and all of your data on Exo — workout history, meal logs, weight logs, water logs, nutrition goals, and profile settings.\n\nMeal scan photos stored in the cloud may also become inaccessible.",
                 [
                   { text: "Cancel", style: "cancel" },
                   {

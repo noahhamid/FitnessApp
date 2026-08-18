@@ -171,8 +171,8 @@ export default function ScanMealScreen() {
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
       <StatusBar
-        barStyle="light-content"
-        backgroundColor="#000000"
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={T.bg}
         translucent={false}
       />
 

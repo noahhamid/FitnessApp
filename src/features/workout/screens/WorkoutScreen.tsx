@@ -503,11 +503,21 @@ export default function WorkoutScreen() {
     setView(cameFrom === "fullPlan" ? "detail" : "today");
   };
 
+  const leaveFinishedWorkout = useCallback(() => {
+    pendingStartPlanRef.current = null;
+    setSessionCreating(false);
+    setSessionCreateError(null);
+    setActiveSessionId(null);
+    setActiveExercises([]);
+    setViewingExercise(null);
+    setSelectedDay(null);
+    setView("today");
+  }, []);
+
+  /** Save only — throws on failure so ActiveWorkout can stay put and retry. */
   const handleFinish = async (logs: SetLog[]) => {
     if (!activeSessionId) {
-      setView("today");
-      setSelectedDay(null);
-      return;
+      throw new Error("Workout isn't saved to your account yet. Retry setup first.");
     }
 
     const byExercise = new Map<string, SetLog[]>();
@@ -534,13 +544,10 @@ export default function WorkoutScreen() {
       });
     } catch (e) {
       console.log("Failed to log completed workout:", e);
+      throw e instanceof Error
+        ? e
+        : new Error("Couldn't save this workout. Try again.");
     }
-
-    setView("today");
-    setSelectedDay(null);
-    setActiveSessionId(null);
-    setActiveExercises([]);
-    setViewingExercise(null);
   };
 
   // ── Detail screen ─────────────────────────────────────────────────────────
@@ -591,6 +598,7 @@ export default function WorkoutScreen() {
             }
             onClose={leaveActiveWorkout}
             onFinish={handleFinish}
+            onLeaveAfterFinish={leaveFinishedWorkout}
             lastPerformance={lastPerformance}
             sessionStartedAtMs={clockStartMs}
           />
@@ -609,7 +617,8 @@ export default function WorkoutScreen() {
           pointerEvents="none"
         />
         <StatusBar
-          barStyle="light-content"
+          barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+          backgroundColor={T.bg}
         />
         <ScrollView
           style={s.scroll}
@@ -744,7 +753,8 @@ export default function WorkoutScreen() {
   return (
     <View style={s.screen}>
       <StatusBar
-        barStyle="light-content"
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={T.bg}
       />
       <ScrollView
         style={s.scroll}

@@ -155,10 +155,6 @@ aiRouter.post("/food-scan", async (c) => {
       },
     );
     const text = extractCandidateText(payload);
-    console.log("[food-scan] raw gemini text:", JSON.stringify(text));
-    console.log("[food-scan] candidate:", JSON.stringify(payload?.candidates?.[0]));
-    console.log("[food-scan] finishReason:", payload?.candidates?.[0]?.finishReason);
-    console.log("[food-scan] blockReason:", payload?.promptFeedback?.blockReason);
     if (!text) return err(c, "Unable to parse image", 400);
     const food = parseFoodScan(text);
     if (!food) return err(c, "Unable to parse image", 400);

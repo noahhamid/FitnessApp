@@ -3,7 +3,7 @@ import type { ExpoConfig } from "expo/config";
 const BRAND_RED = "#C91923";
 
 const config: ExpoConfig = {
-  name: "PotentialPeak",
+  name: "Exo",
   slug: "potential-peak",
   version: "1.0.0",
   orientation: "portrait",
@@ -17,9 +17,9 @@ const config: ExpoConfig = {
     usesAppleSignIn: true,
     infoPlist: {
       NSCameraUsageDescription:
-        "PotentialPeak uses the camera so you can photograph meals for calorie and macro estimates.",
+        "Exo uses the camera so you can photograph meals for calorie and macro estimates.",
       NSPhotoLibraryUsageDescription:
-        "PotentialPeak accesses your photo library when you pick an existing meal photo or progress photo to save in the app.",
+        "Exo accesses your photo library when you pick an existing meal photo to save in the app.",
     },
   },
   android: {
@@ -73,6 +73,15 @@ const config: ExpoConfig = {
     ],
     "expo-font",
     [
+      "expo-image-picker",
+      {
+        cameraPermission:
+          "Exo uses the camera so you can photograph meals for calorie and macro estimates.",
+        photosPermission:
+          "Exo accesses your photo library when you pick an existing meal photo to save in the app.",
+      },
+    ],
+    [
       "expo-notifications",
       {
         color: "#E53935",
@@ -89,7 +98,9 @@ const config: ExpoConfig = {
         },
       },
     ],
-    // Native crash hooks + source-map upload wiring for @sentry/react-native.
+    // Crash reporting uses EXPO_PUBLIC_SENTRY_DSN. eas.json sets
+    // SENTRY_DISABLE_AUTO_UPLOAD so preview builds don't fail without
+    // SENTRY_AUTH_TOKEN.
     "@sentry/react-native/expo",
   ],
   experiments: {

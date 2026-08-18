@@ -82,7 +82,10 @@ export interface SetLog {
 type Props = {
   plan: WorkoutPlan;
   onClose: () => void;
-  onFinish: (logs: SetLog[]) => void;
+  /** Persist the completed session. Must throw on failure so we stay on-screen. */
+  onFinish: (logs: SetLog[]) => Promise<void>;
+  /** Called after the success celebration — only if save already succeeded. */
+  onLeaveAfterFinish: () => void;
   lastPerformance?: Record<string, { weight?: number; reps?: number }>;
   /** Null while background session create is still in flight. */
   sessionId: string | null;
@@ -384,6 +387,7 @@ export function ActiveWorkoutScreen({
   plan,
   onClose,
   onFinish,
+  onLeaveAfterFinish,
   lastPerformance,
   sessionId,
   sessionCreating = false,
@@ -405,6 +409,8 @@ export function ActiveWorkoutScreen({
   const deleteSession = useDeleteWorkoutSession();
   const updateSessionExercise = useUpdateSessionExercise();
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [savingFinish, setSavingFinish] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
   const sessionReady = !!sessionId && !sessionCreating && !sessionCreateError;
 
   const guardSessionReady = (actionLabel: string): boolean => {
@@ -753,9 +759,9 @@ export function ActiveWorkoutScreen({
         useNativeDriver: true,
       }),
     ]).start();
-    const t = setTimeout(() => onFinish(logsRef.current), 1500);
+    const t = setTimeout(() => onLeaveAfterFinish(), 1500);
     return () => clearTimeout(t);
-  }, [phase]);
+  }, [phase, onLeaveAfterFinish]);
 
   const logCurrentSet = (completed: boolean) => {
     if (!selected) return;
@@ -1004,10 +1010,36 @@ export function ActiveWorkoutScreen({
     advanceFromRest();
   };
 
-  const onFinishPress = () => {
+  const saveAndCelebrate = async () => {
     if (!guardSessionReady("finishing")) return;
-    haptic(Haptics.ImpactFeedbackStyle.Medium);
-    setPhase("done");
+    if (savingFinish) return;
+    setFinishError(null);
+    setSavingFinish(true);
+    try {
+      await onFinish(logsRef.current);
+      haptic(Haptics.ImpactFeedbackStyle.Medium);
+      setPhase("done");
+    } catch (e) {
+      const message =
+        e instanceof Error
+          ? e.message
+          : "Couldn't save this workout. Try again.";
+      setFinishError(message);
+      Alert.alert(
+        "Couldn't save this workout",
+        `${message}\n\nYour workout is still here. Tap retry to save it.`,
+        [
+          { text: "Dismiss", style: "cancel" },
+          { text: "Retry", onPress: () => void saveAndCelebrate() },
+        ],
+      );
+    } finally {
+      setSavingFinish(false);
+    }
+  };
+
+  const onFinishPress = () => {
+    void saveAndCelebrate();
   };
 
   const barPct = barWidth.interpolate({
@@ -1103,6 +1135,18 @@ export function ActiveWorkoutScreen({
             onPress={onRetryCreateSession}
             accessibilityRole="button"
             accessibilityLabel="Retry saving workout"
+          >
+            <Text style={s.setupErrorText}>
+              Couldn't save this workout. Tap to retry.
+            </Text>
+          </Pressable>
+        )}
+        {!!finishError && !sessionCreateError && (
+          <Pressable
+            style={s.setupErrorBanner}
+            onPress={() => void saveAndCelebrate()}
+            accessibilityRole="button"
+            accessibilityLabel="Retry finishing workout"
           >
             <Text style={s.setupErrorText}>
               Couldn't save this workout. Tap to retry.
@@ -1295,9 +1339,13 @@ export function ActiveWorkoutScreen({
                 )}
 
                 <TouchableOpacity
-                  style={[s.finishBtn, !sessionReady && s.actionDisabled]}
+                  style={[
+                    s.finishBtn,
+                    (!sessionReady || savingFinish) && s.actionDisabled,
+                  ]}
                   onPress={onFinishPress}
                   activeOpacity={0.9}
+                  disabled={savingFinish}
                   accessibilityRole="button"
                   accessibilityLabel="Finish workout"
                 >
@@ -1306,7 +1354,9 @@ export function ActiveWorkoutScreen({
                     color={T.accentOnDarkText}
                     strokeWidth={2.4}
                   />
-                  <Text style={s.finishBtnText}>Finish workout</Text>
+                  <Text style={s.finishBtnText}>
+                    {savingFinish ? "Saving…" : "Finish workout"}
+                  </Text>
                 </TouchableOpacity>
               </>
             )}

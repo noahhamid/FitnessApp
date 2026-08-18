@@ -26,7 +26,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "**Account information:** name, email address, and password (or Google account information if you sign in with Google).",
+          text: "**Account information:** name, email address, and password (or Google / Apple account information if you sign in with those providers).",
         },
         {
           type: "p",
@@ -62,6 +62,7 @@ export const PRIVACY_POLICY: LegalDocument = {
           type: "ul",
           items: [
             "**Google** — for optional sign-in, and for AI-powered food recognition (Gemini) when you use the meal scanner",
+            "**Apple** — for optional Sign in with Apple on iOS",
             "**Resend** — to send account-related emails (verification, password reset, account deletion confirmation)",
             "**Vercel** — to host our backend and store meal photos",
             "**Neon** — to store your data in our database",
@@ -88,7 +89,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "You can access, correct, or delete your data at any time through the app. If you have questions about your data, contact us at support@fitnessapp.com.",
+          text: "You can access, correct, or delete your data at any time through Profile in the app.",
         },
       ],
     },
@@ -115,7 +116,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "Questions about this policy? Contact us at support@fitnessapp.com.",
+          text: "Questions about this policy? Review or delete your data from Profile in the app.",
         },
       ],
     },
@@ -195,7 +196,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "Questions about these terms? Contact us at support@fitnessapp.com.",
+          text: "Questions about these terms? Review or delete your account from Profile in the app.",
         },
       ],
     },

@@ -41,11 +41,11 @@ async function createAuth() {
           const confirmUrl = `com.exo.fitness://delete-account?token=${encodeURIComponent(token)}`;
           await sendAuthEmail({
             to: user.email,
-            subject: "Confirm deleting your PotentialPeak account",
+            subject: "Confirm deleting your Exo account",
             html: `
       <p>Hi${user.name ? ` ${user.name}` : ""},</p>
-      <p>We received a request to permanently delete your PotentialPeak account and all associated data (workouts, meals, weight logs, and profile).</p>
-      <p>This cannot be undone. Open the link below on the device where you are signed in to PotentialPeak:</p>
+      <p>We received a request to permanently delete your Exo account and all associated data (workouts, meals, weight logs, and profile).</p>
+      <p>This cannot be undone. Open the link below on the device where you are signed in to Exo:</p>
       <p><a href="${confirmUrl}">Delete my account permanently</a></p>
       <p>If you didn't request this, you can ignore this email — your account will stay active.</p>
     `,
@@ -54,39 +54,87 @@ async function createAuth() {
       },
     },
 
-  emailAndPassword: {
-    enabled: true,
-    minPasswordLength: 8,
-    requireEmailVerification: false,
-    sendResetPassword: async ({ user, url }) => {
-      await sendAuthEmail({
-        to: user.email,
-        subject: "Reset your PotentialPeak password",
-        html: `
-          <p>Hi${user.name ? ` ${user.name}` : ""},</p>
-          <p>Tap the link below to choose a new password:</p>
-          <p><a href="${url}">Reset password</a></p>
-          <p>If you didn't request this, you can ignore this email.</p>
-        `,
-      });
+    databaseHooks: {
+      user: {
+        create: {
+          async before(user) {
+            if (typeof user.name !== "string" || !user.name.trim()) {
+              return { data: user };
+            }
+            return {
+              data: {
+                ...user,
+                name: normalizeDisplayFirstName(user.name),
+              },
+            };
+          },
+        },
+        update: {
+          async before(user) {
+            if (typeof user.name !== "string") return { data: user };
+            return {
+              data: {
+                ...user,
+                name: normalizeDisplayFirstName(user.name),
+              },
+            };
+          },
+        },
+      },
     },
 
-  emailVerification: {
-    sendOnSignUp: true,
-    sendOnSignIn: false,
-    autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, token }) => {
-      const verifyUrl = `${APP_VERIFY_EMAIL_URL}?token=${encodeURIComponent(token)}`;
-      await sendAuthEmail({
-        to: user.email,
-        subject: "Confirm your PotentialPeak email",
-        html: `
-          <p>Hi${user.name ? ` ${user.name}` : ""},</p>
-          <p>Tap the link below to confirm this email belongs to you:</p>
-          <p><a href="${verifyUrl}">Confirm email</a></p>
-          <p>If you didn't create an account, you can ignore this email.</p>
-        `,
-      });
+    emailAndPassword: {
+      enabled: true,
+      minPasswordLength: 8,
+      requireEmailVerification: process.env.NODE_ENV === "production",
+      sendResetPassword: async ({ user, url }) => {
+        await sendAuthEmail({
+          to: user.email,
+          subject: "Reset your Exo password",
+          html: `
+      <p>Hi${user.name ? ` ${user.name}` : ""},</p>
+      <p>Tap the link below to choose a new password:</p>
+      <p><a href="${url}">Reset password</a></p>
+      <p>If you didn't request this, you can ignore this email.</p>
+    `,
+        });
+      },
+    },
+
+    emailVerification: {
+      sendOnSignUp: process.env.NODE_ENV === "production",
+      sendOnSignIn: process.env.NODE_ENV === "production",
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: async ({ user, token }) => {
+        const verifyUrl = `${APP_VERIFY_EMAIL_URL}?token=${encodeURIComponent(token)}`;
+        await sendAuthEmail({
+          to: user.email,
+          subject: "Confirm your Exo email",
+          html: `
+      <p>Hi${user.name ? ` ${user.name}` : ""},</p>
+      <p>Tap the link below to confirm this email belongs to you:</p>
+      <p><a href="${verifyUrl}">Confirm email</a></p>
+      <p>If you didn't create an account, you can ignore this email.</p>
+    `,
+        });
+      },
+    },
+
+    socialProviders: {
+      google: {
+        // Must be the Google Cloud *Web* client ID + secret (not Android/iOS).
+        clientId: process.env.GOOGLE_CLIENT_ID!,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      },
+      apple: {
+        // Service ID for web OAuth; native idToken aud is the App ID / bundle.
+        clientId: process.env.APPLE_CLIENT_ID ?? "com.exo.fitness",
+        // Required by the provider shape. Native idToken verify uses
+        // appBundleIdentifier; set a real JWT secret when enabling web Apple OAuth.
+        clientSecret: process.env.APPLE_CLIENT_SECRET ?? "native-idtoken-only",
+        appBundleIdentifier:
+          process.env.APPLE_APP_BUNDLE_IDENTIFIER ?? "com.exo.fitness",
+      },
     },
 
     session: {
@@ -121,23 +169,23 @@ async function createAuth() {
       },
     },
 
-  trustedOrigins: [
-    "com.exo.fitness://",
-    "com.exo.fitness://*",
-    "http://localhost:8081",
-    "http://localhost:3000",
-    "http://127.0.0.1:8081",
-    "http://127.0.0.1:3000",
-    "http://192.168.1.12:8081",
-    "http://192.168.1.12:3000",
-    "https://appleid.apple.com",
-    "exp://",
-    "https://potentialpeak-app.vercel.app",
-    "https://potentialpeak-app-puce.vercel.app",
-    "exp://**",
-    ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
-  ],
-});
+    trustedOrigins: [
+      "com.exo.fitness://",
+      "com.exo.fitness://*",
+      "http://localhost:8081",
+      "http://localhost:3000",
+      "http://127.0.0.1:8081",
+      "http://127.0.0.1:3000",
+      "https://appleid.apple.com",
+      "exp://",
+      "exp://**",
+      "https://potential-peak.vercel.app",
+      "https://potentialpeak-app.vercel.app",
+      "https://potentialpeak-app-puce.vercel.app",
+      ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
+    ],
+  });
+}
 
 type AuthInstance = Awaited<ReturnType<typeof createAuth>>;
 

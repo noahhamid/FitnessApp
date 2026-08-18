@@ -8,6 +8,7 @@ import { nutritionRouter } from "./routes/nutrition";
 import { profileRouter } from "./routes/profile";
 import { weightRouter } from "./routes/weight";
 import { workoutsRouter } from "./routes/workouts";
+import { PRODUCTION_API_URL } from "./lib/public-api-url";
 import { ok } from "./lib/response";
 
 /**
@@ -19,10 +20,30 @@ const app = new Hono({ strict: false });
 
 app.use("*", logger());
 
+const CORS_ALLOW = new Set([
+  PRODUCTION_API_URL,
+  "https://potentialpeak-app.vercel.app",
+  "http://localhost:8081",
+  "http://localhost:3000",
+  "http://127.0.0.1:8081",
+  "http://127.0.0.1:3000",
+]);
+
+function corsOrigin(origin: string): string | undefined {
+  if (!origin) return origin;
+  if (CORS_ALLOW.has(origin.replace(/\/$/, ""))) return origin;
+  if (origin.startsWith("com.exo.fitness://") || origin.startsWith("exp://")) {
+    return origin;
+  }
+  const extra = process.env.BETTER_AUTH_URL?.replace(/\/$/, "");
+  if (extra && origin.replace(/\/$/, "") === extra) return origin;
+  return undefined;
+}
+
 app.use(
   "*",
   cors({
-    origin: (origin) => origin,
+    origin: (origin) => corsOrigin(origin) ?? "",
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,

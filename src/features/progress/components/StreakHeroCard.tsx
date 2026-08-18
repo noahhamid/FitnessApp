@@ -4,6 +4,8 @@ import { Flame } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
+import { useTheme } from "@/src/context/ThemeContext";
+import { STREAK_FLAME_ORANGE } from "@/src/components/StreakPill";
 import type { WorkoutSessionSummary } from "../hooks/useProgress";
 import { completedDayKeys, contributionGrid } from "../lib/analytics";
 import { localDateOnly } from "../lib/localDate";
@@ -15,6 +17,8 @@ type Props = {
 
 export function StreakHeroCard({ streakDays, sessions }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
+  const { resolved } = useTheme();
+  const flame = STREAK_FLAME_ORANGE[resolved];
   const todayKey = localDateOnly();
 
   const weeks = useMemo(() => {
@@ -26,8 +30,8 @@ export function StreakHeroCard({ streakDays, sessions }: Props) {
     <GlassSurface style={s.card}>
       <Text style={s.eyebrow}>STREAK</Text>
       <View style={s.heroRow}>
-        <View style={s.iconWrap}>
-          <Flame size={22} color={T.accent} strokeWidth={2.2} />
+        <View style={[s.iconWrap, { backgroundColor: "rgba(217,107,31,0.14)" }]}>
+          <Flame size={22} color={flame} strokeWidth={2.2} fill={flame} />
         </View>
         <View style={s.heroText}>
           <Text style={s.heroNumber}>{streakDays}</Text>

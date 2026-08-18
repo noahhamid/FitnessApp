@@ -84,16 +84,14 @@ export function MealHistoryCard({ meals, isLoading }: Props) {
 
   if (groups.length === 0) {
     return (
-      <GlassSurface style={s.card}>
-        <Text style={s.eyebrow}>MEAL HISTORY · 30 DAYS</Text>
-        <View style={s.emptyRow}>
-          <View style={s.iconWrap}>
-            <Utensils size={18} color={T.accent} strokeWidth={2.2} />
-          </View>
-          <Text style={s.emptyText}>
-            Logged meals from the last 30 days will show up here.
-          </Text>
+      <GlassSurface style={[s.card, s.emptyCard]}>
+        <View style={s.iconWrapLg}>
+          <Utensils size={22} color={T.accent} strokeWidth={2.2} />
         </View>
+        <Text style={s.emptyTitle}>No meals logged</Text>
+        <Text style={s.emptyTextCentered}>
+          Meals from the last 30 days will show up here once you start logging.
+        </Text>
       </GlassSurface>
     );
   }
@@ -160,26 +158,35 @@ function makeStyles(T: AppTheme) {
       paddingVertical: T.space.xl,
       zIndex: 1,
     },
-    emptyRow: {
-      flexDirection: "row",
+    emptyCard: {
       alignItems: "center",
-      gap: T.space.md,
-      zIndex: 1,
+      paddingVertical: 36,
+      gap: 8,
     },
-    iconWrap: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+    iconWrapLg: {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
       backgroundColor: T.accentTint,
       alignItems: "center",
       justifyContent: "center",
+      marginBottom: 6,
+      zIndex: 1,
     },
-    emptyText: {
-      flex: 1,
+    emptyTitle: {
+      fontFamily: T.displaySemi,
+      fontSize: 16,
+      color: T.white,
+      zIndex: 1,
+    },
+    emptyTextCentered: {
       fontFamily: T.bodyMed,
-      fontSize: 12.5,
+      fontSize: 13,
       color: T.muted,
-      lineHeight: 18,
+      textAlign: "center",
+      lineHeight: 19,
+      paddingHorizontal: 12,
+      zIndex: 1,
     },
     list: { gap: 16, zIndex: 1 },
     dayBlock: { gap: 8 },

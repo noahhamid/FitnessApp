@@ -9,9 +9,10 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Plus } from "lucide-react-native";
 import { useLocalSearchParams } from "expo-router";
+import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useWeightLog,
@@ -32,7 +33,10 @@ import { StreakHeroCard } from "../components/StreakHeroCard";
 import { AdherenceCard } from "../components/AdherenceCard";
 import { MealHistoryCard } from "../components/MealHistoryCard";
 import { ProgressSnapshotStrip } from "../components/ProgressSnapshotStrip";
-import { CategoryFilter } from "@/src/features/workout/components/CategoryFilter";
+import {
+  ProgressSegmentBar,
+  type ProgressTab,
+} from "../components/ProgressSegmentBar";
 import { localDateOnly, parseLocalDateKey } from "../lib/localDate";
 import {
   completedDayKeys,
@@ -41,7 +45,6 @@ import {
 } from "../lib/analytics";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
-import { topInset } from "@/src/lib/safe-area";
 import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import { PageHeader } from "@/src/components/PageHeader";
 import { useExerciseLibrary } from "@/src/features/workout/hooks/useExerciseLibrary";
@@ -52,8 +55,12 @@ import {
   usePullToRefresh,
 } from "@/src/hooks/usePullToRefresh";
 
-const PROGRESS_TABS = ["Body", "Training", "Nutrition", "Records"] as const;
-type ProgressTab = (typeof PROGRESS_TABS)[number];
+const TAB_SUBTITLE: Record<ProgressTab, string> = {
+  Body: "Weight over the last 8 weeks",
+  Training: "Sessions, volume, and consistency",
+  Nutrition: "Meals from the last 30 days",
+  Records: "Your heaviest lifts so far",
+};
 
 function eightWeeksAgo(): string {
   const d = new Date();
@@ -74,6 +81,7 @@ export default function ProgressScreen() {
   const { section } = useLocalSearchParams<{ section?: string }>();
   const scrollRef = useRef<ScrollView>(null);
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [weightError, setWeightError] = useState<string | null>(null);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProgressTab>("Body");
@@ -217,26 +225,31 @@ export default function ProgressScreen() {
   };
 
   const handleSaveWeight = async (weight: number) => {
+    setWeightError(null);
     try {
       await addWeight.mutateAsync({ weight });
       setSheetVisible(false);
     } catch (e) {
-      console.log("Failed to log weight:", e);
+      setWeightError(
+        e instanceof Error
+          ? e.message
+          : "Couldn't save that weight. Try again.",
+      );
     }
   };
 
   return (
-    <View style={s.screen}>
+    <SafeAreaView edges={["top"]} style={s.screen}>
       <StatusBar
-        barStyle="light-content"
-        backgroundColor="#000000"
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={T.bg}
       />
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={[
           s.scrollContent,
           {
-            paddingTop: topInset(insets.top) + T.space.sm,
+            paddingTop: T.space.sm,
             paddingBottom: tabContentBottomPad(insets.bottom),
           },
         ]}
@@ -251,7 +264,11 @@ export default function ProgressScreen() {
           />
         }
       >
-        <PageHeader eyebrow="Overview" title="Progress" />
+        <PageHeader
+          eyebrow="Overview"
+          subtitle="Body, training, and fuel — at a glance"
+          title="Progress"
+        />
 
         <ProgressSnapshotStrip
           streakDays={streakDays}
@@ -260,11 +277,8 @@ export default function ProgressScreen() {
         />
 
         <View style={s.tabsWrap}>
-          <CategoryFilter
-            categories={[...PROGRESS_TABS]}
-            active={activeTab}
-            onChange={handleTabChange}
-          />
+          <ProgressSegmentBar active={activeTab} onChange={handleTabChange} />
+          <Text style={s.tabHint}>{TAB_SUBTITLE[activeTab]}</Text>
         </View>
 
         {activeTab === "Body" && (
@@ -277,7 +291,14 @@ export default function ProgressScreen() {
               <WeightTrendChart entries={weightEntries ?? []} />
             )}
 
-            <Pressable style={s.logBtn} onPress={() => setSheetVisible(true)}>
+            <Pressable
+              style={s.logBtn}
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setWeightError(null);
+                setSheetVisible(true);
+              }}
+            >
               <Plus size={16} color={T.onAccent} strokeWidth={2.4} />
               <Text style={s.logBtnText}>Log weight</Text>
             </Pressable>
@@ -334,10 +355,7 @@ export default function ProgressScreen() {
 
         {activeTab === "Records" && (
           <View style={s.tabPanel}>
-            <View>
-              <Text style={s.sectionTitle}>Personal records</Text>
-              <PersonalRecordsSection records={personalRecords ?? []} />
-            </View>
+            <PersonalRecordsSection records={personalRecords ?? []} />
           </View>
         )}
       </ScrollView>
@@ -346,7 +364,11 @@ export default function ProgressScreen() {
         visible={sheetVisible}
         initialWeight={lastLoggedWeight}
         saving={addWeight.isPending}
-        onClose={() => setSheetVisible(false)}
+        error={weightError}
+        onClose={() => {
+          setWeightError(null);
+          setSheetVisible(false);
+        }}
         onSave={handleSaveWeight}
       />
 
@@ -356,7 +378,7 @@ export default function ProgressScreen() {
         sessions={selectedDaySessions}
         onClose={() => setSelectedDate(null)}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -368,6 +390,13 @@ function makeStyles(T: AppTheme) {
     },
     tabsWrap: {
       marginBottom: T.space.xl,
+      gap: 10,
+    },
+    tabHint: {
+      fontFamily: T.bodyMed,
+      fontSize: 12,
+      color: T.muted,
+      paddingHorizontal: 4,
     },
     logBtn: {
       flexDirection: "row",
@@ -376,22 +405,20 @@ function makeStyles(T: AppTheme) {
       gap: T.space.sm,
       backgroundColor: T.accent,
       borderRadius: T.radius.pill,
-      paddingVertical: T.space.md,
-      marginTop: T.space.md,
+      paddingVertical: 14,
+      marginTop: T.space.sm,
+      ...T.shadow.lifted,
+      shadowColor: T.accent,
+      shadowOpacity: 0.35,
+      elevation: 6,
     },
     logBtnText: {
       fontFamily: T.bodyBold,
-      fontSize: 13,
+      fontSize: 14,
       color: T.onAccent,
+      letterSpacing: -0.2,
     },
     tabPanel: { gap: 16 },
-    sectionTitle: {
-      fontFamily: T.displaySemi,
-      fontSize: 18,
-      color: T.white,
-      letterSpacing: -0.3,
-      marginBottom: T.space.md,
-    },
     cardStack: { gap: 12 },
     centerState: { alignItems: "center", paddingVertical: T.space.xl },
   });

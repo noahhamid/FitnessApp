@@ -34,7 +34,7 @@ function firstParam(value?: string | string[]): string | undefined {
 }
 
 export default function LogMealScreen() {
-  const { T, styles } = useThemedStyles(makeStyles);
+  const { T, styles, resolved } = useThemedStyles(makeStyles);
   const router = useRouter();
   const params = useLocalSearchParams<{
     slot?: string;
@@ -120,8 +120,8 @@ export default function LogMealScreen() {
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
       <StatusBar
-        barStyle="light-content"
-        backgroundColor="#000000"
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={T.bg}
         translucent={false}
       />
 

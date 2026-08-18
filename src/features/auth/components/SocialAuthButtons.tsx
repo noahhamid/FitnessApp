@@ -1,4 +1,5 @@
 import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
+import { isExpoGo } from "@/src/lib/expo-go";
 import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { AntDesign } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
@@ -58,6 +59,7 @@ export function SocialAuthButtons({
   const { styles: s } = useOnboardingStyles(makeStyles);
   const busy = disabled || googleLoading || appleLoading;
   const [appleAvailable, setAppleAvailable] = useState(Platform.OS === "ios");
+  const googleAvailable = !isExpoGo();
 
   useEffect(() => {
     if (Platform.OS !== "ios") return;
@@ -79,27 +81,29 @@ export function SocialAuthButtons({
 
   return (
     <View style={s.stack}>
-      <Pressable
-        disabled={busy}
-        style={({ pressed }) => [
-          s.btn,
-          s.googleBtn,
-          busy && s.disabled,
-          pressed && !busy && s.pressed,
-        ]}
-        onPress={onGoogle}
-        accessibilityRole="button"
-        accessibilityLabel="Continue with Google"
-      >
-        {googleLoading ? (
-          <ActivityIndicator color="#1F1F1F" size="small" />
-        ) : (
-          <View style={s.row}>
-            <GoogleGlyph />
-            <Text style={s.googleText}>Continue with Google</Text>
-          </View>
-        )}
-      </Pressable>
+      {googleAvailable ? (
+        <Pressable
+          disabled={busy}
+          style={({ pressed }) => [
+            s.btn,
+            s.googleBtn,
+            busy && s.disabled,
+            pressed && !busy && s.pressed,
+          ]}
+          onPress={onGoogle}
+          accessibilityRole="button"
+          accessibilityLabel="Continue with Google"
+        >
+          {googleLoading ? (
+            <ActivityIndicator color="#1F1F1F" size="small" />
+          ) : (
+            <View style={s.row}>
+              <GoogleGlyph />
+              <Text style={s.googleText}>Continue with Google</Text>
+            </View>
+          )}
+        </Pressable>
+      ) : null}
 
       {appleAvailable ? (
         <Pressable

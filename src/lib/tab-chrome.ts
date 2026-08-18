@@ -4,13 +4,11 @@ import { bottomInset } from "@/src/lib/safe-area";
 export const TAB_PILL_H = 64;
 export const TAB_PILL_H_MARGIN = 20;
 export const TAB_PILL_BOTTOM_GAP = 10;
-/** Extra red chrome above the pill so content clears the dock, not only the icons. */
-export const TAB_CHROME_PEEK = 14;
-/** Breathing room between last content and the chrome dock. */
+/** Extra clearance above the pill so content doesn't sit under its shadow. */
+export const TAB_CHROME_PEEK = 8;
+/** Breathing room between last content and the tab pill. */
 export const TAB_CONTENT_GAP = 20;
 
-/** Home sticky CTA dock height (content + padding). */
-export const HOME_FLOATING_BAR_H = 58;
 
 /**
  * Full height of the bottom tab chrome dock (safe inset + gap + pill + peek).
@@ -33,7 +31,7 @@ export function tabPillTopFromBottom(insetsBottom: number): number {
 }
 
 /**
- * Scroll/content padding so the last card clears the full red tab chrome
+ * Scroll/content padding so the last card clears the tab pill
  * (and optional floating bar above it).
  */
 export function tabContentBottomPad(

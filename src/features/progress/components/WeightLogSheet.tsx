@@ -24,6 +24,7 @@ interface Props {
   /** null = no prior log; sheet starts blank rather than inventing a weight. */
   initialWeight: number | null;
   saving?: boolean;
+  error?: string | null;
   onClose: () => void;
   onSave: (weight: number) => void;
 }
@@ -32,6 +33,7 @@ function WeightLogSheetBody({
   visible,
   initialWeight,
   saving,
+  error,
   onClose,
   onSave,
 }: Props) {
@@ -136,6 +138,8 @@ function WeightLogSheetBody({
             <Plus size={18} color={T.white} strokeWidth={2.4} />
           </Pressable>
         </View>
+
+        {error ? <Text style={s.errorText}>{error}</Text> : null}
 
         <Pressable
           style={[s.saveBtn, !canSave && s.saveBtnDisabled]}
@@ -255,6 +259,14 @@ function makeStyles(T: AppTheme) {
       fontFamily: T.bodyBold,
       fontSize: 14.5,
       color: T.onAccent,
+    },
+    errorText: {
+      fontFamily: T.bodyMed,
+      fontSize: 13,
+      color: T.accent,
+      textAlign: "center",
+      marginBottom: T.space.md,
+      lineHeight: 18,
     },
   });
 }

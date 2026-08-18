@@ -7,8 +7,8 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
-import { useTheme } from "@/src/context/ThemeContext";
-import type { AppTheme } from "@/src/theme";
+import { useOptionalTheme } from "@/src/context/ThemeContext";
+import { lightTheme, type AppTheme } from "@/src/theme";
 
 /** Quarter-circle catch-light tucked into the top-left corner. */
 const CORNER_ARC_SIZE = 100;
@@ -60,7 +60,9 @@ type Props = {
  * edge + thin corner arc + inset catch-light. Not real blur.
  */
 export function GlassSurface({ children, style }: Props) {
-  const { theme: T, resolved } = useTheme();
+  const ctx = useOptionalTheme();
+  const T = ctx?.theme ?? lightTheme;
+  const resolved = ctx?.resolved ?? "light";
   const isDark = resolved === "dark";
   const gradient = isDark ? GLASS_GRADIENT_DARK : GLASS_GRADIENT_LIGHT;
   const topEdge = isDark ? GLASS_TOP_BORDER_DARK : GLASS_TOP_BORDER_LIGHT;

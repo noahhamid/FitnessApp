@@ -1,16 +1,21 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Tabs } from "expo-router";
 import {
   Animated,
-  Platform,
   Pressable,
-  StatusBar,
   StyleSheet,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Home, Dumbbell, UtensilsCrossed, LineChart, User } from "lucide-react-native";
+import {
+  Dumbbell,
+  Home,
+  LineChart,
+  User,
+  UtensilsCrossed,
+} from "lucide-react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import * as Haptics from "expo-haptics";
 import { useTheme } from "@/src/context/ThemeContext";
 import type { AppTheme } from "@/src/theme";
 import { bottomInset } from "@/src/lib/safe-area";
@@ -18,30 +23,24 @@ import {
   TAB_PILL_BOTTOM_GAP,
   TAB_PILL_H,
   TAB_PILL_H_MARGIN,
-  tabChromeDockHeight,
 } from "@/src/lib/tab-chrome";
 
-const INACTIVE_ICON_ALPHA = 0.78;
-
-function whiteAtAlpha(alpha: number): string {
-  return `rgba(255,255,255,${alpha})`;
-}
+type TabIcon = React.ComponentType<{
+  size?: number;
+  color?: string;
+  strokeWidth?: number;
+  fill?: string;
+}>;
 
 const TAB_META: Record<
   string,
-  {
-    label: string;
-    icon: React.ComponentType<{
-      size: number;
-      color: string;
-      strokeWidth: number;
-    }>;
-  }
+  { label: string; icon: TabIcon; fillOnFocus?: boolean }
 > = {
   index: { label: "Home", icon: Home },
   train: { label: "Train", icon: Dumbbell },
   nutrition: { label: "Nutrition", icon: UtensilsCrossed },
-  progress: { label: "Progress", icon: LineChart },
+  // LineChart's fill paints the whole plot area as a red blob — stroke only.
+  progress: { label: "Progress", icon: LineChart, fillOnFocus: false },
   profile: { label: "Profile", icon: User },
 };
 
@@ -49,65 +48,77 @@ function TabSlot({
   focused,
   label,
   icon: Icon,
+  fillOnFocus = true,
   onPress,
   onLongPress,
+  color,
+  muted,
 }: {
   focused: boolean;
   label: string;
-  icon: React.ComponentType<{
-    size: number;
-    color: string;
-    strokeWidth: number;
-  }>;
+  icon: TabIcon;
+  fillOnFocus?: boolean;
   onPress: () => void;
   onLongPress: () => void;
+  color: string;
+  muted: string;
 }) {
-  const { theme: T } = useTheme();
-  const s = useMemo(() => makeStyles(T), [T]);
-  const anim = useRef(new Animated.Value(focused ? 1 : 0)).current;
+  const focus = useRef(new Animated.Value(focused ? 1 : 0)).current;
+  const press = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.spring(anim, {
+    Animated.spring(focus, {
       toValue: focused ? 1 : 0,
       useNativeDriver: true,
-      friction: 6,
-      tension: 140,
+      friction: 7,
+      tension: 180,
     }).start();
-  }, [focused, anim]);
+  }, [focused, focus]);
 
-  const iconScale = anim.interpolate({
+  const iconScale = focus.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.08],
+    outputRange: [1, 1.12],
+  });
+  const iconLift = focus.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -2],
   });
 
   return (
     <Pressable
       onPress={onPress}
       onLongPress={onLongPress}
+      onPressIn={() => {
+        Animated.spring(press, {
+          toValue: 0.88,
+          useNativeDriver: true,
+          friction: 6,
+          tension: 240,
+        }).start();
+      }}
+      onPressOut={() => {
+        Animated.spring(press, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 6,
+          tension: 240,
+        }).start();
+      }}
       accessibilityRole="button"
       accessibilityState={focused ? { selected: true } : {}}
       accessibilityLabel={label}
-      style={s.slot}
+      style={styles.slot}
     >
-      <View
-        pointerEvents="none"
-        style={[s.idleWell, focused && s.idleWellHidden]}
-      />
       <Animated.View
-        pointerEvents="none"
-        style={[
-          s.activeWell,
-          {
-            opacity: anim,
-            transform: [{ scale: anim }],
-          },
-        ]}
-      />
-      <Animated.View style={{ transform: [{ scale: iconScale }], zIndex: 1 }}>
+        style={{
+          transform: [{ scale: Animated.multiply(iconScale, press) }, { translateY: iconLift }],
+        }}
+      >
         <Icon
-          size={22}
-          color={focused ? "#FFFFFF" : whiteAtAlpha(INACTIVE_ICON_ALPHA)}
-          strokeWidth={focused ? 2.2 : 2.6}
+          size={24}
+          color={focused ? color : muted}
+          strokeWidth={focused ? 2.35 : 1.9}
+          fill={focused && fillOnFocus ? color : "none"}
         />
       </Animated.View>
     </Pressable>
@@ -117,41 +128,26 @@ function TabSlot({
 function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { theme: T } = useTheme();
-  const s = useMemo(() => makeStyles(T), [T]);
-  const safeBottom = bottomInset(insets.bottom);
-  const pillBottom = safeBottom + TAB_PILL_BOTTOM_GAP;
-  const dockH = tabChromeDockHeight(insets.bottom);
+  const s = useMemo(() => makeBarStyles(T), [T]);
+  const pillBottom = bottomInset(insets.bottom) + TAB_PILL_BOTTOM_GAP;
+  const [rowW, setRowW] = useState(0);
+  const indexAnim = useRef(new Animated.Value(state.index)).current;
 
   useEffect(() => {
-    const accent = T.accent;
-    const restore = T.bg;
-    void import("expo-system-ui")
-      .then((SystemUI) => SystemUI.setBackgroundColorAsync(accent))
-      .catch(() => undefined);
-    if (Platform.OS === "android") {
-      StatusBar.setBackgroundColor(accent, true);
-    }
-    return () => {
-      void import("expo-system-ui")
-        .then((SystemUI) => SystemUI.setBackgroundColorAsync(restore))
-        .catch(() => undefined);
-    };
-  }, [T.accent, T.bg]);
+    Animated.spring(indexAnim, {
+      toValue: state.index,
+      useNativeDriver: true,
+      friction: 8,
+      tension: 160,
+    }).start();
+  }, [state.index, indexAnim]);
+
+  const count = Math.max(state.routes.length, 1);
+  const slotW = rowW / count;
+  const indicatorW = 44;
 
   return (
     <View style={s.overlayRoot} pointerEvents="box-none">
-      {/* Solid brand-red dock behind / around / below the pill */}
-      <View
-        pointerEvents="none"
-        style={[
-          s.redDock,
-          {
-            height: dockH,
-            backgroundColor: T.accent,
-          },
-        ]}
-      />
-
       <View
         style={[
           s.pillWrap,
@@ -163,8 +159,33 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           },
         ]}
       >
-        <View style={[s.pillClip, { backgroundColor: T.accentPressed }]}>
-          <View style={s.row}>
+        <View style={s.pill}>
+          {rowW > 0 ? (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                s.indicator,
+                {
+                  width: indicatorW,
+                  transform: [
+                    {
+                      translateX: indexAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [
+                          (slotW - indicatorW) / 2,
+                          slotW + (slotW - indicatorW) / 2,
+                        ],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+          ) : null}
+          <View
+            style={s.row}
+            onLayout={(e) => setRowW(e.nativeEvent.layout.width)}
+          >
             {state.routes.map((route, index) => {
               const focused = state.index === index;
               const { options } = descriptors[route.key];
@@ -180,6 +201,7 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                   canPreventDefault: true,
                 });
                 if (!focused && !event.defaultPrevented) {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   navigation.navigate(route.name, route.params);
                 }
               };
@@ -197,8 +219,11 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                   focused={focused}
                   label={meta.label}
                   icon={meta.icon}
+                  fillOnFocus={meta.fillOnFocus !== false}
                   onPress={onPress}
                   onLongPress={onLongPress}
+                  color={T.accent}
+                  muted={T.muted}
                 />
               );
             })}
@@ -235,71 +260,46 @@ export default function AppTabsLayout() {
   );
 }
 
-function makeStyles(T: AppTheme) {
+const styles = StyleSheet.create({
+  slot: {
+    flex: 1,
+    height: TAB_PILL_H - 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
+
+function makeBarStyles(T: AppTheme) {
   return StyleSheet.create({
     overlayRoot: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: "transparent",
     },
-    redDock: {
-      position: "absolute",
-      left: 0,
-      right: 0,
-      bottom: 0,
-      // Slight top radius so the red chrome meets page content cleanly.
-      borderTopLeftRadius: T.radius.xl,
-      borderTopRightRadius: T.radius.xl,
-    },
     pillWrap: {
       position: "absolute",
       backgroundColor: "transparent",
-      shadowColor: "#0A0A0A",
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.2,
-      shadowRadius: 14,
-      elevation: 10,
     },
-    pillClip: {
+    pill: {
       flex: 1,
       borderRadius: T.radius.pill,
       overflow: "hidden",
+      backgroundColor: T.bgElevated,
       borderWidth: StyleSheet.hairlineWidth,
-      borderColor: "rgba(255,255,255,0.28)",
+      borderColor: T.border,
+      ...T.shadow.lifted,
+    },
+    indicator: {
+      position: "absolute",
+      top: (TAB_PILL_H - 40) / 2,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: T.accentTint,
     },
     row: {
       flex: 1,
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 10,
-    },
-    slot: {
-      flex: 1,
-      height: TAB_PILL_H - 12,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    idleWell: {
-      position: "absolute",
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: whiteAtAlpha(0.14),
-      opacity: 1,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: whiteAtAlpha(0.22),
-    },
-    idleWellHidden: {
-      opacity: 0,
-    },
-    activeWell: {
-      position: "absolute",
-      width: 48,
-      height: 40,
-      borderRadius: T.radius.pill,
-      backgroundColor: whiteAtAlpha(0.22),
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: whiteAtAlpha(0.4),
+      zIndex: 1,
     },
   });
 }

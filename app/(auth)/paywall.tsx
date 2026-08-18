@@ -13,12 +13,11 @@ import { authClient } from "@/src/lib/auth";
 import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { Gift, X } from "lucide-react-native";
+import { X } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   ImageBackground,
-  Modal,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -35,10 +34,6 @@ const PERKS = [
   "Conditioning that fits around lifting, not instead of it",
   "Reminders only on the days you actually train",
 ];
-
-const FULL_PRICE = 35.99;
-const DISCOUNT_PRICE = 26.99;
-const SAVE_AMOUNT = (FULL_PRICE - DISCOUNT_PRICE).toFixed(2);
 
 function heroScrimColors(bgHex: string, resolved: "light" | "dark") {
   const hex = bgHex.replace("#", "");
@@ -62,10 +57,8 @@ function heroScrimColors(bgHex: string, resolved: "light" | "dark") {
 export default function PaywallScreen() {
   const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
   const params = useLocalSearchParams<OnboardingAuthParams>();
-  const [offerOpen, setOfferOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [lastOfferAccepted, setLastOfferAccepted] = useState(false);
   const { data: session } = authClient.useSession();
   const alreadyAuthed = !!session?.user;
 
@@ -82,23 +75,19 @@ export default function PaywallScreen() {
     [C.bg, resolved],
   );
 
-  async function finish(offerAccepted: boolean) {
+  async function finish() {
     if (leaving) return;
     setLeaving(true);
     setSaveError(null);
-    setLastOfferAccepted(offerAccepted);
-    setOfferOpen(false);
-    useAuthStore.getState().setPremiumUnlocked(offerAccepted);
+    useAuthStore.getState().setPremiumUnlocked(true);
 
     const nextParams = onboardingParamsForNavigation({
       ...params,
       onboardingComplete: "1",
-      offerAccepted: offerAccepted ? "1" : "0",
+      offerAccepted: "1",
     });
     await saveOnboardingDraft(nextParams);
 
-    // Already signed in (e.g. Google earlier, then finished onboarding) —
-    // persist the plan and enter the app. No sign-up step.
     if (alreadyAuthed) {
       try {
         await saveCompletedOnboardingPayload(nextParams);
@@ -114,18 +103,10 @@ export default function PaywallScreen() {
       return;
     }
 
-    // Guest flow: leave onboarding and open sign-up as a sibling on the
-    // auth stack (replace, not push — back shouldn't return to the paywall).
     router.replace({
       pathname: "/(auth)/sign-up",
       params: nextParams,
     });
-  }
-
-  /** Exit intent: first skip/close surfaces the discount offer. */
-  function onDismissAttempt() {
-    if (leaving) return;
-    setOfferOpen(true);
   }
 
   return (
@@ -147,10 +128,10 @@ export default function PaywallScreen() {
           <View style={s.content}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Skip"
+              accessibilityLabel="Continue"
               hitSlop={12}
               style={s.closeBtn}
-              onPress={onDismissAttempt}
+              onPress={() => void finish()}
             >
               <X size={22} color={C.muted} strokeWidth={2.2} />
             </Pressable>
@@ -158,11 +139,11 @@ export default function PaywallScreen() {
             <View style={{ flex: 1 }} />
 
             <Text style={s.kicker} numberOfLines={1}>
-              UNLOCK EVERYTHING
+              YOUR PLAN
             </Text>
             <Text
               style={s.headline}
-              numberOfLines={1}
+              numberOfLines={2}
               adjustsFontSizeToFit
               minimumFontScale={0.7}
               allowFontScaling={false}
@@ -177,12 +158,6 @@ export default function PaywallScreen() {
                   <Text style={s.perkText}>{perk}</Text>
                 </View>
               ))}
-            </View>
-
-            <View style={s.priceCard}>
-              <Text style={s.priceLabel}>12 MONTHS</Text>
-              <Text style={s.price}>${FULL_PRICE.toFixed(2)} / year</Text>
-              <Text style={s.priceNote}>Cancel anytime</Text>
             </View>
 
             <View style={{ flex: 1 }} />
@@ -201,111 +176,21 @@ export default function PaywallScreen() {
                 leaving && s.primaryBtnDisabled,
                 pressed && s.pressed,
               ]}
-              onPress={() => {
-                if (saveError) {
-                  void finish(lastOfferAccepted);
-                  return;
-                }
-                setOfferOpen(true);
-              }}
+              onPress={() => void finish()}
             >
               {leaving ? (
                 <ActivityIndicator color={C.onAccent} size="small" />
               ) : (
                 <Text style={s.primaryBtnText}>
-                  {saveError ? "RETRY SAVE" : "UNLOCK NOW"}
+                  {saveError ? "RETRY SAVE" : "CONTINUE"}
                 </Text>
               )}
             </Pressable>
 
-            <Text style={s.legal}>
-              Total ${FULL_PRICE.toFixed(2)}/Year, cancel anytime.
-            </Text>
+            <Text style={s.legal}>No purchase required — this is a preview.</Text>
           </View>
         </SafeAreaView>
       </ImageBackground>
-
-      <Modal
-        visible={offerOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
-          void finish(false);
-        }}
-      >
-        <View style={s.modalBackdrop}>
-          <View style={s.modalCard}>
-            <View style={s.modalHero}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Close offer"
-                hitSlop={10}
-                style={s.modalClose}
-                onPress={() => {
-                  void finish(false);
-                }}
-              >
-                <X size={18} color={C.onAccent} strokeWidth={2.4} />
-              </Pressable>
-              <Gift size={36} color={C.onAccent} strokeWidth={2} />
-              <Text style={s.modalHeroEyebrow}>EXTRA</Text>
-              <Text style={s.modalHeroDeal}>25% OFF</Text>
-            </View>
-
-            <View style={s.modalBody}>
-              <Text
-                style={s.modalHeadline}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}
-                allowFontScaling={false}
-              >
-                WAIT! A PERSONAL OFFER JUST FOR YOU.
-              </Text>
-
-              <View style={s.priceCompare}>
-                <View style={[s.compareCard, s.compareCardMuted]}>
-                  <Text style={s.compareTerm}>12 Months</Text>
-                  <Text style={s.compareWas}>
-                    ${FULL_PRICE.toFixed(2)}
-                    <Text style={s.compareUnit}> /Year</Text>
-                  </Text>
-                </View>
-
-                <View style={s.compareArrow} />
-
-                <View style={[s.compareCard, s.compareCardActive]}>
-                  <Text style={s.compareTerm}>12 Months</Text>
-                  <Text style={s.compareNow}>
-                    ${DISCOUNT_PRICE.toFixed(2)}
-                    <Text style={s.compareUnitActive}> /Year</Text>
-                  </Text>
-                </View>
-              </View>
-
-              <Text style={s.saveLine}>SAVE ${SAVE_AMOUNT} IN TOTAL!</Text>
-
-              <Pressable
-                accessibilityRole="button"
-                disabled={leaving}
-                style={({ pressed }) => [
-                  s.modalContinue,
-                  pressed && s.pressed,
-                ]}
-                onPress={() => {
-                  void finish(true);
-                }}
-              >
-                {leaving ? (
-                  <ActivityIndicator color={C.onAccent} size="small" />
-                ) : (
-                  <Text style={s.modalContinueText}>CONTINUE</Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -380,37 +265,6 @@ function makeStyles(C: OnboardingColors) {
       color: C.text,
       paddingBottom: 8,
     },
-    priceCard: {
-      alignItems: "center",
-      paddingVertical: 18,
-      borderRadius: 16,
-      backgroundColor: C.card,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: C.border,
-    },
-    priceLabel: {
-      fontFamily: FONTS.blackItalic,
-      fontSize: 13,
-      letterSpacing: 2,
-      color: C.muted,
-      textTransform: "uppercase",
-      textAlign: "center",
-    },
-    price: {
-      marginTop: 4,
-      fontFamily: FONTS.blackItalic,
-      fontSize: 28,
-      color: C.text,
-      letterSpacing: -0.5,
-      textAlign: "center",
-    },
-    priceNote: {
-      marginTop: 4,
-      fontFamily: FONTS.regular,
-      fontSize: 12,
-      color: C.muted2,
-      textAlign: "center",
-    },
     primaryBtn: {
       backgroundColor: C.accent,
       borderRadius: 999,
@@ -450,148 +304,6 @@ function makeStyles(C: OnboardingColors) {
     },
     pressed: {
       opacity: 0.85,
-    },
-
-    modalBackdrop: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.72)",
-      justifyContent: "center",
-      paddingHorizontal: 22,
-    },
-    modalCard: {
-      borderRadius: 24,
-      overflow: "hidden",
-      backgroundColor: C.card,
-    },
-    modalHero: {
-      backgroundColor: C.accent,
-      paddingTop: 28,
-      paddingBottom: 22,
-      alignItems: "center",
-    },
-    modalClose: {
-      position: "absolute",
-      top: 12,
-      right: 12,
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: "rgba(0,0,0,0.2)",
-    },
-    modalHeroEyebrow: {
-      marginTop: 10,
-      fontFamily: FONTS.blackItalic,
-      fontSize: 20,
-      letterSpacing: 1,
-      color: C.onAccent,
-      textTransform: "uppercase",
-      textAlign: "center",
-    },
-    modalHeroDeal: {
-      fontFamily: FONTS.blackItalic,
-      fontSize: 40,
-      color: "#FFE082",
-      letterSpacing: -0.5,
-      textTransform: "uppercase",
-      textAlign: "center",
-    },
-    modalBody: {
-      paddingHorizontal: 20,
-      paddingTop: 22,
-      paddingBottom: 22,
-    },
-    modalHeadline: {
-      fontFamily: FONTS.blackItalic,
-      fontSize: 20,
-      color: C.text,
-      textAlign: "center",
-      marginBottom: 18,
-      letterSpacing: -0.2,
-      textTransform: "uppercase",
-    },
-    priceCompare: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-    },
-    compareCard: {
-      flex: 1,
-      borderRadius: 14,
-      paddingVertical: 14,
-      paddingHorizontal: 8,
-      alignItems: "center",
-      backgroundColor: C.bg2,
-    },
-    compareCardMuted: {
-      opacity: 0.55,
-    },
-    compareCardActive: {
-      backgroundColor: C.card,
-      borderWidth: 2,
-      borderColor: C.accent,
-    },
-    compareTerm: {
-      fontFamily: FONTS.blackItalic,
-      fontSize: 12,
-      color: C.muted,
-      marginBottom: 6,
-      letterSpacing: 0.5,
-      textTransform: "uppercase",
-      textAlign: "center",
-    },
-    compareWas: {
-      fontFamily: FONTS.blackItalic,
-      fontSize: 18,
-      color: C.accent,
-      textDecorationLine: "line-through",
-      textAlign: "center",
-    },
-    compareNow: {
-      fontFamily: FONTS.blackItalic,
-      fontSize: 20,
-      color: C.accent,
-      textAlign: "center",
-    },
-    compareUnit: {
-      fontFamily: FONTS.blackItalic,
-      fontSize: 11,
-      color: C.muted2,
-    },
-    compareUnitActive: {
-      fontFamily: FONTS.blackItalic,
-      fontSize: 11,
-      color: C.muted2,
-    },
-    compareArrow: {
-      width: 16,
-      alignItems: "center",
-    },
-    saveLine: {
-      marginTop: 12,
-      fontFamily: FONTS.blackItalic,
-      fontSize: 15,
-      letterSpacing: 0.5,
-      color: C.accent,
-      textAlign: "center",
-      textTransform: "uppercase",
-    },
-    modalContinue: {
-      marginTop: 18,
-      backgroundColor: C.accent,
-      borderRadius: 999,
-      paddingVertical: 16,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    modalContinueText: {
-      fontFamily: FONTS.blackItalic,
-      fontSize: 16,
-      letterSpacing: 1,
-      color: C.onAccent,
-      textTransform: "uppercase",
-      textAlign: "center",
     },
   });
 }

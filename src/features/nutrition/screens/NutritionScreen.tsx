@@ -275,8 +275,8 @@ export default function MealScreen() {
         pointerEvents="none"
       />
       <StatusBar
-        barStyle="light-content"
-        backgroundColor="#000000"
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={T.bg}
         translucent={false}
       />
 

@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import type { WorkoutSessionSummary } from "../hooks/useProgress";
 import { localDateOnly } from "../lib/localDate";
+import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 
@@ -71,7 +72,7 @@ export function WorkoutCalendar({
   };
 
   return (
-    <View style={s.card}>
+    <GlassSurface style={s.card}>
       <View style={s.headerRow}>
         <Pressable onPress={goPrevMonth} hitSlop={8} style={s.navBtn}>
           <ChevronLeft size={18} color={T.white} strokeWidth={2.2} />
@@ -128,56 +129,51 @@ export function WorkoutCalendar({
           );
         })}
       </View>
-    </View>
+    </GlassSurface>
   );
 }
-
-const CELL_SIZE = 40;
 
 function makeStyles(T: AppTheme) {
   return StyleSheet.create({
     card: {
-      backgroundColor: T.glass,
       borderRadius: T.radius.lg,
-      borderWidth: 0.5,
-      borderColor: T.glassBorder,
       padding: T.space.lg,
-      ...T.shadow.card,
     },
     headerRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       marginBottom: T.space.lg,
+      zIndex: 1,
     },
     navBtn: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       backgroundColor: T.accentTint,
-      borderWidth: 0.5,
-      borderColor: T.border,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: T.accentLine,
       alignItems: "center",
       justifyContent: "center",
     },
     monthLabel: {
       fontFamily: T.displaySemi,
-      fontSize: 15,
+      fontSize: 16,
       color: T.white,
-      letterSpacing: -0.2,
+      letterSpacing: -0.3,
     },
-    weekdayRow: { flexDirection: "row", marginBottom: 6 },
+    weekdayRow: { flexDirection: "row", marginBottom: 8, zIndex: 1 },
     weekdayLabel: {
-      width: CELL_SIZE,
+      flex: 1,
       textAlign: "center",
       fontFamily: T.bodySemi,
       fontSize: 11,
       color: T.muted,
     },
-    grid: { flexDirection: "row", flexWrap: "wrap" },
+    grid: { flexDirection: "row", flexWrap: "wrap", zIndex: 1 },
     cell: {
-      width: CELL_SIZE,
-      height: CELL_SIZE,
+      width: "14.285%",
+      aspectRatio: 1,
       alignItems: "center",
       justifyContent: "center",
     },

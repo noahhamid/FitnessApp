@@ -4,6 +4,7 @@ import { Award } from "lucide-react-native";
 import type { PersonalRecord } from "../hooks/useProgress";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
+import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
 
 interface Props {
   records: PersonalRecord[];
@@ -21,23 +22,26 @@ export function PersonalRecordsSection({ records }: Props) {
 
   if (records.length === 0) {
     return (
-      <View style={s.card}>
+      <GlassSurface style={s.emptyCard}>
+        <View style={s.iconWrap}>
+          <Award size={20} color={T.accent} strokeWidth={2.2} />
+        </View>
+        <Text style={s.emptyTitle}>No records yet</Text>
         <Text style={s.emptyText}>
-          Your personal records will show up here once you've logged a few
-          workouts.
+          Your heaviest lifts will show up here after a few logged workouts.
         </Text>
-      </View>
+      </GlassSurface>
     );
   }
 
   return (
     <View style={{ gap: 10 }}>
       {records.map((r) => (
-        <View key={r.exerciseName} style={s.card}>
+        <GlassSurface key={r.exerciseName} style={s.card}>
           <View style={s.iconWrap}>
             <Award size={18} color={T.accent} strokeWidth={2.2} />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, zIndex: 1 }}>
             <Text style={s.exerciseName}>{r.exerciseName}</Text>
             <Text style={s.subtext}>
               {r.heaviestWeight}kg × {r.repsAtHeaviest} · est. 1RM{" "}
@@ -45,7 +49,7 @@ export function PersonalRecordsSection({ records }: Props) {
             </Text>
           </View>
           <Text style={s.dateText}>{formatDate(r.achievedAt)}</Text>
-        </View>
+        </GlassSurface>
       ))}
     </View>
   );
@@ -56,21 +60,31 @@ function makeStyles(T: AppTheme) {
     card: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: T.glass,
       borderRadius: T.radius.md,
-      borderWidth: 0.5,
-      borderColor: T.glassBorder,
       padding: 14,
       gap: T.space.md,
-      ...T.shadow.card,
+    },
+    emptyCard: {
+      alignItems: "center",
+      borderRadius: T.radius.lg,
+      paddingVertical: 36,
+      paddingHorizontal: 20,
+      gap: 8,
+    },
+    emptyTitle: {
+      fontFamily: T.displaySemi,
+      fontSize: 16,
+      color: T.white,
+      zIndex: 1,
     },
     iconWrap: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 40,
+      height: 40,
+      borderRadius: 14,
       backgroundColor: T.accentTint,
       alignItems: "center",
       justifyContent: "center",
+      zIndex: 1,
     },
     exerciseName: { fontFamily: T.bodySemi, fontSize: 14, color: T.white },
     subtext: {
@@ -79,13 +93,14 @@ function makeStyles(T: AppTheme) {
       color: T.muted,
       marginTop: 2,
     },
-    dateText: { fontFamily: T.bodyMed, fontSize: 11, color: T.muted },
+    dateText: { fontFamily: T.bodyMed, fontSize: 11, color: T.muted, zIndex: 1 },
     emptyText: {
       fontFamily: T.bodyMed,
-      fontSize: 12.5,
+      fontSize: 13,
       color: T.muted,
-      lineHeight: 18,
+      lineHeight: 19,
       textAlign: "center",
+      zIndex: 1,
     },
   });
 }

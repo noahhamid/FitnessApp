@@ -1,42 +1,26 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { Dumbbell, Flame, Scale } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
+import { useTheme } from "@/src/context/ThemeContext";
 import type { AppTheme } from "@/src/theme";
 import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
-import { StreakPill } from "@/src/components/StreakPill";
+import { STREAK_FLAME_ORANGE } from "@/src/components/StreakPill";
 
 type Props = {
   streakDays: number;
   sessionsThisWeek: number;
-  /**
-   * Same first→last delta as WeightTrendChart when ≥2 logs exist.
-   * Null when there isn't enough weight history.
-   */
   weightDeltaKg: number | null;
 };
-
-function SnapshotTile({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  const { styles: s } = useThemedStyles(makeStyles);
-  return (
-    <GlassSurface style={s.tile}>
-      <Text style={s.tileLabel}>{label}</Text>
-      <View style={s.tileValueRow}>{children}</View>
-    </GlassSurface>
-  );
-}
 
 export function ProgressSnapshotStrip({
   streakDays,
   sessionsThisWeek,
   weightDeltaKg,
 }: Props) {
-  const { styles: s } = useThemedStyles(makeStyles);
+  const { T, styles: s } = useThemedStyles(makeStyles);
+  const { resolved } = useTheme();
+  const flame = STREAK_FLAME_ORANGE[resolved];
 
   const weightText =
     weightDeltaKg == null
@@ -44,93 +28,90 @@ export function ProgressSnapshotStrip({
       : `${weightDeltaKg > 0 ? "+" : ""}${weightDeltaKg.toFixed(1)}`;
 
   return (
-    <View style={s.wrap}>
-      <Text style={s.eyebrow}>This week</Text>
-      <View style={s.row}>
-        {/* Streak tile keeps the 3-col strip; shared StreakPill is the value. */}
-        <SnapshotTile label="Streak">
-          <StreakPill days={streakDays} style={s.streakInTile} />
-        </SnapshotTile>
+    <View style={s.row}>
+      <GlassSurface style={s.tile}>
+        <View style={[s.iconWell, { backgroundColor: "rgba(217,107,31,0.12)" }]}>
+          <Flame size={16} color={flame} strokeWidth={2.4} fill={flame} />
+        </View>
+        <Text style={s.value}>{streakDays}</Text>
+        <Text style={s.label}>Day streak</Text>
+      </GlassSurface>
 
-        <SnapshotTile label="Sessions">
-          <Text style={s.tileValue}>{sessionsThisWeek}</Text>
-        </SnapshotTile>
+      <GlassSurface style={s.tile}>
+        <View style={s.iconWell}>
+          <Dumbbell size={16} color={T.accent} strokeWidth={2.4} />
+        </View>
+        <Text style={s.value}>{sessionsThisWeek}</Text>
+        <Text style={s.label}>Sessions</Text>
+      </GlassSurface>
 
-        <SnapshotTile label="Weight">
-          <Text
-            style={[
-              s.tileValue,
-              weightDeltaKg != null && weightDeltaKg !== 0 && s.tileValueAccent,
-            ]}
-          >
-            {weightText}
-          </Text>
-          {weightDeltaKg != null && (
-            <Text style={s.tileUnit}>kg</Text>
-          )}
-        </SnapshotTile>
-      </View>
+      <GlassSurface style={s.tile}>
+        <View style={s.iconWell}>
+          <Scale size={16} color={T.accent} strokeWidth={2.4} />
+        </View>
+        <Text
+          style={[
+            s.value,
+            weightDeltaKg != null && weightDeltaKg !== 0 && s.valueAccent,
+          ]}
+          numberOfLines={1}
+        >
+          {weightText}
+          {weightDeltaKg != null ? (
+            <Text style={s.unit}> kg</Text>
+          ) : null}
+        </Text>
+        <Text style={s.label}>Weight</Text>
+      </GlassSurface>
     </View>
   );
 }
 
 function makeStyles(T: AppTheme) {
   return StyleSheet.create({
-    wrap: { marginBottom: T.space.lg },
-    eyebrow: {
-      fontFamily: T.bodyBold,
-      fontSize: 10,
-      letterSpacing: 1.2,
-      textTransform: "uppercase",
-      color: T.muted,
-      marginBottom: 10,
-    },
     row: {
       flexDirection: "row",
-      gap: 8,
+      gap: 10,
+      marginBottom: T.space.lg,
     },
     tile: {
       flex: 1,
-      borderRadius: T.radius.md,
-      paddingVertical: 12,
-      paddingHorizontal: 10,
-      minHeight: 72,
-      justifyContent: "space-between",
+      borderRadius: T.radius.lg,
+      paddingVertical: 14,
+      paddingHorizontal: 12,
       gap: 8,
+      minHeight: 108,
     },
-    tileLabel: {
-      fontFamily: T.bodySemi,
-      fontSize: 10,
-      letterSpacing: 0.4,
-      color: T.muted,
-      zIndex: 1,
-    },
-    tileValueRow: {
-      flexDirection: "row",
+    iconWell: {
+      width: 32,
+      height: 32,
+      borderRadius: 10,
+      backgroundColor: T.accentTint,
       alignItems: "center",
-      gap: 4,
+      justifyContent: "center",
       zIndex: 1,
     },
-    /** Pill sits inside the glass tile — slightly tighter so 3 cols stay even. */
-    streakInTile: {
-      paddingVertical: 5,
-      paddingHorizontal: 8,
-      alignSelf: "flex-start",
-    },
-    tileValue: {
+    value: {
       fontFamily: T.displayBold,
-      fontSize: 22,
-      letterSpacing: -0.4,
+      fontSize: 24,
+      letterSpacing: -0.6,
       color: T.white,
       fontVariant: ["tabular-nums"],
+      zIndex: 1,
     },
-    tileValueAccent: {
+    valueAccent: {
       color: T.accent,
     },
-    tileUnit: {
+    unit: {
+      fontFamily: T.bodySemi,
+      fontSize: 12,
+      color: T.muted,
+    },
+    label: {
       fontFamily: T.bodyMed,
       fontSize: 11,
       color: T.muted,
+      zIndex: 1,
     },
   });
 }

@@ -37,7 +37,6 @@ import {
   TodayChecklistCard,
   nextChecklistAction,
 } from "../components/TodayChecklistCard";
-import { HomeFloatingActionBar } from "../components/HomeFloatingActionBar";
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { useCoachCard } from "../hooks/useCoachCard";
@@ -53,10 +52,7 @@ import {
   invalidateQueryPrefixes,
   usePullToRefresh,
 } from "@/src/hooks/usePullToRefresh";
-import {
-  HOME_FLOATING_BAR_H,
-  tabContentBottomPad,
-} from "@/src/lib/tab-chrome";
+import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 
 function SectionSkeleton({
   height,
@@ -98,7 +94,7 @@ function sessionMinutes(
 }
 
 export default function DashboardScreen() {
-  const { T, styles } = useThemedStyles(makeStyles);
+  const { T, styles, resolved } = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const today = localDateOnly();
@@ -236,9 +232,6 @@ export default function DashboardScreen() {
     isRestDay,
   });
 
-  const floatingComplete = isToday && nextAction.key === "complete";
-  const showFloatingBar = isToday;
-
   function handlePrimaryAction() {
     if (nextAction.key === "workout") {
       router.push("/(app)/(tabs)/train");
@@ -254,19 +247,7 @@ export default function DashboardScreen() {
     handlePrimaryAction();
   }
 
-  const contentPadBottom = tabContentBottomPad(
-    insets.bottom,
-    showFloatingBar ? HOME_FLOATING_BAR_H : 0,
-  );
-
-  let floatingDetail: string | undefined;
-  if (floatingComplete) {
-    floatingDetail = "Nice work — you’re caught up";
-  } else if (nextAction.key === "workout" && plannedMinutes != null) {
-    floatingDetail = `${plannedMinutes} min planned`;
-  } else if (nextAction.key !== "complete") {
-    floatingDetail = "Next on today’s list";
-  }
+  const contentPadBottom = tabContentBottomPad(insets.bottom);
 
   return (
     <SafeAreaView edges={["top"]} style={styles.root}>
@@ -276,8 +257,8 @@ export default function DashboardScreen() {
         pointerEvents="none"
       />
       <StatusBar
-        barStyle="light-content"
-        backgroundColor="#000000"
+        barStyle={resolved === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={T.bg}
         translucent={false}
       />
 
@@ -409,15 +390,6 @@ export default function DashboardScreen() {
           />
         ) : null}
       </ScrollView>
-
-      {showFloatingBar ? (
-        <HomeFloatingActionBar
-          label={nextAction.label}
-          detail={floatingDetail}
-          complete={floatingComplete}
-          onPress={floatingComplete ? undefined : handlePrimaryAction}
-        />
-      ) : null}
     </SafeAreaView>
   );
 }

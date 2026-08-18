@@ -8,9 +8,11 @@ import Svg, {
   LinearGradient,
   Stop,
 } from "react-native-svg";
+import { Scale } from "lucide-react-native";
 import type { WeightLogEntry } from "../hooks/useProgress";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
+import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
 
 interface Props {
   entries: WeightLogEntry[]; // ascending by date, last 8 weeks worth
@@ -50,14 +52,15 @@ export function WeightTrendChart({ entries, height = 140 }: Props) {
 
   if (entries.length === 0) {
     return (
-      <View
-        style={[
-          s.card,
-          { height, alignItems: "center", justifyContent: "center" },
-        ]}
-      >
-        <Text style={s.emptyText}>No weight logged yet</Text>
-      </View>
+      <GlassSurface style={[s.card, s.emptyCard]}>
+        <View style={s.emptyIcon}>
+          <Scale size={22} color={T.accent} strokeWidth={2.2} />
+        </View>
+        <Text style={s.emptyTitle}>No weigh-ins yet</Text>
+        <Text style={s.emptyText}>
+          Log your weight to start a trend — even one entry is enough to begin.
+        </Text>
+      </GlassSurface>
     );
   }
 
@@ -72,14 +75,15 @@ export function WeightTrendChart({ entries, height = 140 }: Props) {
   const delta = last - first;
 
   return (
-    <View style={s.card}>
+    <GlassSurface style={s.card}>
       <View style={s.headerRow}>
         <View>
+          <Text style={s.eyebrow}>WEIGHT TREND</Text>
           <Text style={s.currentWeight}>{last.toFixed(1)} kg</Text>
           <Text style={s.deltaText}>
             {delta === 0
-              ? "No change"
-              : `${delta > 0 ? "+" : ""}${delta.toFixed(1)} kg since start`}
+              ? "No change over this period"
+              : `${delta > 0 ? "+" : ""}${delta.toFixed(1)} kg since first log`}
           </Text>
         </View>
       </View>
@@ -87,7 +91,7 @@ export function WeightTrendChart({ entries, height = 140 }: Props) {
       <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
         <Defs>
           <LinearGradient id="weightFillGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={T.accent} stopOpacity="0.25" />
+            <Stop offset="0" stopColor={T.accent} stopOpacity="0.18" />
             <Stop offset="1" stopColor={T.accent} stopOpacity="0" />
           </LinearGradient>
         </Defs>
@@ -124,29 +128,51 @@ export function WeightTrendChart({ entries, height = 140 }: Props) {
       </Svg>
 
       <View style={s.rangeRow}>
-        <Text style={s.rangeText}>{minW.toFixed(1)} kg</Text>
-        <Text style={s.rangeText}>{maxW.toFixed(1)} kg</Text>
+        <Text style={s.rangeText}>Low {minW.toFixed(1)}</Text>
+        <Text style={s.rangeText}>High {maxW.toFixed(1)}</Text>
       </View>
-    </View>
+    </GlassSurface>
   );
 }
 
 function makeStyles(T: AppTheme) {
   return StyleSheet.create({
     card: {
-      backgroundColor: T.glass,
       borderRadius: T.radius.lg,
-      borderWidth: 0.5,
-      borderColor: T.glassBorder,
       padding: T.space.lg,
-      ...T.shadow.card,
     },
-    headerRow: { marginBottom: T.space.sm },
+    emptyCard: {
+      alignItems: "center",
+      paddingVertical: 36,
+      gap: 8,
+    },
+    emptyIcon: {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
+      backgroundColor: T.accentTint,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 6,
+    },
+    emptyTitle: {
+      fontFamily: T.displaySemi,
+      fontSize: 16,
+      color: T.white,
+    },
+    headerRow: { marginBottom: T.space.sm, zIndex: 1 },
+    eyebrow: {
+      fontFamily: T.bodyBold,
+      fontSize: 10,
+      letterSpacing: 1.1,
+      color: T.muted,
+      marginBottom: 6,
+    },
     currentWeight: {
       fontFamily: T.displayBold,
-      fontSize: 24,
+      fontSize: 32,
       color: T.white,
-      letterSpacing: -0.5,
+      letterSpacing: -0.8,
     },
     deltaText: {
       fontFamily: T.bodyMed,
@@ -157,9 +183,17 @@ function makeStyles(T: AppTheme) {
     rangeRow: {
       flexDirection: "row",
       justifyContent: "space-between",
-      marginTop: 4,
+      marginTop: 8,
+      zIndex: 1,
     },
-    rangeText: { fontFamily: T.bodyMed, fontSize: 10, color: T.muted },
-    emptyText: { fontFamily: T.bodyMed, fontSize: 13, color: T.muted },
+    rangeText: { fontFamily: T.bodyMed, fontSize: 11, color: T.muted },
+    emptyText: {
+      fontFamily: T.bodyMed,
+      fontSize: 13,
+      color: T.muted,
+      textAlign: "center",
+      lineHeight: 19,
+      paddingHorizontal: 12,
+    },
   });
 }

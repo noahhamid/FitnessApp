@@ -1,15 +1,18 @@
 import { useMemo } from "react";
-import { useTheme } from "./ThemeContext";
-import type { AppTheme } from "@/src/theme";
+import { useOptionalTheme } from "./ThemeContext";
+import { lightTheme, type AppTheme } from "@/src/theme";
 
 /**
  * Convenience for components that build StyleSheet.create from theme tokens.
  * Pass a stable module-level factory: `function makeStyles(T: AppTheme) { ... }`.
+ *
+ * Falls back to lightTheme if rendered outside AppThemeProvider (expo-router
+ * can mount a route during error recovery before RootLayout providers attach).
  */
 export function useThemedStyles<S>(factory: (T: AppTheme) => S) {
-  const { theme: T, resolved } = useTheme();
-  // Key off `resolved` (stable string), not the theme object reference —
-  // guarantees styles rebuild when the user toggles light/dark/system.
+  const ctx = useOptionalTheme();
+  const T = ctx?.theme ?? lightTheme;
+  const resolved = ctx?.resolved ?? "light";
   const styles = useMemo(() => factory(T), [resolved, factory, T]);
   return { T, styles, resolved } as const;
 }
