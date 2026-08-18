@@ -14,9 +14,9 @@ import type {
 import {
   addMealEntry,
   adjustWater,
+  applyAdaptiveSuggestion,
   deleteMealEntry,
   fetchAdaptiveSuggestion,
-  updateMealEntry,
   fetchDailyTotals,
   fetchMealLog,
   fetchMealLogRange,
@@ -24,10 +24,8 @@ import {
   fetchSuggestion,
   fetchWater,
   fetchWeeklyTrend,
-  upsertNutritionGoals,
-  applyAdaptiveSuggestion,
   updateMealEntry,
-  fetchAdaptiveSuggestion,
+  upsertNutritionGoals,
 } from "../services/nutrition.service";
 import {
   cancelReminder,
@@ -229,13 +227,6 @@ export function useSuggestion(date = today()) {
   return useQuery<NutritionSuggestion | null>({
     queryKey: ["nutrition", "suggestion", date],
     queryFn: () => fetchSuggestion(date),
-  });
-}
-
-export function useAdaptiveSuggestion() {
-  return useQuery({
-    queryKey: KEYS.adaptive,
-    queryFn: fetchAdaptiveSuggestion,
   });
 }
 

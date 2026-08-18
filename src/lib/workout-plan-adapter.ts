@@ -47,22 +47,27 @@ const REST_SEC_BY_GOAL: Record<string, number> = {
   health: 60,
 };
 
-// Shared local placeholder — do not use dataset GIFs/images (copyrighted).
+// Shared local assets — do not use dataset GIFs/images (copyrighted).
 // Resolve lazily: EAS's Android eager bundle also evaluates this module in
 // Node (web.output: "server"), where Image.resolveAssetSource is missing.
-const EXERCISE_PLACEHOLDER = require("../../assets/images/icon.jpg");
+const EXERCISE_PLACEHOLDER = require("../../assets/images/exercise-placeholder.jpg");
+const PUSH_DAY_COVER = require("../../assets/images/push-day-cover.jpg");
+const PULL_DAY_COVER = require("../../assets/images/pull-day-cover.jpg");
+const LEGS_DAY_COVER = require("../../assets/images/legs-day-cover.jpg");
+const UPPER_DAY_COVER = require("../../assets/images/upper-day-cover.jpg");
+const FULL_BODY_COVER = require("../../assets/images/full-body-cover.jpg");
 
-function exercisePlaceholderUri(): string {
+function resolveAssetUri(asset: number): string {
   const resolve = Image.resolveAssetSource;
   if (typeof resolve !== "function") return "";
-  return resolve(EXERCISE_PLACEHOLDER)?.uri ?? "";
+  return resolve(asset)?.uri ?? "";
 }
 
 type LazyAssetUri = { asset: number; uri?: string };
 
 function resolveLazyAssetUri(slot: LazyAssetUri): string {
   if (slot.uri === undefined) {
-    slot.uri = Image.resolveAssetSource(slot.asset).uri;
+    slot.uri = resolveAssetUri(slot.asset);
   }
   return slot.uri;
 }
@@ -80,7 +85,7 @@ const COVER_BY_LABEL_HINT: { match: RegExp; slot: LazyAssetUri }[] = [
 
 /** Single shared local placeholder for every exercise / muscle-group tile. */
 export function imageForMuscleGroup(_muscleGroup?: string): string {
-  return exercisePlaceholderUri();
+  return resolveLazyAssetUri(exercisePlaceholder);
 }
 
 function coverImageForDay(title: string, storedLabel: string): string {

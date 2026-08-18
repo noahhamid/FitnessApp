@@ -127,9 +127,6 @@ async function readCustomFoods(): Promise<FoodLibraryItem[]> {
 async function writeCustomFoods(foods: FoodLibraryItem[]): Promise<void> {
   await AsyncStorage.setItem(CUSTOM_FOODS_KEY, JSON.stringify(foods));
 }
-export async function fetchAdaptiveSuggestion(): Promise<AdaptiveSuggestion> {
-  return api.get<AdaptiveSuggestion>("/api/nutrition/adaptive-suggestion");
-}
 
 export async function fetchSuggestion(date?: string): Promise<NutritionSuggestion | null> {
 const logDate = date ?? todayLocal();
