@@ -24,9 +24,6 @@ const config: ExpoConfig = {
   },
   android: {
     package: "com.exo.fitness",
-    // HTTP cleartext only for local/dev and non-production EAS profiles
-    // (LAN API). Store builds must use HTTPS (Vercel).
-    usesCleartextTraffic: process.env.EAS_BUILD_PROFILE !== "production",
     adaptiveIcon: {
       // potentialpeak_logo.jpg, inset so the figure survives circle masks.
       foregroundImage: "./assets/images/android-icon-foreground.png",
@@ -73,6 +70,16 @@ const config: ExpoConfig = {
       {
         color: "#E53935",
         defaultChannel: "meal-workout-reminders",
+      },
+    ],
+    // HTTP cleartext only for local/dev and non-production EAS profiles
+    // (LAN API). Store builds must use HTTPS (Vercel).
+    [
+      "expo-build-properties",
+      {
+        android: {
+          usesCleartextTraffic: process.env.EAS_BUILD_PROFILE !== "production",
+        },
       },
     ],
     // Native crash hooks + source-map upload wiring for @sentry/react-native.

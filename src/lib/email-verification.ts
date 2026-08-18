@@ -11,10 +11,19 @@ export function clientRequiresEmailVerification(): boolean {
   return !__DEV__;
 }
 
-/** True when navigation should send the user to the confirm-email screen. */
-export function shouldRedirectToVerifyEmail(user: {
+type VerifyEmailUser = {
+  email?: string | null;
   emailVerified?: boolean | null;
-} | null | undefined): boolean {
+};
+
+/**
+ * True when navigation should send the user to the confirm-email screen.
+ * Narrows `user` to non-null: `user?.emailVerified === false` only holds when
+ * a session user object exists.
+ */
+export function shouldRedirectToVerifyEmail(
+  user: VerifyEmailUser | null | undefined,
+): user is VerifyEmailUser & { emailVerified: false } {
   return (
     clientRequiresEmailVerification() && user?.emailVerified === false
   );

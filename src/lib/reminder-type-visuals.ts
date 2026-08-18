@@ -11,8 +11,8 @@ import type { AppTheme } from "@/src/theme";
 import type { NotificationHistoryType } from "@/src/lib/notification-history";
 
 /**
- * Same icon map + semantic colors as ChallengeReminderCard (workout /
- * breakfast / lunch / dinner). Snack is the extra reminder slot.
+ * Icon map + semantic colors for reminder types (workout / breakfast /
+ * lunch / dinner). Snack is the extra reminder slot.
  */
 export const REMINDER_TYPE_ICON: Record<
   NotificationHistoryType,

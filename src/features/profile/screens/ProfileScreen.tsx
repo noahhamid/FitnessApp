@@ -83,6 +83,18 @@ const SETTINGS = [
     sub: "FAQ · Contact us",
     icon: "help-circle-outline" as const,
   },
+  {
+    id: "privacy",
+    label: "Privacy Policy",
+    sub: null,
+    icon: "shield-outline" as const,
+  },
+  {
+    id: "terms",
+    label: "Terms of Service",
+    sub: null,
+    icon: "document-text-outline" as const,
+  },
 ] as const;
 
 function MetricMini({
@@ -645,6 +657,10 @@ export default function ProfileScreen() {
                       setEditMode(true);
                     } else if (setting.id === "help") {
                       void Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
+                    } else if (setting.id === "privacy") {
+                      router.push("/(app)/privacy-policy");
+                    } else if (setting.id === "terms") {
+                      router.push("/(app)/terms");
                     }
                   }}
                 >

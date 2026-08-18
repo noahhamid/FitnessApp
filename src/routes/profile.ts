@@ -224,6 +224,8 @@ profileRouter.put("/", async (c) => {
         goalId: profile.goalId as "lose" | "build" | "endure" | "health",
         focusAreas: profile.focusAreas as FocusArea[],
         injuries: profile.injuries as Injury[],
+        goalDetail: profile.goalDetail,
+        bodyIssues: profile.bodyIssues,
       });
 
       await prisma.$transaction(async (tx) => {

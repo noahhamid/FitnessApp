@@ -82,6 +82,8 @@ export default function OnboardingWeightScreen() {
     gender?: string;
     age?: string;
     goalId?: string;
+    /** Present when restoring draft / navigating back from a later step. */
+    weightKg?: string;
   }>();
   const gender = params.gender === "female" ? "female" : "male";
   const defaultKg = WEIGHT_BY_GENDER[gender].default;

@@ -160,8 +160,20 @@ function titleCaseName(name: string): string {
     .replace(/^./, (c) => c.toUpperCase());
 }
 
+/**
+ * Exact dataset names that must stay shoulders (bodyweight catalog gap).
+ * Checked before push-up→chest / waist→core / upper-arms-split→triceps rules.
+ */
+const SHOULDERS_NAME_OVERRIDE = new Set([
+  "handstand push-up",
+  "pike-to-cobra push-up",
+  "shoulder tap",
+]);
+
 function muscleOverrideFromName(name: string): MuscleGroup | null {
-  const n = name.toLowerCase();
+  const n = name.toLowerCase().replace(/\s*\((male|female)\)\s*$/i, "").trim();
+  // Curated BW shoulder progressions — beat noisy target tags + push-up→chest.
+  if (SHOULDERS_NAME_OVERRIDE.has(n)) return "shoulders";
   // Strong name signals beat noisy dataset `target` tags (esp. upper legs).
   if (/\b(hip thrust|glute bridge)\b/.test(n)) return "glutes";
   if (/\b(nordic|leg curl)\b/.test(n)) return "hamstrings";

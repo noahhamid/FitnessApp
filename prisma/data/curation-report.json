@@ -8,11 +8,11 @@
     "otherUnmapped": 0,
     "note": "bodyPartCardioNeckLowerArms = Step 2 category skip (cardio/neck/lower arms)"
   },
-  "curatedCount": 200,
+  "curatedCount": 203,
   "byMuscleGroup": {
     "chest": 20,
     "back": 20,
-    "shoulders": 20,
+    "shoulders": 23,
     "quads": 20,
     "hamstrings": 20,
     "glutes": 20,
@@ -22,7 +22,7 @@
     "core": 20
   },
   "byEquipmentTier": {
-    "bodyweight": 61,
+    "bodyweight": 64,
     "home_dumbbells": 75,
     "full_gym": 64
   },
@@ -38,7 +38,7 @@
       "full_gym": 6
     },
     "shoulders": {
-      "bodyweight": 1,
+      "bodyweight": 4,
       "home_dumbbells": 10,
       "full_gym": 9
     },
