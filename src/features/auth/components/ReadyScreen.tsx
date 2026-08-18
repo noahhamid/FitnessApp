@@ -67,6 +67,8 @@ export function ReadyScreen() {
     equipment?: string;
     focusAreas?: string;
     injuries?: string;
+    bodyFatPercent?: string;
+    bodyFatSource?: string;
   }>();
 
   const fade = useRef(new Animated.Value(0)).current;
@@ -178,6 +180,23 @@ export function ReadyScreen() {
                 <Text style={s.rowValue}>{params.heightCm ?? "—"} cm</Text>
               </View>
             </View>
+
+            {params.bodyFatPercent ? (
+              <>
+                <View style={s.divider} />
+                <View style={s.summaryRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.rowLabel}>BODY FAT</Text>
+                    <Text style={s.rowValue}>{params.bodyFatPercent}%</Text>
+                    <Text style={s.rowSubValue}>
+                      {params.bodyFatSource === "measured"
+                        ? "The % you entered"
+                        : "Middle of the range you picked"}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            ) : null}
 
             <View style={s.divider} />
 

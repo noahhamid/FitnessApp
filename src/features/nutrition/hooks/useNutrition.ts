@@ -15,6 +15,8 @@ import {
   addMealEntry,
   adjustWater,
   deleteMealEntry,
+  fetchAdaptiveSuggestion,
+  updateMealEntry,
   fetchDailyTotals,
   fetchMealLog,
   fetchMealLogRange,
@@ -55,6 +57,13 @@ export function useUpdateGoals() {
   return useMutation({
     mutationFn: upsertNutritionGoals,
     onSuccess: () => qc.invalidateQueries({ queryKey: KEYS.goals }),
+  });
+}
+
+export function useAdaptiveSuggestion() {
+  return useQuery({
+    queryKey: KEYS.adaptive,
+    queryFn: fetchAdaptiveSuggestion,
   });
 }
 
@@ -101,6 +110,25 @@ export function useAddMeal() {
       qc.invalidateQueries({ queryKey: ["week-overview", "meals"] });
       // Drop the matching local reminder so a logged meal never nags.
       void cancelReminder(mealTypeToSlot(vars.meal), vars.log_date);
+    },
+  });
+}
+
+export function useUpdateMeal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...entry
+    }: { id: string } & Partial<
+      Pick<MealLogEntry, "log_date" | "meal" | "name" | "cal" | "protein" | "carbs" | "fat">
+    >) => updateMealEntry(id, entry),
+    onSuccess: (row) => {
+      qc.invalidateQueries({ queryKey: KEYS.log(row.log_date) });
+      qc.invalidateQueries({ queryKey: KEYS.totals(row.log_date) });
+      qc.invalidateQueries({ queryKey: ["nutrition", "weekly"] });
+      qc.invalidateQueries({ queryKey: ["nutrition", "log-range"] });
+      qc.invalidateQueries({ queryKey: ["week-overview", "meals"] });
     },
   });
 }

@@ -33,7 +33,7 @@ const profileSchema = z.object({
   heightCm: z.number().int().positive().nullable().optional(),
   age: z.number().int().positive().nullable().optional(),
   gender: genderEnum.nullable().optional(),
-  daysPerWeek: z.number().int().min(2).max(7).nullable().optional(),
+  daysPerWeek: z.number().int().min(1).max(7).nullable().optional(),
   /** Monday-indexed weekdays (0=Mon … 6=Sun); [] restores the default pattern. */
   trainingDays: z.array(z.number().int().min(0).max(6)).max(7).optional(),
   experience: experienceEnum.nullable().optional(),
@@ -43,6 +43,8 @@ const profileSchema = z.object({
   injuries: z.array(z.string()).optional(),
   reminderEnabled: z.boolean().nullable().optional(),
   reminderHour: z.number().int().min(0).max(23).nullable().optional(),
+  bodyFatPercent: z.number().min(5).max(50).nullable().optional(),
+  bodyFatSource: z.enum(["measured", "range"]).nullable().optional(),
 });
 
 function serializeProfile(row: {
@@ -65,6 +67,8 @@ function serializeProfile(row: {
   injuries: string[];
   reminderEnabled: boolean | null;
   reminderHour: number | null;
+  bodyFatPercent: { toString(): string } | null;
+  bodyFatSource: string | null;
   updatedAt: Date;
 }) {
   return {
@@ -88,6 +92,9 @@ function serializeProfile(row: {
     injuries: row.injuries,
     reminderEnabled: row.reminderEnabled,
     reminderHour: row.reminderHour,
+    bodyFatPercent:
+      row.bodyFatPercent != null ? Number(row.bodyFatPercent.toString()) : null,
+    bodyFatSource: row.bodyFatSource,
     updatedAt: row.updatedAt.toISOString(),
   };
 }
@@ -173,6 +180,12 @@ profileRouter.put("/", async (c) => {
       reminderEnabled: data.reminderEnabled,
     }),
     ...(data.reminderHour !== undefined && { reminderHour: data.reminderHour }),
+    ...(data.bodyFatPercent !== undefined && {
+      bodyFatPercent: data.bodyFatPercent,
+    }),
+    ...(data.bodyFatSource !== undefined && {
+      bodyFatSource: data.bodyFatSource,
+    }),
   };
 
   const profile = await prisma.userProfile.upsert({
@@ -196,6 +209,10 @@ profileRouter.put("/", async (c) => {
       targetWeightKg:
         profile.targetWeightKg != null
           ? Number(profile.targetWeightKg)
+          : undefined,
+      bodyFatPercent:
+        profile.bodyFatPercent != null
+          ? Number(profile.bodyFatPercent)
           : undefined,
     });
 
@@ -224,6 +241,8 @@ profileRouter.put("/", async (c) => {
         goalId: profile.goalId as "lose" | "build" | "endure" | "health",
         focusAreas: profile.focusAreas as FocusArea[],
         injuries: profile.injuries as Injury[],
+        goalDetail: profile.goalDetail ?? undefined,
+        bodyIssues: profile.bodyIssues,
       });
 
       await prisma.$transaction(async (tx) => {
@@ -272,6 +291,7 @@ profileRouter.put("/", async (c) => {
               targetSets: ex.targetSets,
               targetRepsMin: ex.targetRepsMin,
               targetRepsMax: ex.targetRepsMax,
+              blockLabel: ex.blockLabel ?? null,
             })),
           });
         }

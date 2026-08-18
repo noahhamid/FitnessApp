@@ -19,6 +19,8 @@ export interface Exercise {
   imageUrl: string;
   instructions: string;
   muscleGroup?: string;   // <-- ADD THIS LINE
+  /** Set when this row belongs to an appended goal-detail / issue block. */
+  blockLabel?: string;
   /** Saved mid-session sets from the backend — used to hydrate resume UI. */
   loggedSets?: ExerciseLoggedSet[];
 }

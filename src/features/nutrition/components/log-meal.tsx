@@ -1,6 +1,7 @@
 // app/log-meal.tsx
 import { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -17,7 +18,7 @@ import { ChevronLeft } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "../components/PressableScale";
-import { useAddMeal } from "../hooks/useNutrition";
+import { useAddMeal, useDeleteMeal, useUpdateMeal } from "../hooks/useNutrition";
 import type { MealType } from "../types/nutrition.types";
 
 const MEAL_SLOTS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"];
@@ -27,50 +28,93 @@ function todayStr(): string {
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
 }
 
+function firstParam(value?: string | string[]): string | undefined {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
 export default function LogMealScreen() {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
   const router = useRouter();
-  const params = useLocalSearchParams<{ slot?: string; date?: string }>();
+  const params = useLocalSearchParams<{
+    slot?: string;
+    date?: string;
+    id?: string;
+    name?: string;
+    cal?: string;
+    protein?: string;
+    carbs?: string;
+    fat?: string;
+  }>();
 
-  const initialSlot = MEAL_SLOTS.includes(params.slot as MealType)
-    ? (params.slot as MealType)
+  const mealId = firstParam(params.id);
+  const isEdit = Boolean(mealId);
+  const initialSlot = MEAL_SLOTS.includes(firstParam(params.slot) as MealType)
+    ? (firstParam(params.slot) as MealType)
     : "Breakfast";
-  const logDate = params.date ?? todayStr();
+  const logDate = firstParam(params.date) ?? todayStr();
 
   const [slot, setSlot] = useState<MealType>(initialSlot);
-  const [name, setName] = useState("");
-  const [cal, setCal] = useState("");
-  const [protein, setProtein] = useState("");
-  const [carbs, setCarbs] = useState("");
-  const [fat, setFat] = useState("");
+  const [name, setName] = useState(firstParam(params.name) ?? "");
+  const [cal, setCal] = useState(firstParam(params.cal) ?? "");
+  const [protein, setProtein] = useState(firstParam(params.protein) ?? "");
+  const [carbs, setCarbs] = useState(firstParam(params.carbs) ?? "");
+  const [fat, setFat] = useState(firstParam(params.fat) ?? "");
 
   const addMeal = useAddMeal();
+  const updateMeal = useUpdateMeal();
+  const deleteMeal = useDeleteMeal(logDate);
 
+  const saving =
+    addMeal.isPending || updateMeal.isPending || deleteMeal.isPending;
   const nameValid = name.trim().length > 0;
   const calValid = cal.trim().length > 0 && !Number.isNaN(Number(cal));
-  const canSubmit = nameValid && calValid && !addMeal.isPending;
+  const canSubmit = nameValid && calValid && !saving;
+
+  const payload = () => ({
+    log_date: logDate,
+    meal: slot,
+    name: name.trim(),
+    cal: Math.round(Number(cal)),
+    protein: Number(protein) || 0,
+    carbs: Number(carbs) || 0,
+    fat: Number(fat) || 0,
+  });
 
   const handleSubmit = () => {
     if (!canSubmit) return;
 
+    if (isEdit && mealId) {
+      updateMeal.mutate(
+        { id: mealId, ...payload() },
+        { onSuccess: () => router.back() },
+      );
+      return;
+    }
+
     addMeal.mutate(
       {
-        log_date: logDate,
-        meal: slot,
-        name: name.trim(),
-        cal: Math.round(Number(cal)),
-        protein: Number(protein) || 0,
-        carbs: Number(carbs) || 0,
-        fat: Number(fat) || 0,
+        ...payload(),
         quantity: 1,
         unit: "serving",
         image_url: null,
         source: "manual",
       },
-      {
-        onSuccess: () => router.back(),
-      },
+      { onSuccess: () => router.back() },
     );
+  };
+
+  const handleDelete = () => {
+    if (!mealId || deleteMeal.isPending) return;
+    Alert.alert("Delete meal", "Remove this meal from the diary?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () =>
+          deleteMeal.mutate(mealId, { onSuccess: () => router.back() }),
+      },
+    ]);
   };
 
   return (
@@ -85,7 +129,9 @@ export default function LogMealScreen() {
         <PressableScale onPress={() => router.back()} style={styles.backBtn}>
           <ChevronLeft size={20} color={T.white} strokeWidth={2.2} />
         </PressableScale>
-        <Text style={styles.headerTitle}>Log meal</Text>
+        <Text style={styles.headerTitle}>
+          {isEdit ? "Edit meal" : "Log meal"}
+        </Text>
         <View style={{ width: 34 }} />
       </View>
 
@@ -177,7 +223,7 @@ export default function LogMealScreen() {
             </View>
           </View>
 
-          {addMeal.isError && (
+          {(addMeal.isError || updateMeal.isError || deleteMeal.isError) && (
             <Text style={styles.error}>
               Couldn't save that meal — try again.
             </Text>
@@ -193,10 +239,31 @@ export default function LogMealScreen() {
           >
             <View style={styles.submitBtn}>
               <Text style={styles.submitText}>
-                {addMeal.isPending ? "Saving…" : "Save meal"}
+                {saving && !deleteMeal.isPending
+                  ? "Saving…"
+                  : isEdit
+                    ? "Save changes"
+                    : "Save meal"}
               </Text>
             </View>
           </PressableScale>
+
+          {isEdit ? (
+            <PressableScale
+              onPress={handleDelete}
+              disabled={saving}
+              style={[
+                styles.deletePressable,
+                saving && styles.submitDisabled,
+              ]}
+            >
+              <View style={styles.deleteBtn}>
+                <Text style={styles.deleteText}>
+                  {deleteMeal.isPending ? "Deleting…" : "Delete meal"}
+                </Text>
+              </View>
+            </PressableScale>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -278,5 +345,15 @@ function makeStyles(T: AppTheme) {
     alignItems: "center",
   },
   submitText: { fontFamily: T.bodyBold, fontSize: 14, color: T.onAccent },
+  deletePressable: { borderRadius: 17, marginTop: 12 },
+  deleteBtn: {
+    backgroundColor: T.glass,
+    borderRadius: 17,
+    paddingVertical: 15,
+    alignItems: "center",
+    borderWidth: 0.5,
+    borderColor: T.glassBorder,
+  },
+  deleteText: { fontFamily: T.bodyBold, fontSize: 14, color: T.badge },
   });
 }

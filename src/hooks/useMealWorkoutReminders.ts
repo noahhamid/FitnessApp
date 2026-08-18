@@ -5,6 +5,7 @@ import * as Notifications from "expo-notifications";
 import { usePermissions } from "@/src/hooks/usePermissions";
 import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import { fetchMealLog } from "@/src/features/nutrition/services/nutrition.service";
+import { fetchUserProfile } from "@/src/features/profile/services/profile.service";
 import { fetchWorkoutPlan } from "@/src/features/workout/hooks/useWorkoutPlan";
 import { api } from "@/src/lib/api";
 import { getPlanDayIndexForDate } from "@/src/lib/plan-day-selection";
@@ -15,6 +16,7 @@ import {
   markReminderSoftPromptSeen,
   promptForReminderPermissions,
   rescheduleTodayReminders,
+  syncWeeklyWorkoutReminders,
 } from "@/src/lib/meal-workout-reminders";
 import { markNotificationFired } from "@/src/lib/notification-history";
 import type { MealType } from "@/src/features/nutrition/types/nutrition.types";
@@ -62,7 +64,7 @@ export function useMealWorkoutReminders(enabled: boolean) {
       if (latest !== "granted") return;
 
       const today = localDateOnly();
-      const [meals, plan, sessions] = await Promise.all([
+      const [meals, plan, sessions, profile] = await Promise.all([
         fetchMealLog(today),
         queryClient.fetchQuery({
           queryKey: ["workout-plan"],
@@ -71,6 +73,10 @@ export function useMealWorkoutReminders(enabled: boolean) {
         api.get<SessionRow[]>(
           `/api/workouts?completed=true&from=${today}&to=${today}&limit=20`,
         ),
+        queryClient.fetchQuery({
+          queryKey: ["user", "profile", "full"],
+          queryFn: fetchUserProfile,
+        }),
       ]);
 
       const loggedMeals: Partial<Record<MealType, boolean>> = {};
@@ -100,13 +106,25 @@ export function useMealWorkoutReminders(enabled: boolean) {
         }
       }
 
+      const reminderOn = profile?.reminderEnabled !== false;
+      const workoutHour = profile?.reminderHour ?? 18;
+      const trainingDays = plan?.trainingDays ?? profile?.trainingDays ?? [];
+
+      await syncWeeklyWorkoutReminders({
+        enabled: reminderOn,
+        hour: workoutHour,
+        trainingDays,
+      });
+
       await rescheduleTodayReminders({
         date: today,
         loggedMeals,
         workoutCompleted,
         daysPerWeek,
-        trainingDays: plan?.trainingDays,
+        trainingDays,
         workoutTitle,
+        reminderEnabled: reminderOn,
+        workoutHour,
       });
     } catch (err) {
       console.warn("[reminders] sync failed", err);

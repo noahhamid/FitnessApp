@@ -28,9 +28,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const PERKS = [
-  "Personalized workout split",
-  "Nutrition targets tuned to your pace",
-  "Injury-aware exercise swaps",
+  "Guided sessions, log every set, resume anytime",
+  "Snap a meal. Macros fill in for you",
+  "Calories that follow your weight, not a static plan",
+  "Know if you hit this week, streaks, calendar, PRs",
+  "Conditioning that fits around lifting, not instead of it",
+  "Reminders only on the days you actually train",
 ];
 
 const FULL_PRICE = 35.99;
@@ -355,8 +358,8 @@ function makeStyles(C: OnboardingColors) {
       textTransform: "uppercase",
     },
     perks: {
-      gap: 12,
-      marginBottom: 20,
+      gap: 8,
+      marginBottom: 16,
     },
     perkRow: {
       flexDirection: "row",
@@ -370,9 +373,12 @@ function makeStyles(C: OnboardingColors) {
       backgroundColor: C.accent,
     },
     perkText: {
+      flex: 1,
       fontFamily: FONTS.regular,
-      fontSize: 14,
+      fontSize: 13,
+      lineHeight: 18,
       color: C.text,
+      paddingBottom: 8,
     },
     priceCard: {
       alignItems: "center",

@@ -4,6 +4,7 @@ export type Gender = "male" | "female";
 export type ExperienceLevel = "novice" | "intermediate" | "advanced";
 export type EquipmentAccess = "full_gym" | "home_dumbbells" | "bodyweight";
 export type Pace = "slow" | "moderate" | "aggressive";
+export type BodyFatSource = "measured" | "range";
 
 export type UserProfile = {
   id: string;
@@ -25,6 +26,8 @@ export type UserProfile = {
   injuries: string[];
   reminderEnabled: boolean | null;
   reminderHour: number | null;
+  bodyFatPercent: number | null;
+  bodyFatSource: BodyFatSource | null;
   updatedAt: string;
 };
 
@@ -52,6 +55,8 @@ export async function saveUserProfile(data: {
   injuries?: string[];
   reminderEnabled?: boolean;
   reminderHour?: number;
+  bodyFatPercent?: number | null;
+  bodyFatSource?: BodyFatSource | null;
 }) {
   return api.put<UserProfile>("/api/profile", data);
 }

@@ -95,7 +95,7 @@ export function SignInForm() {
           pathname: "/(auth)/verify-email",
           params: {
             ...onboardingParamsForNavigation(params),
-            email: email.trim(),
+            email: encodeURIComponent(email.trim()),
           },
         });
         return;

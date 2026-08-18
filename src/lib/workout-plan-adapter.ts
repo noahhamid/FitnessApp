@@ -13,6 +13,7 @@ export interface ApiPlanExercise {
   targetSets: number;
   targetRepsMin: number;
   targetRepsMax: number;
+  blockLabel?: string | null;
 }
 
 export interface ApiPlanDay {
@@ -47,11 +48,15 @@ const REST_SEC_BY_GOAL: Record<string, number> = {
 };
 
 // Shared local placeholder — do not use dataset GIFs/images (copyrighted).
-// Resolved to a packager URI so existing `{ uri: imageUrl }` call sites work.
-const EXERCISE_PLACEHOLDER_URI = Image.resolveAssetSource(
-  // User-provided asset (assets/images/icon.jfif).
-  require("../../assets/images/icon.jpg"),
-).uri;
+// Resolve lazily: EAS's Android eager bundle also evaluates this module in
+// Node (web.output: "server"), where Image.resolveAssetSource is missing.
+const EXERCISE_PLACEHOLDER = require("../../assets/images/icon.jpg");
+
+function exercisePlaceholderUri(): string {
+  const resolve = Image.resolveAssetSource;
+  if (typeof resolve !== "function") return "";
+  return resolve(EXERCISE_PLACEHOLDER)?.uri ?? "";
+}
 
 const COVER_BY_LABEL_HINT: { match: RegExp; url: string }[] = [
   { match: /push|chest|triceps|shoulder/i, url: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=80" },
@@ -64,7 +69,7 @@ const DEFAULT_COVER = "https://muscleevo.net/wp-content/uploads/2020/08/full-bod
 
 /** Single shared local placeholder for every exercise / muscle-group tile. */
 export function imageForMuscleGroup(_muscleGroup?: string): string {
-  return EXERCISE_PLACEHOLDER_URI;
+  return exercisePlaceholderUri();
 }
 
 function coverImageForDay(title: string, storedLabel: string): string {
@@ -85,7 +90,16 @@ const CUE_BY_PATTERN: Record<string, string> = {
 
 // Isometric-hold exercises (Plank, Wall Sit, etc.) get treated as duration
 // type — detected by name since the backend doesn't currently tag this.
-const DURATION_NAME_HINTS = ["plank", "wall sit", "hold"];
+const DURATION_NAME_HINTS = [
+  "plank",
+  "wall sit",
+  "hold",
+  "stretch",
+  "pose",
+  "carry",
+  "cat-cow",
+  "legs-up",
+];
 
 function inferExerciseType(name: string): ExerciseType {
   const lower = name.toLowerCase();
@@ -103,13 +117,14 @@ function adaptExercise(ex: ApiPlanExercise, goalId: string): Exercise {
     sets: ex.targetSets,
     ...(type === "reps"
       ? { reps: midReps }
-      : { durationSec: 40 }), // generic hold duration for inferred isometric moves
+      : { durationSec: ex.targetRepsMin || 40 }),
     restSec: REST_SEC_BY_GOAL[goalId] ?? 60,
     imageUrl: imageForMuscleGroup(ex.muscleGroup),
     instructions:
       CUE_BY_PATTERN[ex.movementPattern] ??
       "Focus on controlled form and full range of motion.",
     muscleGroup: ex.muscleGroup,
+    blockLabel: ex.blockLabel ?? undefined,
   };
 }
 
@@ -117,7 +132,9 @@ export function adaptPlanDay(day: ApiPlanDay, goalId: string): WorkoutPlan {
   const sorted = [...day.exercises].sort((a, b) => a.orderIndex - b.orderIndex);
   // Render-time title from actual muscles so stored "Upper A" / "Push" labels
   // update immediately without regenerating the plan.
-  const title = dayTitleFromMuscleGroups(sorted);
+  const title = dayTitleFromMuscleGroups(
+    sorted.filter((ex) => !ex.blockLabel),
+  );
 
   return {
     id: day.id,

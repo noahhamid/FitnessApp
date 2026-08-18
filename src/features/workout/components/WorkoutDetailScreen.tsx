@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Fragment } from "react";
 import {
   View,
   Text,
@@ -127,16 +127,25 @@ export function WorkoutDetailScreen({
 
         <Text style={s.sectionTitle}>Exercises</Text>
         <View style={s.exList}>
-          {plan.exercises.map((ex, i) => (
-            <ExerciseRow
-              key={ex.id}
-              exercise={ex}
-              index={i}
-              onPress={
-                onExercisePress ? () => onExercisePress(ex) : undefined
-              }
-            />
-          ))}
+          {plan.exercises.map((ex, i) => {
+            const prev = i > 0 ? plan.exercises[i - 1] : undefined;
+            const showBlockHeading =
+              !!ex.blockLabel && ex.blockLabel !== prev?.blockLabel;
+            return (
+              <Fragment key={ex.id}>
+                {showBlockHeading ? (
+                  <Text style={s.blockTitle}>{ex.blockLabel}</Text>
+                ) : null}
+                <ExerciseRow
+                  exercise={ex}
+                  index={i}
+                  onPress={
+                    onExercisePress ? () => onExercisePress(ex) : undefined
+                  }
+                />
+              </Fragment>
+            );
+          })}
         </View>
       </ScrollView>
 
@@ -240,6 +249,14 @@ function makeStyles(T: AppTheme) {
     letterSpacing: -0.3,
     paddingHorizontal: 20,
     marginBottom: 12,
+  },
+  blockTitle: {
+    fontFamily: T.displaySemi,
+    color: T.white,
+    fontSize: 16,
+    letterSpacing: -0.2,
+    marginTop: 8,
+    marginBottom: 2,
   },
   exList: { paddingHorizontal: 20, gap: 10 },
   exRow: {

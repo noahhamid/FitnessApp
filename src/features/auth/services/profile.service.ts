@@ -5,6 +5,7 @@ import {
   type Gender,
   type ExperienceLevel,
   type EquipmentAccess,
+  type BodyFatSource,
 } from "@/src/features/profile/services/profile.service";
 import { getSession } from "./auth.service";
 
@@ -22,6 +23,8 @@ export type ProfileMetrics = {
   daysPerWeek?: number;
   experience?: ExperienceLevel;
   equipment?: EquipmentAccess;
+  bodyFatPercent?: number;
+  bodyFatSource?: BodyFatSource;
 };
 
 function profileKey(userId: string) {
@@ -84,6 +87,8 @@ export async function fetchProfile(): Promise<ProfileMetrics | null> {
         daysPerWeek: remote.daysPerWeek ?? undefined,
         experience: remote.experience ?? undefined,
         equipment: remote.equipment ?? undefined,
+        bodyFatPercent: remote.bodyFatPercent ?? undefined,
+        bodyFatSource: remote.bodyFatSource ?? undefined,
       };
       await AsyncStorage.setItem(
         profileKey(session.user.id),

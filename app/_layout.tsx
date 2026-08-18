@@ -29,16 +29,11 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { AppThemeProvider, useTheme } from "@/src/context/ThemeContext";
-import {
-  useAuthHydration,
-  useAuthStore,
-} from "@/src/features/auth/hooks/useAuth";
-import { AnimatedSplashScreen } from "@/src/components/AnimatedSplashScreen";
 import { AppSafeAreaChrome } from "@/src/components/AppSafeAreaChrome";
 
 import * as WebBrowser from "expo-web-browser";
@@ -48,29 +43,8 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
-function useAuthStoreHydrated(): boolean {
-  const [hydrated, setHydrated] = useState(() =>
-    useAuthStore.persist.hasHydrated(),
-  );
-  useEffect(() => {
-    if (hydrated) return;
-    const unsub = useAuthStore.persist.onFinishHydration(() => {
-      setHydrated(true);
-    });
-    // In case hydration finished between first render and effect.
-    if (useAuthStore.persist.hasHydrated()) setHydrated(true);
-    return unsub;
-  }, [hydrated]);
-  return hydrated;
-}
-
-/** Inside providers — waits on theme + auth, then releases the branded splash. */
-function AppWithBrandedSplash() {
-  const fontsReady = true; // fonts already gated before this mounts
-  const { hydrated: themeHydrated, resolved, theme } = useTheme();
-  const authHydrated = useAuthHydration();
-  const storeHydrated = useAuthStoreHydrated();
-  const ready = fontsReady && themeHydrated && authHydrated && storeHydrated;
+function AppShell() {
+  const { resolved, theme } = useTheme();
 
   const navigationTheme = useMemo(() => {
     const base = resolved === "dark" ? DarkTheme : DefaultTheme;
@@ -90,16 +64,14 @@ function AppWithBrandedSplash() {
 
   return (
     <AppSafeAreaChrome>
-      <AnimatedSplashScreen ready={ready}>
-        <ThemeProvider value={navigationTheme}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(app)" />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-        </ThemeProvider>
-      </AnimatedSplashScreen>
+      <ThemeProvider value={navigationTheme}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(app)" />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </ThemeProvider>
     </AppSafeAreaChrome>
   );
 }
@@ -146,7 +118,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AppThemeProvider>
         <QueryClientProvider client={queryClient}>
-          <AppWithBrandedSplash />
+          <AppShell />
         </QueryClientProvider>
       </AppThemeProvider>
     </SafeAreaProvider>

@@ -1,6 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
 
+/** Elapsed seconds from timestamps — safe to call outside React. */
+export function wallClockElapsedSec(
+  startedAtMs: number,
+  pauseAccumMs = 0,
+  pausedAt: number | null = null,
+  now = Date.now(),
+): number {
+  const end = pausedAt ?? now;
+  return Math.max(0, Math.floor((end - startedAtMs - pauseAccumMs) / 1000));
+}
+
+export function formatTimer(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 /**
  * Elapsed seconds from a wall-clock start, not a +1 ticker.
  * JS timers freeze in the background; this recomputes from timestamps
@@ -9,6 +26,7 @@ import { AppState } from "react-native";
 export function useWallClockElapsed(
   startedAtMs: number | null,
   paused: boolean,
+  persistedPauseAccumMs = 0,
 ): number {
   const [, setTick] = useState(0);
   const pauseAccumMs = useRef(0);
@@ -17,7 +35,7 @@ export function useWallClockElapsed(
   const prevStart = useRef(startedAtMs);
 
   if (prevStart.current !== startedAtMs) {
-    pauseAccumMs.current = 0;
+    pauseAccumMs.current = persistedPauseAccumMs;
     pauseStartedAt.current = paused ? Date.now() : null;
     prevPaused.current = paused;
     prevStart.current = startedAtMs;
@@ -44,9 +62,9 @@ export function useWallClockElapsed(
   }, [startedAtMs, paused]);
 
   if (startedAtMs == null) return 0;
-  const end = pauseStartedAt.current ?? Date.now();
-  return Math.max(
-    0,
-    Math.floor((end - startedAtMs - pauseAccumMs.current) / 1000),
+  return wallClockElapsedSec(
+    startedAtMs,
+    pauseAccumMs.current,
+    pauseStartedAt.current,
   );
 }

@@ -94,6 +94,8 @@ const listQuerySchema = z.object({
 
 const exerciseLibraryQuerySchema = z.object({
   muscleGroup: z.string().optional(),
+  /** "true" → only prop-dependent moves, "false" → only floor-only ones. */
+  needsProp: z.enum(["true", "false"]).optional(),
 });
 
 function serializeSession(session: {
@@ -136,6 +138,7 @@ function serializePlan(plan: {
       targetSets: number;
       targetRepsMin: number;
       targetRepsMax: number;
+      blockLabel: string | null;
       exercise: { id: string; name: string; muscleGroup: string; movementPattern: string };
     }>;
   }>;
@@ -169,6 +172,7 @@ function serializePlan(plan: {
             targetSets: ex.targetSets,
             targetRepsMin: ex.targetRepsMin,
             targetRepsMax: ex.targetRepsMax,
+            blockLabel: ex.blockLabel ?? null,
           })),
       })),
   };
@@ -363,9 +367,14 @@ workoutsRouter.get("/exercises", async (c) => {
   };
 
   const exercises = await prisma.exercise.findMany({
-    where: query.data.muscleGroup
-      ? { muscleGroup: query.data.muscleGroup as any }
-      : undefined,
+    where: {
+      ...(query.data.muscleGroup
+        ? { muscleGroup: query.data.muscleGroup as any }
+        : {}),
+      ...(query.data.needsProp
+        ? { needsProp: query.data.needsProp === "true" }
+        : {}),
+    },
     orderBy: { name: "asc" },
   });
 
@@ -382,6 +391,7 @@ workoutsRouter.get("/exercises", async (c) => {
       muscleGroup: ex.muscleGroup,
       movementPattern: ex.movementPattern,
       minEquipment: ex.minEquipment,
+      needsProp: ex.needsProp,
       instructions: ex.instructions,
     })),
   );

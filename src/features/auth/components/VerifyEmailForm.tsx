@@ -32,9 +32,26 @@ function single(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+/** Expo Router can glue the next query key onto an unencoded `@` email. */
+function cleanEmailParam(raw: string): string {
+  let value = raw;
+  try {
+    value = decodeURIComponent(raw);
+  } catch {
+    /* keep raw */
+  }
+  return value
+    .replace(
+      /(?:focusAreas|gender|goalId|goalDetail|onboardingComplete|from).*$/i,
+      "",
+    )
+    .replace(/&.*$/, "")
+    .trim();
+}
+
 export function VerifyEmailForm() {
   const params = useLocalSearchParams<OnboardingAuthParams & { token?: string }>();
-  const email = single(params.email) ?? "";
+  const email = cleanEmailParam(single(params.email) ?? "");
   const token = single(params.token);
 
   const [loading, setLoading] = useState(!!token);
@@ -144,6 +161,13 @@ export function VerifyEmailForm() {
                     )}
                   </Pressable>
                 ) : null}
+
+                <Pressable
+                  style={s.linkBtn}
+                  onPress={() => void navigateAfterAuth(params)}
+                >
+                  <Text style={s.linkText}>I&apos;ll confirm later</Text>
+                </Pressable>
 
                 <Pressable
                   style={s.linkBtn}

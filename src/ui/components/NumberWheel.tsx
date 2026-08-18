@@ -1,12 +1,13 @@
 import { FONTS, useOnboardingColors } from "@/src/ui/tokens";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { memo, useCallback, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Animated,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -146,9 +147,16 @@ export function NumberWheel({
     [min, max, step],
   );
 
-  const scrollY = useRef(new Animated.Value(0)).current;
   const lastEmitted = useRef(value);
   const initialOffset = useRef(((value - min) / step) * ITEM_HEIGHT).current;
+  // Must match contentOffset or the first paint interpolates as if we are at 0
+  // (every visible number is faded / rotated away until the user scrolls).
+  const scrollY = useRef(new Animated.Value(initialOffset)).current;
+  const listRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    listRef.current?.scrollTo({ y: initialOffset, animated: false });
+  }, [initialOffset]);
 
   const handleScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -181,6 +189,7 @@ export function NumberWheel({
       <View pointerEvents="none" style={s.band} />
 
       <Animated.ScrollView
+        ref={listRef}
         showsVerticalScrollIndicator={false}
         snapToInterval={ITEM_HEIGHT}
         snapToAlignment="start"
@@ -254,7 +263,7 @@ const s = StyleSheet.create({
   },
   itemText: {
     // Distinct display face for the wheel — not the body/UI fonts.
-    fontFamily: FONTS.extraBold,
+    fontFamily: FONTS.blackItalic,
     fontSize: 40,
     lineHeight: 40,
     letterSpacing: -1,

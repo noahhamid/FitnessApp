@@ -1,5 +1,6 @@
 /**
- * Vercel serverless entry used by vercel.json rewrites → `/api`.
- * Re-exports the same Hono app as src/index.ts / src/app.ts.
+ * Vercel entry. `handler.cjs` is produced by vercel.json buildCommand
+ * (esbuild CJS bundle) so better-auth is inlined, not require()'d as ESM.
  */
-export { default } from "../src/app";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+module.exports = require("./handler.cjs");

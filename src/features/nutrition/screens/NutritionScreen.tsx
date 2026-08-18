@@ -28,6 +28,7 @@ import { FadeInUp } from "../components/FadeInUp";
 import { AiSuggestionCard } from "../components/AiSuggestionCard";
 import { WeeklyTrendCard } from "../components/WeeklyTrendCard";
 import { NutritionTargetsModal } from "../components/NutritionTargetsModal";
+import { AdaptiveCalorieCard } from "../components/AdaptiveCalorieCard";
 import { useProfile } from "@/src/features/auth/hooks/useProfile";
 import { goalLabel } from "@/src/features/auth/services/goals.service";
 
@@ -39,8 +40,11 @@ import {
   useAdjustWater,
   useWeeklyTrend,
   useSuggestion,
+  useAdaptiveSuggestion,
+  useApplyAdaptiveSuggestion,
 } from "../hooks/useNutrition";
 import type { MealLogEntry, MealType } from "../types/nutrition.types";
+import { GYM_FOODS } from "@/src/lib/gymFoods";
 import {
   dayLabel,
   formatWeekLabel,
@@ -97,6 +101,7 @@ export default function MealScreen() {
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [weekOffset, setWeekOffset] = useState(0);
   const [targetsOpen, setTargetsOpen] = useState(false);
+  const [adaptiveDismissed, setAdaptiveDismissed] = useState(false);
 
   const refreshNutrition = useCallback(
     () =>
@@ -145,6 +150,8 @@ export default function MealScreen() {
   // API returns end-6…end inclusive (7 days), so Sunday is included.
   const { data: weekDots } = useWeeklyTrend(weekEnd);
   const { data: suggestion } = useSuggestion(selectedDate);
+  const { data: adaptive } = useAdaptiveSuggestion();
+  const applyAdaptive = useApplyAdaptiveSuggestion();
 
   const mealsBySlot = useMemo(() => {
     const map: Partial<Record<MealType, MealLogEntry>> = {};
@@ -251,6 +258,24 @@ export default function MealScreen() {
           onEditGoal={() => setTargetsOpen(true)}
         />
 
+        {adaptive?.eligible &&
+        adaptive.adjustmentNeeded &&
+        !adaptiveDismissed ? (
+          <AdaptiveCalorieCard
+            currentCalories={adaptive.currentCalories}
+            suggestedCalories={adaptive.suggestedCalories}
+            explanation={adaptive.explanation}
+            applying={applyAdaptive.isPending}
+            error={applyAdaptive.isError}
+            onApply={() =>
+              applyAdaptive.mutate(adaptive.suggestedCalories, {
+                onSuccess: () => setAdaptiveDismissed(true),
+              })
+            }
+            onDismiss={() => setAdaptiveDismissed(true)}
+          />
+        ) : null}
+
         <WaterTracker
           glasses={water?.glasses ?? 0}
           total={WATER_GOAL_GLASSES}
@@ -314,7 +339,21 @@ export default function MealScreen() {
                     fat: entry.fat,
                   }}
                   imageUrl={entry.image_url ?? undefined}
-                  onPress={() => {}}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/log-meal",
+                      params: {
+                        id: entry.id,
+                        slot: entry.meal,
+                        date: selectedDate,
+                        name: entry.name,
+                        cal: String(entry.cal),
+                        protein: String(entry.protein),
+                        carbs: String(entry.carbs),
+                        fat: String(entry.fat),
+                      },
+                    })
+                  }
                   entranceDelay={0}
                 />
               ) : (
@@ -339,7 +378,27 @@ export default function MealScreen() {
             body={suggestion.body}
             imageUrl="https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&h=500&fit=crop"
             suggestions={suggestion.suggestions}
-            onSelect={() => {}}
+            onSelect={(s) => {
+              const food = GYM_FOODS.find((f) => f.name === s.label);
+              const emptySlot =
+                MEAL_SLOTS.find((slot) => !mealsBySlot[slot]) ?? "Snack";
+              router.push({
+                pathname: "/log-meal",
+                params: {
+                  slot: emptySlot,
+                  date: selectedDate,
+                  name: s.label,
+                  cal: String(s.calories),
+                  ...(food
+                    ? {
+                        protein: String(food.protein),
+                        carbs: String(food.carbs),
+                        fat: String(food.fat),
+                      }
+                    : {}),
+                },
+              });
+            }}
           />
         )}
 
@@ -376,6 +435,7 @@ export default function MealScreen() {
         goals={goals ?? null}
         goalId={profile?.goalId}
         daysPerWeek={profile?.daysPerWeek}
+        bodyFatSource={profile?.bodyFatSource}
       />
     </SafeAreaView>
   );

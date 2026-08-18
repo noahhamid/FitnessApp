@@ -68,6 +68,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.100.10
         version: 5.101.2(react@19.1.0)
+      babel-preset-expo:
+        specifier: ~54.0.10
+        version: 54.0.12(@babel/core@7.29.7(supports-color@8.1.1))(@babel/runtime@7.29.7)(expo@54.0.36)(react-refresh@0.14.2)(supports-color@8.1.1)
       better-auth:
         specifier: ^1.6.11
         version: 1.6.23(@prisma/client@7.8.0(prisma@7.8.0(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.9.3))(typescript@5.9.3))(mysql2@3.15.3)(prisma@7.8.0(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.9.3))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)

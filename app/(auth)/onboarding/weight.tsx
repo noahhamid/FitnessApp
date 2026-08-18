@@ -79,6 +79,7 @@ export default function OnboardingWeightScreen() {
 
   const params = useLocalSearchParams<{
     heightCm?: string;
+    weightKg?: string;
     gender?: string;
     age?: string;
     goalId?: string;
@@ -150,7 +151,7 @@ export default function OnboardingWeightScreen() {
     };
 
     router.push({
-      pathname: "/(auth)/onboarding/target-weight",
+      pathname: "/(auth)/onboarding/body-fat",
       params: nextParams,
     });
   };

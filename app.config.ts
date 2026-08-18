@@ -20,6 +20,7 @@ const config: ExpoConfig = {
     package: "com.exo.fitness",
     // Local API is http://192.168.x.x — without this, Android blocks cleartext
     // and auth shows a generic "Network request failed".
+    // Expo's Android type omits this Manifest flag; prebuild still honors it.
     usesCleartextTraffic: true,
     adaptiveIcon: {
       // potentialpeak_logo.jpg, inset so the figure survives circle masks.
@@ -30,12 +31,15 @@ const config: ExpoConfig = {
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
-  },
+    // Reinstall was restoring the quiz draft (and jumping to the paywall).
+    allowBackup: false,
+  } as ExpoConfig["android"],
   web: {
     output: "server",
     favicon: "./assets/images/favicon.png",
   },
   plugins: [
+    "./plugins/with-arm64-only",
     "expo-router",
     "expo-secure-store",
     "expo-web-browser",
@@ -53,10 +57,10 @@ const config: ExpoConfig = {
       "expo-splash-screen",
       {
         image: "./assets/images/splash-icon.png",
-        imageWidth: 180,
-        resizeMode: "contain",
         backgroundColor: "#C91923",
+        resizeMode: "contain",
         dark: {
+          image: "./assets/images/splash-icon.png",
           backgroundColor: "#C91923",
         },
       },
@@ -76,7 +80,7 @@ const config: ExpoConfig = {
   },
   extra: {
     eas: {
-      projectId: "29eab73d-563f-4778-948f-acf4cf2e0245",
+      projectId: "dd2b8eed-2852-4097-8e4c-11bb1f17cdc3",
     },
   },
 };

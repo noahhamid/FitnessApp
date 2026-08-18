@@ -2,5 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "hono",
   "buildCommand": "npx prisma generate",
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "api/handler.cjs"
+    }
+  },
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
 }

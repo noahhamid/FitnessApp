@@ -27,6 +27,7 @@ export default function RevisedPredictionScreen() {
     age?: string;
     heightCm?: string;
     experience?: string;
+    bodyFatPercent?: string;
   }>();
 
   const goalId = (params.goalId ?? "health") as GoalId;
@@ -39,6 +40,9 @@ export default function RevisedPredictionScreen() {
   const age = parseInt(params.age ?? "28", 10) || 28;
   const heightCm = parseInt(params.heightCm ?? "170", 10) || 170;
   const experience = resolveExperience(params.experience);
+  const bodyFatRaw = Number(params.bodyFatPercent);
+  const bodyFatPercent =
+    Number.isFinite(bodyFatRaw) && bodyFatRaw > 0 ? bodyFatRaw : undefined;
 
   const estimate = useMemo(
     () =>
@@ -52,6 +56,7 @@ export default function RevisedPredictionScreen() {
         age,
         heightCm,
         experience,
+        bodyFatPercent,
       }),
     [
       goalId,
@@ -63,6 +68,7 @@ export default function RevisedPredictionScreen() {
       age,
       heightCm,
       experience,
+      bodyFatPercent,
     ],
   );
 

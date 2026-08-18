@@ -41,6 +41,8 @@ type Props = {
    * negative favors the bottom (subject lifts).
    */
   imageOffsetY?: number;
+  /** Idle = label on a quiet card; the photo fades in when selected. */
+  revealImageOnSelect?: boolean;
 };
 
 /** Map offset → expo-image contentPosition without scaling the photo. */
@@ -54,8 +56,6 @@ const CARD_TOP_WEIGHT = 30;
 const CARD_WEIGHT = 70;
 const CUTOUT_WEIGHT = 74;
 const CUTOUT_TAIL_WEIGHT = 26;
-/** Crop the black studio margins so the subject fills an inside chip. */
-const INSIDE_ZOOM = 1.28;
 
 const CARD_COLOR_SELECTED = "#E53935";
 
@@ -93,6 +93,7 @@ export function GoalTile({
   imagePlacement = "breakout",
   imageFit = "contain",
   imageOffsetY = 0,
+  revealImageOnSelect = false,
 }: Props) {
   const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
   const inside = imagePlacement === "inside";
@@ -172,28 +173,47 @@ export function GoalTile({
           style={[
             s.bgCard,
             {
+              backgroundColor: revealImageOnSelect ? CARD_COLOR_SELECTED : C.bg,
               transform: [{ scale: cardScale }],
-              borderColor: isSelected ? C.accent : C.border,
+              borderColor: revealImageOnSelect
+                ? CARD_COLOR_SELECTED
+                : isSelected
+                  ? C.accent
+                  : C.border,
             },
           ]}
         >
-          <ExpoImage
-            source={image}
-            contentFit={imageFit === "contain" ? "contain" : "cover"}
-            contentPosition={bgContentPosition(imageOffsetY)}
-            style={[s.bgImage, flipX && s.cutoutFlipped]}
-          />
-          {showBgShade ? (
-            <LinearGradient
-              pointerEvents="none"
-              colors={[...bgScrim]}
-              locations={[0, 0.45, 1]}
-              style={s.bgShade}
+          <Animated.View
+            pointerEvents="none"
+            style={[s.bgReveal, revealImageOnSelect && { opacity: anim }]}
+          >
+            <ExpoImage
+              source={image}
+              contentFit={imageFit === "contain" ? "contain" : "cover"}
+              contentPosition={bgContentPosition(imageOffsetY)}
+              style={[s.bgImage, flipX && s.cutoutFlipped]}
             />
-          ) : null}
+            {showBgShade ? (
+              <LinearGradient
+                colors={[...bgScrim]}
+                locations={[0, 0.45, 1]}
+                style={s.bgShade}
+              />
+            ) : null}
+            {revealImageOnSelect ? (
+              <LinearGradient
+                colors={FADE_SELECTED}
+                locations={FADE_LOCATIONS}
+                style={s.insideFade}
+              />
+            ) : null}
+          </Animated.View>
           <View style={s.bgLabelWrap} pointerEvents="none">
             <Text
-              style={[s.bgTitle, isSelected && s.bgTitleSelected]}
+              style={[
+                s.bgTitle,
+                s.bgTitleSelected,
+              ]}
               numberOfLines={1}
               adjustsFontSizeToFit
               minimumFontScale={0.65}
@@ -213,17 +233,18 @@ export function GoalTile({
           <ExpoImage
             source={image}
             contentFit={imageFit === "contain" ? "contain" : "cover"}
-            contentPosition={{ top: "6%", left: "50%" }}
-            style={[
-              s.insideFill,
-              {
-                transform: flipX
-                  ? [{ scaleX: -INSIDE_ZOOM }, { scaleY: INSIDE_ZOOM }]
-                  : [{ scale: INSIDE_ZOOM }],
-              },
-            ]}
+            contentPosition={
+              imageOffsetY
+                ? bgContentPosition(imageOffsetY)
+                : { top: "0%", left: "50%" }
+            }
+            style={[s.insideFill, flipX && s.cutoutFlipped]}
           />
-          {fade}
+          <LinearGradient
+            colors={isSelected ? FADE_SELECTED : fadeDefault}
+            locations={FADE_LOCATIONS}
+            style={s.insideFade}
+          />
           <View style={s.insideBody} pointerEvents="none">
             {label}
           </View>
@@ -312,6 +333,14 @@ function makeStyles(C: OnboardingColors) {
       height: "48%",
       zIndex: 2,
     },
+    insideFade: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: "70%",
+      zIndex: 2,
+    },
     cutoutTail: {},
     body: {
       position: "absolute",
@@ -351,9 +380,12 @@ function makeStyles(C: OnboardingColors) {
       overflow: "hidden",
       borderWidth: 2,
       borderColor: C.border,
-      backgroundColor: C.bg,
+      backgroundColor: C.bg3,
       justifyContent: "center",
       alignItems: "center",
+    },
+    bgReveal: {
+      ...StyleSheet.absoluteFillObject,
     },
     bgImage: {
       position: "absolute",
@@ -380,13 +412,12 @@ function makeStyles(C: OnboardingColors) {
       textTransform: "uppercase",
       textAlign: "center",
       width: "100%",
+    },
+    bgTitleSelected: {
       color: "#FFFFFF",
       textShadowColor: "rgba(0,0,0,0.65)",
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 8,
-    },
-    bgTitleSelected: {
-      color: "#FFFFFF",
     },
     title: {
       fontFamily: FONTS.blackItalic,

@@ -7,16 +7,32 @@ export interface LibraryExercise {
   muscleGroup: string;
   movementPattern: string;
   minEquipment: string;
+  /** True = needs a bench, bar, wall or step. Bodyweight plans exclude these. */
+  needsProp?: boolean;
   instructions?: string | null;
 }
 
-export function useExerciseLibrary(muscleGroup?: string) {
+type Options = {
+  /** Restrict to prop-dependent moves, or to floor-only ones. */
+  needsProp?: boolean;
+  enabled?: boolean;
+};
+
+export function useExerciseLibrary(muscleGroup?: string, options: Options = {}) {
+  const { needsProp, enabled = true } = options;
+
   return useQuery({
-    queryKey: ["exercise-library", muscleGroup ?? "all"],
-    queryFn: () =>
-      api.get<LibraryExercise[]>(
-        `/api/workouts/exercises${muscleGroup ? `?muscleGroup=${muscleGroup}` : ""}`,
-      ),
+    queryKey: ["exercise-library", muscleGroup ?? "all", needsProp ?? "any"],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (muscleGroup) params.set("muscleGroup", muscleGroup);
+      if (needsProp !== undefined) params.set("needsProp", String(needsProp));
+      const qs = params.toString();
+      return api.get<LibraryExercise[]>(
+        `/api/workouts/exercises${qs ? `?${qs}` : ""}`,
+      );
+    },
+    enabled,
     // Keeps showing the previous category's list while the new one loads,
     // instead of blanking to a spinner on every tap.
     placeholderData: keepPreviousData,

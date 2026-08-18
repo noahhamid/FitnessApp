@@ -43,10 +43,12 @@ type Props = {
   /** "cover" crops the artwork to fill each card, i.e. zooms in. */
   imageFit?: "contain" | "cover";
   /**
-   * "inside" = cutout chip (default). "background" = full-bleed shaded photo
-   * with a large centered label (focus areas).
+   * "breakout" = subject rises above the card (gender / goals).
+   * "inside" = clipped chip. "background" = full-bleed shaded photo.
    */
-  imagePlacement?: "inside" | "background";
+  imagePlacement?: "breakout" | "inside" | "background";
+  /** Idle = label only; photo fades in on select (focus areas). */
+  revealImageOnSelect?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -134,6 +136,7 @@ export function ChipSelect({
   columns = 2,
   imageFit = "cover",
   imagePlacement = "inside",
+  revealImageOnSelect = false,
   style,
 }: Props) {
   const { styles: s } = useOnboardingStyles(makeStyles);
@@ -195,41 +198,45 @@ export function ChipSelect({
       style={[s.grid, style]}
       accessibilityRole={multiple ? undefined : "radiogroup"}
     >
-      {rows.map((row, ri) => (
-        <View key={ri} style={s.row}>
-          {row.map((opt) => {
-            const active = selected.includes(opt.id);
+      {rows.map((row, ri) => {
+        const lone = row.length === 1 && !row[0].fullWidth && columns > 1;
+        return (
+          <View key={ri} style={[s.row, lone && s.rowCenter]}>
+            {row.map((opt) => {
+              const active = selected.includes(opt.id);
+              const tileStyle = lone ? s.tileLone : s.tile;
 
-            return opt.image ? (
-              <GoalTile
-                key={opt.id}
-                image={opt.image}
-                title={opt.label}
-                desc={opt.desc}
-                isSelected={active}
-                onPress={() => toggle(opt.id)}
-                role={role}
-                imagePlacement={imagePlacement}
-                imageFit={imageFit}
-                imageOffsetY={opt.imageOffsetY}
-                style={s.tile}
-              />
-            ) : (
-              <PlainChip
-                key={opt.id}
-                option={opt}
-                active={active}
-                onPress={() => toggle(opt.id)}
-                role={role}
-              />
-            );
-          })}
-          {/* Keeps a lone trailing tile the same width as a full row. */}
-          {row.length < columns && !row[0].fullWidth ? (
-            <View style={s.tile} />
-          ) : null}
-        </View>
-      ))}
+              return opt.image ? (
+                <GoalTile
+                  key={opt.id}
+                  image={opt.image}
+                  title={opt.label}
+                  desc={opt.desc}
+                  isSelected={active}
+                  onPress={() => toggle(opt.id)}
+                  role={role}
+                  imagePlacement={imagePlacement}
+                  imageFit={imageFit}
+                  imageOffsetY={opt.imageOffsetY}
+                  revealImageOnSelect={revealImageOnSelect}
+                  style={tileStyle}
+                />
+              ) : (
+                <PlainChip
+                  key={opt.id}
+                  option={opt}
+                  active={active}
+                  onPress={() => toggle(opt.id)}
+                  role={role}
+                />
+              );
+            })}
+            {row.length < columns && !row[0].fullWidth && !lone ? (
+              <View style={s.tile} />
+            ) : null}
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -246,8 +253,15 @@ function makeStyles(C: OnboardingColors) {
     flex: 1,
     flexDirection: "row",
   },
+  rowCenter: {
+    justifyContent: "center",
+  },
   tile: {
     flex: 1,
+  },
+  tileLone: {
+    flex: 1,
+    maxWidth: "50%",
   },
   // GoalTile owns an 8pt slot padding; mirror it so both card kinds align.
   plainSlot: {

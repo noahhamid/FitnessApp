@@ -5,12 +5,23 @@ import {
   DISPLAY_NAME_MAX_LENGTH,
   normalizeDisplayFirstName,
 } from "@/src/lib/display-name";
-import {
-  GoogleSignin,
-  isErrorWithCode,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
-import { Platform } from "react-native";
+import { NativeModules, Platform } from "react-native";
+
+type GoogleSignInSdk = typeof import("@react-native-google-signin/google-signin");
+
+/** Expo Go does not ship this native module — a static import crashes on load. */
+function googleNativeReady(): boolean {
+  return Boolean(NativeModules.RNGoogleSignin);
+}
+
+async function loadGoogleSignIn(): Promise<GoogleSignInSdk> {
+  if (!googleNativeReady()) {
+    throw new Error(
+      "Google Sign-In needs a development build or EAS APK. Expo Go does not include it.",
+    );
+  }
+  return import("@react-native-google-signin/google-signin");
+}
 
 /** Thrown when the user dismisses the Google sheet — UI should ignore quietly. */
 export class AuthCancelledError extends Error {
@@ -23,21 +34,19 @@ export class AuthCancelledError extends Error {
 // Same iOS client as app.config.ts google-signin plugin.
 const IOS_CLIENT_ID =
   "571605491186-kd1lt4933dp1a60hvuvegu2rn9cteodo.apps.googleusercontent.com";
+// Web client ID is public (not the secret). Baked in so EAS APKs work
+// even when EXPO_PUBLIC_* was missing from the build profile.
+const WEB_CLIENT_ID =
+  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+  "571605491186-b04ac11j9h523q4v733k4g9726hupbh9.apps.googleusercontent.com";
 
 let googleConfigured = false;
 
-function configureGoogleSignIn() {
+async function configureGoogleSignIn(sdk: GoogleSignInSdk) {
   if (googleConfigured) return;
 
-  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-  if (!webClientId) {
-    throw new Error(
-      "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is not set. Use your Google Cloud Web client ID (same as GOOGLE_CLIENT_ID).",
-    );
-  }
-
-  GoogleSignin.configure({
-    webClientId,
+  sdk.GoogleSignin.configure({
+    webClientId: WEB_CLIENT_ID,
     iosClientId: IOS_CLIENT_ID,
     offlineAccess: false,
   });
@@ -55,6 +64,11 @@ function throwIfAuthError(error: AuthClientError): void {
   if (!error) return;
   if (error.status === 429 || /too many requests/i.test(error.message ?? "")) {
     throw new Error("Too many tries. Wait a few minutes and try again.");
+  }
+  if (/invalid token/i.test(error.message ?? "")) {
+    throw new Error(
+      "Google signed you in, but the server rejected Google's ID token. The Web client ID on the API must match the one in this app — SHA-1 is not that token.",
+    );
   }
   throw new Error(error.message || "Something went wrong.");
 }
@@ -138,10 +152,12 @@ async function ensureOAuthFirstName(
  * Drop any cached Google account so the next `signIn()` always shows the
  * account picker instead of silently reusing the last account.
  */
-async function clearGoogleSessionForAccountPicker(): Promise<void> {
+async function clearGoogleSessionForAccountPicker(
+  sdk: GoogleSignInSdk,
+): Promise<void> {
   try {
-    if (GoogleSignin.hasPreviousSignIn()) {
-      await GoogleSignin.signOut();
+    if (sdk.GoogleSignin.hasPreviousSignIn()) {
+      await sdk.GoogleSignin.signOut();
     }
   } catch {
     // No active Google session — picker will still appear.
@@ -153,7 +169,9 @@ async function clearGoogleSessionForAccountPicker(): Promise<void> {
  * Requires a development / production build (not Expo Go).
  */
 export async function signInWithGoogle(): Promise<void> {
-  configureGoogleSignIn();
+  const sdk = await loadGoogleSignIn();
+  await configureGoogleSignIn(sdk);
+  const { GoogleSignin, isErrorWithCode, statusCodes } = sdk;
 
   try {
     if (Platform.OS === "android") {
@@ -162,7 +180,7 @@ export async function signInWithGoogle(): Promise<void> {
       });
     }
 
-    await clearGoogleSessionForAccountPicker();
+    await clearGoogleSessionForAccountPicker(sdk);
 
     const response = await GoogleSignin.signIn();
     if (response.type === "cancelled") {
@@ -262,8 +280,11 @@ export async function signInWithApple(): Promise<void> {
 
 export async function signOut(): Promise<void> {
   try {
-    if (GoogleSignin.hasPreviousSignIn()) {
-      await GoogleSignin.signOut();
+    if (googleNativeReady()) {
+      const { GoogleSignin } = await loadGoogleSignIn();
+      if (GoogleSignin.hasPreviousSignIn()) {
+        await GoogleSignin.signOut();
+      }
     }
   } catch {
     // Best-effort; Better Auth session is what matters.

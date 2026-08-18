@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import type { ConditioningModality } from "@/src/lib/conditioning-plan";
+import { wallClockElapsedSec } from "@/src/hooks/useWallClockElapsed";
 import { ensureNotificationHandler } from "@/src/lib/meal-workout-reminders";
 
 const STORAGE_KEY = "conditioning-run-v1";
@@ -17,11 +18,17 @@ export type ConditioningRun = {
   targetMinutes: number;
   startedAt: number;
   index: number;
+  pauseAccumMs: number;
+  pausedAt: number | null;
 };
 
 function isStoredRun(
   value: unknown,
-): value is Omit<ConditioningRun, "index"> & { index?: number } {
+): value is Omit<ConditioningRun, "index" | "pauseAccumMs" | "pausedAt"> & {
+  index?: number;
+  pauseAccumMs?: number;
+  pausedAt?: number | null;
+} {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
   return (
@@ -39,7 +46,13 @@ export async function loadConditioningRun(): Promise<ConditioningRun | null> {
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (!isStoredRun(parsed)) return null;
-    return { ...parsed, index: parsed.index ?? 0 };
+    return {
+      ...parsed,
+      index: parsed.index ?? 0,
+      pauseAccumMs:
+        typeof parsed.pauseAccumMs === "number" ? parsed.pauseAccumMs : 0,
+      pausedAt: typeof parsed.pausedAt === "number" ? parsed.pausedAt : null,
+    };
   } catch {
     return null;
   }
@@ -67,8 +80,21 @@ export async function scheduleConditioningNotification(
   run: ConditioningRun,
 ): Promise<void> {
   if (Platform.OS === "web") return;
-  const fireAt = new Date(run.startedAt + run.targetMinutes * 60 * 1000);
-  if (fireAt.getTime() <= Date.now()) return;
+  if (run.pausedAt != null) {
+    await cancelConditioningNotification();
+    return;
+  }
+  const elapsedSec = wallClockElapsedSec(
+    run.startedAt,
+    run.pauseAccumMs,
+    run.pausedAt,
+  );
+  const remainingMs = run.targetMinutes * 60 * 1000 - elapsedSec * 1000;
+  if (remainingMs <= 0) {
+    await cancelConditioningNotification();
+    return;
+  }
+  const fireAt = new Date(Date.now() + remainingMs);
 
   try {
     ensureNotificationHandler();

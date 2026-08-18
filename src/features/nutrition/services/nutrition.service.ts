@@ -1,6 +1,7 @@
 // src/features/nutrition/services/nutrition.service.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "@/src/lib/api";
+import type { AdaptiveSuggestion } from "@/src/lib/adaptive-nutrition";
 import type {
   DailyTotals,
   FoodLibraryItem,
@@ -126,6 +127,10 @@ async function readCustomFoods(): Promise<FoodLibraryItem[]> {
 async function writeCustomFoods(foods: FoodLibraryItem[]): Promise<void> {
   await AsyncStorage.setItem(CUSTOM_FOODS_KEY, JSON.stringify(foods));
 }
+export async function fetchAdaptiveSuggestion(): Promise<AdaptiveSuggestion> {
+  return api.get<AdaptiveSuggestion>("/api/nutrition/adaptive-suggestion");
+}
+
 export async function fetchSuggestion(date?: string): Promise<NutritionSuggestion | null> {
 const logDate = date ?? todayLocal();
   return api.get<NutritionSuggestion | null>(
@@ -193,6 +198,24 @@ export async function addMealEntry(
     fat: entry.fat,
     imageUrl: entry.image_url ?? undefined,
     source: entry.source ?? "manual",
+  });
+  return toMealLogEntry(row);
+}
+
+export async function updateMealEntry(
+  id: string,
+  entry: Partial<
+    Pick<MealLogEntry, "log_date" | "meal" | "name" | "cal" | "protein" | "carbs" | "fat">
+  >,
+): Promise<MealLogEntry> {
+  const row = await api.patch<ApiMealLog>(`/api/nutrition/log/${id}`, {
+    ...(entry.log_date !== undefined && { logDate: entry.log_date }),
+    ...(entry.meal !== undefined && { meal: entry.meal }),
+    ...(entry.name !== undefined && { name: entry.name }),
+    ...(entry.cal !== undefined && { cal: entry.cal }),
+    ...(entry.protein !== undefined && { protein: entry.protein }),
+    ...(entry.carbs !== undefined && { carbs: entry.carbs }),
+    ...(entry.fat !== undefined && { fat: entry.fat }),
   });
   return toMealLogEntry(row);
 }

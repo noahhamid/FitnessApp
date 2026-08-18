@@ -99,11 +99,73 @@ function copyFor(
 export function isReminderTimeUpcoming(
   slot: ReminderSlot,
   now: Date = new Date(),
+  workoutHour?: number,
 ): boolean {
-  const { hour, minute } = REMINDER_TIMES[slot];
+  const { hour, minute } =
+    slot === "workout" && workoutHour != null
+      ? { hour: workoutHour, minute: 0 }
+      : REMINDER_TIMES[slot];
   const trigger = new Date(now);
   trigger.setHours(hour, minute, 0, 0);
   return trigger.getTime() > now.getTime();
+}
+
+/** Monday-index 0–6 → Expo WEEKLY weekday (Sunday = 1). */
+function expoWeekdayFromMondayIndex(mondayIndex: number): number {
+  return mondayIndex === 6 ? 1 : mondayIndex + 2;
+}
+
+function weeklyWorkoutId(mondayIndex: number): string {
+  return `reminder-workout-weekly-${mondayIndex}`;
+}
+
+/**
+ * Repeating workout pings on the chosen weekdays at `hour`:00.
+ * Replaces any previous weekly workout schedules.
+ */
+export async function syncWeeklyWorkoutReminders(input: {
+  enabled: boolean;
+  hour: number;
+  trainingDays: readonly number[];
+}): Promise<void> {
+  if (Platform.OS === "web") return;
+
+  ensureNotificationHandler();
+  await ensureAndroidReminderChannel();
+
+  for (let i = 0; i < 7; i++) {
+    await cancelOsReminder(weeklyWorkoutId(i));
+  }
+
+  if (!input.enabled || input.trainingDays.length === 0) return;
+
+  const perms = await Notifications.getPermissionsAsync();
+  if (!perms.granted) return;
+
+  const hour = Math.max(0, Math.min(23, Math.round(input.hour)));
+
+  for (const mondayIndex of input.trainingDays) {
+    if (!Number.isInteger(mondayIndex) || mondayIndex < 0 || mondayIndex > 6) {
+      continue;
+    }
+    const id = weeklyWorkoutId(mondayIndex);
+    await Notifications.scheduleNotificationAsync({
+      identifier: id,
+      content: {
+        title: "Training day",
+        body: "Today's a training day — your session is ready when you are",
+        sound: true,
+        data: { type: "reminder", slot: "workout", weekday: mondayIndex },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+        weekday: expoWeekdayFromMondayIndex(mondayIndex),
+        hour,
+        minute: 0,
+        ...(Platform.OS === "android" ? { channelId: CHANNEL_ID } : {}),
+      },
+    });
+  }
 }
 
 export function isTrainingDayToday(
@@ -194,17 +256,25 @@ export type TodayReminderState = {
   trainingDays?: readonly number[] | null;
   /** Used in workout notification body when it's a training day. */
   workoutTitle?: string;
+  /** Profile flag — when false, skip the workout ping (meals still fire). */
+  reminderEnabled?: boolean;
+  /** Local hour for the workout ping (7 / 14 / 19 from onboarding). */
+  workoutHour?: number;
 };
 
 async function scheduleOne(
   slot: ReminderSlot,
   date: string,
   workoutTitle?: string,
+  workoutHour?: number,
 ): Promise<void> {
   const now = new Date();
-  if (!isReminderTimeUpcoming(slot, now)) return;
+  if (!isReminderTimeUpcoming(slot, now, workoutHour)) return;
 
-  const { hour, minute } = REMINDER_TIMES[slot];
+  const { hour, minute } =
+    slot === "workout" && workoutHour != null
+      ? { hour: workoutHour, minute: 0 }
+      : REMINDER_TIMES[slot];
   const triggerDate = new Date(now);
   triggerDate.setHours(hour, minute, 0, 0);
 
@@ -274,10 +344,16 @@ export async function rescheduleTodayReminders(
   }
 
   const training =
+    state.reminderEnabled !== false &&
     state.daysPerWeek > 0 &&
     isTrainingDayToday(state.daysPerWeek, new Date(), state.trainingDays);
   if (training && !state.workoutCompleted) {
-    await scheduleOne("workout", date, state.workoutTitle);
+    await scheduleOne(
+      "workout",
+      date,
+      state.workoutTitle,
+      state.workoutHour,
+    );
   }
 }
 

@@ -1,8 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/src/lib/api";
 import { useWallClockElapsed } from "@/src/hooks/useWallClockElapsed";
 import type { ConditioningSession } from "@/src/lib/conditioning-plan";
+import {
+  attachSessionTimer,
+  detachSessionTimer,
+  setSessionTimerPaused,
+} from "@/src/lib/session-timer-notification";
 import {
   CONDITIONING_SESSION_NOTES,
   clearConditioningRun,
@@ -20,7 +25,11 @@ export function useConditioningRun() {
   const [justCompletedIndexes, setJustCompletedIndexes] = useState<number[]>(
     [],
   );
-  const elapsedSec = useWallClockElapsed(run?.startedAt ?? null, false);
+  const elapsedSec = useWallClockElapsed(
+    run?.startedAt ?? null,
+    run?.pausedAt != null,
+    run?.pauseAccumMs ?? 0,
+  );
 
   useEffect(() => {
     let active = true;
@@ -35,21 +44,47 @@ export function useConditioningRun() {
     };
   }, []);
 
-  const start = useCallback(async (session: ConditioningSession, index: number) => {
-    const next: ConditioningRun = {
-      label: session.label,
-      modality: session.modality,
-      targetMinutes: session.minutes,
-      startedAt: Date.now(),
-      index,
-    };
+  const persist = useCallback(async (next: ConditioningRun) => {
     setRun(next);
     await saveConditioningRun(next);
     await scheduleConditioningNotification(next);
   }, []);
 
+  const start = useCallback(
+    async (session: ConditioningSession, index: number) => {
+      const next: ConditioningRun = {
+        label: session.label,
+        modality: session.modality,
+        targetMinutes: session.minutes,
+        startedAt: Date.now(),
+        index,
+        pauseAccumMs: 0,
+        pausedAt: null,
+      };
+      await persist(next);
+    },
+    [persist],
+  );
+
+  const pause = useCallback(async () => {
+    if (!run || run.pausedAt != null) return;
+    setSessionTimerPaused(true);
+    await persist({ ...run, pausedAt: Date.now() });
+  }, [run, persist]);
+
+  const resume = useCallback(async () => {
+    if (!run || run.pausedAt == null) return;
+    setSessionTimerPaused(false);
+    await persist({
+      ...run,
+      pauseAccumMs: run.pauseAccumMs + (Date.now() - run.pausedAt),
+      pausedAt: null,
+    });
+  }, [run, persist]);
+
   const discard = useCallback(async () => {
     setRun(null);
+    detachSessionTimer("conditioning");
     await clearConditioningRun();
   }, []);
 
@@ -75,6 +110,7 @@ export function useConditioningRun() {
       });
       const finishedIndex = run.index;
       setRun(null);
+      detachSessionTimer("conditioning");
       setJustCompletedIndexes((prev) =>
         prev.includes(finishedIndex) ? prev : [...prev, finishedIndex],
       );
@@ -92,13 +128,55 @@ export function useConditioningRun() {
     }
   }, [run, saving, elapsedSec, queryClient]);
 
+  const pauseRef = useRef(pause);
+  const resumeRef = useRef(resume);
+  const completeRef = useRef(complete);
+  pauseRef.current = pause;
+  resumeRef.current = resume;
+  completeRef.current = complete;
+
+  useEffect(() => {
+    if (!run) {
+      detachSessionTimer("conditioning");
+      return;
+    }
+    return attachSessionTimer(
+      {
+        kind: "conditioning",
+        title: run.label,
+        startedAt: run.startedAt,
+        pauseAccumMs: run.pauseAccumMs,
+        pausedAt: run.pausedAt,
+      },
+      {
+        onPause: () => {
+          void pauseRef.current();
+        },
+        onResume: () => {
+          void resumeRef.current();
+        },
+        onEnd: () => {
+          void completeRef.current();
+        },
+      },
+    );
+  }, [run?.startedAt, run?.label, run?.index]);
+
+  useEffect(() => {
+    if (!run) return;
+    setSessionTimerPaused(run.pausedAt != null);
+  }, [run?.pausedAt]);
+
   return {
     run,
     hydrated,
     saving,
     elapsedSec,
+    paused: run?.pausedAt != null,
     justCompletedIndexes,
     start,
+    pause,
+    resume,
     complete,
     discard,
   };

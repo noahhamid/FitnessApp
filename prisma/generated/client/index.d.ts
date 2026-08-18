@@ -193,6 +193,14 @@ export const Pace: {
 
 export type Pace = (typeof Pace)[keyof typeof Pace]
 
+
+export const BodyFatSource: {
+  measured: 'measured',
+  range: 'range'
+};
+
+export type BodyFatSource = (typeof BodyFatSource)[keyof typeof BodyFatSource]
+
 }
 
 export type MuscleGroup = $Enums.MuscleGroup
@@ -226,6 +234,10 @@ export const EquipmentAccess: typeof $Enums.EquipmentAccess
 export type Pace = $Enums.Pace
 
 export const Pace: typeof $Enums.Pace
+
+export type BodyFatSource = $Enums.BodyFatSource
+
+export const BodyFatSource: typeof $Enums.BodyFatSource
 
 /**
  * ##  Prisma Client ʲˢ
@@ -2855,6 +2867,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup | null
     movementPattern: $Enums.MovementPattern | null
     minEquipment: $Enums.EquipmentAccess | null
+    needsProp: boolean | null
     instructions: string | null
   }
 
@@ -2864,6 +2877,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup | null
     movementPattern: $Enums.MovementPattern | null
     minEquipment: $Enums.EquipmentAccess | null
+    needsProp: boolean | null
     instructions: string | null
   }
 
@@ -2873,6 +2887,7 @@ export namespace Prisma {
     muscleGroup: number
     movementPattern: number
     minEquipment: number
+    needsProp: number
     instructions: number
     _all: number
   }
@@ -2884,6 +2899,7 @@ export namespace Prisma {
     muscleGroup?: true
     movementPattern?: true
     minEquipment?: true
+    needsProp?: true
     instructions?: true
   }
 
@@ -2893,6 +2909,7 @@ export namespace Prisma {
     muscleGroup?: true
     movementPattern?: true
     minEquipment?: true
+    needsProp?: true
     instructions?: true
   }
 
@@ -2902,6 +2919,7 @@ export namespace Prisma {
     muscleGroup?: true
     movementPattern?: true
     minEquipment?: true
+    needsProp?: true
     instructions?: true
     _all?: true
   }
@@ -2984,6 +3002,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup
     movementPattern: $Enums.MovementPattern
     minEquipment: $Enums.EquipmentAccess
+    needsProp: boolean
     instructions: string | null
     _count: ExerciseCountAggregateOutputType | null
     _min: ExerciseMinAggregateOutputType | null
@@ -3010,6 +3029,7 @@ export namespace Prisma {
     muscleGroup?: boolean
     movementPattern?: boolean
     minEquipment?: boolean
+    needsProp?: boolean
     instructions?: boolean
     planExercises?: boolean | Exercise$planExercisesArgs<ExtArgs>
     _count?: boolean | ExerciseCountOutputTypeDefaultArgs<ExtArgs>
@@ -3021,6 +3041,7 @@ export namespace Prisma {
     muscleGroup?: boolean
     movementPattern?: boolean
     minEquipment?: boolean
+    needsProp?: boolean
     instructions?: boolean
   }, ExtArgs["result"]["exercise"]>
 
@@ -3030,6 +3051,7 @@ export namespace Prisma {
     muscleGroup?: boolean
     movementPattern?: boolean
     minEquipment?: boolean
+    needsProp?: boolean
     instructions?: boolean
   }, ExtArgs["result"]["exercise"]>
 
@@ -3039,10 +3061,11 @@ export namespace Prisma {
     muscleGroup?: boolean
     movementPattern?: boolean
     minEquipment?: boolean
+    needsProp?: boolean
     instructions?: boolean
   }
 
-  export type ExerciseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "muscleGroup" | "movementPattern" | "minEquipment" | "instructions", ExtArgs["result"]["exercise"]>
+  export type ExerciseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "muscleGroup" | "movementPattern" | "minEquipment" | "needsProp" | "instructions", ExtArgs["result"]["exercise"]>
   export type ExerciseInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     planExercises?: boolean | Exercise$planExercisesArgs<ExtArgs>
     _count?: boolean | ExerciseCountOutputTypeDefaultArgs<ExtArgs>
@@ -3061,6 +3084,7 @@ export namespace Prisma {
       muscleGroup: $Enums.MuscleGroup
       movementPattern: $Enums.MovementPattern
       minEquipment: $Enums.EquipmentAccess
+      needsProp: boolean
       instructions: string | null
     }, ExtArgs["result"]["exercise"]>
     composites: {}
@@ -3491,6 +3515,7 @@ export namespace Prisma {
     readonly muscleGroup: FieldRef<"Exercise", 'MuscleGroup'>
     readonly movementPattern: FieldRef<"Exercise", 'MovementPattern'>
     readonly minEquipment: FieldRef<"Exercise", 'EquipmentAccess'>
+    readonly needsProp: FieldRef<"Exercise", 'Boolean'>
     readonly instructions: FieldRef<"Exercise", 'String'>
   }
     
@@ -6254,6 +6279,7 @@ export namespace Prisma {
     targetSets: number | null
     targetRepsMin: number | null
     targetRepsMax: number | null
+    blockLabel: string | null
   }
 
   export type WorkoutPlanExerciseMaxAggregateOutputType = {
@@ -6264,6 +6290,7 @@ export namespace Prisma {
     targetSets: number | null
     targetRepsMin: number | null
     targetRepsMax: number | null
+    blockLabel: string | null
   }
 
   export type WorkoutPlanExerciseCountAggregateOutputType = {
@@ -6274,6 +6301,7 @@ export namespace Prisma {
     targetSets: number
     targetRepsMin: number
     targetRepsMax: number
+    blockLabel: number
     _all: number
   }
 
@@ -6300,6 +6328,7 @@ export namespace Prisma {
     targetSets?: true
     targetRepsMin?: true
     targetRepsMax?: true
+    blockLabel?: true
   }
 
   export type WorkoutPlanExerciseMaxAggregateInputType = {
@@ -6310,6 +6339,7 @@ export namespace Prisma {
     targetSets?: true
     targetRepsMin?: true
     targetRepsMax?: true
+    blockLabel?: true
   }
 
   export type WorkoutPlanExerciseCountAggregateInputType = {
@@ -6320,6 +6350,7 @@ export namespace Prisma {
     targetSets?: true
     targetRepsMin?: true
     targetRepsMax?: true
+    blockLabel?: true
     _all?: true
   }
 
@@ -6417,6 +6448,7 @@ export namespace Prisma {
     targetSets: number
     targetRepsMin: number
     targetRepsMax: number
+    blockLabel: string | null
     _count: WorkoutPlanExerciseCountAggregateOutputType | null
     _avg: WorkoutPlanExerciseAvgAggregateOutputType | null
     _sum: WorkoutPlanExerciseSumAggregateOutputType | null
@@ -6446,6 +6478,7 @@ export namespace Prisma {
     targetSets?: boolean
     targetRepsMin?: boolean
     targetRepsMax?: boolean
+    blockLabel?: boolean
     day?: boolean | WorkoutPlanDayDefaultArgs<ExtArgs>
     exercise?: boolean | ExerciseDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["workoutPlanExercise"]>
@@ -6458,6 +6491,7 @@ export namespace Prisma {
     targetSets?: boolean
     targetRepsMin?: boolean
     targetRepsMax?: boolean
+    blockLabel?: boolean
     day?: boolean | WorkoutPlanDayDefaultArgs<ExtArgs>
     exercise?: boolean | ExerciseDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["workoutPlanExercise"]>
@@ -6470,6 +6504,7 @@ export namespace Prisma {
     targetSets?: boolean
     targetRepsMin?: boolean
     targetRepsMax?: boolean
+    blockLabel?: boolean
     day?: boolean | WorkoutPlanDayDefaultArgs<ExtArgs>
     exercise?: boolean | ExerciseDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["workoutPlanExercise"]>
@@ -6482,9 +6517,10 @@ export namespace Prisma {
     targetSets?: boolean
     targetRepsMin?: boolean
     targetRepsMax?: boolean
+    blockLabel?: boolean
   }
 
-  export type WorkoutPlanExerciseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "dayId" | "exerciseId" | "orderIndex" | "targetSets" | "targetRepsMin" | "targetRepsMax", ExtArgs["result"]["workoutPlanExercise"]>
+  export type WorkoutPlanExerciseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "dayId" | "exerciseId" | "orderIndex" | "targetSets" | "targetRepsMin" | "targetRepsMax" | "blockLabel", ExtArgs["result"]["workoutPlanExercise"]>
   export type WorkoutPlanExerciseInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     day?: boolean | WorkoutPlanDayDefaultArgs<ExtArgs>
     exercise?: boolean | ExerciseDefaultArgs<ExtArgs>
@@ -6512,6 +6548,7 @@ export namespace Prisma {
       targetSets: number
       targetRepsMin: number
       targetRepsMax: number
+      blockLabel: string | null
     }, ExtArgs["result"]["workoutPlanExercise"]>
     composites: {}
   }
@@ -6944,6 +6981,7 @@ export namespace Prisma {
     readonly targetSets: FieldRef<"WorkoutPlanExercise", 'Int'>
     readonly targetRepsMin: FieldRef<"WorkoutPlanExercise", 'Int'>
     readonly targetRepsMax: FieldRef<"WorkoutPlanExercise", 'Int'>
+    readonly blockLabel: FieldRef<"WorkoutPlanExercise", 'String'>
   }
     
 
@@ -8772,6 +8810,7 @@ export namespace Prisma {
     daysPerWeek: number | null
     trainingDays: number | null
     reminderHour: number | null
+    bodyFatPercent: Decimal | null
   }
 
   export type UserProfileSumAggregateOutputType = {
@@ -8782,6 +8821,7 @@ export namespace Prisma {
     daysPerWeek: number | null
     trainingDays: number[]
     reminderHour: number | null
+    bodyFatPercent: Decimal | null
   }
 
   export type UserProfileMinAggregateOutputType = {
@@ -8800,6 +8840,8 @@ export namespace Prisma {
     equipment: $Enums.EquipmentAccess | null
     reminderEnabled: boolean | null
     reminderHour: number | null
+    bodyFatPercent: Decimal | null
+    bodyFatSource: $Enums.BodyFatSource | null
     updatedAt: Date | null
   }
 
@@ -8819,6 +8861,8 @@ export namespace Prisma {
     equipment: $Enums.EquipmentAccess | null
     reminderEnabled: boolean | null
     reminderHour: number | null
+    bodyFatPercent: Decimal | null
+    bodyFatSource: $Enums.BodyFatSource | null
     updatedAt: Date | null
   }
 
@@ -8842,6 +8886,8 @@ export namespace Prisma {
     injuries: number
     reminderEnabled: number
     reminderHour: number
+    bodyFatPercent: number
+    bodyFatSource: number
     updatedAt: number
     _all: number
   }
@@ -8855,6 +8901,7 @@ export namespace Prisma {
     daysPerWeek?: true
     trainingDays?: true
     reminderHour?: true
+    bodyFatPercent?: true
   }
 
   export type UserProfileSumAggregateInputType = {
@@ -8865,6 +8912,7 @@ export namespace Prisma {
     daysPerWeek?: true
     trainingDays?: true
     reminderHour?: true
+    bodyFatPercent?: true
   }
 
   export type UserProfileMinAggregateInputType = {
@@ -8883,6 +8931,8 @@ export namespace Prisma {
     equipment?: true
     reminderEnabled?: true
     reminderHour?: true
+    bodyFatPercent?: true
+    bodyFatSource?: true
     updatedAt?: true
   }
 
@@ -8902,6 +8952,8 @@ export namespace Prisma {
     equipment?: true
     reminderEnabled?: true
     reminderHour?: true
+    bodyFatPercent?: true
+    bodyFatSource?: true
     updatedAt?: true
   }
 
@@ -8925,6 +8977,8 @@ export namespace Prisma {
     injuries?: true
     reminderEnabled?: true
     reminderHour?: true
+    bodyFatPercent?: true
+    bodyFatSource?: true
     updatedAt?: true
     _all?: true
   }
@@ -9035,6 +9089,8 @@ export namespace Prisma {
     injuries: string[]
     reminderEnabled: boolean | null
     reminderHour: number | null
+    bodyFatPercent: Decimal | null
+    bodyFatSource: $Enums.BodyFatSource | null
     updatedAt: Date
     _count: UserProfileCountAggregateOutputType | null
     _avg: UserProfileAvgAggregateOutputType | null
@@ -9077,6 +9133,8 @@ export namespace Prisma {
     injuries?: boolean
     reminderEnabled?: boolean
     reminderHour?: boolean
+    bodyFatPercent?: boolean
+    bodyFatSource?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["userProfile"]>
@@ -9101,6 +9159,8 @@ export namespace Prisma {
     injuries?: boolean
     reminderEnabled?: boolean
     reminderHour?: boolean
+    bodyFatPercent?: boolean
+    bodyFatSource?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["userProfile"]>
@@ -9125,6 +9185,8 @@ export namespace Prisma {
     injuries?: boolean
     reminderEnabled?: boolean
     reminderHour?: boolean
+    bodyFatPercent?: boolean
+    bodyFatSource?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["userProfile"]>
@@ -9149,10 +9211,12 @@ export namespace Prisma {
     injuries?: boolean
     reminderEnabled?: boolean
     reminderHour?: boolean
+    bodyFatPercent?: boolean
+    bodyFatSource?: boolean
     updatedAt?: boolean
   }
 
-  export type UserProfileOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "goalId" | "goalDetail" | "weightKg" | "targetWeightKg" | "pace" | "heightCm" | "age" | "gender" | "daysPerWeek" | "trainingDays" | "experience" | "equipment" | "focusAreas" | "bodyIssues" | "injuries" | "reminderEnabled" | "reminderHour" | "updatedAt", ExtArgs["result"]["userProfile"]>
+  export type UserProfileOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "goalId" | "goalDetail" | "weightKg" | "targetWeightKg" | "pace" | "heightCm" | "age" | "gender" | "daysPerWeek" | "trainingDays" | "experience" | "equipment" | "focusAreas" | "bodyIssues" | "injuries" | "reminderEnabled" | "reminderHour" | "bodyFatPercent" | "bodyFatSource" | "updatedAt", ExtArgs["result"]["userProfile"]>
   export type UserProfileInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -9188,6 +9252,11 @@ export namespace Prisma {
       injuries: string[]
       reminderEnabled: boolean | null
       reminderHour: number | null
+      /**
+       * * User-entered or range-midpoint BF%. Null = BMI estimate.
+       */
+      bodyFatPercent: Prisma.Decimal | null
+      bodyFatSource: $Enums.BodyFatSource | null
       updatedAt: Date
     }, ExtArgs["result"]["userProfile"]>
     composites: {}
@@ -9632,6 +9701,8 @@ export namespace Prisma {
     readonly injuries: FieldRef<"UserProfile", 'String[]'>
     readonly reminderEnabled: FieldRef<"UserProfile", 'Boolean'>
     readonly reminderHour: FieldRef<"UserProfile", 'Int'>
+    readonly bodyFatPercent: FieldRef<"UserProfile", 'Decimal'>
+    readonly bodyFatSource: FieldRef<"UserProfile", 'BodyFatSource'>
     readonly updatedAt: FieldRef<"UserProfile", 'DateTime'>
   }
     
@@ -24359,6 +24430,7 @@ export namespace Prisma {
     muscleGroup: 'muscleGroup',
     movementPattern: 'movementPattern',
     minEquipment: 'minEquipment',
+    needsProp: 'needsProp',
     instructions: 'instructions'
   };
 
@@ -24397,7 +24469,8 @@ export namespace Prisma {
     orderIndex: 'orderIndex',
     targetSets: 'targetSets',
     targetRepsMin: 'targetRepsMin',
-    targetRepsMax: 'targetRepsMax'
+    targetRepsMax: 'targetRepsMax',
+    blockLabel: 'blockLabel'
   };
 
   export type WorkoutPlanExerciseScalarFieldEnum = (typeof WorkoutPlanExerciseScalarFieldEnum)[keyof typeof WorkoutPlanExerciseScalarFieldEnum]
@@ -24436,6 +24509,8 @@ export namespace Prisma {
     injuries: 'injuries',
     reminderEnabled: 'reminderEnabled',
     reminderHour: 'reminderHour',
+    bodyFatPercent: 'bodyFatPercent',
+    bodyFatSource: 'bodyFatSource',
     updatedAt: 'updatedAt'
   };
 
@@ -24709,6 +24784,13 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Boolean'
+   */
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+  /**
    * Reference to a field of type 'Int'
    */
   export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -24751,13 +24833,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Boolean'
-   */
-  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
-
-
-  /**
    * Reference to a field of type 'Decimal'
    */
   export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
@@ -24796,6 +24871,20 @@ export namespace Prisma {
    * Reference to a field of type 'Gender[]'
    */
   export type ListEnumGenderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Gender[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'BodyFatSource'
+   */
+  export type EnumBodyFatSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BodyFatSource'>
+    
+
+
+  /**
+   * Reference to a field of type 'BodyFatSource[]'
+   */
+  export type ListEnumBodyFatSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BodyFatSource[]'>
     
 
 
@@ -24881,6 +24970,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFilter<"Exercise"> | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFilter<"Exercise"> | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFilter<"Exercise"> | $Enums.EquipmentAccess
+    needsProp?: BoolFilter<"Exercise"> | boolean
     instructions?: StringNullableFilter<"Exercise"> | string | null
     planExercises?: WorkoutPlanExerciseListRelationFilter
   }
@@ -24891,6 +24981,7 @@ export namespace Prisma {
     muscleGroup?: SortOrder
     movementPattern?: SortOrder
     minEquipment?: SortOrder
+    needsProp?: SortOrder
     instructions?: SortOrderInput | SortOrder
     planExercises?: WorkoutPlanExerciseOrderByRelationAggregateInput
   }
@@ -24904,6 +24995,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFilter<"Exercise"> | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFilter<"Exercise"> | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFilter<"Exercise"> | $Enums.EquipmentAccess
+    needsProp?: BoolFilter<"Exercise"> | boolean
     instructions?: StringNullableFilter<"Exercise"> | string | null
     planExercises?: WorkoutPlanExerciseListRelationFilter
   }, "id" | "name">
@@ -24914,6 +25006,7 @@ export namespace Prisma {
     muscleGroup?: SortOrder
     movementPattern?: SortOrder
     minEquipment?: SortOrder
+    needsProp?: SortOrder
     instructions?: SortOrderInput | SortOrder
     _count?: ExerciseCountOrderByAggregateInput
     _max?: ExerciseMaxOrderByAggregateInput
@@ -24929,6 +25022,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupWithAggregatesFilter<"Exercise"> | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternWithAggregatesFilter<"Exercise"> | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessWithAggregatesFilter<"Exercise"> | $Enums.EquipmentAccess
+    needsProp?: BoolWithAggregatesFilter<"Exercise"> | boolean
     instructions?: StringNullableWithAggregatesFilter<"Exercise"> | string | null
   }
 
@@ -25078,6 +25172,7 @@ export namespace Prisma {
     targetSets?: IntFilter<"WorkoutPlanExercise"> | number
     targetRepsMin?: IntFilter<"WorkoutPlanExercise"> | number
     targetRepsMax?: IntFilter<"WorkoutPlanExercise"> | number
+    blockLabel?: StringNullableFilter<"WorkoutPlanExercise"> | string | null
     day?: XOR<WorkoutPlanDayScalarRelationFilter, WorkoutPlanDayWhereInput>
     exercise?: XOR<ExerciseScalarRelationFilter, ExerciseWhereInput>
   }
@@ -25090,6 +25185,7 @@ export namespace Prisma {
     targetSets?: SortOrder
     targetRepsMin?: SortOrder
     targetRepsMax?: SortOrder
+    blockLabel?: SortOrderInput | SortOrder
     day?: WorkoutPlanDayOrderByWithRelationInput
     exercise?: ExerciseOrderByWithRelationInput
   }
@@ -25105,6 +25201,7 @@ export namespace Prisma {
     targetSets?: IntFilter<"WorkoutPlanExercise"> | number
     targetRepsMin?: IntFilter<"WorkoutPlanExercise"> | number
     targetRepsMax?: IntFilter<"WorkoutPlanExercise"> | number
+    blockLabel?: StringNullableFilter<"WorkoutPlanExercise"> | string | null
     day?: XOR<WorkoutPlanDayScalarRelationFilter, WorkoutPlanDayWhereInput>
     exercise?: XOR<ExerciseScalarRelationFilter, ExerciseWhereInput>
   }, "id">
@@ -25117,6 +25214,7 @@ export namespace Prisma {
     targetSets?: SortOrder
     targetRepsMin?: SortOrder
     targetRepsMax?: SortOrder
+    blockLabel?: SortOrderInput | SortOrder
     _count?: WorkoutPlanExerciseCountOrderByAggregateInput
     _avg?: WorkoutPlanExerciseAvgOrderByAggregateInput
     _max?: WorkoutPlanExerciseMaxOrderByAggregateInput
@@ -25135,6 +25233,7 @@ export namespace Prisma {
     targetSets?: IntWithAggregatesFilter<"WorkoutPlanExercise"> | number
     targetRepsMin?: IntWithAggregatesFilter<"WorkoutPlanExercise"> | number
     targetRepsMax?: IntWithAggregatesFilter<"WorkoutPlanExercise"> | number
+    blockLabel?: StringNullableWithAggregatesFilter<"WorkoutPlanExercise"> | string | null
   }
 
   export type UserWhereInput = {
@@ -25258,6 +25357,8 @@ export namespace Prisma {
     injuries?: StringNullableListFilter<"UserProfile">
     reminderEnabled?: BoolNullableFilter<"UserProfile"> | boolean | null
     reminderHour?: IntNullableFilter<"UserProfile"> | number | null
+    bodyFatPercent?: DecimalNullableFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: EnumBodyFatSourceNullableFilter<"UserProfile"> | $Enums.BodyFatSource | null
     updatedAt?: DateTimeFilter<"UserProfile"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }
@@ -25282,6 +25383,8 @@ export namespace Prisma {
     injuries?: SortOrder
     reminderEnabled?: SortOrderInput | SortOrder
     reminderHour?: SortOrderInput | SortOrder
+    bodyFatPercent?: SortOrderInput | SortOrder
+    bodyFatSource?: SortOrderInput | SortOrder
     updatedAt?: SortOrder
     user?: UserOrderByWithRelationInput
   }
@@ -25309,6 +25412,8 @@ export namespace Prisma {
     injuries?: StringNullableListFilter<"UserProfile">
     reminderEnabled?: BoolNullableFilter<"UserProfile"> | boolean | null
     reminderHour?: IntNullableFilter<"UserProfile"> | number | null
+    bodyFatPercent?: DecimalNullableFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: EnumBodyFatSourceNullableFilter<"UserProfile"> | $Enums.BodyFatSource | null
     updatedAt?: DateTimeFilter<"UserProfile"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }, "id" | "userId">
@@ -25333,6 +25438,8 @@ export namespace Prisma {
     injuries?: SortOrder
     reminderEnabled?: SortOrderInput | SortOrder
     reminderHour?: SortOrderInput | SortOrder
+    bodyFatPercent?: SortOrderInput | SortOrder
+    bodyFatSource?: SortOrderInput | SortOrder
     updatedAt?: SortOrder
     _count?: UserProfileCountOrderByAggregateInput
     _avg?: UserProfileAvgOrderByAggregateInput
@@ -25364,6 +25471,8 @@ export namespace Prisma {
     injuries?: StringNullableListFilter<"UserProfile">
     reminderEnabled?: BoolNullableWithAggregatesFilter<"UserProfile"> | boolean | null
     reminderHour?: IntNullableWithAggregatesFilter<"UserProfile"> | number | null
+    bodyFatPercent?: DecimalNullableWithAggregatesFilter<"UserProfile"> | Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: EnumBodyFatSourceNullableWithAggregatesFilter<"UserProfile"> | $Enums.BodyFatSource | null
     updatedAt?: DateTimeWithAggregatesFilter<"UserProfile"> | Date | string
   }
 
@@ -26211,6 +26320,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup
     movementPattern: $Enums.MovementPattern
     minEquipment: $Enums.EquipmentAccess
+    needsProp?: boolean
     instructions?: string | null
     planExercises?: WorkoutPlanExerciseCreateNestedManyWithoutExerciseInput
   }
@@ -26221,6 +26331,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup
     movementPattern: $Enums.MovementPattern
     minEquipment: $Enums.EquipmentAccess
+    needsProp?: boolean
     instructions?: string | null
     planExercises?: WorkoutPlanExerciseUncheckedCreateNestedManyWithoutExerciseInput
   }
@@ -26231,6 +26342,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFieldUpdateOperationsInput | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFieldUpdateOperationsInput | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess
+    needsProp?: BoolFieldUpdateOperationsInput | boolean
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
     planExercises?: WorkoutPlanExerciseUpdateManyWithoutExerciseNestedInput
   }
@@ -26241,6 +26353,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFieldUpdateOperationsInput | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFieldUpdateOperationsInput | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess
+    needsProp?: BoolFieldUpdateOperationsInput | boolean
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
     planExercises?: WorkoutPlanExerciseUncheckedUpdateManyWithoutExerciseNestedInput
   }
@@ -26251,6 +26364,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup
     movementPattern: $Enums.MovementPattern
     minEquipment: $Enums.EquipmentAccess
+    needsProp?: boolean
     instructions?: string | null
   }
 
@@ -26260,6 +26374,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFieldUpdateOperationsInput | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFieldUpdateOperationsInput | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess
+    needsProp?: BoolFieldUpdateOperationsInput | boolean
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -26269,6 +26384,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFieldUpdateOperationsInput | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFieldUpdateOperationsInput | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess
+    needsProp?: BoolFieldUpdateOperationsInput | boolean
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -26417,6 +26533,7 @@ export namespace Prisma {
     targetSets: number
     targetRepsMin: number
     targetRepsMax: number
+    blockLabel?: string | null
     day: WorkoutPlanDayCreateNestedOneWithoutExercisesInput
     exercise: ExerciseCreateNestedOneWithoutPlanExercisesInput
   }
@@ -26429,6 +26546,7 @@ export namespace Prisma {
     targetSets: number
     targetRepsMin: number
     targetRepsMax: number
+    blockLabel?: string | null
   }
 
   export type WorkoutPlanExerciseUpdateInput = {
@@ -26437,6 +26555,7 @@ export namespace Prisma {
     targetSets?: IntFieldUpdateOperationsInput | number
     targetRepsMin?: IntFieldUpdateOperationsInput | number
     targetRepsMax?: IntFieldUpdateOperationsInput | number
+    blockLabel?: NullableStringFieldUpdateOperationsInput | string | null
     day?: WorkoutPlanDayUpdateOneRequiredWithoutExercisesNestedInput
     exercise?: ExerciseUpdateOneRequiredWithoutPlanExercisesNestedInput
   }
@@ -26449,6 +26568,7 @@ export namespace Prisma {
     targetSets?: IntFieldUpdateOperationsInput | number
     targetRepsMin?: IntFieldUpdateOperationsInput | number
     targetRepsMax?: IntFieldUpdateOperationsInput | number
+    blockLabel?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type WorkoutPlanExerciseCreateManyInput = {
@@ -26459,6 +26579,7 @@ export namespace Prisma {
     targetSets: number
     targetRepsMin: number
     targetRepsMax: number
+    blockLabel?: string | null
   }
 
   export type WorkoutPlanExerciseUpdateManyMutationInput = {
@@ -26467,6 +26588,7 @@ export namespace Prisma {
     targetSets?: IntFieldUpdateOperationsInput | number
     targetRepsMin?: IntFieldUpdateOperationsInput | number
     targetRepsMax?: IntFieldUpdateOperationsInput | number
+    blockLabel?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type WorkoutPlanExerciseUncheckedUpdateManyInput = {
@@ -26477,6 +26599,7 @@ export namespace Prisma {
     targetSets?: IntFieldUpdateOperationsInput | number
     targetRepsMin?: IntFieldUpdateOperationsInput | number
     targetRepsMax?: IntFieldUpdateOperationsInput | number
+    blockLabel?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type UserCreateInput = {
@@ -26616,6 +26739,8 @@ export namespace Prisma {
     injuries?: UserProfileCreateinjuriesInput | string[]
     reminderEnabled?: boolean | null
     reminderHour?: number | null
+    bodyFatPercent?: Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: $Enums.BodyFatSource | null
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutProfileInput
   }
@@ -26640,6 +26765,8 @@ export namespace Prisma {
     injuries?: UserProfileCreateinjuriesInput | string[]
     reminderEnabled?: boolean | null
     reminderHour?: number | null
+    bodyFatPercent?: Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: $Enums.BodyFatSource | null
     updatedAt?: Date | string
   }
 
@@ -26662,6 +26789,8 @@ export namespace Prisma {
     injuries?: UserProfileUpdateinjuriesInput | string[]
     reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
     reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
+    bodyFatPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: NullableEnumBodyFatSourceFieldUpdateOperationsInput | $Enums.BodyFatSource | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutProfileNestedInput
   }
@@ -26686,6 +26815,8 @@ export namespace Prisma {
     injuries?: UserProfileUpdateinjuriesInput | string[]
     reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
     reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
+    bodyFatPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: NullableEnumBodyFatSourceFieldUpdateOperationsInput | $Enums.BodyFatSource | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -26709,6 +26840,8 @@ export namespace Prisma {
     injuries?: UserProfileCreateinjuriesInput | string[]
     reminderEnabled?: boolean | null
     reminderHour?: number | null
+    bodyFatPercent?: Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: $Enums.BodyFatSource | null
     updatedAt?: Date | string
   }
 
@@ -26731,6 +26864,8 @@ export namespace Prisma {
     injuries?: UserProfileUpdateinjuriesInput | string[]
     reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
     reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
+    bodyFatPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: NullableEnumBodyFatSourceFieldUpdateOperationsInput | $Enums.BodyFatSource | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -26754,6 +26889,8 @@ export namespace Prisma {
     injuries?: UserProfileUpdateinjuriesInput | string[]
     reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
     reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
+    bodyFatPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: NullableEnumBodyFatSourceFieldUpdateOperationsInput | $Enums.BodyFatSource | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -27668,6 +27805,11 @@ export namespace Prisma {
     not?: NestedEnumEquipmentAccessFilter<$PrismaModel> | $Enums.EquipmentAccess
   }
 
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type StringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -27704,6 +27846,7 @@ export namespace Prisma {
     muscleGroup?: SortOrder
     movementPattern?: SortOrder
     minEquipment?: SortOrder
+    needsProp?: SortOrder
     instructions?: SortOrder
   }
 
@@ -27713,6 +27856,7 @@ export namespace Prisma {
     muscleGroup?: SortOrder
     movementPattern?: SortOrder
     minEquipment?: SortOrder
+    needsProp?: SortOrder
     instructions?: SortOrder
   }
 
@@ -27722,6 +27866,7 @@ export namespace Prisma {
     muscleGroup?: SortOrder
     movementPattern?: SortOrder
     minEquipment?: SortOrder
+    needsProp?: SortOrder
     instructions?: SortOrder
   }
 
@@ -27771,6 +27916,14 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumEquipmentAccessFilter<$PrismaModel>
     _max?: NestedEnumEquipmentAccessFilter<$PrismaModel>
+  }
+
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -27971,6 +28124,7 @@ export namespace Prisma {
     targetSets?: SortOrder
     targetRepsMin?: SortOrder
     targetRepsMax?: SortOrder
+    blockLabel?: SortOrder
   }
 
   export type WorkoutPlanExerciseAvgOrderByAggregateInput = {
@@ -27988,6 +28142,7 @@ export namespace Prisma {
     targetSets?: SortOrder
     targetRepsMin?: SortOrder
     targetRepsMax?: SortOrder
+    blockLabel?: SortOrder
   }
 
   export type WorkoutPlanExerciseMinOrderByAggregateInput = {
@@ -27998,6 +28153,7 @@ export namespace Prisma {
     targetSets?: SortOrder
     targetRepsMin?: SortOrder
     targetRepsMax?: SortOrder
+    blockLabel?: SortOrder
   }
 
   export type WorkoutPlanExerciseSumOrderByAggregateInput = {
@@ -28005,11 +28161,6 @@ export namespace Prisma {
     targetSets?: SortOrder
     targetRepsMin?: SortOrder
     targetRepsMax?: SortOrder
-  }
-
-  export type BoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
   export type SessionListRelationFilter = {
@@ -28142,14 +28293,6 @@ export namespace Prisma {
     updatedAt?: SortOrder
   }
 
-  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
-  }
-
   export type DecimalNullableFilter<$PrismaModel = never> = {
     equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
     in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
@@ -28221,6 +28364,13 @@ export namespace Prisma {
     not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
   }
 
+  export type EnumBodyFatSourceNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.BodyFatSource | EnumBodyFatSourceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.BodyFatSource[] | ListEnumBodyFatSourceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.BodyFatSource[] | ListEnumBodyFatSourceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumBodyFatSourceNullableFilter<$PrismaModel> | $Enums.BodyFatSource | null
+  }
+
   export type UserProfileCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
@@ -28241,6 +28391,8 @@ export namespace Prisma {
     injuries?: SortOrder
     reminderEnabled?: SortOrder
     reminderHour?: SortOrder
+    bodyFatPercent?: SortOrder
+    bodyFatSource?: SortOrder
     updatedAt?: SortOrder
   }
 
@@ -28252,6 +28404,7 @@ export namespace Prisma {
     daysPerWeek?: SortOrder
     trainingDays?: SortOrder
     reminderHour?: SortOrder
+    bodyFatPercent?: SortOrder
   }
 
   export type UserProfileMaxOrderByAggregateInput = {
@@ -28270,6 +28423,8 @@ export namespace Prisma {
     equipment?: SortOrder
     reminderEnabled?: SortOrder
     reminderHour?: SortOrder
+    bodyFatPercent?: SortOrder
+    bodyFatSource?: SortOrder
     updatedAt?: SortOrder
   }
 
@@ -28289,6 +28444,8 @@ export namespace Prisma {
     equipment?: SortOrder
     reminderEnabled?: SortOrder
     reminderHour?: SortOrder
+    bodyFatPercent?: SortOrder
+    bodyFatSource?: SortOrder
     updatedAt?: SortOrder
   }
 
@@ -28300,6 +28457,7 @@ export namespace Prisma {
     daysPerWeek?: SortOrder
     trainingDays?: SortOrder
     reminderHour?: SortOrder
+    bodyFatPercent?: SortOrder
   }
 
   export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -28380,6 +28538,16 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedBoolNullableFilter<$PrismaModel>
     _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
+  export type EnumBodyFatSourceNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.BodyFatSource | EnumBodyFatSourceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.BodyFatSource[] | ListEnumBodyFatSourceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.BodyFatSource[] | ListEnumBodyFatSourceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumBodyFatSourceNullableWithAggregatesFilter<$PrismaModel> | $Enums.BodyFatSource | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumBodyFatSourceNullableFilter<$PrismaModel>
+    _max?: NestedEnumBodyFatSourceNullableFilter<$PrismaModel>
   }
 
   export type SessionCountOrderByAggregateInput = {
@@ -29054,6 +29222,10 @@ export namespace Prisma {
     set?: $Enums.EquipmentAccess
   }
 
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
+  }
+
   export type NullableStringFieldUpdateOperationsInput = {
     set?: string | null
   }
@@ -29400,10 +29572,6 @@ export namespace Prisma {
     connectOrCreate?: NutritionAdjustmentLogCreateOrConnectWithoutUserInput | NutritionAdjustmentLogCreateOrConnectWithoutUserInput[]
     createMany?: NutritionAdjustmentLogCreateManyUserInputEnvelope
     connect?: NutritionAdjustmentLogWhereUniqueInput | NutritionAdjustmentLogWhereUniqueInput[]
-  }
-
-  export type BoolFieldUpdateOperationsInput = {
-    set?: boolean
   }
 
   export type SessionUpdateManyWithoutUserNestedInput = {
@@ -29788,6 +29956,10 @@ export namespace Prisma {
     set?: boolean | null
   }
 
+  export type NullableEnumBodyFatSourceFieldUpdateOperationsInput = {
+    set?: $Enums.BodyFatSource | null
+  }
+
   export type UserUpdateOneRequiredWithoutProfileNestedInput = {
     create?: XOR<UserCreateWithoutProfileInput, UserUncheckedCreateWithoutProfileInput>
     connectOrCreate?: UserCreateOrConnectWithoutProfileInput
@@ -30055,6 +30227,11 @@ export namespace Prisma {
     not?: NestedEnumEquipmentAccessFilter<$PrismaModel> | $Enums.EquipmentAccess
   }
 
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type NestedStringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -30125,6 +30302,14 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumEquipmentAccessFilter<$PrismaModel>
     _max?: NestedEnumEquipmentAccessFilter<$PrismaModel>
+  }
+
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -30224,19 +30409,6 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type NestedBoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
-  }
-
-  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
-  }
-
   export type NestedDecimalNullableFilter<$PrismaModel = never> = {
     equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
     in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
@@ -30279,6 +30451,13 @@ export namespace Prisma {
   export type NestedBoolNullableFilter<$PrismaModel = never> = {
     equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
     not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
+  export type NestedEnumBodyFatSourceNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.BodyFatSource | EnumBodyFatSourceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.BodyFatSource[] | ListEnumBodyFatSourceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.BodyFatSource[] | ListEnumBodyFatSourceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumBodyFatSourceNullableFilter<$PrismaModel> | $Enums.BodyFatSource | null
   }
 
   export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -30370,6 +30549,16 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedBoolNullableFilter<$PrismaModel>
     _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumBodyFatSourceNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.BodyFatSource | EnumBodyFatSourceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.BodyFatSource[] | ListEnumBodyFatSourceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.BodyFatSource[] | ListEnumBodyFatSourceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumBodyFatSourceNullableWithAggregatesFilter<$PrismaModel> | $Enums.BodyFatSource | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumBodyFatSourceNullableFilter<$PrismaModel>
+    _max?: NestedEnumBodyFatSourceNullableFilter<$PrismaModel>
   }
 
   export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
@@ -30514,6 +30703,7 @@ export namespace Prisma {
     targetSets: number
     targetRepsMin: number
     targetRepsMax: number
+    blockLabel?: string | null
     day: WorkoutPlanDayCreateNestedOneWithoutExercisesInput
   }
 
@@ -30524,6 +30714,7 @@ export namespace Prisma {
     targetSets: number
     targetRepsMin: number
     targetRepsMax: number
+    blockLabel?: string | null
   }
 
   export type WorkoutPlanExerciseCreateOrConnectWithoutExerciseInput = {
@@ -30563,6 +30754,7 @@ export namespace Prisma {
     targetSets?: IntFilter<"WorkoutPlanExercise"> | number
     targetRepsMin?: IntFilter<"WorkoutPlanExercise"> | number
     targetRepsMax?: IntFilter<"WorkoutPlanExercise"> | number
+    blockLabel?: StringNullableFilter<"WorkoutPlanExercise"> | string | null
   }
 
   export type UserCreateWithoutWorkoutPlanInput = {
@@ -30750,6 +30942,7 @@ export namespace Prisma {
     targetSets: number
     targetRepsMin: number
     targetRepsMax: number
+    blockLabel?: string | null
     exercise: ExerciseCreateNestedOneWithoutPlanExercisesInput
   }
 
@@ -30760,6 +30953,7 @@ export namespace Prisma {
     targetSets: number
     targetRepsMin: number
     targetRepsMax: number
+    blockLabel?: string | null
   }
 
   export type WorkoutPlanExerciseCreateOrConnectWithoutDayInput = {
@@ -30848,6 +31042,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup
     movementPattern: $Enums.MovementPattern
     minEquipment: $Enums.EquipmentAccess
+    needsProp?: boolean
     instructions?: string | null
   }
 
@@ -30857,6 +31052,7 @@ export namespace Prisma {
     muscleGroup: $Enums.MuscleGroup
     movementPattern: $Enums.MovementPattern
     minEquipment: $Enums.EquipmentAccess
+    needsProp?: boolean
     instructions?: string | null
   }
 
@@ -30907,6 +31103,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFieldUpdateOperationsInput | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFieldUpdateOperationsInput | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess
+    needsProp?: BoolFieldUpdateOperationsInput | boolean
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -30916,6 +31113,7 @@ export namespace Prisma {
     muscleGroup?: EnumMuscleGroupFieldUpdateOperationsInput | $Enums.MuscleGroup
     movementPattern?: EnumMovementPatternFieldUpdateOperationsInput | $Enums.MovementPattern
     minEquipment?: EnumEquipmentAccessFieldUpdateOperationsInput | $Enums.EquipmentAccess
+    needsProp?: BoolFieldUpdateOperationsInput | boolean
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -31034,6 +31232,8 @@ export namespace Prisma {
     injuries?: UserProfileCreateinjuriesInput | string[]
     reminderEnabled?: boolean | null
     reminderHour?: number | null
+    bodyFatPercent?: Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: $Enums.BodyFatSource | null
     updatedAt?: Date | string
   }
 
@@ -31056,6 +31256,8 @@ export namespace Prisma {
     injuries?: UserProfileCreateinjuriesInput | string[]
     reminderEnabled?: boolean | null
     reminderHour?: number | null
+    bodyFatPercent?: Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: $Enums.BodyFatSource | null
     updatedAt?: Date | string
   }
 
@@ -31397,6 +31599,8 @@ export namespace Prisma {
     injuries?: UserProfileUpdateinjuriesInput | string[]
     reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
     reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
+    bodyFatPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: NullableEnumBodyFatSourceFieldUpdateOperationsInput | $Enums.BodyFatSource | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -31419,6 +31623,8 @@ export namespace Prisma {
     injuries?: UserProfileUpdateinjuriesInput | string[]
     reminderEnabled?: NullableBoolFieldUpdateOperationsInput | boolean | null
     reminderHour?: NullableIntFieldUpdateOperationsInput | number | null
+    bodyFatPercent?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    bodyFatSource?: NullableEnumBodyFatSourceFieldUpdateOperationsInput | $Enums.BodyFatSource | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -32861,6 +33067,7 @@ export namespace Prisma {
     targetSets: number
     targetRepsMin: number
     targetRepsMax: number
+    blockLabel?: string | null
   }
 
   export type WorkoutPlanExerciseUpdateWithoutExerciseInput = {
@@ -32869,6 +33076,7 @@ export namespace Prisma {
     targetSets?: IntFieldUpdateOperationsInput | number
     targetRepsMin?: IntFieldUpdateOperationsInput | number
     targetRepsMax?: IntFieldUpdateOperationsInput | number
+    blockLabel?: NullableStringFieldUpdateOperationsInput | string | null
     day?: WorkoutPlanDayUpdateOneRequiredWithoutExercisesNestedInput
   }
 
@@ -32879,6 +33087,7 @@ export namespace Prisma {
     targetSets?: IntFieldUpdateOperationsInput | number
     targetRepsMin?: IntFieldUpdateOperationsInput | number
     targetRepsMax?: IntFieldUpdateOperationsInput | number
+    blockLabel?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type WorkoutPlanExerciseUncheckedUpdateManyWithoutExerciseInput = {
@@ -32888,6 +33097,7 @@ export namespace Prisma {
     targetSets?: IntFieldUpdateOperationsInput | number
     targetRepsMin?: IntFieldUpdateOperationsInput | number
     targetRepsMax?: IntFieldUpdateOperationsInput | number
+    blockLabel?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type WorkoutPlanDayCreateManyPlanInput = {
@@ -32923,6 +33133,7 @@ export namespace Prisma {
     targetSets: number
     targetRepsMin: number
     targetRepsMax: number
+    blockLabel?: string | null
   }
 
   export type WorkoutPlanExerciseUpdateWithoutDayInput = {
@@ -32931,6 +33142,7 @@ export namespace Prisma {
     targetSets?: IntFieldUpdateOperationsInput | number
     targetRepsMin?: IntFieldUpdateOperationsInput | number
     targetRepsMax?: IntFieldUpdateOperationsInput | number
+    blockLabel?: NullableStringFieldUpdateOperationsInput | string | null
     exercise?: ExerciseUpdateOneRequiredWithoutPlanExercisesNestedInput
   }
 
@@ -32941,6 +33153,7 @@ export namespace Prisma {
     targetSets?: IntFieldUpdateOperationsInput | number
     targetRepsMin?: IntFieldUpdateOperationsInput | number
     targetRepsMax?: IntFieldUpdateOperationsInput | number
+    blockLabel?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type WorkoutPlanExerciseUncheckedUpdateManyWithoutDayInput = {
@@ -32950,6 +33163,7 @@ export namespace Prisma {
     targetSets?: IntFieldUpdateOperationsInput | number
     targetRepsMin?: IntFieldUpdateOperationsInput | number
     targetRepsMax?: IntFieldUpdateOperationsInput | number
+    blockLabel?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SessionCreateManyUserInput = {

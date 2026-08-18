@@ -6,6 +6,8 @@ type Props = {
   onNext: () => void;
   nextLabel?: string;
   nextDisabled?: boolean;
+  /** Narrower pill, centered — used on goal-detail. */
+  centered?: boolean;
 };
 
 /** Shared continue CTA for onboarding question screens (back lives in the header). */
@@ -13,17 +15,19 @@ export function OnboardingNav({
   onNext,
   nextLabel = "CONTINUE",
   nextDisabled = false,
+  centered = false,
 }: Props) {
   const { C, styles } = useOnboardingStyles(makeStyles);
 
   return (
-    <View style={styles.nav}>
+    <View style={[styles.nav, centered && styles.navCentered]}>
       <Pressable
         disabled={nextDisabled}
         accessibilityRole="button"
         accessibilityState={{ disabled: nextDisabled }}
         style={({ pressed }) => [
           styles.nextBtn,
+          centered && styles.nextBtnCentered,
           nextDisabled && styles.nextBtnDisabled,
           pressed && styles.btnPressed,
         ]}
@@ -47,6 +51,9 @@ function makeStyles(C: OnboardingColors) {
       marginHorizontal: 24,
       zIndex: 1,
     },
+    navCentered: {
+      alignItems: "center",
+    },
     nextBtn: {
       paddingVertical: 18,
       borderRadius: 12,
@@ -58,6 +65,11 @@ function makeStyles(C: OnboardingColors) {
       shadowOpacity: 0.3,
       shadowRadius: 8,
       elevation: 4,
+    },
+    nextBtnCentered: {
+      alignSelf: "center",
+      minWidth: 220,
+      paddingHorizontal: 48,
     },
     nextBtnDisabled: {
       opacity: 0.35,

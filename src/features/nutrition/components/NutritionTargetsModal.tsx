@@ -4,6 +4,7 @@ import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import type { NutritionGoals } from "../types/nutrition.types";
 import { goalLabel } from "@/src/features/auth/services/goals.service";
+import type { BodyFatSource } from "@/src/features/profile/services/profile.service";
 
 type Props = {
   visible: boolean;
@@ -11,7 +12,14 @@ type Props = {
   goals: NutritionGoals | null;
   goalId: string | null | undefined;
   daysPerWeek: number | null | undefined;
+  bodyFatSource?: BodyFatSource | null;
 };
+
+function proteinSourceLine(source?: BodyFatSource | null): string {
+  if (source === "measured") return "Protein from the % you entered.";
+  if (source === "range") return "Protein from your body-fat range.";
+  return "Protein from estimated body fat (BMI).";
+}
 
 function Row({ label, value }: { label: string; value: string }) {
   const { styles } = useThemedStyles(makeStyles);
@@ -29,6 +37,7 @@ export function NutritionTargetsModal({
   goals,
   goalId,
   daysPerWeek,
+  bodyFatSource,
 }: Props) {
   const { T, styles } = useThemedStyles(makeStyles);
 
@@ -71,6 +80,9 @@ export function NutritionTargetsModal({
               <Row label="Protein" value={`${goals.protein} g`} />
               <Row label="Carbs" value={`${goals.carbs} g`} />
               <Row label="Fat" value={`${goals.fat} g`} />
+              <Text style={styles.proteinNote}>
+                {proteinSourceLine(bodyFatSource)}
+              </Text>
               {hasBmrTdee && (
                 <>
                   <View style={styles.divider} />
@@ -174,6 +186,13 @@ function makeStyles(T: AppTheme) {
       fontSize: 14,
       color: T.white,
       fontVariant: ["tabular-nums"],
+    },
+    proteinNote: {
+      fontFamily: T.bodyMed,
+      fontSize: 11.5,
+      color: T.faint,
+      lineHeight: 16,
+      paddingBottom: 10,
     },
     divider: {
       height: StyleSheet.hairlineWidth,

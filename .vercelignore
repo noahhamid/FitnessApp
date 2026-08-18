@@ -1,0 +1,10 @@
+.pnpm-store
+android
+ios
+.expo
+*.apk
+/data
+/uploads
+.cursor
+agent-transcripts
+!api/handler.cjs

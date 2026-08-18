@@ -19,6 +19,7 @@ export default function PredictedDateScreen() {
     gender?: string;
     age?: string;
     heightCm?: string;
+    bodyFatPercent?: string;
   }>();
 
   const goalId = (params.goalId ?? "health") as GoalId;
@@ -29,6 +30,9 @@ export default function PredictedDateScreen() {
   const gender: Gender = params.gender === "female" ? "female" : "male";
   const age = parseInt(params.age ?? "28", 10) || 28;
   const heightCm = parseInt(params.heightCm ?? "170", 10) || 170;
+  const bodyFatRaw = Number(params.bodyFatPercent);
+  const bodyFatPercent =
+    Number.isFinite(bodyFatRaw) && bodyFatRaw > 0 ? bodyFatRaw : undefined;
 
   const estimate = useMemo(
     () =>
@@ -40,8 +44,9 @@ export default function PredictedDateScreen() {
         gender,
         age,
         heightCm,
+        bodyFatPercent,
       }),
-    [goalId, currentKg, targetKg, pace, gender, age, heightCm],
+    [goalId, currentKg, targetKg, pace, gender, age, heightCm, bodyFatPercent],
   );
 
   let headline: string;

@@ -1,0 +1,30 @@
+[
+  {
+    "name": "Pull-Up",
+    "needsProp": true,
+    "muscleGroup": "back",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight"
+  },
+  {
+    "name": "Chin-Up",
+    "needsProp": true,
+    "muscleGroup": "biceps",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight"
+  },
+  {
+    "name": "Bench Dip",
+    "needsProp": true,
+    "muscleGroup": "triceps",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight"
+  },
+  {
+    "name": "Nordic Curl",
+    "needsProp": true,
+    "muscleGroup": "hamstrings",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight"
+  }
+]

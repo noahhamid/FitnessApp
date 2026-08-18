@@ -40,6 +40,7 @@ export type TimelineInput = {
   age?: number;
   heightCm?: number;
   experience?: ExperienceLevel;
+  bodyFatPercent?: number;
 };
 
 export function isWeightGoal(goalId: string): goalId is WeightGoalId {
@@ -70,7 +71,7 @@ export function paceRateKgPerWeek(
 
 /** @deprecated Linear boost — recomposition uses daysPerWeek as PAL instead. */
 export function frequencyBoost(daysPerWeek: number): number {
-  const clamped = Math.max(2, Math.min(7, Math.round(daysPerWeek)));
+  const clamped = Math.max(1, Math.min(7, Math.round(daysPerWeek)));
   return 0.85 + 0.05 * clamped;
 }
 
@@ -146,6 +147,7 @@ export function estimateTimeline(
     age,
     heightCm,
     experience,
+    bodyFatPercent,
   } = input;
 
   const deltaKg = Math.abs(endKg - startKg);
@@ -180,6 +182,7 @@ export function estimateTimeline(
       daysPerWeek: trainingDays ?? 3,
       experience: experience ?? "intermediate",
       horizonDays: MAX_TIMELINE_WEEKS * 7 + 21,
+      bodyFatPercent,
     });
     const fromSim = weeksToTargetFromProjection(projection);
     if (fromSim != null) {
@@ -233,8 +236,9 @@ export function previewSplitLabel(
   daysPerWeek: number,
   experience: "novice" | "intermediate" | "advanced",
 ): string {
-  const days = Math.max(2, Math.min(7, Math.round(daysPerWeek)));
+  const days = Math.max(1, Math.min(7, Math.round(daysPerWeek)));
 
+  if (days === 1) return "Full Body";
   if (days === 2) return "Full Body";
   if (days === 3) return experience === "novice" ? "Full Body" : "Push / Pull / Legs";
   if (days === 4) return "Upper / Lower";

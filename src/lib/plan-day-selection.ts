@@ -28,17 +28,18 @@ export const WEEKDAY_LABELS_SHORT = [
 ] as const;
 
 /**
- * Valid selectable range: the onboarding schedule step offers DAYS = [2…7] and
- * the profile API zod is `.min(2).max(7)`, matching clampDays in
- * src/lib/workout-plan-generator.ts. Keep these three in sync.
+ * Valid range is 1–7 (count comes from the chosen weekdays). Keep in sync
+ * with the profile API zod and clampDays in workout-plan-generator.ts.
  */
 function clampDaysPerWeek(daysPerWeek: number): number {
   if (!Number.isFinite(daysPerWeek) || daysPerWeek <= 0) return 0;
-  return Math.min(7, Math.max(2, Math.round(daysPerWeek)));
+  return Math.min(7, Math.max(1, Math.round(daysPerWeek)));
 }
 
 /** Default patterns when the user hasn't picked weekdays — Mon=0 … Sun=6. */
-const WEEKLY_SCHEDULE: Record<2 | 3 | 4 | 5 | 6 | 7, readonly boolean[]> = {
+const WEEKLY_SCHEDULE: Record<1 | 2 | 3 | 4 | 5 | 6 | 7, readonly boolean[]> = {
+  // Monday
+  1: [true, false, false, false, false, false, false],
   // Mon, Thu
   2: [true, false, false, true, false, false, false],
   // Mon, Wed, Fri
@@ -60,7 +61,7 @@ const WEEKLY_SCHEDULE: Record<2 | 3 | 4 | 5 | 6 | 7, readonly boolean[]> = {
 export function defaultTrainingDays(daysPerWeek: number): number[] {
   const n = clampDaysPerWeek(daysPerWeek);
   if (n <= 0) return [];
-  return WEEKLY_SCHEDULE[n as 2 | 3 | 4 | 5 | 6 | 7].reduce<number[]>(
+  return WEEKLY_SCHEDULE[n as 1 | 2 | 3 | 4 | 5 | 6 | 7].reduce<number[]>(
     (days, isTrain, weekdayIndex) => {
       if (isTrain) days.push(weekdayIndex);
       return days;
@@ -135,7 +136,7 @@ export function computeWeeklySchedule(
     return mask;
   }
 
-  return [...WEEKLY_SCHEDULE[n as 2 | 3 | 4 | 5 | 6 | 7]];
+  return [...WEEKLY_SCHEDULE[n as 1 | 2 | 3 | 4 | 5 | 6 | 7]];
 }
 
 export function getWeekdayMondayIndex(date: Date): number {

@@ -14,8 +14,9 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://potentialpeak-app.vercel.app",
-        "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potentialpeak-app.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://potentialpeak-app-puce.vercel.app",
+        "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potentialpeak-app-puce.vercel.app",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "571605491186-b04ac11j9h523q4v733k4g9726hupbh9.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -23,8 +24,9 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://potentialpeak-app.vercel.app",
-        "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potentialpeak-app.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://potentialpeak-app-puce.vercel.app",
+        "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potentialpeak-app-puce.vercel.app",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "571605491186-b04ac11j9h523q4v733k4g9726hupbh9.apps.googleusercontent.com"
       }
     }
   },

@@ -1,20 +1,13 @@
 import { Image, StyleSheet, View } from "react-native";
 
-/** Brand red — matches AnimatedSplashScreen / app.config splash. */
+/** Same mark as the native splash so font/auth wait is one continuous plate. */
 const BRAND_RED = "#C91923";
+const LOGO = require("../../../assets/images/splash-icon.png");
 
-/**
- * Static boot frame while fonts load — same look as the animated splash so
- * there is no spinner / “LOADING” flash before Welcome or the signed-in app.
- */
 export function LoadingScreen(_props?: { message?: string }) {
   return (
     <View style={s.root}>
-      <Image
-        source={require("@/assets/images/potentialpeak_logo.jpg")}
-        style={s.logo}
-        resizeMode="contain"
-      />
+      <Image source={LOGO} style={s.logo} resizeMode="contain" />
     </View>
   );
 }
@@ -27,8 +20,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   logo: {
-    width: 200,
-    height: 200,
-    borderRadius: 40,
+    width: "60%",
+    aspectRatio: 1,
   },
 });

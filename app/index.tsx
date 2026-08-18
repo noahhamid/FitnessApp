@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 
 export default function Index() {
   const hydrated = useAuthHydration();
-  const { hasSession, onboardingComplete, user } = useAuth();
+  const { hasSession, onboardingComplete } = useAuth();
   const queryClient = useQueryClient();
   const setOnboarded = useAuthStore((s) => s.setOnboarded);
   const [backendProfileLoaded, setBackendProfileLoaded] = useState(false);
@@ -60,16 +60,6 @@ export default function Index() {
 
   if (!hydrated) return <LoadingScreen />;
   if (!hasSession) return <Redirect href="/(auth)/welcome" />;
-  if (user?.emailVerified === false) {
-    return (
-      <Redirect
-        href={{
-          pathname: "/(auth)/verify-email",
-          params: { email: user.email ?? "" },
-        }}
-      />
-    );
-  }
   if (!backendProfileLoaded) return <LoadingScreen />;
   if (!resolvedOnboarding) return <Redirect href="/(auth)/onboarding" />;
   return <Redirect href="/(app)/(tabs)" />;

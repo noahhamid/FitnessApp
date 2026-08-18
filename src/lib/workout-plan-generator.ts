@@ -1,6 +1,13 @@
 import { prisma } from "./prisma";
 import { canPerform, type EquipmentAccess } from "./equipment-rank";
 import { dayTitleFromMuscleGroups } from "./plan-day-title";
+import { goalDetailTuning } from "./plan-modifiers";
+import {
+  allBlockExerciseNames,
+  assignBlocksToDays,
+  moveAllowedForInjuries,
+  namesForMove,
+} from "./plan-blocks";
 
 export type ExperienceLevel = "novice" | "intermediate" | "advanced";
 export type GoalId = "lose" | "build" | "endure" | "health";
@@ -17,7 +24,7 @@ export type FocusArea =
 export type Injury = "none" | "knees" | "back" | "shoulders" | "wrists";
 
 export interface WorkoutPlanInput {
-  daysPerWeek: number; // 2-7
+  daysPerWeek: number; // 1-7
   experience: ExperienceLevel;
   equipment: EquipmentAccess;
   goalId: GoalId;
@@ -25,6 +32,10 @@ export interface WorkoutPlanInput {
   focusAreas?: FocusArea[];
   /** Steers slot selection away from movements that load these joints. */
   injuries?: Injury[];
+  /** Onboarding goal-detail id — tunes reps/sets and picks a finisher block. */
+  goalDetail?: string;
+  /** Onboarding lifestyle issues — sitting/sleep attach a block; diet does not. */
+  bodyIssues?: string[];
 }
 
 const FOCUS_TO_MUSCLE_GROUPS: Record<FocusArea, MuscleGroup[]> = {
@@ -63,6 +74,8 @@ export interface PlanExerciseOut {
   targetSets: number;
   targetRepsMin: number;
   targetRepsMax: number;
+  /** Set when this row belongs to an appended goal-detail / issue block. */
+  blockLabel?: string;
 }
 
 export interface PlanDayOut {
@@ -87,7 +100,7 @@ interface DayTemplate {
 }
 
 function clampDays(days: number): number {
-  return Math.min(7, Math.max(2, Math.round(days)));
+  return Math.min(7, Math.max(1, Math.round(days)));
 }
 
 function getSplitTemplate(daysPerWeek: number, experience: ExperienceLevel): {
@@ -121,6 +134,9 @@ function getSplitTemplate(daysPerWeek: number, experience: ExperienceLevel): {
     slots: ["quads", "hamstrings", "glutes", "calves", "core"],
   });
 
+  if (days === 1) {
+    return { splitLabel: "Full Body", days: [fullBodyDay("Full Body")] };
+  }
   if (days === 2) {
     return { splitLabel: "Full Body", days: [fullBodyDay("Full Body A"), fullBodyDay("Full Body B")] };
   }
@@ -178,22 +194,22 @@ const REP_RANGE_BY_GOAL: Record<GoalId, [number, number]> = {
 };
 
 // --- 2. Exercise selection — queries the real Exercise table ---
+type Candidate = {
+  id: string;
+  name: string;
+  minEquipment: EquipmentAccess;
+  movementPattern: MovementPattern;
+  needsProp: boolean;
+};
+
 async function loadExercisesByMuscleGroup(
   muscleGroups: MuscleGroup[],
-): Promise<
-  Map<
-    MuscleGroup,
-    { id: string; name: string; minEquipment: EquipmentAccess; movementPattern: MovementPattern }[]
-  >
-> {
+): Promise<Map<MuscleGroup, Candidate[]>> {
   const rows = await prisma.exercise.findMany({
     where: { muscleGroup: { in: muscleGroups as any } },
   });
 
-  const map = new Map<
-    MuscleGroup,
-    { id: string; name: string; minEquipment: EquipmentAccess; movementPattern: MovementPattern }[]
-  >();
+  const map = new Map<MuscleGroup, Candidate[]>();
   for (const row of rows) {
     const list = map.get(row.muscleGroup as MuscleGroup) ?? [];
     list.push({
@@ -201,6 +217,7 @@ async function loadExercisesByMuscleGroup(
       name: row.name,
       minEquipment: row.minEquipment as EquipmentAccess,
       movementPattern: row.movementPattern as MovementPattern,
+      needsProp: row.needsProp,
     });
     map.set(row.muscleGroup as MuscleGroup, list);
   }
@@ -225,7 +242,7 @@ function substituteMuscleGroup(
 }
 
 function pickExercise(
-  candidates: { id: string; name: string; minEquipment: EquipmentAccess; movementPattern: MovementPattern }[],
+  candidates: Candidate[],
   userEquipment: EquipmentAccess,
   usedInDay: Set<string>,
   avoidPatterns: Set<MovementPattern>,
@@ -237,7 +254,14 @@ function pickExercise(
    */
   rotationOffset: number,
 ): { id: string; name: string } {
-  const eligible = candidates.filter((c) => canPerform(userEquipment, c.minEquipment));
+  // A bodyweight plan must be doable in an empty room, so prop moves are cut
+  // here rather than in the injury filter below — that one relaxes when it
+  // empties the pool, and "no bench" is not a preference we can relax.
+  const eligible = candidates.filter(
+    (c) =>
+      canPerform(userEquipment, c.minEquipment) &&
+      (userEquipment !== "bodyweight" || !c.needsProp),
+  );
   const safe = eligible.filter((c) => !avoidPatterns.has(c.movementPattern));
   const pool = safe.length > 0 ? safe : eligible;
 
@@ -275,8 +299,17 @@ export async function generateWorkoutPlan(input: WorkoutPlanInput): Promise<Work
   );
 
   const template = getSplitTemplate(input.daysPerWeek, experience);
-  const baseSets = SETS_BY_EXPERIENCE[experience];
-  const [repLow, repHigh] = REP_RANGE_BY_GOAL[goalId];
+  const tuning = goalDetailTuning(input.goalDetail);
+  const baseSets = Math.min(
+    5,
+    Math.max(2, SETS_BY_EXPERIENCE[experience] + (tuning.setDelta ?? 0)),
+  );
+  const [repLow, repHigh] = tuning.repRange ?? REP_RANGE_BY_GOAL[goalId];
+  const dayBlocks = assignBlocksToDays({
+    dayCount: template.days.length,
+    goalDetail: input.goalDetail,
+    bodyIssues: input.bodyIssues,
+  });
 
   // Apply injury substitutions to the template before loading candidates,
   // so a swapped-out muscle group (e.g. shoulders → core) is loaded too.
@@ -286,7 +319,19 @@ export async function generateWorkoutPlan(input: WorkoutPlanInput): Promise<Work
   }));
 
   const allMuscleGroups = [...new Set(substitutedDays.flatMap((d) => d.slots))];
-  const exercisesByGroup = await loadExercisesByMuscleGroup(allMuscleGroups);
+  const [exercisesByGroup, blockRows] = await Promise.all([
+    loadExercisesByMuscleGroup(allMuscleGroups),
+    prisma.exercise.findMany({
+      where: {
+        name: { in: allBlockExerciseNames() },
+        // Same empty-room rule as the main slots — a bodyweight block must
+        // never resolve to a move that needs a bench, bar or wall.
+        ...(equipment === "bodyweight" ? { needsProp: false } : {}),
+      },
+      select: { id: true, name: true, muscleGroup: true },
+    }),
+  ]);
+  const blockByName = new Map(blockRows.map((row) => [row.name, row]));
 
   // Rotation cursor per muscle group, carried across days so a repeated day
   // template (Push A / Push B) doesn't produce an identical workout.
@@ -320,10 +365,33 @@ export async function generateWorkoutPlan(input: WorkoutPlanInput): Promise<Work
       };
     });
 
+    const block = dayBlocks[dayIndex];
+    if (block) {
+      for (const move of block.moves) {
+        if (!moveAllowedForInjuries(move, injuries)) continue;
+        const resolved = namesForMove(move, equipment)
+          .map((name) => blockByName.get(name))
+          .find((row) => row && !usedInDay.has(row.id));
+        if (!resolved) continue;
+        usedInDay.add(resolved.id);
+        exercises.push({
+          orderIndex: exercises.length,
+          exerciseId: resolved.id,
+          exerciseName: resolved.name,
+          muscleGroup: resolved.muscleGroup as MuscleGroup,
+          targetSets: move.sets,
+          targetRepsMin: move.repsMin,
+          targetRepsMax: move.repsMax,
+          blockLabel: block.label,
+        });
+      }
+    }
+
     return {
       dayIndex,
       // Store muscle-derived title; UI also recomputes at render for old rows.
-      label: dayTitleFromMuscleGroups(exercises),
+      // Block moves are excluded so a Push day stays "Chest & Shoulders".
+      label: dayTitleFromMuscleGroups(exercises.filter((ex) => !ex.blockLabel)),
       exercises,
     };
   });

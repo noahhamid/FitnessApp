@@ -274,8 +274,10 @@ export default function WorkoutScreen() {
         | "home_dumbbells"
         | "bodyweight",
       injuries: profile?.injuries,
+      goalDetail: profile?.goalDetail,
+      bodyIssues: profile?.bodyIssues,
     });
-  }, [apiPlan, daysPerWeek, profile?.injuries]);
+  }, [apiPlan, daysPerWeek, profile?.injuries, profile?.goalDetail, profile?.bodyIssues]);
 
   const completedCardioIndexes = useMemo(() => {
     const counts = new Map<string, number>();
@@ -885,8 +887,13 @@ export default function WorkoutScreen() {
                     elapsedSec={cardio.elapsedSec}
                     saving={cardio.saving}
                     completedIndexes={completedCardioIndexes}
+                    paused={cardio.paused}
                     onStart={(session, index) => {
                       void cardio.start(session, index);
+                    }}
+                    onTogglePause={() => {
+                      if (cardio.paused) void cardio.resume();
+                      else void cardio.pause();
                     }}
                     onComplete={() => {
                       void handleCardioComplete();

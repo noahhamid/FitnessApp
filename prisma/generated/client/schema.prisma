@@ -13,6 +13,7 @@ model Exercise {
   muscleGroup     MuscleGroup
   movementPattern MovementPattern
   minEquipment    EquipmentAccess // minimum tier required — see EQUIPMENT_RANK in code
+  needsProp       Boolean               @default(false) // true = needs furniture (bench, bar, wall, stairs)
   instructions    String? // English form guidance (optional until curated seed lands)
   planExercises   WorkoutPlanExercise[]
 
@@ -59,6 +60,7 @@ model WorkoutPlanExercise {
   targetSets    Int
   targetRepsMin Int
   targetRepsMax Int
+  blockLabel    String? // null = main lift; set = appended block section
 
   @@map("workout_plan_exercise")
 }
@@ -132,6 +134,11 @@ model UserProfile {
   injuries        String[]         @default([])
   reminderEnabled Boolean?         @default(true)
   reminderHour    Int?
+  /**
+   * User-entered or range-midpoint BF%. Null = BMI estimate.
+   */
+  bodyFatPercent  Decimal?         @db.Decimal(4, 1)
+  bodyFatSource   BodyFatSource?
   updatedAt       DateTime         @updatedAt
 
   @@map("user_profile")
@@ -337,6 +344,11 @@ enum Pace {
   slow
   moderate
   aggressive
+}
+
+enum BodyFatSource {
+  measured
+  range
 }
 
 model PlannedExtraExercise {

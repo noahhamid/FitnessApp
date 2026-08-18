@@ -113,7 +113,7 @@ const PROTEIN_G_PER_KG_BODYWEIGHT: Record<GoalId, number> = {
 const FAT_PERCENT_OF_CALORIES = 0.25;
 
 function clampDaysPerWeek(days: number): number {
-  return Math.min(7, Math.max(2, Math.round(days)));
+  return Math.min(7, Math.max(1, Math.round(days)));
 }
 
 /**

@@ -61,6 +61,7 @@ export default function OnboardingFocusAreasScreen() {
           columns={2}
           imagePlacement="background"
           imageFit="cover"
+          revealImageOnSelect
         />
       </View>
 

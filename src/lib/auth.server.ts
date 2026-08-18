@@ -49,7 +49,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
-    requireEmailVerification: true,
+    requireEmailVerification: false,
     sendResetPassword: async ({ user, url }) => {
       await sendAuthEmail({
         to: user.email,
@@ -66,7 +66,7 @@ export const auth = betterAuth({
 
   emailVerification: {
     sendOnSignUp: true,
-    sendOnSignIn: true,
+    sendOnSignIn: false,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, token }) => {
       const verifyUrl = `${APP_VERIFY_EMAIL_URL}?token=${encodeURIComponent(token)}`;
@@ -144,6 +144,7 @@ export const auth = betterAuth({
     "https://appleid.apple.com",
     "exp://",
     "https://potentialpeak-app.vercel.app",
+    "https://potentialpeak-app-puce.vercel.app",
     "exp://**",
     ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
   ],

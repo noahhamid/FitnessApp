@@ -8,6 +8,7 @@ import { saveUserProfile } from "@/src/features/profile/services/profile.service
 import { getSession } from "./auth.service";
 
 export type OnboardingAuthParams = {
+  email?: string | string[];
   onboardingComplete?: string | string[];
   goalId?: string | string[];
   goalDetail?: string | string[];
@@ -16,6 +17,10 @@ export type OnboardingAuthParams = {
   age?: string | string[];
   heightCm?: string | string[];
   weightKg?: string | string[];
+  /** "1" after the body-fat step is completed or skipped. */
+  bodyFatStep?: string | string[];
+  bodyFatPercent?: string | string[];
+  bodyFatSource?: string | string[];
   targetWeightKg?: string | string[];
   pace?: string | string[];
   bodyIssues?: string | string[];
@@ -78,6 +83,15 @@ export function onboardingParamsForNavigation(params: OnboardingAuthParams) {
     ...(single(params.age) ? { age: single(params.age)! } : {}),
     ...(single(params.heightCm) ? { heightCm: single(params.heightCm)! } : {}),
     ...(single(params.weightKg) ? { weightKg: single(params.weightKg)! } : {}),
+    ...(single(params.bodyFatStep) ? { bodyFatStep: "1" } : {}),
+    ...(single(params.bodyFatPercent)
+      ? {
+          bodyFatPercent: single(params.bodyFatPercent)!,
+          bodyFatSource: single(params.bodyFatSource) ?? "range",
+        }
+      : single(params.bodyFatStep)
+        ? { bodyFatPercent: "", bodyFatSource: "" }
+        : {}),
     ...(single(params.targetWeightKg)
       ? { targetWeightKg: single(params.targetWeightKg)! }
       : {}),
@@ -137,6 +151,12 @@ export async function saveCompletedOnboardingPayload(
   const reminderEnabled = single(params.reminderEnabled);
   const bodyIssues = (listParam(params.bodyIssues) ?? []).filter((i) => i !== "none");
   const injuries = (listParam(params.injuries) ?? []).filter((i) => i !== "none");
+  const bodyFatPercent = numberParam(params.bodyFatPercent);
+  const hasBodyFat =
+    bodyFatPercent != null && bodyFatPercent > 0 && single(params.bodyFatPercent) !== "";
+  const rawSource = single(params.bodyFatSource);
+  const bodyFatSource =
+    rawSource === "measured" || rawSource === "range" ? rawSource : undefined;
 
   await saveUserProfile({
     goalId: single(params.goalId),
@@ -162,5 +182,7 @@ export async function saveCompletedOnboardingPayload(
     injuries,
     reminderEnabled: reminderEnabled != null ? reminderEnabled === "1" : undefined,
     reminderHour: numberParam(params.reminderHour),
+    bodyFatPercent: hasBodyFat ? bodyFatPercent : null,
+    bodyFatSource: hasBodyFat ? (bodyFatSource ?? "range") : null,
   });
 }

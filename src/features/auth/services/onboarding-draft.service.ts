@@ -18,6 +18,7 @@ const RESUME_STEPS = [
   { field: "age", path: "/(auth)/onboarding/age" },
   { field: "heightCm", path: "/(auth)/onboarding/height" },
   { field: "weightKg", path: "/(auth)/onboarding/weight" },
+  { field: "bodyFatStep", path: "/(auth)/onboarding/body-fat" },
   { field: "targetWeightKg", path: "/(auth)/onboarding/target-weight" },
   { field: "pace", path: "/(auth)/onboarding/pace" },
   { field: "bodyIssues", path: "/(auth)/onboarding/body-issues" },
@@ -77,4 +78,9 @@ export function resumeHrefFromDraft(draft: OnboardingDraft): Href {
 export async function getOnboardingResumeHref(): Promise<Href> {
   const draft = await loadOnboardingDraft();
   return resumeHrefFromDraft(draft);
+}
+
+/** New quiz — wipe the local draft so reinstall / a second email starts clean. */
+export async function startFreshOnboarding(): Promise<void> {
+  await clearOnboardingDraft();
 }

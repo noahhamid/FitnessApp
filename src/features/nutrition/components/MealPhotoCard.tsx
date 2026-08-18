@@ -15,7 +15,10 @@ import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 
 const MANUAL_MEAL_ASSET = require("../../../../assets/images/meal.png");
-const MANUAL_MEAL_URI = Image.resolveAssetSource(MANUAL_MEAL_ASSET).uri;
+const MANUAL_MEAL_URI =
+  typeof Image.resolveAssetSource === "function"
+    ? (Image.resolveAssetSource(MANUAL_MEAL_ASSET)?.uri ?? "")
+    : "";
 
 export type MealMacros = { carbs: number; protein: number; fat: number };
 

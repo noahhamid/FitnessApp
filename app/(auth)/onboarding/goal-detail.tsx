@@ -65,10 +65,17 @@ export default function OnboardingGoalDetailScreen() {
       />
 
       <View style={s.body}>
-        <ChipSelect options={options} selected={selected} onChange={setSelected} />
+        <ChipSelect
+          options={options}
+          selected={selected}
+          onChange={setSelected}
+          imagePlacement="inside"
+          imageFit="cover"
+        />
       </View>
 
       <OnboardingNav
+        centered
         onNext={() =>
           router.push({
             pathname: "/(auth)/onboarding/focus-areas",

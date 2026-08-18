@@ -30,6 +30,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="age" />
       <Stack.Screen name="height" />
       <Stack.Screen name="weight" />
+      <Stack.Screen name="body-fat" />
       <Stack.Screen name="target-weight" />
       <Stack.Screen name="pace" />
       <Stack.Screen name="predicted-date" />

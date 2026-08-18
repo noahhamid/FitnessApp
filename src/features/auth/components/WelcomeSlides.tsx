@@ -1,3 +1,5 @@
+import { startFreshOnboarding } from "@/src/features/auth/services/onboarding-draft.service";
+import { useAuthStore } from "@/src/features/auth/hooks/useAuth";
 import { router } from "expo-router";
 import {
   Image,
@@ -51,7 +53,13 @@ export function WelcomeSlides() {
           <Pressable
             accessibilityRole="button"
             style={({ pressed }) => [s.primaryBtn, pressed && s.pressed]}
-            onPress={() => router.push("/(auth)/onboarding")}
+            onPress={() => {
+              void (async () => {
+                await startFreshOnboarding();
+                useAuthStore.getState().reset();
+                router.push("/(auth)/onboarding/gender");
+              })();
+            }}
           >
             <Text style={s.primaryBtnText}>BUILD MY PLAN</Text>
           </Pressable>

@@ -5,7 +5,10 @@
  * endurance goal used to produce a lifting split and nothing else. This derives
  * the aerobic side of the week from the same onboarding answers: goal sets the
  * dose, injuries and equipment pick a modality that the user can actually do.
+ * goalDetail / bodyIssues then nudge session count, minutes, and intensity.
  */
+
+import { bodyIssueTuning, goalDetailTuning } from "./plan-modifiers";
 
 export type GoalId = "lose" | "build" | "endure" | "health";
 export type EquipmentAccess = "full_gym" | "home_dumbbells" | "bodyweight";
@@ -45,6 +48,8 @@ export type ConditioningInput = {
   equipment: EquipmentAccess;
   /** Onboarding injury ids (`none` is ignored). */
   injuries?: string[];
+  goalDetail?: string | null;
+  bodyIssues?: string[] | null;
 };
 
 const MODALITY_LABEL: Record<ConditioningModality, string> = {
@@ -172,6 +177,11 @@ export function planConditioning(
 ): ConditioningPlan | null {
   const injuries = (input.injuries ?? []).filter((i) => i !== "none");
   const dose = baseDose(input.goalId);
+  const detail = goalDetailTuning(input.goalDetail);
+  const issues = bodyIssueTuning(input.bodyIssues);
+  const allowIntervals =
+    dose.includeIntervals && issues.cardioIntensityCap !== "moderate" &&
+    issues.cardioIntensityCap !== "easy";
 
   // High lifting frequency eats the recovery budget — trim aerobic sessions
   // rather than stacking fatigue on top of six or seven gym days.
@@ -181,12 +191,14 @@ export function planConditioning(
   } else if (input.daysPerWeek === 5 && input.goalId === "build") {
     sessions = 1;
   }
+  sessions += detail.cardioSessionDelta ?? 0;
 
   if (sessions <= 0) return null;
 
+  const easyMinutes = dose.easyMinutes + (detail.cardioMinuteDelta ?? 0);
   const out: ConditioningSession[] = [];
 
-  if (dose.includeIntervals && sessions >= 2) {
+  if (allowIntervals && sessions >= 2) {
     const hardModality = pickModality(input.equipment, injuries, "hard");
     out.push(describe(hardModality, "hard", 22));
     sessions -= 1;
@@ -196,7 +208,7 @@ export function planConditioning(
     input.goalId === "lose" ? "moderate" : "easy";
   const easyModality = pickModality(input.equipment, injuries, easyIntensity);
   for (let i = 0; i < sessions; i++) {
-    out.push(describe(easyModality, easyIntensity, dose.easyMinutes));
+    out.push(describe(easyModality, easyIntensity, easyMinutes));
   }
 
   return {

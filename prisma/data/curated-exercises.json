@@ -1,6 +1,7 @@
 [
   {
     "name": "Chest Dip",
+    "needsProp": true,
     "muscleGroup": "chest",
     "movementPattern": "push",
     "minEquipment": "bodyweight",
@@ -8,6 +9,7 @@
   },
   {
     "name": "Chest Dip on Straight Bar",
+    "needsProp": true,
     "muscleGroup": "chest",
     "movementPattern": "push",
     "minEquipment": "bodyweight",
@@ -141,6 +143,7 @@
   },
   {
     "name": "Bodyweight Squatting Row",
+    "needsProp": true,
     "muscleGroup": "back",
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
@@ -148,6 +151,7 @@
   },
   {
     "name": "Bodyweight Standing Row",
+    "needsProp": true,
     "muscleGroup": "back",
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
@@ -155,6 +159,7 @@
   },
   {
     "name": "Chin-up",
+    "needsProp": true,
     "muscleGroup": "back",
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
@@ -162,6 +167,7 @@
   },
   {
     "name": "Inverted Row",
+    "needsProp": true,
     "muscleGroup": "back",
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
@@ -169,6 +175,7 @@
   },
   {
     "name": "Inverted Row Bent Knees",
+    "needsProp": true,
     "muscleGroup": "back",
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
@@ -176,6 +183,7 @@
   },
   {
     "name": "Inverted Row on Bench",
+    "needsProp": true,
     "muscleGroup": "back",
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
@@ -183,6 +191,7 @@
   },
   {
     "name": "Pull-up",
+    "needsProp": true,
     "muscleGroup": "back",
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
@@ -561,6 +570,7 @@
   },
   {
     "name": "Glute-ham Raise",
+    "needsProp": true,
     "muscleGroup": "hamstrings",
     "movementPattern": "hinge",
     "minEquipment": "bodyweight",
@@ -568,6 +578,7 @@
   },
   {
     "name": "Inverse Leg Curl (bench Support)",
+    "needsProp": true,
     "muscleGroup": "hamstrings",
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
@@ -575,6 +586,7 @@
   },
   {
     "name": "Inverse Leg Curl (on Pull-up Cable Machine)",
+    "needsProp": true,
     "muscleGroup": "hamstrings",
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
@@ -582,6 +594,7 @@
   },
   {
     "name": "Kick Out Sit",
+    "needsProp": true,
     "muscleGroup": "hamstrings",
     "movementPattern": "hinge",
     "minEquipment": "bodyweight",
@@ -596,6 +609,7 @@
   },
   {
     "name": "Single Leg Platform Slide",
+    "needsProp": true,
     "muscleGroup": "hamstrings",
     "movementPattern": "hinge",
     "minEquipment": "bodyweight",
@@ -708,6 +722,7 @@
   },
   {
     "name": "Bench Hip Extension",
+    "needsProp": true,
     "muscleGroup": "glutes",
     "movementPattern": "hinge",
     "minEquipment": "bodyweight",
@@ -729,6 +744,7 @@
   },
   {
     "name": "Glute Bridge Two Legs on Bench",
+    "needsProp": true,
     "muscleGroup": "glutes",
     "movementPattern": "hinge",
     "minEquipment": "bodyweight",
@@ -743,6 +759,7 @@
   },
   {
     "name": "Rear Decline Bridge",
+    "needsProp": true,
     "muscleGroup": "glutes",
     "movementPattern": "hinge",
     "minEquipment": "bodyweight",
@@ -855,6 +872,7 @@
   },
   {
     "name": "Donkey Calf Raise",
+    "needsProp": true,
     "muscleGroup": "calves",
     "movementPattern": "squat",
     "minEquipment": "bodyweight",
@@ -876,6 +894,7 @@
   },
   {
     "name": "Standing Calf Raise (on a Staircase)",
+    "needsProp": true,
     "muscleGroup": "calves",
     "movementPattern": "squat",
     "minEquipment": "bodyweight",
@@ -981,6 +1000,7 @@
   },
   {
     "name": "Biceps Leg Concentration Curl",
+    "needsProp": true,
     "muscleGroup": "biceps",
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
@@ -988,6 +1008,7 @@
   },
   {
     "name": "Biceps Narrow Pull-ups",
+    "needsProp": true,
     "muscleGroup": "biceps",
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
@@ -995,6 +1016,7 @@
   },
   {
     "name": "Biceps Pull-up",
+    "needsProp": true,
     "muscleGroup": "biceps",
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
@@ -1121,6 +1143,7 @@
   },
   {
     "name": "Bench Dip (knees Bent)",
+    "needsProp": true,
     "muscleGroup": "triceps",
     "movementPattern": "push",
     "minEquipment": "bodyweight",
@@ -1128,6 +1151,7 @@
   },
   {
     "name": "Bench Dip on Floor",
+    "needsProp": true,
     "muscleGroup": "triceps",
     "movementPattern": "push",
     "minEquipment": "bodyweight",
@@ -1142,6 +1166,7 @@
   },
   {
     "name": "One Arm Dip",
+    "needsProp": true,
     "muscleGroup": "triceps",
     "movementPattern": "push",
     "minEquipment": "bodyweight",
@@ -1149,6 +1174,7 @@
   },
   {
     "name": "Reverse Dip",
+    "needsProp": true,
     "muscleGroup": "triceps",
     "movementPattern": "push",
     "minEquipment": "bodyweight",
@@ -1156,6 +1182,7 @@
   },
   {
     "name": "Three Bench Dip",
+    "needsProp": true,
     "muscleGroup": "triceps",
     "movementPattern": "push",
     "minEquipment": "bodyweight",
@@ -1163,6 +1190,7 @@
   },
   {
     "name": "Triceps Dip",
+    "needsProp": true,
     "muscleGroup": "triceps",
     "movementPattern": "push",
     "minEquipment": "bodyweight",
@@ -1261,6 +1289,7 @@
   },
   {
     "name": "Bodyweight Incline Side Plank",
+    "needsProp": true,
     "muscleGroup": "core",
     "movementPattern": "carry",
     "minEquipment": "bodyweight",

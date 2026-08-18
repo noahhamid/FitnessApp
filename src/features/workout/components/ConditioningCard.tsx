@@ -28,6 +28,8 @@ type Props = {
   onStart: (session: ConditioningSession, index: number) => void;
   onComplete: () => void;
   onDiscard: () => void;
+  paused?: boolean;
+  onTogglePause?: () => void;
 };
 
 export function ConditioningCard({
@@ -39,6 +41,8 @@ export function ConditioningCard({
   onStart,
   onComplete,
   onDiscard,
+  paused = false,
+  onTogglePause,
 }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
 
@@ -77,12 +81,27 @@ export function ConditioningCard({
                 <View style={s.sessionTop}>
                   <Text style={s.sessionLabel}>{session.label}</Text>
                   <Text style={s.sessionMinutes}>
-                    {running ? fmt(elapsedSec) : `${session.minutes} min`}
+                    {running
+                      ? `${fmt(elapsedSec)}${paused ? " · paused" : ""}`
+                      : `${session.minutes} min`}
                   </Text>
                 </View>
                 <Text style={s.sessionDetail}>{session.detail}</Text>
                 {running ? (
                   <View style={s.actions}>
+                    <Pressable
+                      onPress={onTogglePause}
+                      disabled={saving}
+                      style={s.ghostBtn}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        paused ? "Resume conditioning" : "Pause conditioning"
+                      }
+                    >
+                      <Text style={s.ghostBtnText}>
+                        {paused ? "Resume" : "Pause"}
+                      </Text>
+                    </Pressable>
                     <Pressable
                       onPress={onComplete}
                       disabled={saving}

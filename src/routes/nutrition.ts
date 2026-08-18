@@ -486,6 +486,7 @@ async function freshAdaptiveSuggestion(userId: string): Promise<
       gender: "male" | "female" | undefined;
       age: number | undefined;
       heightCm: number | undefined;
+      bodyFatPercent: number | undefined;
     }
 > {
   const [profile, nutritionGoal] = await Promise.all([
@@ -540,6 +541,10 @@ async function freshAdaptiveSuggestion(userId: string): Promise<
     gender: (profile.gender as "male" | "female" | null) ?? undefined,
     age: profile.age ?? undefined,
     heightCm: profile.heightCm ?? undefined,
+    bodyFatPercent:
+      profile.bodyFatPercent != null
+        ? Number(profile.bodyFatPercent)
+        : undefined,
   };
 }
 
@@ -548,7 +553,7 @@ nutritionRouter.get("/adaptive-suggestion", async (c) => {
   const user = getUser(c);
   const fresh = await freshAdaptiveSuggestion(user.id);
 
-  if (!fresh.ok) {
+  if (fresh.ok === false) {
     return ok(c, {
       eligible: false as const,
       reason: fresh.reason,
@@ -571,7 +576,7 @@ nutritionRouter.patch("/goals/apply-suggestion", async (c) => {
   const clientSuggested = parsed.data.suggestedCalories;
 
   const fresh = await freshAdaptiveSuggestion(user.id);
-  if (!fresh.ok) {
+  if (fresh.ok === false) {
     return err(
       c,
       fresh.reason === "missing_profile"
@@ -581,10 +586,18 @@ nutritionRouter.patch("/goals/apply-suggestion", async (c) => {
     );
   }
 
-  const { suggestion, nutritionGoal, goalId, weightKg, gender, age, heightCm } =
-    fresh;
+  const {
+    suggestion,
+    nutritionGoal,
+    goalId,
+    weightKg,
+    gender,
+    age,
+    heightCm,
+    bodyFatPercent,
+  } = fresh;
 
-  if (!suggestion.eligible) {
+  if (suggestion.eligible === false) {
     return err(
       c,
       `Suggestion no longer eligible (${suggestion.reason}). Fetch a fresh adaptive suggestion.`,
@@ -624,6 +637,7 @@ nutritionRouter.patch("/goals/apply-suggestion", async (c) => {
     gender,
     age,
     heightCm,
+    bodyFatPercent,
   });
 
   const [updated] = await prisma.$transaction([

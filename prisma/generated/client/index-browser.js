@@ -126,6 +126,7 @@ exports.Prisma.ExerciseScalarFieldEnum = {
   muscleGroup: 'muscleGroup',
   movementPattern: 'movementPattern',
   minEquipment: 'minEquipment',
+  needsProp: 'needsProp',
   instructions: 'instructions'
 };
 
@@ -155,7 +156,8 @@ exports.Prisma.WorkoutPlanExerciseScalarFieldEnum = {
   orderIndex: 'orderIndex',
   targetSets: 'targetSets',
   targetRepsMin: 'targetRepsMin',
-  targetRepsMax: 'targetRepsMax'
+  targetRepsMax: 'targetRepsMax',
+  blockLabel: 'blockLabel'
 };
 
 exports.Prisma.UserScalarFieldEnum = {
@@ -188,6 +190,8 @@ exports.Prisma.UserProfileScalarFieldEnum = {
   injuries: 'injuries',
   reminderEnabled: 'reminderEnabled',
   reminderHour: 'reminderHour',
+  bodyFatPercent: 'bodyFatPercent',
+  bodyFatSource: 'bodyFatSource',
   updatedAt: 'updatedAt'
 };
 
@@ -383,6 +387,11 @@ exports.Pace = exports.$Enums.Pace = {
 exports.Gender = exports.$Enums.Gender = {
   male: 'male',
   female: 'female'
+};
+
+exports.BodyFatSource = exports.$Enums.BodyFatSource = {
+  measured: 'measured',
+  range: 'range'
 };
 
 exports.Meal = exports.$Enums.Meal = {

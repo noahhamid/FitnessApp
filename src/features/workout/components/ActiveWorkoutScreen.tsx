@@ -42,6 +42,7 @@ import { WorkoutPlan, type Exercise } from "../data/workouts";
 import { T, type AppTheme } from "@/src/theme";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import { ExerciseLibrarySection } from "./ExerciseLibrarySection";
+import { PropExerciseOptIn } from "./PropExerciseOptIn";
 import { ExerciseDetailCard } from "./ExerciseDetailCard";
 import { useAddToLiveSession } from "../hooks/useAddToLiveSession";
 import {
@@ -52,6 +53,11 @@ import { topInset } from "@/src/lib/safe-area";
 import { imageForMuscleGroup } from "@/src/lib/workout-plan-adapter";
 import type { LibraryExercise } from "../hooks/useExerciseLibrary";
 import { useWallClockElapsed } from "@/src/hooks/useWallClockElapsed";
+import {
+  attachSessionTimer,
+  detachSessionTimer,
+  setSessionTimerPaused,
+} from "@/src/lib/session-timer-notification";
 
 /** Hero photo band — image is clipped here, not full-screen absoluteFill.
  *  Panel starts just below with a slight overlap so the sheet sits on the
@@ -468,6 +474,17 @@ export function ActiveWorkoutScreen({
     [exercises],
   );
 
+  const sessionMuscleGroups = useMemo(
+    () => [
+      ...new Set(
+        exercises
+          .map((e) => e.muscleGroup)
+          .filter((g): g is string => !!g),
+      ),
+    ],
+    [exercises],
+  );
+
   const handleAddFromLibrary = (libEx: LibraryExercise) => {
     void addToLiveSession(libEx, {
       alreadyAdded: sessionExerciseNames,
@@ -513,12 +530,40 @@ export function ActiveWorkoutScreen({
   const selectedComplete = selected
     ? doneForSelected >= selected.sets
     : false;
-  const elapsed = useWallClockElapsed(
+  const sessionClockMs =
     typeof sessionStartedAtMs === "number" && Number.isFinite(sessionStartedAtMs)
       ? sessionStartedAtMs
-      : clockOriginMs,
+      : clockOriginMs;
+  const elapsed = useWallClockElapsed(
+    sessionClockMs,
     paused || phase === "done",
   );
+
+  useEffect(() => {
+    if (phase === "done") {
+      detachSessionTimer("lift");
+      return;
+    }
+    return attachSessionTimer(
+      {
+        kind: "lift",
+        title: plan.title,
+        startedAt: sessionClockMs,
+        pauseAccumMs: 0,
+        pausedAt: paused ? Date.now() : null,
+      },
+      {
+        onPause: () => setPaused(true),
+        onResume: () => setPaused(false),
+        onEnd: () => setPhase("done"),
+      },
+    );
+  }, [phase, plan.title, sessionClockMs]);
+
+  useEffect(() => {
+    if (phase === "done") return;
+    setSessionTimerPaused(paused);
+  }, [paused, phase]);
 
   const setsDoneRef = useRef(setsDone);
   setsDoneRef.current = setsDone;
@@ -1130,13 +1175,26 @@ export function ActiveWorkoutScreen({
                   </Pressable>
                 </View>
 
+                <PropExerciseOptIn
+                  muscleGroups={sessionMuscleGroups}
+                  alreadyAdded={sessionExerciseNames}
+                  onAdd={handleAddFromLibrary}
+                  disabled={!sessionReady}
+                />
+
                 <View style={s.exList}>
-                  {exercises.map((ex) => {
+                  {exercises.map((ex, i) => {
                     const done = setsDone[ex.id] ?? 0;
                     const complete = done >= ex.sets;
+                    const prev = i > 0 ? exercises[i - 1] : undefined;
+                    const showBlockHeading =
+                      !!ex.blockLabel && ex.blockLabel !== prev?.blockLabel;
                     return (
+                      <View key={ex.id}>
+                        {showBlockHeading ? (
+                          <Text style={s.blockLabel}>{ex.blockLabel}</Text>
+                        ) : null}
                       <View
-                        key={ex.id}
                         style={[
                           s.exListRow,
                           complete && s.exListRowDone,
@@ -1206,6 +1264,7 @@ export function ActiveWorkoutScreen({
                             />
                           </Pressable>
                         ) : null}
+                      </View>
                       </View>
                     );
                   })}
@@ -1607,6 +1666,15 @@ const s = StyleSheet.create({
     fontSize: 12,
   },
   exList: { gap: 8 },
+  blockLabel: {
+    color: T.onDarkMuted,
+    fontFamily: T.bodySemi,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    marginTop: 6,
+    marginBottom: 4,
+  },
   addingHint: {
     fontFamily: T.bodyMed,
     fontSize: 12,

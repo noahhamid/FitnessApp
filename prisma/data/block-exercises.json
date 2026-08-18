@@ -1,0 +1,201 @@
+[
+  {
+    "name": "Dead Bug",
+    "muscleGroup": "core",
+    "movementPattern": "carry",
+    "minEquipment": "bodyweight",
+    "instructions": "On your back, arms up, knees at 90°. Slowly extend opposite arm and leg toward the floor without letting your low back lift. Return and switch sides."
+  },
+  {
+    "name": "Bird Dog",
+    "muscleGroup": "core",
+    "movementPattern": "carry",
+    "minEquipment": "bodyweight",
+    "instructions": "On hands and knees, reach one arm forward and the opposite leg back until both are level with your torso. Hold briefly, return, then switch sides. Keep hips square."
+  },
+  {
+    "name": "Cat-Cow Stretch",
+    "muscleGroup": "core",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "On hands and knees, alternate between arching your back upward (cat) and letting it sag downward (cow) slowly with the breath."
+  },
+  {
+    "name": "Hip Flexor Lunge Stretch",
+    "muscleGroup": "quads",
+    "movementPattern": "squat",
+    "minEquipment": "bodyweight",
+    "instructions": "Lunge forward and drop the back knee to the floor. Push hips forward gently to feel the stretch through the front of the hip. Hold, then switch sides."
+  },
+  {
+    "name": "Standing Thoracic Rotation",
+    "muscleGroup": "core",
+    "movementPattern": "carry",
+    "minEquipment": "bodyweight",
+    "instructions": "Stand tall with hands behind your head. Rotate the upper body as far as comfortable each direction, keeping the hips facing forward."
+  },
+  {
+    "name": "Child's Pose",
+    "muscleGroup": "core",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "Kneel and sit back on your heels, stretch arms forward on the floor, relax your forehead down. Breathe deeply into your back."
+  },
+  {
+    "name": "Supine Spinal Twist",
+    "muscleGroup": "core",
+    "movementPattern": "carry",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie on your back, drop both knees to one side while keeping shoulders on the floor. Hold, then switch sides."
+  },
+  {
+    "name": "Legs-Up-the-Wall",
+    "needsProp": true,
+    "muscleGroup": "hamstrings",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "Sit sideways next to a wall, swing your legs up so they rest against it, and lie back. Stay still and breathe slowly."
+  },
+  {
+    "name": "Wall Sit",
+    "needsProp": true,
+    "muscleGroup": "quads",
+    "movementPattern": "squat",
+    "minEquipment": "bodyweight",
+    "instructions": "Back flat against a wall, knees at 90 degrees. Hold the position without letting hips drop."
+  },
+  {
+    "name": "Mountain Climbers",
+    "muscleGroup": "core",
+    "movementPattern": "carry",
+    "minEquipment": "bodyweight",
+    "instructions": "High plank, drive knees to chest alternately as fast as possible. Keep hips level and core engaged the whole time."
+  },
+  {
+    "name": "Burpee",
+    "muscleGroup": "quads",
+    "movementPattern": "squat",
+    "minEquipment": "bodyweight",
+    "instructions": "Drop to a squat, kick feet back to plank, do a push-up, jump feet to hands, then explode upward with arms overhead."
+  },
+  {
+    "name": "High Knees",
+    "muscleGroup": "quads",
+    "movementPattern": "carry",
+    "minEquipment": "bodyweight",
+    "instructions": "Run in place driving knees up to hip height, pumping arms in rhythm. Stay on the balls of your feet throughout."
+  },
+  {
+    "name": "Pike Push-up",
+    "muscleGroup": "shoulders",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Form an inverted V with hips high. Bend elbows to lower your head toward the floor, then press back up. Targets the shoulders."
+  },
+  {
+    "name": "Scapular Wall Slide",
+    "needsProp": true,
+    "muscleGroup": "shoulders",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Stand with your back against a wall, elbows and wrists touching it. Slide arms up and down while keeping contact and ribs down."
+  },
+  {
+    "name": "Prone Y Raise",
+    "muscleGroup": "shoulders",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie face down with arms in a Y. Lift arms a few inches off the floor by squeezing the mid-back, then lower with control."
+  },
+  {
+    "name": "Superman Hold",
+    "muscleGroup": "back",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie face down, lift chest, arms, and legs a few inches off the floor. Hold without cranking the neck."
+  },
+  {
+    "name": "Reverse Snow Angel",
+    "muscleGroup": "shoulders",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie face down with arms at your sides. Sweep them out and overhead along the floor, then reverse. Keep thumbs up and neck long."
+  },
+  {
+    "name": "Glute Bridge Hold",
+    "muscleGroup": "glutes",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie on your back, knees bent, feet flat. Drive hips up and hold at the top, squeezing glutes without arching the low back."
+  },
+  {
+    "name": "Dumbbell Farmer Carry",
+    "muscleGroup": "core",
+    "movementPattern": "carry",
+    "minEquipment": "home_dumbbells",
+    "instructions": "Hold a dumbbell in each hand at your sides. Walk tall with ribs down and shoulders packed. Set the bells down under control."
+  },
+  {
+    "name": "Dumbbell Suitcase Carry",
+    "muscleGroup": "core",
+    "movementPattern": "carry",
+    "minEquipment": "home_dumbbells",
+    "instructions": "Hold one dumbbell at your side. Walk without leaning toward or away from the weight. Switch hands each set."
+  },
+  {
+    "name": "Banded Pull-Apart",
+    "muscleGroup": "shoulders",
+    "movementPattern": "pull",
+    "minEquipment": "home_dumbbells",
+    "instructions": "Hold a light band at chest height with arms straight. Pull the band apart until it touches your chest, then return slowly."
+  },
+  {
+    "name": "Banded External Rotation",
+    "muscleGroup": "shoulders",
+    "movementPattern": "pull",
+    "minEquipment": "home_dumbbells",
+    "instructions": "Elbow pinned to your side at 90°. Rotate the forearm outward against a light band, then return slowly. Switch sides."
+  },
+  {
+    "name": "Dumbbell Goblet Hold",
+    "muscleGroup": "core",
+    "movementPattern": "carry",
+    "minEquipment": "home_dumbbells",
+    "instructions": "Hold a dumbbell at your chest, elbows tucked. Stand tall and breathe into your belly without letting the ribs flare."
+  },
+  {
+    "name": "Dumbbell Pullover",
+    "muscleGroup": "chest",
+    "movementPattern": "pull",
+    "minEquipment": "home_dumbbells",
+    "instructions": "Lie on a bench or the floor holding one dumbbell over your chest. Lower it behind your head with a slight elbow bend, then pull it back over."
+  },
+  {
+    "name": "Cable Face Pull",
+    "muscleGroup": "shoulders",
+    "movementPattern": "pull",
+    "minEquipment": "full_gym",
+    "instructions": "Set a rope at face height. Pull toward your face, leading with the elbows, and externally rotate at the end. Control the return."
+  },
+  {
+    "name": "Cable Pallof Press",
+    "muscleGroup": "core",
+    "movementPattern": "carry",
+    "minEquipment": "full_gym",
+    "instructions": "Stand sideways to a cable at chest height. Press the handle straight out and resist rotation. Hold briefly, then return. Switch sides."
+  },
+  {
+    "name": "Trap Bar Farmer Carry",
+    "muscleGroup": "core",
+    "movementPattern": "carry",
+    "minEquipment": "full_gym",
+    "instructions": "Stand inside a loaded trap bar, pick it up with a tall torso, and walk with short even steps. Set it down under control."
+  },
+  {
+    "name": "Cable Rope Overhead Extension",
+    "muscleGroup": "triceps",
+    "movementPattern": "push",
+    "minEquipment": "full_gym",
+    "instructions": "Face away from a high cable with a rope. Extend the elbows overhead without flaring the ribs, then return with control."
+  }
+]

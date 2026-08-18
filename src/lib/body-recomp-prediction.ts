@@ -87,7 +87,7 @@ function clamp(n: number, lo: number, hi: number): number {
 }
 
 function clampDays(days: number): number {
-  return clamp(Math.round(days), 2, 7);
+  return clamp(Math.round(days), 1, 7);
 }
 
 /** Mifflin–St Jeor BMR (kcal/day). */

@@ -9,6 +9,7 @@ export const ONBOARDING_STEPS = [
   "age",
   "height",
   "weight",
+  "body-fat",
   "target-weight",
   "pace",
   "body-issues",

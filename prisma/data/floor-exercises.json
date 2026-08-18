@@ -1,0 +1,282 @@
+[
+  {
+    "name": "Prone Back Extension",
+    "muscleGroup": "back",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie face down with hands by your temples. Lift your chest off the floor by squeezing your lower back, hold for a beat, then lower slowly. Keep your neck long and your feet down."
+  },
+  {
+    "name": "Prone Reverse Fly",
+    "muscleGroup": "back",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie face down with arms straight out to the sides, thumbs up. Lift both arms as high as you can by squeezing the mid-back, pause, then lower with control."
+  },
+  {
+    "name": "Prone T Raise",
+    "muscleGroup": "back",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie face down, arms out in a T. Raise the arms off the floor while pulling the shoulder blades together. Hold two seconds at the top and lower slowly."
+  },
+  {
+    "name": "Prone W Raise",
+    "muscleGroup": "back",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie face down with elbows bent so the arms form a W. Lift the elbows and hands off the floor, driving the shoulder blades down and together. Lower slowly."
+  },
+  {
+    "name": "Prone Swimmer Pull",
+    "muscleGroup": "back",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie face down with arms overhead. Lift the arms and sweep them back toward your hips as if pulling water, then return overhead. Keep the chest lifted the whole time."
+  },
+  {
+    "name": "Sliding Floor Lat Pull",
+    "muscleGroup": "back",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Kneel with both palms on a smooth floor, arms overhead. Slide the hands back toward your hips by pulling through the lats, keeping the ribs down. Slide forward again slowly."
+  },
+  {
+    "name": "Self-Resisted Standing Row",
+    "muscleGroup": "back",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Extend one arm forward and grip that wrist with the other hand. Pull the forward arm back into a row while the other hand resists. Squeeze the shoulder blade, then reverse and switch sides."
+  },
+  {
+    "name": "Self-Resisted Biceps Curl",
+    "muscleGroup": "biceps",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Place one palm under the opposite wrist. Curl that arm upward while the lower hand pushes down to resist. Move slowly and fight the whole range. Switch sides each set."
+  },
+  {
+    "name": "Self-Resisted Biceps Eccentric",
+    "muscleGroup": "biceps",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Start with the working arm fully curled. Press down with the other hand and take five slow seconds to lower against that resistance. Return to the top with help from the free hand."
+  },
+  {
+    "name": "Isometric Biceps Hold",
+    "muscleGroup": "biceps",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Bend the elbow to 90 degrees and press the opposite hand down against the forearm. Hold the position without letting the elbow move. Breathe steadily."
+  },
+  {
+    "name": "Leg-Resisted Biceps Curl",
+    "muscleGroup": "biceps",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Sit on the floor with one knee bent. Hook that hand under the thigh and curl upward while pressing the leg down against it. Keep the elbow pinned at your side."
+  },
+  {
+    "name": "Prone Biceps Squeeze",
+    "muscleGroup": "biceps",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie face down with elbows bent and palms up beside your ribs. Squeeze the biceps hard and lift the hands a few inches, hold, then lower."
+  },
+  {
+    "name": "Kneeling Self-Resisted Hammer Curl",
+    "muscleGroup": "biceps",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Kneel tall with the working thumb pointing up. Grip that wrist with the other hand and curl against the resistance in a hammer position. Switch sides each set."
+  },
+  {
+    "name": "Standing Isometric Curl Squeeze",
+    "muscleGroup": "biceps",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Press both fists together in front of your chest with elbows bent. Push one hand up and the other down, swapping the direction halfway through the hold."
+  },
+  {
+    "name": "Kneeling Triceps Extension",
+    "muscleGroup": "triceps",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Kneel and place your forearms on the floor. Lean forward, then press through the triceps to straighten the elbows and lift the body back up. Keep the hips in line with the shoulders."
+  },
+  {
+    "name": "Cobra Push-up",
+    "muscleGroup": "triceps",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie face down with hands under your shoulders and legs relaxed. Press the chest up by straightening the arms, keeping the hips on the floor. Lower slowly."
+  },
+  {
+    "name": "Sphinx Push-up",
+    "muscleGroup": "triceps",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Start in a forearm plank. Press the floor away to straighten your arms into a high plank, then lower back onto the forearms one at a time. Keep the hips level."
+  },
+  {
+    "name": "Triceps Floor Press",
+    "muscleGroup": "triceps",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie on your back and press one palm against the other above your chest. Extend the arms while the top hand resists, then bend the elbows back to the floor."
+  },
+  {
+    "name": "Self-Resisted Triceps Extension",
+    "muscleGroup": "triceps",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Raise one elbow overhead with the hand behind your head. Grip that wrist with the other hand and extend the elbow against the resistance. Switch sides each set."
+  },
+  {
+    "name": "Plank Triceps Extension",
+    "muscleGroup": "triceps",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "From a high plank, walk the hands slightly forward so the elbows bend. Press back to straight arms using the triceps without letting the hips sag."
+  },
+  {
+    "name": "Reverse Plank Triceps Dip",
+    "muscleGroup": "triceps",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Sit with legs extended and hands on the floor behind you, fingers forward. Press the hips up, then bend and straighten the elbows while keeping the hips high."
+  },
+  {
+    "name": "Sliding Leg Curl",
+    "muscleGroup": "hamstrings",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie on your back with heels on a smooth floor and hips lifted. Slide the heels out until the legs are almost straight, then pull them back in using the hamstrings. Keep the hips up throughout."
+  },
+  {
+    "name": "Single Leg Romanian Deadlift",
+    "muscleGroup": "hamstrings",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "Stand on one leg. Hinge at the hip and reach toward the floor while the free leg extends straight behind you. Feel the stretch in the standing hamstring, then stand tall."
+  },
+  {
+    "name": "Standing Good Morning",
+    "muscleGroup": "hamstrings",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "Stand with hands behind your head and knees softly bent. Push the hips back and lower the chest with a flat spine until you feel the hamstrings load, then drive the hips forward."
+  },
+  {
+    "name": "Prone Hamstring Curl",
+    "muscleGroup": "hamstrings",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie face down and curl one heel toward your glute, squeezing the hamstring hard at the top. Lower slowly and alternate legs."
+  },
+  {
+    "name": "Supine Heel Slide Curl",
+    "muscleGroup": "hamstrings",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie on your back with hips raised and one heel on the floor. Slide that heel out and back in while keeping the hips level. Switch legs each set."
+  },
+  {
+    "name": "Single Leg Hip Hinge Reach",
+    "muscleGroup": "hamstrings",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "Balance on one leg and hinge forward slowly, reaching both hands toward the floor. Pause at your limit, then return upright without touching the free foot down."
+  },
+  {
+    "name": "Prone A Raise",
+    "muscleGroup": "shoulders",
+    "movementPattern": "pull",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie face down with arms low by your hips, thumbs out. Lift the arms up and back to form an A, squeezing the rear shoulders. Lower with control."
+  },
+  {
+    "name": "Self-Resisted Overhead Press",
+    "muscleGroup": "shoulders",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Start with one hand at shoulder height, palm up, and press it overhead while the other hand pushes down on it. Resist on the way back down. Switch sides each set."
+  },
+  {
+    "name": "Bear Crawl Shoulder Hold",
+    "muscleGroup": "shoulders",
+    "movementPattern": "carry",
+    "minEquipment": "bodyweight",
+    "instructions": "On hands and toes with knees hovering just off the floor, hold the position with the shoulders stacked over the wrists. Breathe without letting the hips rise."
+  },
+  {
+    "name": "Downward Dog Push-up",
+    "muscleGroup": "shoulders",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "From a downward dog with hips high, bend the elbows to lower the crown of the head toward the floor, then press straight back up. Keep the weight over the hands."
+  },
+  {
+    "name": "Wide Push-up",
+    "muscleGroup": "chest",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Set the hands wider than shoulder width. Lower the chest to the floor with the elbows flaring slightly out, then press up. Emphasises the outer chest."
+  },
+  {
+    "name": "Archer Push-up",
+    "muscleGroup": "chest",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Take a wide hand position. Bend one arm to lower toward that hand while the other arm stays nearly straight. Alternate the working side each rep."
+  },
+  {
+    "name": "Slow Eccentric Push-up",
+    "muscleGroup": "chest",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Take five slow seconds to lower your chest to the floor, then press back up at normal speed. The slow descent is the whole point."
+  },
+  {
+    "name": "Single Leg Glute Bridge",
+    "muscleGroup": "glutes",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie on your back with one foot planted and the other knee pulled toward your chest. Drive the hips up through the planted heel, squeeze, and lower slowly. Switch sides each set."
+  },
+  {
+    "name": "Frog Pump",
+    "muscleGroup": "glutes",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "Lie on your back with heels together and knees splayed wide. Pump the hips up, squeezing the glutes hard at the top, then lower to a light touch and repeat."
+  },
+  {
+    "name": "Fire Hydrant",
+    "muscleGroup": "glutes",
+    "movementPattern": "hinge",
+    "minEquipment": "bodyweight",
+    "instructions": "On hands and knees, lift one knee out to the side without letting the torso rotate. Pause at the top, lower slowly, and switch sides each set."
+  },
+  {
+    "name": "Single Leg Calf Raise",
+    "muscleGroup": "calves",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Balance on one foot and rise as high onto the ball of that foot as you can. Pause at the top, then lower slowly. Switch sides each set."
+  },
+  {
+    "name": "Seated Floor Calf Raise",
+    "muscleGroup": "calves",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Sit on the floor with knees bent and feet flat. Press through the balls of the feet to lift the heels as high as possible, then lower slowly."
+  },
+  {
+    "name": "Calf Raise Iso Hold",
+    "muscleGroup": "calves",
+    "movementPattern": "push",
+    "minEquipment": "bodyweight",
+    "instructions": "Rise onto the balls of both feet and hold at the very top. Keep the ankles from rolling outward and breathe steadily until the set ends."
+  }
+]
