@@ -6,11 +6,13 @@ import { ensureSessionTimerListener } from "@/src/lib/session-timer-notification
 import { LoadingScreen } from "@/src/ui/components/LoadingScreen";
 import { useQueryClient } from "@tanstack/react-query";
 import { Redirect, Stack } from "expo-router";
+import { shouldRedirectToVerifyEmail } from "@/src/lib/email-verification";
 
 export default function AppGroupLayout() {
   const hydrated = useAuthHydration();
-  const { hasSession, onboardingComplete } = useAuth();
+  const { hasSession, onboardingComplete, user } = useAuth();
   const queryClient = useQueryClient();
+  
 
   // Kick workout boot queries as soon as the signed-in app shell mounts —
   // ahead of Train tab focus — so in-progress vs Start isn't unknown on open.
@@ -31,6 +33,9 @@ export default function AppGroupLayout() {
 
   if (!hydrated) return <LoadingScreen />;
   if (!hasSession) return <Redirect href="/(auth)/welcome" />;
+  if (shouldRedirectToVerifyEmail(user)) {
+    return <Redirect href="/(auth)/verify-email" />;
+  }
   if (!onboardingComplete) return <Redirect href="/(auth)/onboarding" />;
 
   return <Stack screenOptions={{ headerShown: false }} />;

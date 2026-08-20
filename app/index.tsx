@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 
 export default function Index() {
   const hydrated = useAuthHydration();
-  const { hasSession, onboardingComplete } = useAuth();
+  const { hasSession, onboardingComplete, user} = useAuth();
   const queryClient = useQueryClient();
   const setOnboarded = useAuthStore((s) => s.setOnboarded);
   const [backendProfileLoaded, setBackendProfileLoaded] = useState(false);
@@ -28,6 +28,8 @@ export default function Index() {
         }
         return;
       }
+
+      
       if (active) setBackendProfileLoaded(false);
 
       try {
@@ -54,14 +56,17 @@ export default function Index() {
       active = false;
     };
   }, [hydrated, hasSession, queryClient, setOnboarded]);
-
+  
   const resolvedOnboarding = backendCheckFailed
     ? onboardingComplete
     : backendProfileComplete;
 
-  if (!hydrated) return <LoadingScreen />;
-  if (!hasSession) return <Redirect href="/(auth)/welcome" />;
-  if (!backendProfileLoaded) return <LoadingScreen />;
-  if (!resolvedOnboarding) return <Redirect href="/(auth)/onboarding" />;
-  return <Redirect href="/(app)/(tabs)" />;
+    if (!hydrated) return <LoadingScreen />;
+    if (!hasSession) return <Redirect href="/(auth)/welcome" />;
+    if (shouldRedirectToVerifyEmail(user)) {
+      return <Redirect href="/(auth)/verify-email" />;
+    }
+    if (!backendProfileLoaded) return <LoadingScreen />;
+    if (!resolvedOnboarding) return <Redirect href="/(auth)/onboarding" />;
+    return <Redirect href="/(app)/(tabs)" />;
 }
