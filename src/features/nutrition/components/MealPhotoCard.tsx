@@ -64,7 +64,7 @@ function MealPhotoCardBase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const displayUri = imageUrl?.trim() ? imageUrl : getManualMealUri();
+  const displayUri = imageUrl?.trim() ? imageUrl : MANUAL_MEAL_URI;
   const isRemoteScan = Boolean(imageUrl?.trim());
 
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">(
@@ -147,7 +147,7 @@ function MealPhotoCardBase({
           ) : (
             <View style={s.imageFallback}>
               <Image
-                source={{ uri: getManualMealUri() }}
+                source={{ uri: MANUAL_MEAL_URI }}
                 style={s.manualFallbackImage}
                 resizeMode="contain"
                 accessibilityIgnoresInvertColors

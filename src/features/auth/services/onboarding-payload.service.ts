@@ -34,8 +34,6 @@ export type OnboardingAuthParams = {
   reminderHour?: string | string[];
   /** "1" if user accepted the paywall discount offer. */
   offerAccepted?: string | string[];
-  /** Passed into verify-email for resend / display (not part of profile payload). */
-  email?: string | string[];
 };
 
 function single(value: string | string[] | undefined): string | undefined {
