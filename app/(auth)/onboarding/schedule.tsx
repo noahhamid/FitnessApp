@@ -1,6 +1,5 @@
 import { OnboardingHeader } from "@/src/features/auth/components/OnboardingHeader";
 import { OnboardingNav } from "@/src/features/auth/components/OnboardingNav";
-import { ChipSelect, type ChipOption } from "@/src/ui/components/ChipSelect";
 import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { usePermissions } from "@/src/hooks/usePermissions";
@@ -22,10 +21,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const REMINDER_BASE = [
-  { id: "7", label: "Morning" },
-  { id: "14", label: "Afternoon" },
-  { id: "19", label: "Evening" },
+const REMINDER_OPTIONS = [
+  { id: "off", label: "Off", hint: "No training pings" },
+  { id: "7", label: "Morning", hint: "Around 7:00" },
+  { id: "14", label: "Afternoon", hint: "Around 14:00" },
+  { id: "19", label: "Evening", hint: "Around 19:00" },
 ] as const;
 
 function paramList(raw?: string | string[]): string[] {
@@ -106,10 +106,7 @@ export default function OnboardingScheduleScreen() {
     setWeekdays(row.days);
   };
 
-  const reminderOptions = useMemo<ChipOption[]>(
-    () => REMINDER_BASE.map((opt) => ({ ...opt })),
-    [],
-  );
+  const selectedReminderId = reminderEnabled ? reminderHour[0] : "off";
 
   const canContinue =
     weekdays.length > 0 && (!reminderEnabled || reminderHour.length > 0);
@@ -117,6 +114,15 @@ export default function OnboardingScheduleScreen() {
   const enableReminder = async () => {
     setReminderEnabled(true);
     await requestNotifications();
+  };
+
+  const pickReminder = (id: string) => {
+    if (id === "off") {
+      setReminderEnabled(false);
+      return;
+    }
+    setReminderHour([id]);
+    void enableReminder();
   };
 
   const handleNext = async () => {
@@ -175,40 +181,36 @@ export default function OnboardingScheduleScreen() {
         contentContainerStyle={s.body}
         showsVerticalScrollIndicator={false}
       >
-        {suggestions.length > 0 && (
-          <>
-            <Text style={s.sectionLabel}>RECOMMENDED FOR YOU</Text>
-            <View style={s.suggestList}>
-              {suggestions.map((row, i) => {
-                const active = sameDays(weekdays, row.days);
-                return (
-                  <Pressable
-                    key={row.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    onPress={() => applySuggestion(row)}
-                    style={[s.suggestRow, active && s.suggestRowActive]}
+        <Text style={s.sectionLabel}>TRAINING REMINDER</Text>
+        <View style={s.list}>
+          {REMINDER_OPTIONS.map((opt) => {
+            const active = selectedReminderId === opt.id;
+            return (
+              <Pressable
+                key={opt.id}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                onPress={() => pickReminder(opt.id)}
+                style={[s.listRow, active && s.listRowActive]}
+              >
+                <View style={s.listCopy}>
+                  <Text
+                    style={[s.listTitle, active && s.listTitleActive]}
+                    numberOfLines={1}
                   >
-                    <Text style={[s.suggestRank, active && s.suggestRankActive]}>
-                      {i + 1}
-                    </Text>
-                    <View style={s.suggestCopy}>
-                      <Text
-                        style={[s.suggestTitle, active && s.suggestTitleActive]}
-                        numberOfLines={1}
-                      >
-                        {row.title}
-                      </Text>
-                      <Text style={s.suggestReason} numberOfLines={1}>
-                        {row.reason}
-                      </Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </>
-        )}
+                    {opt.label}
+                  </Text>
+                  <Text style={[s.listHint, active && s.listHintActive]}>
+                    {opt.hint}
+                  </Text>
+                </View>
+                <View style={[s.radio, active && s.radioActive]}>
+                  {active ? <View style={s.radioDot} /> : null}
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
 
         <Text style={s.sectionLabel}>
           {weekdays.length === 0
@@ -217,65 +219,74 @@ export default function OnboardingScheduleScreen() {
               ? "1 DAY A WEEK"
               : `${weekdays.length} DAYS A WEEK`}
         </Text>
-        <View style={s.weekdayRow}>
-          {WEEKDAY_LABELS_SHORT.map((label, index) => {
-            const selected = weekdays.includes(index);
-            return (
-              <Pressable
-                key={label}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: selected }}
-                accessibilityLabel={label}
-                onPress={() => toggleWeekday(index)}
-                style={[s.weekdayChip, selected && s.weekdayChipActive]}
-              >
-                <Text
-                  style={[
-                    s.weekdayChipText,
-                    selected && s.weekdayChipTextActive,
-                  ]}
-                >
-                  {label.slice(0, 1)}
-                </Text>
-              </Pressable>
-            );
-          })}
+        <View style={s.weekdayGrid}>
+          {[WEEKDAY_LABELS_SHORT.slice(0, 3), WEEKDAY_LABELS_SHORT.slice(3)].map(
+            (row, rowIndex) => (
+              <View key={rowIndex} style={s.weekdayRow}>
+                {row.map((label, col) => {
+                  const index = rowIndex === 0 ? col : col + 3;
+                  const selected = weekdays.includes(index);
+                  return (
+                    <Pressable
+                      key={label}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: selected }}
+                      accessibilityLabel={label}
+                      onPress={() => toggleWeekday(index)}
+                      style={[s.weekdayChip, selected && s.weekdayChipActive]}
+                    >
+                      <Text
+                        style={[
+                          s.weekdayChipText,
+                          selected && s.weekdayChipTextActive,
+                        ]}
+                      >
+                        {label.slice(0, 1)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ),
+          )}
         </View>
 
-        <View style={s.reminderHeader}>
-          <Text style={s.sectionLabel}>TRAINING REMINDER</Text>
-          <Pressable
-            accessibilityRole="switch"
-            accessibilityState={{ checked: reminderEnabled }}
-            onPress={() => {
-              if (reminderEnabled) setReminderEnabled(false);
-              else void enableReminder();
-            }}
-            style={[s.toggle, reminderEnabled && s.toggleActive]}
-          >
-            <View
-              style={[s.toggleKnob, reminderEnabled && s.toggleKnobActive]}
-            />
-          </Pressable>
-        </View>
-
-        {reminderEnabled ? (
+        {suggestions.length > 0 && (
           <>
-            <Text style={s.reminderHint}>
-              We&apos;ll ping you on training days at this time. Allow
-              notifications when asked.
-            </Text>
-            <ChipSelect
-              options={reminderOptions}
-              selected={reminderHour}
-              onChange={setReminderHour}
-              style={s.reminderChips}
-            />
+            <Text style={s.sectionLabel}>RECOMMENDED FOR YOU</Text>
+            <View style={s.list}>
+              {suggestions.map((row, i) => {
+                const active = sameDays(weekdays, row.days);
+                return (
+                  <Pressable
+                    key={row.id}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    onPress={() => applySuggestion(row)}
+                    style={[s.listRow, active && s.listRowActive]}
+                  >
+                    <Text style={[s.suggestRank, active && s.suggestRankActive]}>
+                      {i + 1}
+                    </Text>
+                    <View style={s.listCopy}>
+                      <Text
+                        style={[s.listTitle, active && s.listTitleActive]}
+                        numberOfLines={1}
+                      >
+                        {row.title}
+                      </Text>
+                      <Text
+                        style={[s.listHint, active && s.listHintActive]}
+                        numberOfLines={1}
+                      >
+                        {row.reason}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
           </>
-        ) : (
-          <Text style={s.reminderOffHint}>
-            We won&apos;t send training reminders. Adjust this anytime later.
-          </Text>
         )}
       </ScrollView>
 
@@ -312,23 +323,64 @@ function makeStyles(C: OnboardingColors) {
     marginBottom: 2,
     marginTop: 8,
   },
-  suggestList: {
+  list: {
     gap: 6,
   },
-  suggestRow: {
+  listRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 14,
     backgroundColor: C.bg3,
     borderWidth: 1.5,
     borderColor: C.border,
   },
-  suggestRowActive: {
+  listRowActive: {
     backgroundColor: C.accent,
     borderColor: C.accent,
+  },
+  listCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  listTitle: {
+    fontFamily: FONTS.blackItalic,
+    fontSize: 15,
+    letterSpacing: 0.3,
+    color: C.text,
+    textTransform: "uppercase",
+  },
+  listTitleActive: {
+    color: "#FFFFFF",
+  },
+  listHint: {
+    fontFamily: FONTS.regular,
+    fontSize: 12,
+    color: C.muted,
+    marginTop: 2,
+  },
+  listHintActive: {
+    color: "rgba(255,255,255,0.78)",
+  },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioActive: {
+    borderColor: "#FFFFFF",
+  },
+  radioDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#FFFFFF",
   },
   suggestRank: {
     fontFamily: FONTS.blackItalic,
@@ -339,25 +391,8 @@ function makeStyles(C: OnboardingColors) {
   suggestRankActive: {
     color: "#FFFFFF",
   },
-  suggestCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  suggestTitle: {
-    fontFamily: FONTS.blackItalic,
-    fontSize: 15,
-    letterSpacing: 0.3,
-    color: C.text,
-    textTransform: "uppercase",
-  },
-  suggestTitleActive: {
-    color: "#FFFFFF",
-  },
-  suggestReason: {
-    fontFamily: FONTS.regular,
-    fontSize: 12,
-    color: C.muted,
-    marginTop: 2,
+  weekdayGrid: {
+    gap: 6,
   },
   weekdayRow: {
     flexDirection: "row",
@@ -365,8 +400,7 @@ function makeStyles(C: OnboardingColors) {
   },
   weekdayChip: {
     flex: 1,
-    aspectRatio: 1,
-    maxHeight: 52,
+    height: 52,
     borderRadius: 12,
     backgroundColor: C.bg3,
     alignItems: "center",
@@ -382,46 +416,6 @@ function makeStyles(C: OnboardingColors) {
   },
   weekdayChipTextActive: {
     color: "#FFFFFF",
-  },
-  reminderHeader: {
-    marginTop: 6,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  reminderHint: {
-    fontFamily: FONTS.regular,
-    fontSize: 12,
-    color: C.muted,
-    marginBottom: 4,
-  },
-  reminderChips: {
-    height: 168,
-  },
-  toggle: {
-    width: 48,
-    height: 28,
-    borderRadius: 14,
-    padding: 3,
-    backgroundColor: C.bg3,
-    justifyContent: "center",
-  },
-  toggleActive: {
-    backgroundColor: C.accent,
-  },
-  toggleKnob: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "#FFFFFF",
-  },
-  toggleKnobActive: {
-    transform: [{ translateX: 20 }],
-  },
-  reminderOffHint: {
-    fontFamily: FONTS.regular,
-    fontSize: 12,
-    color: C.muted,
   },
 });
 }

@@ -6,39 +6,28 @@ import type { AppTheme } from "@/src/theme";
 import { getGreeting } from "@/src/lib/greeting";
 import { fullDayLabel } from "@/src/lib/week-days";
 import { localDateOnly } from "@/src/features/progress/lib/localDate";
+import { BrandWordmark } from "@/src/components/BrandWordmark";
 
 type Props = {
   name: string;
   /** When false, omit greeting text. Default true. */
   showGreeting?: boolean;
-  /** When false, omit initials avatar (Dashboard uses wave emoji instead). Default true. */
+  /** Unused — home no longer shows an avatar. Kept for call-site compat. */
   showAvatar?: boolean;
   /** When false, omit today's weekday + date under the greeting. Default true. */
   showDate?: boolean;
 };
-
-function initialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "A";
-  return parts
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
 
 function onLogsPress() {
   router.push("/(app)/logs");
 }
 
 /**
- * Compact greeting header (Dashboard):
- * optional initials avatar · "Good morning, {name} 👋" · reminder logs.
+ * Home header: PotentialPeak mark, then the existing salutations.
  */
 export function SimpleGreetingHeader({
   name,
   showGreeting = true,
-  showAvatar = true,
   showDate = true,
 }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
@@ -49,16 +38,12 @@ export function SimpleGreetingHeader({
   return (
     <View style={s.row}>
       <View style={[s.left, leftNeedsGrow && s.leftGrow]}>
-        {showAvatar ? (
-          <View style={s.avatar} accessibilityLabel="Profile avatar">
-            <Text style={s.initials}>{initialsFromName(displayName)}</Text>
-          </View>
-        ) : null}
+        <BrandWordmark size={26} />
         {showGreeting || showDate ? (
           <View style={s.greetingStack}>
             {showGreeting ? (
               <Text style={s.greeting} numberOfLines={1}>
-                {greeting}, {displayName} 👋
+                {greeting}, {displayName}
               </Text>
             ) : null}
             {showDate ? (
@@ -95,35 +80,15 @@ function makeStyles(T: AppTheme) {
       gap: 12,
     },
     left: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
       minWidth: 0,
       flexShrink: 0,
+      gap: 4,
     },
     leftGrow: {
       flex: 1,
       flexShrink: 1,
     },
-    avatar: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: T.accentTint,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: T.accentLine,
-      alignItems: "center",
-      justifyContent: "center",
-      flexShrink: 0,
-    },
-    initials: {
-      fontFamily: T.displayBold,
-      fontSize: 12,
-      color: T.accent,
-      letterSpacing: 0.2,
-    },
     greetingStack: {
-      flex: 1,
       minWidth: 0,
       gap: 1,
     },

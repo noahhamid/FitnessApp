@@ -3,11 +3,11 @@ import type { ExpoConfig } from "expo/config";
 const BRAND_RED = "#C91923";
 
 const config: ExpoConfig = {
-  name: "Exo",
+  name: "PotentialPeak",
   slug: "potential-peak",
   version: "1.0.0",
   orientation: "portrait",
-  icon: "./assets/images/icon.png",
+  icon: "./assets/images/potentialpeak_logo.jpg",
   scheme: "com.exo.fitness",
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
@@ -17,9 +17,9 @@ const config: ExpoConfig = {
     usesAppleSignIn: true,
     infoPlist: {
       NSCameraUsageDescription:
-        "Exo uses the camera so you can photograph meals for calorie and macro estimates.",
+        "PotentialPeak uses the camera so you can photograph meals for calorie and macro estimates.",
       NSPhotoLibraryUsageDescription:
-        "Exo accesses your photo library when you pick an existing meal photo to save in the app.",
+        "PotentialPeak accesses your photo library when you pick an existing meal photo to save in the app.",
     },
   },
   android: {
@@ -42,7 +42,7 @@ const config: ExpoConfig = {
   } as ExpoConfig["android"],
   web: {
     output: "server",
-    favicon: "./assets/images/favicon.png",
+    favicon: "./assets/images/potentialpeak_logo.jpg",
   },
   plugins: [
     "./plugins/with-arm64-only",
@@ -65,6 +65,7 @@ const config: ExpoConfig = {
         image: "./assets/images/splash-icon.png",
         backgroundColor: "#C91923",
         resizeMode: "contain",
+        imageWidth: 128,
         dark: {
           image: "./assets/images/splash-icon.png",
           backgroundColor: "#C91923",

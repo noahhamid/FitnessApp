@@ -144,6 +144,26 @@ function adaptExercise(ex: ApiPlanExercise, goalId: string): Exercise {
   };
 }
 
+/** Same minute estimate Train and Home use for a planned session. */
+export function estimateWorkoutMinutes(
+  exercises: {
+    type?: string;
+    sets: number;
+    reps?: number;
+    durationSec?: number;
+    restSec: number;
+  }[],
+): number {
+  const seconds = exercises.reduce((sum, ex) => {
+    const work =
+      ex.type === "duration"
+        ? (ex.durationSec ?? 0)
+        : (ex.reps ?? 10) * 3;
+    return sum + (work + ex.restSec) * ex.sets;
+  }, 0);
+  return Math.round(seconds / 60);
+}
+
 export function adaptPlanDay(day: ApiPlanDay, goalId: string): WorkoutPlan {
   const sorted = [...day.exercises].sort((a, b) => a.orderIndex - b.orderIndex);
   // Render-time title from actual muscles so stored "Upper A" / "Push" labels

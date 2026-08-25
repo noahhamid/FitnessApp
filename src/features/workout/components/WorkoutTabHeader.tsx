@@ -1,23 +1,22 @@
 import React from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
 import { useWorkoutStreak } from "../hooks/useWorkoutStreak";
 import { StreakPill } from "@/src/components/StreakPill";
+import { BrandWordmark } from "@/src/components/BrandWordmark";
 
 type Props = {
-  name: string;
-  /** Short line under the coach headline. */
+  title?: string;
+  /** Short line under the page title. */
   subtitle?: string;
-  avatarUrl: string;
 };
 
 export function WorkoutTabHeader({
-  name,
+  title = "Train",
   subtitle = "Ready to move today?",
-  avatarUrl,
 }: Props) {
   const { styles: s } = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
@@ -25,19 +24,16 @@ export function WorkoutTabHeader({
 
   return (
     <View style={[s.row, { paddingTop: topInset(insets.top) + 8 }]}>
-      <View style={s.left}>
-        <View style={s.avatarRing}>
-          <Image source={{ uri: avatarUrl }} style={s.avatar} />
-        </View>
-
-        <View style={s.copy}>
-          <Text style={s.greeting} numberOfLines={1}>
-            {name}, let's get to work
-          </Text>
-          <Text style={s.subtitle} numberOfLines={1}>
-            {subtitle}
+      <View style={s.copy}>
+        <View style={s.heading}>
+          <BrandWordmark size={22} />
+          <Text style={s.title} numberOfLines={1}>
+            {title}
           </Text>
         </View>
+        <Text style={s.subtitle} numberOfLines={1}>
+          {subtitle}
+        </Text>
       </View>
 
       <StreakPill days={streakDays} />
@@ -54,33 +50,20 @@ function makeStyles(T: AppTheme) {
       marginBottom: 20,
       gap: 10,
     },
-    left: {
-      flex: 1,
+    copy: { flex: 1, minWidth: 0, gap: 4 },
+    heading: {
       flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
+      alignItems: "baseline",
+      flexWrap: "wrap",
+      gap: 8,
       minWidth: 0,
     },
-    copy: { flex: 1, minWidth: 0, gap: 3 },
-
-    avatarRing: {
-      width: 54,
-      height: 54,
-      borderRadius: 27,
-      borderWidth: 1.5,
-      borderColor: T.accent,
-      padding: 2,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    avatar: { width: "100%", height: "100%", borderRadius: 23 },
-
-    // Was displayBold 22 — reduced to sit with 54px avatar + streak pill.
-    greeting: {
-      fontFamily: T.displaySemi,
-      fontSize: 15,
-      letterSpacing: -0.2,
+    title: {
+      fontFamily: T.displayBold,
+      fontSize: 22,
+      letterSpacing: -0.3,
       color: T.white,
+      flexShrink: 1,
     },
     subtitle: {
       fontFamily: T.bodyMed,

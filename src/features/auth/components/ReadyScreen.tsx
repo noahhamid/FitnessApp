@@ -7,9 +7,20 @@ import {
 import { previewSplitLabel } from "@/src/lib/onboarding-timeline";
 import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
+import { promptOnboardingReview } from "@/src/lib/store-review";
+import { useAuthStore } from "@/src/features/auth/hooks/useAuth";
+import {
+  isOnboardingRetake,
+  onboardingParamsForNavigation,
+  saveCompletedOnboardingPayload,
+} from "@/src/features/auth/services/onboarding-payload.service";
+import { clearOnboardingDraft } from "@/src/features/auth/services/onboarding-draft.service";
+import { workoutPlanQueryKey } from "@/src/features/workout/hooks/useWorkoutPlan";
+import { useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef } from "react";
 import {
+  Alert,
   Animated,
   Pressable,
   StyleSheet,
@@ -69,11 +80,15 @@ export function ReadyScreen() {
     injuries?: string;
     bodyFatPercent?: string;
     bodyFatSource?: string;
+    retake?: string;
   }>();
 
+  const queryClient = useQueryClient();
+  const isRetake = isOnboardingRetake(params);
   const fade = useRef(new Animated.Value(0)).current;
   const rise = useRef(new Animated.Value(16)).current;
   const badgeScale = useRef(new Animated.Value(0.6)).current;
+  const continuing = useRef(false);
 
   useEffect(() => {
     Animated.sequence([
@@ -142,8 +157,12 @@ export function ReadyScreen() {
             marginTop: 24,
           }}
         >
-          <Text style={s.kicker}>{"YOU'RE ALL SET"}</Text>
-          <Text style={s.headline}>PLAN{"\n"}READY.</Text>
+          <Text style={s.kicker}>
+            {isRetake ? "PLAN UPDATED" : "YOU'RE ALL SET"}
+          </Text>
+          <Text style={s.headline}>
+            {isRetake ? "NEW PLAN\nREADY." : "PLAN\nREADY."}
+          </Text>
 
           <View style={s.summaryCard}>
             {goalId && (
@@ -244,11 +263,47 @@ export function ReadyScreen() {
 
         <Pressable
           style={s.primaryBtn}
-          onPress={() =>
-            router.push({ pathname: "/(auth)/paywall", params })
-          }
+          onPress={async () => {
+            if (continuing.current) return;
+            continuing.current = true;
+            try {
+              if (isRetake) {
+                const nextParams = onboardingParamsForNavigation({
+                  ...params,
+                  onboardingComplete: "1",
+                });
+                await saveCompletedOnboardingPayload(nextParams);
+                await clearOnboardingDraft();
+                useAuthStore.getState().setOnboarded(true);
+                await queryClient.invalidateQueries({
+                  queryKey: ["user", "profile"],
+                });
+                await queryClient.invalidateQueries({
+                  queryKey: ["nutrition", "goals"],
+                });
+                await queryClient.invalidateQueries({
+                  queryKey: workoutPlanQueryKey,
+                });
+                router.replace("/(app)/(tabs)");
+                return;
+              }
+              await Promise.race([
+                promptOnboardingReview(),
+                new Promise<void>((resolve) => setTimeout(resolve, 2500)),
+              ]);
+              router.push({ pathname: "/(auth)/paywall", params });
+            } catch {
+              continuing.current = false;
+              Alert.alert(
+                "Couldn't save your plan",
+                "Check your connection and try again. Your workouts and meals are still on your account.",
+              );
+            }
+          }}
         >
-          <Text style={s.primaryBtnText}>CONTINUE</Text>
+          <Text style={s.primaryBtnText}>
+            {isRetake ? "UPDATE MY PLAN" : "CONTINUE"}
+          </Text>
         </Pressable>
       </View>
     </View>

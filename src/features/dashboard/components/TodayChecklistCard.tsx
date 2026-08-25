@@ -26,7 +26,7 @@ import { PressableScale } from "./PressableScale";
 import { GlassSurface } from "./GlassSurface";
 
 export type ChecklistDayKind = "today" | "past" | "future";
-type StepKey = "workout" | "breakfast" | "lunch" | "dinner";
+export type ChecklistStepKey = "workout" | "breakfast" | "lunch" | "dinner";
 
 type Props = {
   dayKind: ChecklistDayKind;
@@ -36,21 +36,21 @@ type Props = {
   dinnerDone: boolean;
   waterGlasses: number;
   waterTotal?: number;
-  onStepPress?: () => void;
+  onStepPress?: (key: ChecklistStepKey) => void;
   onWaterAdjust?: (delta: number) => void;
   isLoading?: boolean;
 };
 
-const STEPS: StepKey[] = ["workout", "breakfast", "lunch", "dinner"];
+const STEPS: ChecklistStepKey[] = ["workout", "breakfast", "lunch", "dinner"];
 
-const STEP_LABEL: Record<StepKey, string> = {
+const STEP_LABEL: Record<ChecklistStepKey, string> = {
   workout: "Workout",
   breakfast: "Breakfast",
   lunch: "Lunch",
   dinner: "Dinner",
 };
 
-const STEP_ICON: Record<StepKey, React.ComponentType<LucideProps>> = {
+const STEP_ICON: Record<ChecklistStepKey, React.ComponentType<LucideProps>> = {
   workout: Dumbbell,
   breakfast: Coffee,
   lunch: UtensilsCrossed,
@@ -80,7 +80,7 @@ const WATER = {
 type WellColors = { bg: string; border: string; icon: string };
 
 function stepWellColors(
-  key: StepKey,
+  key: ChecklistStepKey,
   resolved: "light" | "dark",
   T: AppTheme,
 ): WellColors {
@@ -96,7 +96,7 @@ export function nextChecklistAction(input: {
   lunchDone: boolean;
   dinnerDone: boolean;
   isRestDay?: boolean;
-}): { key: StepKey | "complete"; label: string } {
+}): { key: ChecklistStepKey | "complete"; label: string } {
   if (!input.workoutDone && !input.isRestDay) {
     return { key: "workout", label: "Start workout" };
   }
@@ -122,14 +122,15 @@ export function TodayChecklistCard({
   const { resolved } = useTheme();
   const waterColors = WATER[resolved];
 
-  const doneMap: Record<StepKey, boolean> = {
+  const doneMap: Record<ChecklistStepKey, boolean> = {
     workout: workoutDone,
     breakfast: breakfastDone,
     lunch: lunchDone,
     dinner: dinnerDone,
   };
   const complete = workoutDone && breakfastDone && lunchDone && dinnerDone;
-  const currentStep: StepKey | null = STEPS.find((k) => !doneMap[k]) ?? null;
+  const currentStep: ChecklistStepKey | null =
+    STEPS.find((k) => !doneMap[k]) ?? null;
   const isActionable = dayKind === "today" && !complete && !isLoading;
 
   const pulse = useRef(new Animated.Value(1)).current;
@@ -215,11 +216,17 @@ export function TodayChecklistCard({
             </Animated.View>
           );
 
-          if (isFocus && onStepPress) {
+          const canPress =
+            dayKind === "today" &&
+            !isLoading &&
+            !!onStepPress &&
+            (key !== "workout" || !done);
+
+          if (canPress) {
             return (
               <PressableScale
                 key={key}
-                onPress={onStepPress}
+                onPress={() => onStepPress(key)}
                 scaleTo={0.98}
                 style={s.stepPress}
               >

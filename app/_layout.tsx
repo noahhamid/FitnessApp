@@ -37,7 +37,6 @@ import { AppThemeProvider, useTheme } from "@/src/context/ThemeContext";
 import { AppSafeAreaChrome } from "@/src/components/AppSafeAreaChrome";
 
 import * as WebBrowser from "expo-web-browser";
-import { LoadingScreen } from "@/src/ui/components/LoadingScreen";
 import { Sentry, sentryEnabled } from "@/src/lib/sentry";
 
 SplashScreen.preventAutoHideAsync();
@@ -107,13 +106,15 @@ function RootLayout() {
     };
   }, []);
 
-  // Hand off from the native splash as soon as we have something rendered, so
-  // our own loading screen covers the wait for fonts rather than a blank view.
+  // Keep the native splash up until index / LoadingScreen / welcome hide it.
+  // Do not swap in a second logo plate while fonts load (guests go to welcome).
   useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
-
-  if (!loaded && !err) return <LoadingScreen />;
+    if (!loaded && !err) return;
+    const t = setTimeout(() => {
+      void SplashScreen.hideAsync();
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [loaded, err]);
 
   return (
     <SafeAreaProvider>

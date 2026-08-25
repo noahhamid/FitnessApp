@@ -18,7 +18,10 @@ import type { AppTheme } from "@/src/theme";
 import { DashboardHeader } from "../components/DashboardHeader";
 import { LinearGradient } from "expo-linear-gradient";
 import { DaySelector } from "@/src/features/nutrition/components/DaySelector";
-import { useWorkoutHistory } from "@/src/features/progress/hooks/useProgress";
+import {
+  usePersonalRecords,
+  useWorkoutHistory,
+} from "@/src/features/progress/hooks/useProgress";
 import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import { weekScheduleStats } from "@/src/features/progress/lib/analytics";
 import {
@@ -31,11 +34,12 @@ import {
 } from "@/src/lib/week-days";
 import { ProgressCoachCard } from "../components/ProgressCoachCard";
 import { UpNextWorkoutCard } from "../components/UpNextWorkoutCard";
+import { ContinueWorkoutCard } from "@/src/features/workout/components/ContinueWorkoutCard";
 import { TodayPulseRow } from "../components/TodayPulseRow";
 import { WeekAdherenceBar } from "../components/WeekAdherenceBar";
 import {
   TodayChecklistCard,
-  nextChecklistAction,
+  type ChecklistStepKey,
 } from "../components/TodayChecklistCard";
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
@@ -104,7 +108,8 @@ export default function DashboardScreen() {
   const { user } = useAuth();
   const joinDate = signupDateOnly(user?.createdAt);
   const minWeekOffset = minWeekOffsetSince(user?.createdAt);
-  useInProgressSession();
+  const { inProgress, isLoading: inProgressLoading } = useInProgressSession();
+  const { data: personalRecords } = usePersonalRecords();
 
   const refreshDashboard = useCallback(
     () =>
@@ -213,6 +218,7 @@ export default function DashboardScreen() {
     sparklinePoints,
     coachHeadline,
     coachBody,
+    goalHit,
   } = useCoachCard();
 
   const {
@@ -221,30 +227,31 @@ export default function DashboardScreen() {
   } = useTodaysWorkoutSummary(selectedDate);
 
   const isRestDay = todaysWorkoutDay?.kind === "rest";
-  const plannedMinutes =
-    todaysWorkoutDay?.kind === "workout" ? todaysWorkoutDay.minutes : null;
+  const showContinue = isToday && !inProgressLoading && !!inProgress;
+  const showWorkoutSkeleton =
+    workoutSummaryLoading || (isToday && inProgressLoading);
+  const plannedMinutes = showContinue
+    ? inProgress.minutesLeft
+    : todaysWorkoutDay?.kind === "workout"
+      ? todaysWorkoutDay.minutes
+      : null;
 
-  const nextAction = nextChecklistAction({
-    workoutDone: workoutCompletedForDay || !!isRestDay,
-    breakfastDone,
-    lunchDone,
-    dinnerDone,
-    isRestDay,
-  });
+  function openMealLog(slot: "Breakfast" | "Lunch" | "Dinner") {
+    router.push({
+      pathname: "/log-meal",
+      params: { slot, date: selectedDate },
+    });
+  }
 
-  function handlePrimaryAction() {
-    if (nextAction.key === "workout") {
+  function handleChecklistPress(key: ChecklistStepKey) {
+    if (dayKind !== "today") return;
+    if (key === "workout") {
       router.push("/(app)/(tabs)/train");
       return;
     }
-    if (nextAction.key !== "complete") {
-      router.push("/log-meal");
-    }
-  }
-
-  function handleChecklistPress() {
-    if (dayKind !== "today") return;
-    handlePrimaryAction();
+    const slot =
+      key === "breakfast" ? "Breakfast" : key === "lunch" ? "Lunch" : "Dinner";
+    openMealLog(slot);
   }
 
   const contentPadBottom = tabContentBottomPad(insets.bottom);
@@ -308,7 +315,7 @@ export default function DashboardScreen() {
           onPressOverview={() => router.push("/(app)/(tabs)/progress")}
         />
 
-        {workoutSummaryLoading ? (
+        {showWorkoutSkeleton ? (
           <>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
@@ -316,6 +323,39 @@ export default function DashboardScreen() {
               </Text>
             </View>
             <SectionSkeleton height={224} />
+          </>
+        ) : showContinue ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Continue</Text>
+              <Text
+                style={styles.sectionLink}
+                onPress={() => router.push("/(app)/(tabs)/train")}
+              >
+                Full plan →
+              </Text>
+            </View>
+            <ContinueWorkoutCard
+              title={inProgress.plan.title}
+              tag={inProgress.plan.tag}
+              minutes={inProgress.minutesLeft}
+              calories={inProgress.estCalories}
+              percent={inProgress.percent}
+              imageUrl={
+                inProgress.plan.coverImage ||
+                (todaysWorkoutDay?.kind === "workout"
+                  ? todaysWorkoutDay.imageUrl
+                  : undefined)
+              }
+              exercises={inProgress.plan.exercises}
+              personalRecords={personalRecords}
+              onPress={() =>
+                router.push({
+                  pathname: "/(app)/(tabs)/train",
+                  params: { resume: "1" },
+                })
+              }
+            />
           </>
         ) : todaysWorkoutDay ? (
           <>
@@ -367,9 +407,7 @@ export default function DashboardScreen() {
           dinnerDone={dinnerDone}
           waterGlasses={water?.glasses ?? 0}
           onStepPress={
-            dayKind === "today" && nextAction.key !== "complete"
-              ? handleChecklistPress
-              : undefined
+            dayKind === "today" ? handleChecklistPress : undefined
           }
           onWaterAdjust={
             dayKind === "today"
@@ -387,6 +425,7 @@ export default function DashboardScreen() {
             sparklinePoints={sparklinePoints}
             coachHeadline={coachHeadline}
             coachBody={coachBody}
+            goalHit={goalHit}
           />
         ) : null}
       </ScrollView>

@@ -2,6 +2,8 @@ import { GoalTile } from "@/src/ui/components/GoalTile";
 import { OnboardingHeader } from "@/src/features/auth/components/OnboardingHeader";
 import { OnboardingNav } from "@/src/features/auth/components/OnboardingNav";
 import { useOnboardingColors, useSystemResolvedScheme } from "@/src/ui/tokens";
+import { clearOnboardingDraft } from "@/src/features/auth/services/onboarding-draft.service";
+import { isOnboardingRetake } from "@/src/features/auth/services/onboarding-payload.service";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
@@ -31,6 +33,7 @@ export default function OnboardingGenderScreen() {
   const resolved = useSystemResolvedScheme();
 
   const params = useLocalSearchParams();
+  const isRetake = isOnboardingRetake(params);
   const genderParam = Array.isArray(params.gender)
     ? params.gender[0]
     : params.gender;
@@ -56,7 +59,14 @@ export default function OnboardingGenderScreen() {
       <OnboardingHeader
         headline={"YOUR\nGENDER."}
         sub="This helps us calibrate your baseline metrics."
-        onBack={() => router.back()}
+        onBack={() => {
+          if (isRetake) {
+            void clearOnboardingDraft();
+            router.replace("/(app)/(tabs)/profile");
+            return;
+          }
+          router.back();
+        }}
       />
 
       <View style={s.quadrantsContainer} accessibilityRole="radiogroup">

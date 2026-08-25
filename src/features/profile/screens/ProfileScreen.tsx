@@ -2,6 +2,8 @@ import { useAuth, useSignOut, useDeleteAccount } from "@/src/features/auth/hooks
 import {
   fetchUserProfile,
   saveUserProfile,
+  type EquipmentAccess,
+  type ExperienceLevel,
 } from "@/src/features/profile/services/profile.service";
 import {
   useCompletedSessionCount,
@@ -9,9 +11,9 @@ import {
 } from "@/src/features/progress/hooks/useProgress";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import {
   ActivityIndicator,
@@ -37,6 +39,7 @@ import {
   WEEKDAY_LABELS_SHORT,
 } from "@/src/lib/plan-day-selection";
 import { workoutPlanQueryKey } from "@/src/features/workout/hooks/useWorkoutPlan";
+import { startOnboardingRetake } from "@/src/features/auth/services/onboarding-draft.service";
 
 const GOALS = [
   { id: "lose", label: "Lose Weight", icon: "trending-down-outline" as const },
@@ -45,8 +48,28 @@ const GOALS = [
   { id: "health", label: "Stay Healthy", icon: "leaf-outline" as const },
 ] as const;
 
+const EXPERIENCE_OPTIONS = [
+  { id: "novice", label: "Novice" },
+  { id: "intermediate", label: "Intermediate" },
+  { id: "advanced", label: "Advanced" },
+] as const;
+
+const EQUIPMENT_OPTIONS = [
+  { id: "full_gym", label: "Full Gym" },
+  { id: "home_dumbbells", label: "Home / Dumbbells" },
+  { id: "bodyweight", label: "Bodyweight Only" },
+] as const;
+
 type GoalId = (typeof GOALS)[number]["id"];
 type SaveState = "idle" | "saving" | "saved";
+
+function experienceLabel(id: string | null | undefined): string {
+  return EXPERIENCE_OPTIONS.find((o) => o.id === id)?.label ?? "Not set";
+}
+
+function equipmentLabel(id: string | null | undefined): string {
+  return EQUIPMENT_OPTIONS.find((o) => o.id === id)?.label ?? "Not set";
+}
 
 function parsePositiveNumber(value: string): number | null {
   const parsed = Number(value.trim().replace(",", "."));
@@ -72,6 +95,18 @@ const SETTINGS = [
     label: "Training Schedule",
     sub: null,
     icon: "calendar-outline" as const,
+  },
+  {
+    id: "training",
+    label: "Training Setup",
+    sub: null,
+    icon: "barbell-outline" as const,
+  },
+  {
+    id: "restart",
+    label: "Restart setup",
+    sub: "Redo the quiz. History stays.",
+    icon: "refresh-outline" as const,
   },
   {
     id: "privacy",
@@ -178,6 +213,7 @@ export default function ProfileScreen() {
   const signOutMutation = useSignOut();
   const deleteAccountMutation = useDeleteAccount();
   const qc = useQueryClient();
+  const params = useLocalSearchParams<{ editPlan?: string }>();
 
   const { data: profile, isPending: profilePending } = useQuery({
     queryKey: ["user", "profile"],
@@ -195,6 +231,10 @@ export default function ProfileScreen() {
   const [heightInput, setHeightInput] = useState("");
   const [ageInput, setAgeInput] = useState("");
   const [goalInput, setGoalInput] = useState<GoalId>("health");
+  const [experienceInput, setExperienceInput] =
+    useState<ExperienceLevel>("novice");
+  const [equipmentInput, setEquipmentInput] =
+    useState<EquipmentAccess>("full_gym");
   const [daysInput, setDaysInput] = useState<number[]>([]);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -247,16 +287,43 @@ export default function ProfileScreen() {
         ? (profile!.goalId as GoalId)
         : "health",
     );
+    setExperienceInput(
+      (["novice", "intermediate", "advanced"] as ExperienceLevel[]).includes(
+        profile?.experience as ExperienceLevel,
+      )
+        ? (profile!.experience as ExperienceLevel)
+        : "novice",
+    );
+    setEquipmentInput(
+      (["full_gym", "home_dumbbells", "bodyweight"] as EquipmentAccess[]).includes(
+        profile?.equipment as EquipmentAccess,
+      )
+        ? (profile!.equipment as EquipmentAccess)
+        : "full_gym",
+    );
     setDaysInput(scheduledDays);
   }, [
     ageYears,
     editMode,
     heightCm,
     name,
+    profile?.equipment,
+    profile?.experience,
     profile?.goalId,
     scheduledDays,
     weightKg,
   ]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const flag = Array.isArray(params.editPlan)
+        ? params.editPlan[0]
+        : params.editPlan;
+      if (flag !== "1") return;
+      setEditMode(true);
+      router.setParams({ editPlan: undefined });
+    }, [params.editPlan]),
+  );
 
   /** Two sessions is the floor the plan generator supports. */
   const toggleTrainingDay = (index: number) => {
@@ -302,6 +369,11 @@ export default function ProfileScreen() {
       const scheduleChanged =
         daysInput.length >= 2 &&
         daysInput.join(",") !== scheduledDays.join(",");
+      const planInputsChanged =
+        scheduleChanged ||
+        goalInput !== (profile?.goalId as GoalId | null) ||
+        experienceInput !== profile?.experience ||
+        equipmentInput !== profile?.equipment;
 
       await saveUserProfile({
         name: nextName,
@@ -309,6 +381,8 @@ export default function ProfileScreen() {
         weightKg: savedWeight,
         heightCm: savedHeight,
         age: savedAge,
+        experience: experienceInput,
+        equipment: equipmentInput,
         ...(scheduleChanged && { trainingDays: daysInput }),
       });
       await qc.invalidateQueries({ queryKey: ["auth", "session"] });
@@ -316,8 +390,8 @@ export default function ProfileScreen() {
       // Server PUT /api/profile already upserts NutritionGoal via
       // computeNutritionTargets — refresh clients; do not recompute here.
       await qc.invalidateQueries({ queryKey: ["nutrition", "goals"] });
-      if (scheduleChanged) {
-        // A new day count regenerates the split server-side.
+      if (planInputsChanged) {
+        // Goal, days, level, or equipment regenerates the split server-side.
         await qc.invalidateQueries({ queryKey: workoutPlanQueryKey });
       }
       setSaveState("saved");
@@ -530,38 +604,94 @@ export default function ProfileScreen() {
                 })}
               </View>
 
-              <Text style={styles.editFieldLabel}>Training Days</Text>
-              <View style={styles.weekdayRow}>
-                {WEEKDAY_LABELS_SHORT.map((label, index) => {
-                  const active = daysInput.includes(index);
+              <Text style={styles.editFieldLabel}>Experience</Text>
+              <View style={styles.goalGrid}>
+                {EXPERIENCE_OPTIONS.map((option) => {
+                  const active = experienceInput === option.id;
                   return (
                     <TouchableOpacity
-                      key={label}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: active }}
-                      accessibilityLabel={label}
-                      onPress={() => toggleTrainingDay(index)}
+                      key={option.id}
+                      onPress={() => setExperienceInput(option.id)}
                       activeOpacity={0.75}
-                      style={[
-                        styles.weekdayChip,
-                        active && styles.weekdayChipActive,
-                      ]}
+                      style={[styles.goalChip, active && styles.goalChipActive]}
                     >
                       <Text
                         style={[
-                          styles.weekdayChipText,
+                          styles.goalChipText,
                           active && { color: T.accent },
                         ]}
                       >
-                        {label.slice(0, 1)}
+                        {option.label}
                       </Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
+
+              <Text style={styles.editFieldLabel}>Equipment</Text>
+              <View style={styles.goalGrid}>
+                {EQUIPMENT_OPTIONS.map((option) => {
+                  const active = equipmentInput === option.id;
+                  return (
+                    <TouchableOpacity
+                      key={option.id}
+                      onPress={() => setEquipmentInput(option.id)}
+                      activeOpacity={0.75}
+                      style={[styles.goalChip, active && styles.goalChipActive]}
+                    >
+                      <Text
+                        style={[
+                          styles.goalChipText,
+                          active && { color: T.accent },
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text style={styles.editFieldLabel}>Training Days</Text>
+              <View style={styles.weekdayGrid}>
+                {[
+                  WEEKDAY_LABELS_SHORT.slice(0, 3),
+                  WEEKDAY_LABELS_SHORT.slice(3),
+                ].map((row, rowIndex) => (
+                  <View key={rowIndex} style={styles.weekdayRow}>
+                    {row.map((label, col) => {
+                      const index = rowIndex === 0 ? col : col + 3;
+                      const active = daysInput.includes(index);
+                      return (
+                        <TouchableOpacity
+                          key={label}
+                          accessibilityRole="checkbox"
+                          accessibilityState={{ checked: active }}
+                          accessibilityLabel={label}
+                          onPress={() => toggleTrainingDay(index)}
+                          activeOpacity={0.75}
+                          style={[
+                            styles.weekdayChip,
+                            active && styles.weekdayChipActive,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.weekdayChipText,
+                              active && { color: T.accent },
+                            ]}
+                          >
+                            {label.slice(0, 1)}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ))}
+              </View>
               <Text style={styles.weekdayHint}>
-                {daysInput.length} days a week. Changing this rebuilds your
-                split, so today's workout may differ.
+                {daysInput.length} days a week. Changing goal, days, level, or
+                equipment rebuilds your split, so today's workout may differ.
               </Text>
             </GlassSurface>
           )}
@@ -605,7 +735,9 @@ export default function ProfileScreen() {
                           .map((d) => WEEKDAY_LABELS_SHORT[d])
                           .join(" · ")
                       : "Not set"
-                    : null;
+                    : setting.id === "training"
+                      ? `${experienceLabel(profile?.experience)} · ${equipmentLabel(profile?.equipment)}`
+                      : null;
 
               return (
                 <TouchableOpacity
@@ -616,9 +748,24 @@ export default function ProfileScreen() {
                     if (
                       setting.id === "body" ||
                       setting.id === "goal" ||
-                      setting.id === "schedule"
+                      setting.id === "schedule" ||
+                      setting.id === "training"
                     ) {
                       setEditMode(true);
+                    } else if (setting.id === "restart") {
+                      Alert.alert(
+                        "Restart setup?",
+                        "You'll go through the quiz again and we'll rebuild your plan and nutrition targets. Workouts, meals, and progress stay on your account.",
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          {
+                            text: "Restart",
+                            onPress: () => {
+                              void startOnboardingRetake();
+                            },
+                          },
+                        ],
+                      );
                     } else if (setting.id === "privacy") {
                       router.push("/(app)/privacy-policy");
                     } else if (setting.id === "terms") {
@@ -924,10 +1071,13 @@ function makeStyles(T: AppTheme) {
       fontSize: 12,
       color: T.muted,
     },
+    weekdayGrid: {
+      gap: 6,
+      marginTop: 2,
+    },
     weekdayRow: {
       flexDirection: "row",
       gap: 6,
-      marginTop: 2,
     },
     weekdayChip: {
       flex: 1,

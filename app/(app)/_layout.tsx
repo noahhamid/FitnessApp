@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useAuth, useAuthHydration } from "@/src/features/auth/hooks/useAuth";
 import { prefetchWorkoutBootQueries } from "@/src/features/workout/hooks/useInProgressSession";
 import { useMealWorkoutReminders } from "@/src/hooks/useMealWorkoutReminders";
+import { useStoreReviewPrompts } from "@/src/hooks/useStoreReviewPrompts";
 import { ensureSessionTimerListener } from "@/src/lib/session-timer-notification";
 import { LoadingScreen } from "@/src/ui/components/LoadingScreen";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,6 +26,7 @@ export default function AppGroupLayout() {
   useMealWorkoutReminders(
     hydrated && hasSession && onboardingComplete,
   );
+  useStoreReviewPrompts(hydrated && hasSession && onboardingComplete);
 
   useEffect(() => {
     if (!hydrated || !hasSession || !onboardingComplete) return;

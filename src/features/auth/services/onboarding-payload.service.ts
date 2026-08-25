@@ -34,6 +34,8 @@ export type OnboardingAuthParams = {
   reminderHour?: string | string[];
   /** "1" if user accepted the paywall discount offer. */
   offerAccepted?: string | string[];
+  /** "1" when an existing user is redo-ing the quiz from settings. */
+  retake?: string | string[];
 };
 
 function single(value: string | string[] | undefined): string | undefined {
@@ -121,7 +123,12 @@ export function onboardingParamsForNavigation(params: OnboardingAuthParams) {
     ...(single(params.offerAccepted)
       ? { offerAccepted: single(params.offerAccepted)! }
       : {}),
+    ...(single(params.retake) === "1" ? { retake: "1" } : {}),
   };
+}
+
+export function isOnboardingRetake(params: OnboardingAuthParams): boolean {
+  return single(params.retake) === "1";
 }
 
 async function waitForSession() {
