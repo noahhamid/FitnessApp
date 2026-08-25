@@ -1,0 +1,3398 @@
+{
+  "generatedAt": "2026-08-25T12:17:44.855Z",
+  "totals": {
+    "exercises": 203,
+    "imagesGenerated": 60,
+    "imagesOnDisk": 60,
+    "remainingWithoutImage": 143
+  },
+  "byMuscleGroup": {
+    "chest": {
+      "total": 20,
+      "withImage": 20
+    },
+    "back": {
+      "total": 20,
+      "withImage": 20
+    },
+    "shoulders": {
+      "total": 23,
+      "withImage": 20
+    },
+    "quads": {
+      "total": 20,
+      "withImage": 0
+    },
+    "hamstrings": {
+      "total": 20,
+      "withImage": 0
+    },
+    "glutes": {
+      "total": 20,
+      "withImage": 0
+    },
+    "calves": {
+      "total": 20,
+      "withImage": 0
+    },
+    "biceps": {
+      "total": 20,
+      "withImage": 0
+    },
+    "triceps": {
+      "total": 20,
+      "withImage": 0
+    },
+    "core": {
+      "total": 20,
+      "withImage": 0
+    }
+  },
+  "byEquipment": {
+    "bodyweight": 64,
+    "home_dumbbells": 75,
+    "full_gym": 64
+  },
+  "reductionProposal": {
+    "strategy": "Hand-picked ~8 distinct staples per muscle group (80 total). Prefer compounds + one clear isolation. Cut one-arm duplicates, micro fly/raise/row variants, and niche specialty moves.",
+    "keepCount": 80,
+    "cutCount": 123,
+    "imagesAlreadyDoneThatWouldBeKept": 23,
+    "imagesAlreadyDoneThatWouldBeCut": 37,
+    "remainingImagesIfSlimmed": 57
+  },
+  "allExercises": [
+    {
+      "index": 1,
+      "name": "Chest Dip",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "fitness_dips_character_1787587901667.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 2,
+      "name": "Chest Dip on Straight Bar",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "straight_bar_dips_v2_1787588600332.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 3,
+      "name": "Chest Tap Push-up",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "pushup_shoulder_tap_1787588327064.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 4,
+      "name": "Clock Push-up",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "clock_pushup_char_1787588406831.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 5,
+      "name": "Diamond Push-up",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "diamond_pushup_char_1787588493325.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 6,
+      "name": "Elbow Lift - Reverse Push-up",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "prone_press_character_1787589022144.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 7,
+      "name": "Push-up",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "standard_pushup_char_1787589367682.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 8,
+      "name": "Dumbbell Bench Press",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "db_bench_press_char_1787589483250.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 9,
+      "name": "Dumbbell Decline Fly",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "decline_db_flyes_char_1787589585728.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 10,
+      "name": "Dumbbell Decline One Arm Fly",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "single_arm_decline_fly_1787589815028.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 11,
+      "name": "Dumbbell Decline Twist Fly",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "carry",
+      "hasImage": true,
+      "imageFile": "twisting_decline_fly_1787590281538.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 12,
+      "name": "Dumbbell Incline Breeding",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "incline_db_press_char_1787590721736.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 13,
+      "name": "Dumbbell One Arm Bench Fly",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "single_arm_flat_fly_1787590848233.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 14,
+      "name": "Dumbbell Reverse Bench Press",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "overhand_db_bench_char_1787653154269.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 15,
+      "name": "Barbell Bench Press",
+      "muscleGroup": "chest",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "barbell_bench_press_char_1787591035966.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 16,
+      "name": "Barbell Decline Pullover",
+      "muscleGroup": "chest",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "decline_bb_pullover_char_1787591158884.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 17,
+      "name": "Barbell Guillotine Bench Press",
+      "muscleGroup": "chest",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "bb_guillotine_press_1787591255561.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 18,
+      "name": "Barbell Wide Bench Press",
+      "muscleGroup": "chest",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "wide_bb_bench_press_1787591346057.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 19,
+      "name": "Cable Bench Press",
+      "muscleGroup": "chest",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "standing_cable_press_char_1787591432233.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 20,
+      "name": "Floor Fly (with Barbell)",
+      "muscleGroup": "chest",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "floor_bb_fly_char_1787652703691.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 21,
+      "name": "Bodyweight Squatting Row",
+      "muscleGroup": "back",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "squat_suspension_row_1787653774605.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 22,
+      "name": "Bodyweight Standing Row",
+      "muscleGroup": "back",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "standing_overhand_row_1787654024323.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 23,
+      "name": "Chin-up",
+      "muscleGroup": "back",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "underhand_chinup_char_1787654133798.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 24,
+      "name": "Inverted Row",
+      "muscleGroup": "back",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "inverted_row_char_1787654275739.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 25,
+      "name": "Inverted Row Bent Knees",
+      "muscleGroup": "back",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "bent_knee_inverted_row_1787654395845.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 26,
+      "name": "Inverted Row on Bench",
+      "muscleGroup": "back",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "under_bench_row_char_1787654475342.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 27,
+      "name": "Pull-up",
+      "muscleGroup": "back",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "overhand_pullup_char_1787654696447.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 28,
+      "name": "Dumbbell Bent Over Row",
+      "muscleGroup": "back",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "bent_over_db_row_1787654893738.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 29,
+      "name": "Dumbbell Decline Shrug",
+      "muscleGroup": "back",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "prone_decline_db_shrug_1787654950834.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 30,
+      "name": "Dumbbell Incline Row",
+      "muscleGroup": "back",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "chest_incline_db_row_1787655100702.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 31,
+      "name": "Dumbbell Incline Y-raise",
+      "muscleGroup": "back",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "incline_y_raise_1787655456071.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 32,
+      "name": "Dumbbell Lying Rear Delt Row",
+      "muscleGroup": "back",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "prone_rear_delt_row_1787655588599.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 33,
+      "name": "Dumbbell One Arm Bent-over Row",
+      "muscleGroup": "back",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "single_arm_db_row_1787655727995.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 34,
+      "name": "Dumbbell Reverse Grip Row",
+      "muscleGroup": "back",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "reverse_grip_db_row_1787655812923.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 35,
+      "name": "Barbell Bent Over Row",
+      "muscleGroup": "back",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "barbell_overhand_row_1787655901024.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 36,
+      "name": "Barbell Incline Row",
+      "muscleGroup": "back",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "incline_bb_row_1787656048486.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 37,
+      "name": "Barbell One Arm Bent Over Row",
+      "muscleGroup": "back",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "single_arm_bb_row_1787656179163.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 38,
+      "name": "Barbell Pendlay Row",
+      "muscleGroup": "back",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "pendlay_row_1787656282111.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 39,
+      "name": "Barbell Shrug",
+      "muscleGroup": "back",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "barbell_shrug_1787656394449.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 40,
+      "name": "Cambered Bar Lying Row",
+      "muscleGroup": "back",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "seal_row_cambered_bar_1787656606291.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 41,
+      "name": "Left Hook. Boxing",
+      "muscleGroup": "shoulders",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "boxing_left_hook_1787656971781.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 42,
+      "name": "Handstand Push-up",
+      "muscleGroup": "shoulders",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "wall_handstand_pushup_1787657090610.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 43,
+      "name": "Pike-to-cobra Push-up",
+      "muscleGroup": "shoulders",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "hindu_pushup_flow_1787657197790.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 44,
+      "name": "Shoulder Tap",
+      "muscleGroup": "shoulders",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "plank_shoulder_tap_1787657312274.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 45,
+      "name": "Dumbbell Incline Raise",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "incline_db_press_1787657401926.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 46,
+      "name": "Dumbbell Lateral Raise",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "standing_db_lateral_raise_1787657507581.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 47,
+      "name": "Dumbbell One Arm Lateral Raise",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "single_arm_db_lateral_raise_1787657605996.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 48,
+      "name": "Dumbbell One Arm Upright Row",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "single_arm_db_upright_row_1787657718732.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 49,
+      "name": "Dumbbell Rear Fly",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "rear_delt_fly_1787658018147.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 50,
+      "name": "Dumbbell Rear Lateral Raise",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "bent_over_raise_1787658489689.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 51,
+      "name": "Dumbbell Reverse Fly",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "dumbbell_reverse_fly.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 52,
+      "name": "Dumbbell Rotation Reverse Fly",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "Dumbbell Rotation Reverse Fly.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 53,
+      "name": "Dumbbell Seated Shoulder Press",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "dumbbell_seated_shoulder_press.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 54,
+      "name": "Dumbbell Upright Row",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "Dumbbell Upright Row.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 55,
+      "name": "Barbell Rear Delt Row",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "Barbell Rear Delt Row.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 56,
+      "name": "Barbell Seated Overhead Press",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "barbell_seated_overhead_press.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 57,
+      "name": "Barbell Upright Row",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": true,
+      "imageFile": "barbell_upright_row.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 58,
+      "name": "Cable Cross-over Revers Fly",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "Cable Cross-over Revers Fly.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 59,
+      "name": "Cable Lateral Raise",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "Cable Lateral Raise.jpg",
+      "decision": "KEEP"
+    },
+    {
+      "index": 60,
+      "name": "Cable One Arm Lateral Raise",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": true,
+      "imageFile": "Cable One Arm Lateral Raise.jpg",
+      "decision": "CUT"
+    },
+    {
+      "index": 61,
+      "name": "Cable Shoulder Press",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 62,
+      "name": "Cable Supine Reverse Fly",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 63,
+      "name": "Cable Upright Row",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 64,
+      "name": "Bodyweight Drop Jump Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 65,
+      "name": "Curtsey Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 66,
+      "name": "Forward Lunge",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 67,
+      "name": "Jump Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 68,
+      "name": "Lunge with Jump",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 69,
+      "name": "Lunge with Twist",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 70,
+      "name": "One Leg Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 71,
+      "name": "Dumbbell Bench Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 72,
+      "name": "Dumbbell Goblet Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 73,
+      "name": "Dumbbell Lunge",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 74,
+      "name": "Dumbbell Plyo Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 75,
+      "name": "Dumbbell Rear Lunge",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 76,
+      "name": "Dumbbell Single Leg Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 77,
+      "name": "Dumbbell Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 78,
+      "name": "Barbell Bench Front Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "full_gym",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 79,
+      "name": "Barbell Bench Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "full_gym",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 80,
+      "name": "Barbell Front Chest Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "full_gym",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 81,
+      "name": "Barbell Front Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "full_gym",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 82,
+      "name": "Barbell Full Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "full_gym",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 83,
+      "name": "Barbell Lunge",
+      "muscleGroup": "quads",
+      "minEquipment": "full_gym",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 84,
+      "name": "Glute-ham Raise",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "bodyweight",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 85,
+      "name": "Inverse Leg Curl (bench Support)",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 86,
+      "name": "Inverse Leg Curl (on Pull-up Cable Machine)",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 87,
+      "name": "Kick Out Sit",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "bodyweight",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 88,
+      "name": "Self Assisted Inverse Leg Curl",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 89,
+      "name": "Single Leg Platform Slide",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "bodyweight",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 90,
+      "name": "Standing Single Leg Curl",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 91,
+      "name": "Band Stiff Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 92,
+      "name": "Band Straight Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 93,
+      "name": "Dumbbell Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 94,
+      "name": "Dumbbell Romanian Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 95,
+      "name": "Dumbbell Single Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 96,
+      "name": "Dumbbell Stiff Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 97,
+      "name": "Dumbbell Straight Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 98,
+      "name": "Barbell Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "full_gym",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 99,
+      "name": "Barbell Good Morning",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "full_gym",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 100,
+      "name": "Barbell Romanian Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "full_gym",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 101,
+      "name": "Barbell Single Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "full_gym",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 102,
+      "name": "Barbell Sumo Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "full_gym",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 103,
+      "name": "Cable Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "full_gym",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 104,
+      "name": "Basic Toe Touch",
+      "muscleGroup": "glutes",
+      "minEquipment": "bodyweight",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 105,
+      "name": "Bench Hip Extension",
+      "muscleGroup": "glutes",
+      "minEquipment": "bodyweight",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 106,
+      "name": "Bent Knee Lying Twist",
+      "muscleGroup": "glutes",
+      "minEquipment": "bodyweight",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 107,
+      "name": "Glute Bridge March",
+      "muscleGroup": "glutes",
+      "minEquipment": "bodyweight",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 108,
+      "name": "Glute Bridge Two Legs on Bench",
+      "muscleGroup": "glutes",
+      "minEquipment": "bodyweight",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 109,
+      "name": "Low Glute Bridge on Floor",
+      "muscleGroup": "glutes",
+      "minEquipment": "bodyweight",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 110,
+      "name": "Rear Decline Bridge",
+      "muscleGroup": "glutes",
+      "minEquipment": "bodyweight",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 111,
+      "name": "Band Bent-over Hip Extension",
+      "muscleGroup": "glutes",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 112,
+      "name": "Band Hip Lift",
+      "muscleGroup": "glutes",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 113,
+      "name": "Dumbbell Clean",
+      "muscleGroup": "glutes",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 114,
+      "name": "Dumbbell One Arm Snatch",
+      "muscleGroup": "glutes",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 115,
+      "name": "Dumbbell Sumo Pull Through",
+      "muscleGroup": "glutes",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 116,
+      "name": "Exercise Ball One Legged Diagonal Kick Hamstring Curl",
+      "muscleGroup": "glutes",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 117,
+      "name": "Kettlebell Swing",
+      "muscleGroup": "glutes",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 118,
+      "name": "Barbell Glute Bridge",
+      "muscleGroup": "glutes",
+      "minEquipment": "full_gym",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 119,
+      "name": "Barbell Glute Bridge Two Legs on Bench",
+      "muscleGroup": "glutes",
+      "minEquipment": "full_gym",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 120,
+      "name": "Barbell Rack Pull",
+      "muscleGroup": "glutes",
+      "minEquipment": "full_gym",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 121,
+      "name": "Barbell Seated Good Morning",
+      "muscleGroup": "glutes",
+      "minEquipment": "full_gym",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 122,
+      "name": "Barbell Stiff Leg Good Morning",
+      "muscleGroup": "glutes",
+      "minEquipment": "full_gym",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 123,
+      "name": "Cable Standing Hip Extension",
+      "muscleGroup": "glutes",
+      "minEquipment": "full_gym",
+      "movementPattern": "hinge",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 124,
+      "name": "Ankle Circles",
+      "muscleGroup": "calves",
+      "minEquipment": "bodyweight",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 125,
+      "name": "Bodyweight Standing Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "bodyweight",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 126,
+      "name": "Donkey Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "bodyweight",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 127,
+      "name": "One Leg Donkey Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "bodyweight",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 128,
+      "name": "One Leg Floor Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "bodyweight",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 129,
+      "name": "Standing Calf Raise (on a Staircase)",
+      "muscleGroup": "calves",
+      "minEquipment": "bodyweight",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 130,
+      "name": "Standing Calves",
+      "muscleGroup": "calves",
+      "minEquipment": "bodyweight",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 131,
+      "name": "Band Single Leg Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 132,
+      "name": "Band Single Leg Reverse Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 133,
+      "name": "Dumbbell Seated Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 134,
+      "name": "Dumbbell Seated One Leg Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 135,
+      "name": "Dumbbell Single Leg Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 136,
+      "name": "Exercise Ball on the Wall Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 137,
+      "name": "Single Leg Calf Raise (on a Dumbbell)",
+      "muscleGroup": "calves",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 138,
+      "name": "Barbell Floor Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "full_gym",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 139,
+      "name": "Barbell Seated Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "full_gym",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 140,
+      "name": "Barbell Standing Leg Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "full_gym",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 141,
+      "name": "Barbell Standing Rocking Leg Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "full_gym",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 142,
+      "name": "Cable Standing Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "full_gym",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 143,
+      "name": "Cable Standing One Leg Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "full_gym",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 144,
+      "name": "Biceps Leg Concentration Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 145,
+      "name": "Biceps Narrow Pull-ups",
+      "muscleGroup": "biceps",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 146,
+      "name": "Biceps Pull-up",
+      "muscleGroup": "biceps",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 147,
+      "name": "Bodyweight Side Lying Biceps Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "bodyweight",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 148,
+      "name": "Dumbbell Biceps Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 149,
+      "name": "Dumbbell Biceps Curl Reverse",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 150,
+      "name": "Dumbbell Biceps Curl Squat",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "squat",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 151,
+      "name": "Dumbbell Concentration Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 152,
+      "name": "Dumbbell Hammer Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 153,
+      "name": "Dumbbell High Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 154,
+      "name": "Dumbbell Incline Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 155,
+      "name": "Dumbbell Lying Supine Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 156,
+      "name": "Dumbbell Lying Wide Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 157,
+      "name": "Barbell Alternate Biceps Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 158,
+      "name": "Barbell Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 159,
+      "name": "Barbell Drag Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 160,
+      "name": "Barbell Lying Preacher Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 161,
+      "name": "Barbell Prone Incline Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 162,
+      "name": "Barbell Reverse Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 163,
+      "name": "Cable Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "full_gym",
+      "movementPattern": "pull",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 164,
+      "name": "Bench Dip (knees Bent)",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 165,
+      "name": "Bench Dip on Floor",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 166,
+      "name": "Close-grip Push-up",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 167,
+      "name": "One Arm Dip",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 168,
+      "name": "Reverse Dip",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 169,
+      "name": "Three Bench Dip",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 170,
+      "name": "Triceps Dip",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 171,
+      "name": "Dumbbell Incline Two Arm Extension",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 172,
+      "name": "Dumbbell Kickback",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 173,
+      "name": "Dumbbell Lying Single Extension",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 174,
+      "name": "Dumbbell Lying Triceps Extension",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 175,
+      "name": "Dumbbell One Arm Kickback",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 176,
+      "name": "Dumbbell Seated Bench Extension",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 177,
+      "name": "Push-up Close-grip Off Dumbbell",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 178,
+      "name": "Barbell Incline Reverse-grip Press",
+      "muscleGroup": "triceps",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 179,
+      "name": "Barbell Lying Extension",
+      "muscleGroup": "triceps",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 180,
+      "name": "Barbell Lying Triceps Extension",
+      "muscleGroup": "triceps",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 181,
+      "name": "Cable Kickback",
+      "muscleGroup": "triceps",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 182,
+      "name": "Cable One Arm Tricep Pushdown",
+      "muscleGroup": "triceps",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 183,
+      "name": "Cable Two Arm Tricep Kickback",
+      "muscleGroup": "triceps",
+      "minEquipment": "full_gym",
+      "movementPattern": "push",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 184,
+      "name": "Bodyweight Incline Side Plank",
+      "muscleGroup": "core",
+      "minEquipment": "bodyweight",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 185,
+      "name": "Front Plank with Twist",
+      "muscleGroup": "core",
+      "minEquipment": "bodyweight",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 186,
+      "name": "Kneeling Plank Tap Shoulder",
+      "muscleGroup": "core",
+      "minEquipment": "bodyweight",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 187,
+      "name": "Power Point Plank",
+      "muscleGroup": "core",
+      "minEquipment": "bodyweight",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 188,
+      "name": "Push-up to Side Plank",
+      "muscleGroup": "core",
+      "minEquipment": "bodyweight",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 189,
+      "name": "Reverse Plank with Leg Lift",
+      "muscleGroup": "core",
+      "minEquipment": "bodyweight",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 190,
+      "name": "Side Plank Hip Adduction",
+      "muscleGroup": "core",
+      "minEquipment": "bodyweight",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 191,
+      "name": "Band Bicycle Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 192,
+      "name": "Band Jack Knife Sit-up",
+      "muscleGroup": "core",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 193,
+      "name": "Band Push Sit-up",
+      "muscleGroup": "core",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 194,
+      "name": "Band Standing Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 195,
+      "name": "Crunch (on Stability Ball)",
+      "muscleGroup": "core",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 196,
+      "name": "Dumbbell Side Plank with Rear Fly",
+      "muscleGroup": "core",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 197,
+      "name": "Roller Reverse Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "home_dumbbells",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 198,
+      "name": "Barbell Press Sit-up",
+      "muscleGroup": "core",
+      "minEquipment": "full_gym",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 199,
+      "name": "Cable Kneeling Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "full_gym",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    },
+    {
+      "index": 200,
+      "name": "Cable Reverse Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "full_gym",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 201,
+      "name": "Cable Seated Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "full_gym",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 202,
+      "name": "Cable Side Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "full_gym",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "CUT"
+    },
+    {
+      "index": 203,
+      "name": "Weighted Front Plank",
+      "muscleGroup": "core",
+      "minEquipment": "full_gym",
+      "movementPattern": "carry",
+      "hasImage": false,
+      "imageFile": null,
+      "decision": "KEEP"
+    }
+  ],
+  "proposedKeep": [
+    {
+      "muscleGroup": "chest",
+      "name": "Push-up",
+      "minEquipment": "bodyweight",
+      "hasImage": true,
+      "order": 1
+    },
+    {
+      "muscleGroup": "chest",
+      "name": "Diamond Push-up",
+      "minEquipment": "bodyweight",
+      "hasImage": true,
+      "order": 2
+    },
+    {
+      "muscleGroup": "chest",
+      "name": "Chest Dip",
+      "minEquipment": "bodyweight",
+      "hasImage": true,
+      "order": 3
+    },
+    {
+      "muscleGroup": "chest",
+      "name": "Dumbbell Bench Press",
+      "minEquipment": "home_dumbbells",
+      "hasImage": true,
+      "order": 4
+    },
+    {
+      "muscleGroup": "chest",
+      "name": "Dumbbell Incline Breeding",
+      "minEquipment": "home_dumbbells",
+      "hasImage": true,
+      "order": 5
+    },
+    {
+      "muscleGroup": "chest",
+      "name": "Dumbbell Decline Fly",
+      "minEquipment": "home_dumbbells",
+      "hasImage": true,
+      "order": 6
+    },
+    {
+      "muscleGroup": "chest",
+      "name": "Barbell Bench Press",
+      "minEquipment": "full_gym",
+      "hasImage": true,
+      "order": 7
+    },
+    {
+      "muscleGroup": "chest",
+      "name": "Cable Bench Press",
+      "minEquipment": "full_gym",
+      "hasImage": true,
+      "order": 8
+    },
+    {
+      "muscleGroup": "back",
+      "name": "Pull-up",
+      "minEquipment": "bodyweight",
+      "hasImage": true,
+      "order": 1
+    },
+    {
+      "muscleGroup": "back",
+      "name": "Chin-up",
+      "minEquipment": "bodyweight",
+      "hasImage": true,
+      "order": 2
+    },
+    {
+      "muscleGroup": "back",
+      "name": "Inverted Row",
+      "minEquipment": "bodyweight",
+      "hasImage": true,
+      "order": 3
+    },
+    {
+      "muscleGroup": "back",
+      "name": "Dumbbell Bent Over Row",
+      "minEquipment": "home_dumbbells",
+      "hasImage": true,
+      "order": 4
+    },
+    {
+      "muscleGroup": "back",
+      "name": "Dumbbell One Arm Bent-over Row",
+      "minEquipment": "home_dumbbells",
+      "hasImage": true,
+      "order": 5
+    },
+    {
+      "muscleGroup": "back",
+      "name": "Barbell Bent Over Row",
+      "minEquipment": "full_gym",
+      "hasImage": true,
+      "order": 6
+    },
+    {
+      "muscleGroup": "back",
+      "name": "Barbell Pendlay Row",
+      "minEquipment": "full_gym",
+      "hasImage": true,
+      "order": 7
+    },
+    {
+      "muscleGroup": "back",
+      "name": "Barbell Shrug",
+      "minEquipment": "full_gym",
+      "hasImage": true,
+      "order": 8
+    },
+    {
+      "muscleGroup": "shoulders",
+      "name": "Handstand Push-up",
+      "minEquipment": "bodyweight",
+      "hasImage": true,
+      "order": 1
+    },
+    {
+      "muscleGroup": "shoulders",
+      "name": "Shoulder Tap",
+      "minEquipment": "bodyweight",
+      "hasImage": true,
+      "order": 2
+    },
+    {
+      "muscleGroup": "shoulders",
+      "name": "Dumbbell Lateral Raise",
+      "minEquipment": "home_dumbbells",
+      "hasImage": true,
+      "order": 3
+    },
+    {
+      "muscleGroup": "shoulders",
+      "name": "Dumbbell Seated Shoulder Press",
+      "minEquipment": "home_dumbbells",
+      "hasImage": true,
+      "order": 4
+    },
+    {
+      "muscleGroup": "shoulders",
+      "name": "Dumbbell Rear Fly",
+      "minEquipment": "home_dumbbells",
+      "hasImage": true,
+      "order": 5
+    },
+    {
+      "muscleGroup": "shoulders",
+      "name": "Barbell Seated Overhead Press",
+      "minEquipment": "full_gym",
+      "hasImage": true,
+      "order": 6
+    },
+    {
+      "muscleGroup": "shoulders",
+      "name": "Cable Lateral Raise",
+      "minEquipment": "full_gym",
+      "hasImage": true,
+      "order": 7
+    },
+    {
+      "muscleGroup": "shoulders",
+      "name": "Cable Shoulder Press",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 8
+    },
+    {
+      "muscleGroup": "quads",
+      "name": "Forward Lunge",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 1
+    },
+    {
+      "muscleGroup": "quads",
+      "name": "Jump Squat",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 2
+    },
+    {
+      "muscleGroup": "quads",
+      "name": "One Leg Squat",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 3
+    },
+    {
+      "muscleGroup": "quads",
+      "name": "Dumbbell Goblet Squat",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 4
+    },
+    {
+      "muscleGroup": "quads",
+      "name": "Dumbbell Squat",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 5
+    },
+    {
+      "muscleGroup": "quads",
+      "name": "Dumbbell Lunge",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 6
+    },
+    {
+      "muscleGroup": "quads",
+      "name": "Barbell Front Squat",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 7
+    },
+    {
+      "muscleGroup": "quads",
+      "name": "Barbell Full Squat",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 8
+    },
+    {
+      "muscleGroup": "hamstrings",
+      "name": "Glute-ham Raise",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 1
+    },
+    {
+      "muscleGroup": "hamstrings",
+      "name": "Dumbbell Romanian Deadlift",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 2
+    },
+    {
+      "muscleGroup": "hamstrings",
+      "name": "Dumbbell Deadlift",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 3
+    },
+    {
+      "muscleGroup": "hamstrings",
+      "name": "Dumbbell Single Leg Deadlift",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 4
+    },
+    {
+      "muscleGroup": "hamstrings",
+      "name": "Barbell Deadlift",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 5
+    },
+    {
+      "muscleGroup": "hamstrings",
+      "name": "Barbell Romanian Deadlift",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 6
+    },
+    {
+      "muscleGroup": "hamstrings",
+      "name": "Barbell Good Morning",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 7
+    },
+    {
+      "muscleGroup": "hamstrings",
+      "name": "Barbell Sumo Deadlift",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 8
+    },
+    {
+      "muscleGroup": "glutes",
+      "name": "Low Glute Bridge on Floor",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 1
+    },
+    {
+      "muscleGroup": "glutes",
+      "name": "Glute Bridge March",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 2
+    },
+    {
+      "muscleGroup": "glutes",
+      "name": "Kettlebell Swing",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 3
+    },
+    {
+      "muscleGroup": "glutes",
+      "name": "Barbell Glute Bridge",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 4
+    },
+    {
+      "muscleGroup": "glutes",
+      "name": "Barbell Rack Pull",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 5
+    },
+    {
+      "muscleGroup": "glutes",
+      "name": "Dumbbell Sumo Pull Through",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 6
+    },
+    {
+      "muscleGroup": "glutes",
+      "name": "Cable Standing Hip Extension",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 7
+    },
+    {
+      "muscleGroup": "glutes",
+      "name": "Band Hip Lift",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 8
+    },
+    {
+      "muscleGroup": "calves",
+      "name": "Bodyweight Standing Calf Raise",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 1
+    },
+    {
+      "muscleGroup": "calves",
+      "name": "Standing Calf Raise (on a Staircase)",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 2
+    },
+    {
+      "muscleGroup": "calves",
+      "name": "Dumbbell Seated Calf Raise",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 3
+    },
+    {
+      "muscleGroup": "calves",
+      "name": "Dumbbell Single Leg Calf Raise",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 4
+    },
+    {
+      "muscleGroup": "calves",
+      "name": "Barbell Standing Leg Calf Raise",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 5
+    },
+    {
+      "muscleGroup": "calves",
+      "name": "Barbell Seated Calf Raise",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 6
+    },
+    {
+      "muscleGroup": "calves",
+      "name": "Cable Standing Calf Raise",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 7
+    },
+    {
+      "muscleGroup": "calves",
+      "name": "Donkey Calf Raise",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 8
+    },
+    {
+      "muscleGroup": "biceps",
+      "name": "Dumbbell Biceps Curl",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 1
+    },
+    {
+      "muscleGroup": "biceps",
+      "name": "Dumbbell Hammer Curl",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 2
+    },
+    {
+      "muscleGroup": "biceps",
+      "name": "Dumbbell Concentration Curl",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 3
+    },
+    {
+      "muscleGroup": "biceps",
+      "name": "Dumbbell Incline Curl",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 4
+    },
+    {
+      "muscleGroup": "biceps",
+      "name": "Barbell Curl",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 5
+    },
+    {
+      "muscleGroup": "biceps",
+      "name": "Barbell Reverse Curl",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 6
+    },
+    {
+      "muscleGroup": "biceps",
+      "name": "Cable Curl",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 7
+    },
+    {
+      "muscleGroup": "biceps",
+      "name": "Biceps Pull-up",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 8
+    },
+    {
+      "muscleGroup": "triceps",
+      "name": "Triceps Dip",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 1
+    },
+    {
+      "muscleGroup": "triceps",
+      "name": "Close-grip Push-up",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 2
+    },
+    {
+      "muscleGroup": "triceps",
+      "name": "Bench Dip (knees Bent)",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 3
+    },
+    {
+      "muscleGroup": "triceps",
+      "name": "Dumbbell Kickback",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 4
+    },
+    {
+      "muscleGroup": "triceps",
+      "name": "Dumbbell Lying Triceps Extension",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 5
+    },
+    {
+      "muscleGroup": "triceps",
+      "name": "Barbell Lying Triceps Extension",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 6
+    },
+    {
+      "muscleGroup": "triceps",
+      "name": "Cable Kickback",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 7
+    },
+    {
+      "muscleGroup": "triceps",
+      "name": "Cable One Arm Tricep Pushdown",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 8
+    },
+    {
+      "muscleGroup": "core",
+      "name": "Power Point Plank",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 1
+    },
+    {
+      "muscleGroup": "core",
+      "name": "Front Plank with Twist",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 2
+    },
+    {
+      "muscleGroup": "core",
+      "name": "Push-up to Side Plank",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 3
+    },
+    {
+      "muscleGroup": "core",
+      "name": "Bodyweight Incline Side Plank",
+      "minEquipment": "bodyweight",
+      "hasImage": false,
+      "order": 4
+    },
+    {
+      "muscleGroup": "core",
+      "name": "Band Bicycle Crunch",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 5
+    },
+    {
+      "muscleGroup": "core",
+      "name": "Crunch (on Stability Ball)",
+      "minEquipment": "home_dumbbells",
+      "hasImage": false,
+      "order": 6
+    },
+    {
+      "muscleGroup": "core",
+      "name": "Cable Kneeling Crunch",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 7
+    },
+    {
+      "muscleGroup": "core",
+      "name": "Weighted Front Plank",
+      "minEquipment": "full_gym",
+      "hasImage": false,
+      "order": 8
+    }
+  ],
+  "proposedCut": [
+    {
+      "name": "Chest Dip on Straight Bar",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Chest Tap Push-up",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Clock Push-up",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Elbow Lift - Reverse Push-up",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Decline One Arm Fly",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Decline Twist Fly",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell One Arm Bench Fly",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Reverse Bench Press",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Decline Pullover",
+      "muscleGroup": "chest",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Guillotine Bench Press",
+      "muscleGroup": "chest",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Wide Bench Press",
+      "muscleGroup": "chest",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Floor Fly (with Barbell)",
+      "muscleGroup": "chest",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Bodyweight Squatting Row",
+      "muscleGroup": "back",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Bodyweight Standing Row",
+      "muscleGroup": "back",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Inverted Row Bent Knees",
+      "muscleGroup": "back",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Inverted Row on Bench",
+      "muscleGroup": "back",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Decline Shrug",
+      "muscleGroup": "back",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Incline Row",
+      "muscleGroup": "back",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Incline Y-raise",
+      "muscleGroup": "back",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Lying Rear Delt Row",
+      "muscleGroup": "back",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Reverse Grip Row",
+      "muscleGroup": "back",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Incline Row",
+      "muscleGroup": "back",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell One Arm Bent Over Row",
+      "muscleGroup": "back",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Cambered Bar Lying Row",
+      "muscleGroup": "back",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Left Hook. Boxing",
+      "muscleGroup": "shoulders",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Pike-to-cobra Push-up",
+      "muscleGroup": "shoulders",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Incline Raise",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell One Arm Lateral Raise",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell One Arm Upright Row",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Rear Lateral Raise",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Reverse Fly",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Rotation Reverse Fly",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Upright Row",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Rear Delt Row",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Upright Row",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Cable Cross-over Revers Fly",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Cable One Arm Lateral Raise",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Cable Supine Reverse Fly",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Cable Upright Row",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Bodyweight Drop Jump Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Curtsey Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Lunge with Jump",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Lunge with Twist",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Bench Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Plyo Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Rear Lunge",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Single Leg Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Bench Front Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Bench Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Front Chest Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Lunge",
+      "muscleGroup": "quads",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Inverse Leg Curl (bench Support)",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Inverse Leg Curl (on Pull-up Cable Machine)",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Kick Out Sit",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Self Assisted Inverse Leg Curl",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Single Leg Platform Slide",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Standing Single Leg Curl",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Band Stiff Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Band Straight Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Stiff Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Straight Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Single Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Cable Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Basic Toe Touch",
+      "muscleGroup": "glutes",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Bench Hip Extension",
+      "muscleGroup": "glutes",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Bent Knee Lying Twist",
+      "muscleGroup": "glutes",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Glute Bridge Two Legs on Bench",
+      "muscleGroup": "glutes",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Rear Decline Bridge",
+      "muscleGroup": "glutes",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Band Bent-over Hip Extension",
+      "muscleGroup": "glutes",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Clean",
+      "muscleGroup": "glutes",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell One Arm Snatch",
+      "muscleGroup": "glutes",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Exercise Ball One Legged Diagonal Kick Hamstring Curl",
+      "muscleGroup": "glutes",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Glute Bridge Two Legs on Bench",
+      "muscleGroup": "glutes",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Seated Good Morning",
+      "muscleGroup": "glutes",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Stiff Leg Good Morning",
+      "muscleGroup": "glutes",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Ankle Circles",
+      "muscleGroup": "calves",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "One Leg Donkey Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "One Leg Floor Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Standing Calves",
+      "muscleGroup": "calves",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Band Single Leg Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Band Single Leg Reverse Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Seated One Leg Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Exercise Ball on the Wall Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Single Leg Calf Raise (on a Dumbbell)",
+      "muscleGroup": "calves",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Floor Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Standing Rocking Leg Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Cable Standing One Leg Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Biceps Leg Concentration Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Biceps Narrow Pull-ups",
+      "muscleGroup": "biceps",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Bodyweight Side Lying Biceps Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Biceps Curl Reverse",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Biceps Curl Squat",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell High Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Lying Supine Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Lying Wide Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Alternate Biceps Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Drag Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Lying Preacher Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Prone Incline Curl",
+      "muscleGroup": "biceps",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Bench Dip on Floor",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "One Arm Dip",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Reverse Dip",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Three Bench Dip",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Incline Two Arm Extension",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Lying Single Extension",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell One Arm Kickback",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Seated Bench Extension",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Push-up Close-grip Off Dumbbell",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Incline Reverse-grip Press",
+      "muscleGroup": "triceps",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Lying Extension",
+      "muscleGroup": "triceps",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Cable Two Arm Tricep Kickback",
+      "muscleGroup": "triceps",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Kneeling Plank Tap Shoulder",
+      "muscleGroup": "core",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Reverse Plank with Leg Lift",
+      "muscleGroup": "core",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Side Plank Hip Adduction",
+      "muscleGroup": "core",
+      "minEquipment": "bodyweight",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Band Jack Knife Sit-up",
+      "muscleGroup": "core",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Band Push Sit-up",
+      "muscleGroup": "core",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Band Standing Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Dumbbell Side Plank with Rear Fly",
+      "muscleGroup": "core",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Roller Reverse Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "home_dumbbells",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Barbell Press Sit-up",
+      "muscleGroup": "core",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Cable Reverse Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Cable Seated Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    },
+    {
+      "name": "Cable Side Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "full_gym",
+      "reason": "duplicate / niche / similar look"
+    }
+  ]
+}

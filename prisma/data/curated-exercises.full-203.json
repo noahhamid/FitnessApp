@@ -548,6 +548,13 @@
     "instructions": "Stand with your feet shoulder-width apart, holding a dumbbell in each hand at your sides. Keeping your chest up and core engaged, lower your body down by bending at the knees and hips, as if sitting back into a chair. Continue lowering until your thighs are parallel to the ground, or as low as you can comfortably go. Pause for a moment at the bottom, then push through your heels to return to the starting position. Repeat for the desired number of repetitions."
   },
   {
+    "name": "Barbell Bench Front Squat",
+    "muscleGroup": "quads",
+    "movementPattern": "squat",
+    "minEquipment": "full_gym",
+    "instructions": "Start by standing with your feet shoulder-width apart and the barbell resting on your upper chest, just below your collarbone. Hold the barbell with an overhand grip, keeping your elbows up and your upper arms parallel to the ground. Lower your body down into a squat position by bending at the knees and hips, keeping your back straight and your chest up. Pause for a moment at the bottom of the squat, then push through your heels to return to the starting position. Repeat for the desired number of repetitions."
+  },
+  {
     "name": "Barbell Bench Squat",
     "muscleGroup": "quads",
     "movementPattern": "squat",
@@ -635,6 +642,20 @@
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
     "instructions": "Stand with your feet hip-width apart and your hands on your hips. Shift your weight onto your left leg and lift your right foot off the ground, bending your knee. Slowly curl your right heel towards your glutes, squeezing your hamstring. Pause for a moment at the top, then slowly lower your right foot back down to the starting position. Repeat for the desired number of repetitions, then switch legs."
+  },
+  {
+    "name": "Band Stiff Leg Deadlift",
+    "muscleGroup": "hamstrings",
+    "movementPattern": "hinge",
+    "minEquipment": "home_dumbbells",
+    "instructions": "Stand with your feet shoulder-width apart and place the band around your ankles. Hold the band with both hands in front of your thighs, palms facing your body. Keeping your back straight and your core engaged, hinge at the hips and slowly lower your upper body towards the ground. As you lower, push your hips back and allow your knees to bend slightly. Lower the band towards the ground, feeling a stretch in your hamstrings. Pause for a moment at the bottom, then engage your glutes and hamstrings to lift your upper body back up to the starting position. Repeat for the desired number of repetitions."
+  },
+  {
+    "name": "Band Straight Leg Deadlift",
+    "muscleGroup": "hamstrings",
+    "movementPattern": "carry",
+    "minEquipment": "home_dumbbells",
+    "instructions": "Stand with your feet shoulder-width apart and place the band around your feet. Hold the band with both hands, palms facing your body, and keep your arms straight. Engage your core and maintain a slight bend in your knees. Slowly hinge forward at your hips, keeping your back straight and chest lifted. Lower the band towards the ground while keeping your legs straight. Pause for a moment at the bottom, then squeeze your glutes and hamstrings to return to the starting position. Repeat for the desired number of repetitions."
   },
   {
     "name": "Dumbbell Deadlift",
