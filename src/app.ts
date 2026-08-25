@@ -22,7 +22,7 @@ app.use("*", logger());
 
 const CORS_ALLOW = new Set([
   PRODUCTION_API_URL,
-  "https://potentialpeak-app.vercel.app",
+  "https://potentialpeak-app-puce.vercel.app",
   "http://localhost:8081",
   "http://localhost:3000",
   "http://127.0.0.1:8081",

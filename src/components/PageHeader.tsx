@@ -2,13 +2,14 @@ import type { ReactNode } from "react";
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
+import { BrandWordmark } from "@/src/components/BrandWordmark";
 
 type Props = {
-  /** Uppercase tracked label (e.g. "OVERVIEW", "ATHLETE PROFILE"). */
-  eyebrow: string;
-  /** Optional leading mark next to the eyebrow (e.g. Profile shield icon). */
+  /** @deprecated Replaced by the PotentialPeak wordmark. Kept so call sites compile. */
+  eyebrow?: string;
+  /** @deprecated Unused — wordmark replaced the eyebrow row. */
   eyebrowLeading?: ReactNode;
-  /** Soft line under the eyebrow (e.g. "Manage your account,"). */
+  /** Soft line under the heading (e.g. "Manage your account,"). */
   subtitle?: string;
   /** Large page title — displayBold 28 / -0.5. */
   title: string;
@@ -18,12 +19,9 @@ type Props = {
 };
 
 /**
- * Shared page chrome for Progress + Profile:
- * eyebrow → optional subtitle → title (+ optional right action).
+ * Shared page chrome: PotentialPeak + existing title (+ optional action).
  */
 export function PageHeader({
-  eyebrow,
-  eyebrowLeading,
   subtitle,
   title,
   action,
@@ -33,9 +31,14 @@ export function PageHeader({
 
   return (
     <View style={[s.wrap, style]}>
-      <View style={s.eyebrowRow}>
-        {eyebrowLeading}
-        <Text style={s.eyebrow}>{eyebrow}</Text>
+      <View style={s.titleRow}>
+        <View style={s.heading}>
+          <BrandWordmark size={22} />
+          <Text style={s.title} numberOfLines={1}>
+            {title}
+          </Text>
+        </View>
+        {action ? <View style={s.action}>{action}</View> : null}
       </View>
 
       {subtitle ? (
@@ -43,13 +46,6 @@ export function PageHeader({
           {subtitle}
         </Text>
       ) : null}
-
-      <View style={s.titleRow}>
-        <Text style={s.title} numberOfLines={1}>
-          {title}
-        </Text>
-        {action ? <View style={s.action}>{action}</View> : null}
-      </View>
     </View>
   );
 }
@@ -59,26 +55,7 @@ function makeStyles(T: AppTheme) {
     wrap: {
       paddingTop: 6,
       paddingBottom: 20,
-      gap: 2,
-    },
-    eyebrowRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 5,
-      marginBottom: 4,
-    },
-    eyebrow: {
-      fontFamily: T.bodySemi,
-      fontSize: 11,
-      color: T.muted,
-      letterSpacing: 1.2,
-      textTransform: "uppercase",
-    },
-    subtitle: {
-      fontFamily: T.body,
-      fontSize: 13,
-      color: T.muted,
-      marginBottom: 2,
+      gap: 4,
     },
     titleRow: {
       flexDirection: "row",
@@ -87,13 +64,26 @@ function makeStyles(T: AppTheme) {
       gap: 12,
       minWidth: 0,
     },
-    title: {
+    heading: {
       flex: 1,
+      flexDirection: "row",
+      alignItems: "baseline",
+      flexWrap: "wrap",
+      gap: 8,
+      minWidth: 0,
+    },
+    subtitle: {
+      fontFamily: T.body,
+      fontSize: 13,
+      color: T.muted,
+    },
+    title: {
       fontFamily: T.displayBold,
       fontSize: 28,
       color: T.white,
       letterSpacing: -0.5,
       lineHeight: 32,
+      flexShrink: 1,
       minWidth: 0,
     },
     action: {

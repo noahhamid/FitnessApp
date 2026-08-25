@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Sparkles } from "lucide-react-native";
+import { Check, Sparkles } from "lucide-react-native";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
@@ -94,15 +94,20 @@ export function AiSuggestionCard({
                     isPending && styles.chipPending,
                   ]}
                 >
-                  <Text
-                    style={[styles.chipText, isAdded && styles.chipTextAdded]}
-                  >
-                    {isAdded
-                      ? "Added ✓"
-                      : isPending
-                        ? "Adding…"
-                        : `${s.label} · ${s.calories} Cal`}
-                  </Text>
+                  <View style={styles.chipInner}>
+                    {isAdded ? (
+                      <Check size={12} color={T.onAccent} strokeWidth={2.6} />
+                    ) : null}
+                    <Text
+                      style={[styles.chipText, isAdded && styles.chipTextAdded]}
+                    >
+                      {isAdded
+                        ? "Added"
+                        : isPending
+                          ? "Adding…"
+                          : `${s.label} · ${s.calories} Cal`}
+                    </Text>
+                  </View>
                 </View>
               </PressableScale>
             );
@@ -177,6 +182,11 @@ function makeStyles(T: AppTheme) {
     chipAdded: {
       backgroundColor: T.accent,
       borderColor: T.accent,
+    },
+    chipInner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
     },
     chipText: { fontFamily: T.bodySemi, fontSize: 11, color: T.onImage },
     chipTextAdded: { color: T.onAccent },

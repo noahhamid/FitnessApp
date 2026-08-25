@@ -1,7 +1,7 @@
 // src/features/auth/hooks/useAuth.ts
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -92,11 +92,30 @@ export function useAuth() {
   };
 }
 
-// ── useAuthHydration — was used in _layout to wait for session ────────────────
+// ── Persist hydration — AsyncStorage is async; default onboarded is false ─────
+
+export function useAuthStoreHydration(): boolean {
+  const [ready, setReady] = useState(() => useAuthStore.persist.hasHydrated());
+
+  useEffect(() => {
+    if (useAuthStore.persist.hasHydrated()) {
+      setReady(true);
+      return;
+    }
+    return useAuthStore.persist.onFinishHydration(() => {
+      setReady(true);
+    });
+  }, []);
+
+  return ready;
+}
+
+// ── useAuthHydration — wait for session AND persisted onboarding flags ─────────
 
 export function useAuthHydration(): boolean {
   const { isPending } = useAuthSession();
-  return !isPending;
+  const storeReady = useAuthStoreHydration();
+  return !isPending && storeReady;
 }
 
 // ── Mutation hooks ────────────────────────────────────────────────────────────

@@ -20,7 +20,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
@@ -62,7 +62,12 @@ import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import {
   adaptPlanDay,
   adaptLibraryExercise,
+<<<<<<< HEAD
   imageForExercise,
+=======
+  estimateWorkoutMinutes,
+  imageForMuscleGroup,
+>>>>>>> c84f82c51a5877e6f793708322cf1c115b69fae5
 } from "@/src/lib/workout-plan-adapter";
 import {
   getTodaysPlanDayIndex,
@@ -76,7 +81,6 @@ import {
 } from "../hooks/useWorkoutSession";
 import { useAddToLiveSession } from "../hooks/useAddToLiveSession";
 import type { Exercise, WorkoutPlan } from "../data/workouts";
-import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import {
   invalidateQueryPrefixes,
   usePullToRefresh,
@@ -84,9 +88,17 @@ import {
 
 type ViewState = "today" | "fullPlan" | "detail" | "active" | "libraryDetail";
 
+function openPlanEditor() {
+  router.push({
+    pathname: "/(app)/(tabs)/profile",
+    params: { editPlan: "1" },
+  });
+}
+
 /** Flip to `true` in __DEV__ to verify failed background session UX (banner + Alert). */
 const FORCE_SESSION_CREATE_FAIL = false;
 
+<<<<<<< HEAD
 // `require` at module scope is fine; resolveAssetSource must stay lazy
 // (breaks `expo export:embed` if called at import time).
 const AVATAR_PLACEHOLDER = require("../../../../assets/images/avatar-placeholder.jpg");
@@ -99,6 +111,8 @@ function getAvatarPlaceholderUri(): string {
   return avatarPlaceholderUri;
 }
 
+=======
+>>>>>>> c84f82c51a5877e6f793708322cf1c115b69fae5
 /** Resolve a plan exercise to LibraryExercise shape for ExerciseDetailCard. */
 function toLibraryExercise(
   exercise: { id: string; name: string; muscleGroup?: string },
@@ -153,12 +167,7 @@ const Reveal = ({
 };
 
 function estimateMinutes(plan: WorkoutPlan): number {
-  const seconds = plan.exercises.reduce((sum, ex) => {
-    const work =
-      ex.type === "duration" ? (ex.durationSec ?? 0) : (ex.reps ?? 10) * 3;
-    return sum + (work + ex.restSec) * ex.sets;
-  }, 0);
-  return Math.round(seconds / 60);
+  return estimateWorkoutMinutes(plan.exercises);
 }
 
 function muscleSummary(plan: WorkoutPlan): string {
@@ -194,12 +203,12 @@ export default function WorkoutScreen() {
   const startGenRef = useRef(0);
   const pendingStartPlanRef = useRef<WorkoutPlan | null>(null);
 
-  const { user } = useAuth();
   const { data: apiPlan, isLoading, error } = useWorkoutPlan();
   const { data: profile } = useUserProfile();
   const { data: lastPerformance } = useLastPerformance();
   const { data: exerciseLibrary } = useExerciseLibrary();
   const { inProgress, isLoading: inProgressLoading } = useInProgressSession();
+  const params = useLocalSearchParams<{ resume?: string }>();
   const { streakDays } = useWorkoutStreak(!!inProgress);
   const { data: personalRecords } = usePersonalRecords();
   const startSession = useStartWorkoutSession();
@@ -392,7 +401,7 @@ export default function WorkoutScreen() {
     setView("libraryDetail");
   };
 
-  const handleResume = () => {
+  const handleResume = useCallback(() => {
     if (!inProgress) return;
     startGenRef.current += 1;
     pendingStartPlanRef.current = null;
@@ -405,7 +414,18 @@ export default function WorkoutScreen() {
     const resumedAt = Date.parse(inProgress.startedAt);
     setClockStartMs(Number.isFinite(resumedAt) ? resumedAt : Date.now());
     setView("active");
-  };
+  }, [inProgress]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const flag = Array.isArray(params.resume)
+        ? params.resume[0]
+        : params.resume;
+      if (flag !== "1" || inProgressLoading || !inProgress) return;
+      handleResume();
+      router.setParams({ resume: undefined });
+    }, [params.resume, inProgress, inProgressLoading, handleResume]),
+  );
 
   const createSessionInBackground = (plan: WorkoutPlan, gen: number) => {
     setSessionCreating(true);
@@ -647,9 +667,19 @@ export default function WorkoutScreen() {
             </Pressable>
             <Text style={s.sectionTitle}>Full plan</Text>
             {apiPlan && (
-              <Text style={s.splitSub}>
-                {apiPlan.splitLabel} · {apiPlan.daysPerWeek} days / week
-              </Text>
+              <View style={s.splitTitleRow}>
+                <Text style={[s.splitSub, s.splitCopy]}>
+                  {apiPlan.splitLabel} · {apiPlan.daysPerWeek} days / week
+                </Text>
+                <Pressable
+                  onPress={openPlanEditor}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Update plan"
+                >
+                  <Text style={s.updatePlanText}>Update plan</Text>
+                </Pressable>
+              </View>
             )}
           </Reveal>
 
@@ -775,18 +805,27 @@ export default function WorkoutScreen() {
         }
       >
         <Reveal delay={0}>
-          <WorkoutTabHeader
-            name={user?.name ?? "there"}
-            avatarUrl={getAvatarPlaceholderUri()}
-          />
+          <WorkoutTabHeader />
         </Reveal>
 
         <Reveal delay={80} style={s.splitHeader}>
           {apiPlan && (
-            <>
-              <Text style={s.splitLabel}>{apiPlan.splitLabel}</Text>
-              <Text style={s.splitSub}>{apiPlan.daysPerWeek} days / week</Text>
-            </>
+            <View style={s.splitTitleRow}>
+              <View style={s.splitCopy}>
+                <Text style={s.splitLabel}>{apiPlan.splitLabel}</Text>
+                <Text style={s.splitSub}>
+                  {apiPlan.daysPerWeek} days / week
+                </Text>
+              </View>
+              <Pressable
+                onPress={openPlanEditor}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Update plan"
+              >
+                <Text style={s.updatePlanText}>Update plan</Text>
+              </Pressable>
+            </View>
           )}
         </Reveal>
 
@@ -953,6 +992,19 @@ function makeStyles(T: AppTheme) {
   // uses its own insets). Keep a small gap under the status-bar padding.
   scrollContent: { paddingHorizontal: 20, paddingTop: 8 },
   splitHeader: { marginBottom: 20 },
+  splitTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  splitCopy: { flex: 1, minWidth: 0 },
+  updatePlanText: {
+    color: T.accent,
+    fontFamily: T.display,
+    fontSize: 13,
+    letterSpacing: -0.1,
+  },
   splitLabel: {
     color: T.accent,
     fontFamily: T.display,

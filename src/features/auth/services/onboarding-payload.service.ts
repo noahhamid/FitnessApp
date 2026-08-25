@@ -34,6 +34,11 @@ export type OnboardingAuthParams = {
   reminderHour?: string | string[];
   /** "1" if user accepted the paywall discount offer. */
   offerAccepted?: string | string[];
+<<<<<<< HEAD
+=======
+  /** "1" when an existing user is redo-ing the quiz from settings. */
+  retake?: string | string[];
+>>>>>>> c84f82c51a5877e6f793708322cf1c115b69fae5
 };
 
 function single(value: string | string[] | undefined): string | undefined {
@@ -121,12 +126,22 @@ export function onboardingParamsForNavigation(params: OnboardingAuthParams) {
     ...(single(params.offerAccepted)
       ? { offerAccepted: single(params.offerAccepted)! }
       : {}),
+    ...(single(params.retake) === "1" ? { retake: "1" } : {}),
   };
 }
 
+<<<<<<< HEAD
 async function waitForSession(): Promise<boolean> {
   const { readSessionToken } = await import("@/src/lib/session-token");
   for (let attempt = 0; attempt < 12; attempt += 1) {
+=======
+export function isOnboardingRetake(params: OnboardingAuthParams): boolean {
+  return single(params.retake) === "1";
+}
+
+async function waitForSession() {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+>>>>>>> c84f82c51a5877e6f793708322cf1c115b69fae5
     const session = await getSession();
     if (session?.user) return true;
     // Web cross-origin: Bearer token is enough for our API even when

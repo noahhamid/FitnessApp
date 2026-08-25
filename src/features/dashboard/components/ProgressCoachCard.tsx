@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Scale, Sparkles } from "lucide-react-native";
+import { Scale, Sparkles, Trophy } from "lucide-react-native";
 import {
   Animated as RNAnimated,
   Easing,
@@ -28,6 +28,7 @@ type Props = {
   sparklinePoints: number[];
   coachHeadline: string;
   coachBody: string;
+  goalHit?: boolean;
 };
 
 function polylineLength(points: { x: number; y: number }[]): number {
@@ -46,6 +47,7 @@ export function ProgressCoachCard({
   sparklinePoints,
   coachHeadline,
   coachBody,
+  goalHit = false,
 }: Props) {
   const { T, styles } = useThemedStyles(makeStyles);
 
@@ -182,7 +184,11 @@ export function ProgressCoachCard({
 
         <View style={styles.bottom}>
           <View style={styles.eyebrowRow}>
-            <Sparkles size={11} color={T.accent} strokeWidth={2.2} />
+            {goalHit ? (
+              <Trophy size={11} color={T.accent} strokeWidth={2.2} />
+            ) : (
+              <Sparkles size={11} color={T.accent} strokeWidth={2.2} />
+            )}
             <Text style={styles.eyebrow}>COACH'S NOTE</Text>
           </View>
 

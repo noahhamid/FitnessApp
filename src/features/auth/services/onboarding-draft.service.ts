@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { Href } from "expo-router";
+import { router, type Href } from "expo-router";
 import {
   hasCompletedOnboardingPayload,
   onboardingParamsForNavigation,
@@ -83,4 +83,16 @@ export async function getOnboardingResumeHref(): Promise<Href> {
 /** New quiz — wipe the local draft so reinstall / a second email starts clean. */
 export async function startFreshOnboarding(): Promise<void> {
   await clearOnboardingDraft();
+}
+
+/**
+ * Signed-in retake from settings. History stays; only the quiz draft is cleared.
+ * Does not flip `onboarded`, so backing out still leaves them in the app.
+ */
+export async function startOnboardingRetake(): Promise<void> {
+  await clearOnboardingDraft();
+  router.push({
+    pathname: "/(auth)/onboarding/gender",
+    params: { retake: "1" },
+  });
 }

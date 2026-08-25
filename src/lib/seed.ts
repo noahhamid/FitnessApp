@@ -1,12 +1,12 @@
 import { COLORS } from "@/src/ui/tokens/colors";
 
 export const NAV_ITEMS = [
-  { id: "home", icon: "⊞", label: "Home" },
-  { id: "workout", icon: "🏋️", label: "Workout" },
-  { id: "nutrition", icon: "🍎", label: "Nutrition" },
-  { id: "focus", icon: "⚡", label: "Focus" },
-  { id: "progress", icon: "📈", label: "Progress" },
-  { id: "profile", icon: "👤", label: "Profile" },
+  { id: "home", icon: "house", label: "Home" },
+  { id: "workout", icon: "dumbbell", label: "Workout" },
+  { id: "nutrition", icon: "apple", label: "Nutrition" },
+  { id: "focus", icon: "zap", label: "Focus" },
+  { id: "progress", icon: "trending-up", label: "Progress" },
+  { id: "profile", icon: "user", label: "Profile" },
 ] as const;
 
 export const WEEKLY_DATA = [

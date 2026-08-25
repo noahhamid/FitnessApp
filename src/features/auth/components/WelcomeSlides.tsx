@@ -1,6 +1,8 @@
 import { startFreshOnboarding } from "@/src/features/auth/services/onboarding-draft.service";
 import { useAuthStore } from "@/src/features/auth/hooks/useAuth";
 import { router } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
 import {
   Image,
   ImageBackground,
@@ -15,6 +17,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { C, FONTS } from "@/src/ui/tokens";
 
 export function WelcomeSlides() {
+  useEffect(() => {
+    void SplashScreen.hideAsync();
+  }, []);
+
   return (
     <ImageBackground
       source={require("../../../../assets/images/welcome-gym.jpg")}

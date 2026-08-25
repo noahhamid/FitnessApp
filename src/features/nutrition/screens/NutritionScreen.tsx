@@ -16,7 +16,6 @@ import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-
 import { useWaterResync } from "@/src/features/nutrition/hooks/useNutrition";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
@@ -46,6 +45,7 @@ import {
   useSuggestion,
   useAdaptiveSuggestion,
   useApplyAdaptiveSuggestion,
+  useDeleteMeal,
 } from "../hooks/useNutrition";
 import type { MealLogEntry, MealType } from "../types/nutrition.types";
 import { GYM_FOODS } from "@/src/lib/gymFoods";
@@ -64,7 +64,6 @@ import {
   usePullToRefresh,
 } from "@/src/hooks/usePullToRefresh";
 import { AdaptiveSuggestionCard } from "../components/AdaptiveSuggestionCard";
-
 const WATER_GOAL_GLASSES = 8;
 const MEAL_SLOTS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"];
 const RECOMMENDED_RANGE: Record<MealType, string> = {
@@ -120,6 +119,7 @@ export default function MealScreen() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [targetsOpen, setTargetsOpen] = useState(false);
   const [adaptiveDismissed, setAdaptiveDismissed] = useState(false);
+  const deleteMeal = useDeleteMeal(selectedDate);
 
   const refreshNutrition = useCallback(
     () =>

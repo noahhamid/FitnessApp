@@ -4,14 +4,6 @@ import { sendAuthEmail } from "./send-auth-email";
 
 const APP_VERIFY_EMAIL_URL = "com.exo.fitness://verify-email";
 
-/**
- * better-auth (and @better-auth/expo) are ESM-only. Root package.json is
- * "type": "commonjs", so Vercel's Hono preset compiles this file to CJS and a
- * static `import`/`require` of better-auth crashes with ERR_REQUIRE_ESM.
- *
- * Dynamic `import()` works from CJS and loads the ESM package correctly.
- * Keep all better-auth imports inside this async factory — never top-level.
- */
 async function createAuth() {
   const [{ betterAuth }, { prismaAdapter }, { expo }, { bearer }] =
     await Promise.all([
@@ -34,22 +26,18 @@ async function createAuth() {
     user: {
       deleteUser: {
         enabled: true,
-        // OAuth users have no password — email confirm is required for them.
-        // Password users can also delete with a fresh session (default 1 day).
         sendDeleteAccountVerification: async ({ user, token }) => {
-          // Mobile app deep link — Better Auth's default web callback URL requires
-          // a browser session cookie on the API host, which email clients don't have.
-          // Opening this link in the app (still signed in) completes deletion via token.
           const confirmUrl = `com.exo.fitness://delete-account?token=${encodeURIComponent(token)}`;
           await sendAuthEmail({
             to: user.email,
-            subject: "Confirm deleting your Exo account",
+            subject: "Confirm deleting your PotentialPeak Fitness account",
             html: `
       <p>Hi${user.name ? ` ${user.name}` : ""},</p>
-      <p>We received a request to permanently delete your Exo account and all associated data (workouts, meals, weight logs, and profile).</p>
-      <p>This cannot be undone. Open the link below on the device where you are signed in to Exo:</p>
-      <p><a href="${confirmUrl}">Delete my account permanently</a></p>
-      <p>If you didn't request this, you can ignore this email — your account will stay active.</p>
+      <p>We got a request to delete your PotentialPeak Fitness account. If you go through with this, everything including your workouts, meals, weight logs, and profile. It will be permanently wiped out.</p>
+      <p>There's no turning back once you do it. If you're sure, just tap the link below on the device where you're currently logged in:</p>
+      <p><a href="${confirmUrl}">Yes, delete my account</a></p>
+      <p>Didn't ask for this? No worries at all, you can just ignore this email and your account will stay safe and active.</p>
+      <p>Take care,<br>The PotentialPeak Fitness Team</p>
     `,
           });
         },
@@ -92,12 +80,13 @@ async function createAuth() {
       sendResetPassword: async ({ user, url }) => {
         await sendAuthEmail({
           to: user.email,
-          subject: "Reset your Exo password",
+          subject: "Reset your PotentialPeak Fitness password",
           html: `
       <p>Hi${user.name ? ` ${user.name}` : ""},</p>
-      <p>Tap the link below to choose a new password:</p>
-      <p><a href="${url}">Reset password</a></p>
-      <p>If you didn't request this, you can ignore this email.</p>
+      <p>We received a request to reset your password. No worries, it happens to the best of us! Just tap the link below to set up a new one:</p>
+      <p><a href="${url}">Choose a new password</a></p>
+      <p>If you didn't ask for this, you can safely ignore this email—your current password won't change.</p>
+      <p>Take care,<br>The PotentialPeak Fitness Team</p>
     `,
         });
       },
@@ -111,12 +100,13 @@ async function createAuth() {
         const verifyUrl = `${APP_VERIFY_EMAIL_URL}?token=${encodeURIComponent(token)}`;
         await sendAuthEmail({
           to: user.email,
-          subject: "Confirm your Exo email",
+          subject: "Welcome to PotentialPeak Fitness! Please verify your email",
           html: `
       <p>Hi${user.name ? ` ${user.name}` : ""},</p>
-      <p>Tap the link below to confirm this email belongs to you:</p>
-      <p><a href="${verifyUrl}">Confirm email</a></p>
-      <p>If you didn't create an account, you can ignore this email.</p>
+      <p>Welcome aboard! We're super excited to have you. Just click the link below to verify your email address and get everything set up:</p>
+      <p><a href="${verifyUrl}">Verify my email</a></p>
+      <p>If you didn't create an account with us, feel free to ignore this email.</p>
+      <p>Take care,<br>The PotentialPeak Fitness Team</p>
     `,
         });
       },
@@ -124,7 +114,6 @@ async function createAuth() {
 
     socialProviders: {
       google: {
-        // Must be the Google Cloud *Web* client ID + secret (not Android/iOS).
         clientId: process.env.GOOGLE_CLIENT_ID!,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       },

@@ -1,20 +1,13 @@
 import { useMemo } from "react";
 import { useWorkoutPlan } from "@/src/features/workout/hooks/useWorkoutPlan";
-import { adaptPlanDay } from "@/src/lib/workout-plan-adapter";
+import { useTodayExtras } from "@/src/features/workout/hooks/useTodayExtras";
+import {
+  adaptLibraryExercise,
+  adaptPlanDay,
+  estimateWorkoutMinutes,
+} from "@/src/lib/workout-plan-adapter";
 import { getPlanDayIndexForDate } from "@/src/lib/plan-day-selection";
-
-function estimateMinutes(exercises: {
-  sets: number;
-  reps?: number;
-  durationSec?: number;
-  restSec: number;
-}[]) {
-  const seconds = exercises.reduce((sum, ex) => {
-    const work = ex.durationSec ?? (ex.reps ?? 10) * 3;
-    return sum + (work + ex.restSec) * ex.sets;
-  }, 0);
-  return Math.round(seconds / 60);
-}
+import { localDateOnly } from "@/src/features/progress/lib/localDate";
 
 export type TodaysWorkoutDay =
   | {
@@ -29,6 +22,8 @@ export type TodaysWorkoutDay =
 
 export function useTodaysWorkoutSummary(dateStr?: string) {
   const { data: apiPlan, isLoading } = useWorkoutPlan();
+  const { extras } = useTodayExtras();
+  const includeExtras = !dateStr || dateStr === localDateOnly();
 
   const day = useMemo((): TodaysWorkoutDay | null => {
     if (!apiPlan) return null;
@@ -47,30 +42,34 @@ export function useTodaysWorkoutSummary(dateStr?: string) {
     const apiDay = apiPlan.days[dayIndex];
     if (!apiDay) return null;
 
-    const uiDay = adaptPlanDay({ ...apiDay }, apiPlan.goalId);
-
-    const groups = [
-      ...new Set(
-        uiDay.exercises.map((e) => e.muscleGroup).filter(Boolean),
-      ),
-    ] as string[];
-    const capitalized = groups.map(
-      (g) => g.charAt(0).toUpperCase() + g.slice(1),
-    );
-    const title =
-      capitalized.length >= 2
-        ? `${capitalized[0]} & ${capitalized[1]}`
-        : (capitalized[0] ?? uiDay.title);
+    const uiDay = adaptPlanDay(apiDay, apiPlan.goalId);
+    const exercises =
+      includeExtras && extras.length > 0
+        ? [
+            ...uiDay.exercises,
+            ...extras.map((e) =>
+              adaptLibraryExercise(
+                {
+                  id: e.id,
+                  name: e.exerciseName,
+                  muscleGroup: e.muscleGroup,
+                  movementPattern: e.movementPattern,
+                },
+                apiPlan.goalId,
+              ),
+            ),
+          ]
+        : uiDay.exercises;
 
     return {
       kind: "workout",
-      title,
-      tag: uiDay.title,
-      minutes: estimateMinutes(uiDay.exercises),
-      exerciseCount: uiDay.exercises.length,
+      title: uiDay.title,
+      tag: uiDay.tag,
+      minutes: estimateWorkoutMinutes(exercises),
+      exerciseCount: exercises.length,
       imageUrl: uiDay.coverImage,
     };
-  }, [apiPlan, dateStr]);
+  }, [apiPlan, dateStr, extras, includeExtras]);
 
   // Back-compat alias used by older call sites expecting `summary`.
   const summary = day?.kind === "workout" ? day : null;

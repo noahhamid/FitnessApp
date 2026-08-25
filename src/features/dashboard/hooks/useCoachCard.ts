@@ -70,7 +70,7 @@ export function useCoachCard() {
 
     if (remaining === 0) {
       return {
-        headline: "You've hit your training goal this week 🎉",
+        headline: "You've hit your training goal this week",
         body: "Great consistency — keep the momentum into next week.",
       };
     }
@@ -91,5 +91,6 @@ export function useCoachCard() {
     sparklinePoints,
     coachHeadline: coach.headline,
     coachBody: coach.body,
+    goalHit: weekStats.target > 0 && weekStats.completed >= weekStats.target,
   };
 }
