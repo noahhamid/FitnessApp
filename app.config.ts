@@ -73,6 +73,7 @@ const config: ExpoConfig = {
       },
     ],
     "expo-font",
+    "expo-iap",
     [
       "expo-image-picker",
       {

@@ -1,5 +1,5 @@
 // app/log-meal.tsx
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -19,19 +19,15 @@ import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "../components/PressableScale";
 import { useAddMeal, useDeleteMeal, useUpdateMeal } from "../hooks/useNutrition";
-import type { MealType } from "../types/nutrition.types";
+import { useAddCustomFood, useFoodSearch } from "../hooks/useFoodSearch";
+import type { FoodLibraryItem, MealType } from "../types/nutrition.types";
+import {
+  firstRouteParam,
+  mealSlotFromParam,
+} from "../lib/meal-route-params";
+import { localDateOnly } from "@/src/features/progress/lib/localDate";
 
 const MEAL_SLOTS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"];
-
-function todayStr(): string {
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
-}
-
-function firstParam(value?: string | string[]): string | undefined {
-  if (Array.isArray(value)) return value[0];
-  return value;
-}
 
 export default function LogMealScreen() {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
@@ -47,29 +43,43 @@ export default function LogMealScreen() {
     fat?: string;
   }>();
 
-  const mealId = firstParam(params.id);
+  const mealId = firstRouteParam(params.id);
   const isEdit = Boolean(mealId);
-  const initialSlot = MEAL_SLOTS.includes(firstParam(params.slot) as MealType)
-    ? (firstParam(params.slot) as MealType)
-    : "Breakfast";
-  const logDate = firstParam(params.date) ?? todayStr();
+  const initialSlot = mealSlotFromParam(params.slot);
+  const logDate = firstRouteParam(params.date) ?? localDateOnly();
 
   const [slot, setSlot] = useState<MealType>(initialSlot);
-  const [name, setName] = useState(firstParam(params.name) ?? "");
-  const [cal, setCal] = useState(firstParam(params.cal) ?? "");
-  const [protein, setProtein] = useState(firstParam(params.protein) ?? "");
-  const [carbs, setCarbs] = useState(firstParam(params.carbs) ?? "");
-  const [fat, setFat] = useState(firstParam(params.fat) ?? "");
+  const [name, setName] = useState(firstRouteParam(params.name) ?? "");
+  const [cal, setCal] = useState(firstRouteParam(params.cal) ?? "");
+  const [protein, setProtein] = useState(firstRouteParam(params.protein) ?? "");
+  const [carbs, setCarbs] = useState(firstRouteParam(params.carbs) ?? "");
+  const [fat, setFat] = useState(firstRouteParam(params.fat) ?? "");
 
   const addMeal = useAddMeal();
   const updateMeal = useUpdateMeal();
   const deleteMeal = useDeleteMeal(logDate);
+  const { results: foodResults } = useFoodSearch(name);
+  const addCustomFood = useAddCustomFood();
+  const [customSaved, setCustomSaved] = useState(false);
+
+  const nameKey = name.trim().toLowerCase();
+  const catalogMatch = useMemo(
+    () => foodResults.some((food) => food.name.toLowerCase() === nameKey),
+    [foodResults, nameKey],
+  );
 
   const saving =
     addMeal.isPending || updateMeal.isPending || deleteMeal.isPending;
   const nameValid = name.trim().length > 0;
   const calValid = cal.trim().length > 0 && !Number.isNaN(Number(cal));
   const canSubmit = nameValid && calValid && !saving;
+  const canSaveCustom =
+    !isEdit &&
+    nameValid &&
+    calValid &&
+    !catalogMatch &&
+    name.trim().length >= 2 &&
+    !customSaved;
 
   const payload = () => ({
     log_date: logDate,
@@ -101,6 +111,32 @@ export default function LogMealScreen() {
         source: "manual",
       },
       { onSuccess: () => router.back() },
+    );
+  };
+
+  const applyFood = (food: FoodLibraryItem) => {
+    setName(food.name);
+    setCal(String(Math.round(food.cal)));
+    setProtein(String(food.protein));
+    setCarbs(String(food.carbs));
+    setFat(String(food.fat));
+    setCustomSaved(true);
+  };
+
+  const handleSaveCustom = () => {
+    if (!canSaveCustom || addCustomFood.isPending) return;
+    addCustomFood.mutate(
+      {
+        name: name.trim(),
+        cal: Math.round(Number(cal)),
+        protein: Number(protein) || 0,
+        carbs: Number(carbs) || 0,
+        fat: Number(fat) || 0,
+        serving_size: null,
+        serving_unit: null,
+        barcode: null,
+      },
+      { onSuccess: () => setCustomSaved(true) },
     );
   };
 
@@ -171,11 +207,53 @@ export default function LogMealScreen() {
           <Text style={styles.label}>Food name</Text>
           <TextInput
             value={name}
-            onChangeText={setName}
+            onChangeText={(value) => {
+              setName(value);
+              setCustomSaved(false);
+            }}
             placeholder="e.g. Grilled chicken salad"
             placeholderTextColor={T.muted}
             style={styles.input}
+            autoCorrect={false}
           />
+
+          {foodResults.length > 0 ? (
+            <View style={styles.searchList}>
+              {foodResults.slice(0, 6).map((food) => (
+                <PressableScale
+                  key={food.id}
+                  onPress={() => applyFood(food)}
+                  scaleTo={0.98}
+                  style={styles.searchRowPressable}
+                >
+                  <View style={styles.searchRow}>
+                    <Text style={styles.searchName} numberOfLines={1}>
+                      {food.name}
+                    </Text>
+                    <Text style={styles.searchMeta}>
+                      {Math.round(food.cal)} kcal
+                    </Text>
+                  </View>
+                </PressableScale>
+              ))}
+            </View>
+          ) : null}
+
+          {canSaveCustom ? (
+            <PressableScale
+              onPress={handleSaveCustom}
+              disabled={addCustomFood.isPending}
+              style={styles.customPressable}
+            >
+              <Text style={styles.customText}>
+                {addCustomFood.isPending
+                  ? "Saving food…"
+                  : "Save as custom food"}
+              </Text>
+            </PressableScale>
+          ) : addCustomFood.isSuccess && !isEdit ? (
+            <Text style={styles.customSaved}>Saved to your foods</Text>
+          ) : null}
 
           <Text style={styles.label}>Calories</Text>
           <TextInput
@@ -327,6 +405,49 @@ function makeStyles(T: AppTheme) {
     fontFamily: T.bodyMed,
     fontSize: 14,
     color: T.white,
+  },
+  searchList: {
+    marginTop: 8,
+    borderRadius: 14,
+    overflow: "hidden",
+    backgroundColor: T.glass,
+    borderWidth: 0.5,
+    borderColor: T.glassBorder,
+  },
+  searchRowPressable: { borderRadius: 0 },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: T.glassBorder,
+  },
+  searchName: {
+    flex: 1,
+    fontFamily: T.bodyMed,
+    fontSize: 13.5,
+    color: T.white,
+  },
+  searchMeta: {
+    fontFamily: T.bodyMed,
+    fontSize: 12,
+    color: T.muted,
+    fontVariant: ["tabular-nums"],
+  },
+  customPressable: { marginTop: 10, alignSelf: "flex-start" },
+  customText: {
+    fontFamily: T.bodySemi,
+    fontSize: 12.5,
+    color: T.accent,
+  },
+  customSaved: {
+    fontFamily: T.bodyMed,
+    fontSize: 12,
+    color: T.muted,
+    marginTop: 10,
   },
   macroRow: { flexDirection: "row", gap: 10 },
   macroField: { flex: 1 },

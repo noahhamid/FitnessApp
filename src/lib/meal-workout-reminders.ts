@@ -43,6 +43,16 @@ const MEAL_SLOTS: ReminderSlot[] = [
 
 const ALL_SLOTS: ReminderSlot[] = [...MEAL_SLOTS, "workout"];
 
+export const DEFAULT_REMINDER_SLOTS: ReminderSlot[] = [...ALL_SLOTS];
+
+/** Missing/null → all five (legacy rows). Explicit [] stays empty. */
+export function normalizeReminderSlots(
+  slots?: readonly string[] | null,
+): ReminderSlot[] {
+  if (slots == null) return [...DEFAULT_REMINDER_SLOTS];
+  return ALL_SLOTS.filter((slot) => slots.includes(slot));
+}
+
 export function reminderId(slot: ReminderSlot, date: string): string {
   return `reminder-${slot}-${date}`;
 }
@@ -67,6 +77,17 @@ const MEAL_TYPE_ORDER: MealType[] = [
   "Dinner",
 ];
 
+/** Meal slot for the current clock window (Breakfast → Dinner). */
+export function currentMealSlot(now: Date = new Date()): MealType {
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  let current: MealType = "Breakfast";
+  for (const meal of MEAL_TYPE_ORDER) {
+    const { hour, minute } = REMINDER_TIMES[mealTypeToSlot(meal)];
+    if (hour * 60 + minute <= minutes) current = meal;
+  }
+  return current;
+}
+
 /**
  * Pick a meal slot for quick-add (suggestion chips, etc.).
  * Uses reminder clock windows: current window if empty, else next empty
@@ -76,13 +97,7 @@ export function suggestMealSlotForQuickAdd(
   filled: Partial<Record<MealType, unknown>>,
   now: Date = new Date(),
 ): MealType {
-  const minutes = now.getHours() * 60 + now.getMinutes();
-
-  let current: MealType = "Breakfast";
-  for (const meal of MEAL_TYPE_ORDER) {
-    const { hour, minute } = REMINDER_TIMES[mealTypeToSlot(meal)];
-    if (hour * 60 + minute <= minutes) current = meal;
-  }
+  const current = currentMealSlot(now);
 
   if (!filled[current]) return current;
 
@@ -291,10 +306,12 @@ export type TodayReminderState = {
   trainingDays?: readonly number[] | null;
   /** Used in workout notification body when it's a training day. */
   workoutTitle?: string;
-  /** Profile flag — when false, skip the workout ping (meals still fire). */
+  /** Master switch — when false, skip every ping. */
   reminderEnabled?: boolean;
   /** Local hour for the workout ping (7 / 14 / 19 from onboarding). */
   workoutHour?: number;
+  /** Enabled slots. Missing/null = all five. */
+  reminderSlots?: readonly string[] | null;
 };
 
 async function scheduleOne(
@@ -365,6 +382,10 @@ export async function rescheduleTodayReminders(
   await cancelAllRemindersForDate(localDateOnly(yesterdayDate));
   await cancelAllRemindersForDate(date);
 
+  if (state.reminderEnabled === false) return;
+
+  const enabledSlots = new Set(normalizeReminderSlots(state.reminderSlots));
+
   const mealDone: Record<ReminderSlot, boolean> = {
     breakfast: !!state.loggedMeals.Breakfast,
     lunch: !!state.loggedMeals.Lunch,
@@ -374,12 +395,12 @@ export async function rescheduleTodayReminders(
   };
 
   for (const slot of MEAL_SLOTS) {
-    if (mealDone[slot]) continue;
+    if (!enabledSlots.has(slot) || mealDone[slot]) continue;
     await scheduleOne(slot, date);
   }
 
   const training =
-    state.reminderEnabled !== false &&
+    enabledSlots.has("workout") &&
     state.daysPerWeek > 0 &&
     isTrainingDayToday(state.daysPerWeek, new Date(), state.trainingDays);
   if (training && !state.workoutCompleted) {

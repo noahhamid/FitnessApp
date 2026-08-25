@@ -24,15 +24,6 @@ export async function navigateAfterAuth(
     ...onboardingParamsForNavigation(params),
   };
 
-  const offer = Array.isArray(merged.offerAccepted)
-    ? merged.offerAccepted[0]
-    : merged.offerAccepted;
-  if (offer === "1") {
-    useAuthStore.getState().setPremiumUnlocked(true);
-  } else if (offer === "0") {
-    useAuthStore.getState().setPremiumUnlocked(false);
-  }
-
   if (hasCompletedOnboardingPayload(merged)) {
     await saveCompletedOnboardingPayload(merged);
     await clearOnboardingDraft();

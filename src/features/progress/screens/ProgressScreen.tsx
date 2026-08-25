@@ -48,6 +48,7 @@ import type { AppTheme } from "@/src/theme";
 import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import { PageHeader } from "@/src/components/PageHeader";
 import { useExerciseLibrary } from "@/src/features/workout/hooks/useExerciseLibrary";
+import { useUserProfile } from "@/src/features/profile/hooks/useUserProfile";
 import { useWorkoutStreak } from "@/src/features/workout/hooks/useWorkoutStreak";
 import { useMealLogRange } from "@/src/features/nutrition/hooks/useNutrition";
 import {
@@ -151,6 +152,7 @@ export default function ProgressScreen() {
 
   const { data: weightEntries, isLoading: weightLoading } =
     useWeightLog(eightWeeksAgo());
+  const { data: profile } = useUserProfile();
   const { data: apiPlan } = useWorkoutPlan();
   const addWeight = useAddWeightLog();
 
@@ -288,7 +290,10 @@ export default function ProgressScreen() {
                 <ActivityIndicator color={T.accent} />
               </View>
             ) : (
-              <WeightTrendChart entries={weightEntries ?? []} />
+              <WeightTrendChart
+                entries={weightEntries ?? []}
+                goalKg={profile?.targetWeightKg}
+              />
             )}
 
             <Pressable

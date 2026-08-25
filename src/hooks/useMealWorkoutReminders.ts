@@ -14,6 +14,7 @@ import {
   ensureNotificationHandler,
   hasSeenReminderSoftPrompt,
   markReminderSoftPromptSeen,
+  normalizeReminderSlots,
   promptForReminderPermissions,
   rescheduleTodayReminders,
   syncWeeklyWorkoutReminders,
@@ -109,9 +110,11 @@ export function useMealWorkoutReminders(enabled: boolean) {
       const reminderOn = profile?.reminderEnabled !== false;
       const workoutHour = profile?.reminderHour ?? 18;
       const trainingDays = plan?.trainingDays ?? profile?.trainingDays ?? [];
+      const reminderSlots = normalizeReminderSlots(profile?.reminderSlots);
+      const workoutSlotOn = reminderSlots.includes("workout");
 
       await syncWeeklyWorkoutReminders({
-        enabled: reminderOn,
+        enabled: reminderOn && workoutSlotOn,
         hour: workoutHour,
         trainingDays,
       });
@@ -125,6 +128,7 @@ export function useMealWorkoutReminders(enabled: boolean) {
         workoutTitle,
         reminderEnabled: reminderOn,
         workoutHour,
+        reminderSlots,
       });
     } catch (err) {
       console.warn("[reminders] sync failed", err);

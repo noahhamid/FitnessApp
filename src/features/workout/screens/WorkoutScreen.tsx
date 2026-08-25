@@ -75,6 +75,7 @@ import {
   useCompleteWorkoutSession,
 } from "../hooks/useWorkoutSession";
 import { useAddToLiveSession } from "../hooks/useAddToLiveSession";
+import { useRequirePremium } from "@/src/features/billing/useRequirePremium";
 import type { Exercise, WorkoutPlan } from "../data/workouts";
 import {
   invalidateQueryPrefixes,
@@ -191,6 +192,7 @@ export default function WorkoutScreen() {
   const params = useLocalSearchParams<{ resume?: string }>();
   const { streakDays } = useWorkoutStreak(!!inProgress);
   const { data: personalRecords } = usePersonalRecords();
+  const requirePremium = useRequirePremium();
   const startSession = useStartWorkoutSession();
   const completeSession = useCompleteWorkoutSession();
   const cardio = useConditioningRun();
@@ -383,18 +385,20 @@ export default function WorkoutScreen() {
 
   const handleResume = useCallback(() => {
     if (!inProgress) return;
-    startGenRef.current += 1;
-    pendingStartPlanRef.current = null;
-    setSessionCreating(false);
-    setSessionCreateError(null);
-    setEntryMode("list");
-    setSelectedDay(inProgress.plan);
-    setActiveExercises(inProgress.plan.exercises);
-    setActiveSessionId(inProgress.sessionId);
-    const resumedAt = Date.parse(inProgress.startedAt);
-    setClockStartMs(Number.isFinite(resumedAt) ? resumedAt : Date.now());
-    setView("active");
-  }, [inProgress]);
+    requirePremium(() => {
+      startGenRef.current += 1;
+      pendingStartPlanRef.current = null;
+      setSessionCreating(false);
+      setSessionCreateError(null);
+      setEntryMode("list");
+      setSelectedDay(inProgress.plan);
+      setActiveExercises(inProgress.plan.exercises);
+      setActiveSessionId(inProgress.sessionId);
+      const resumedAt = Date.parse(inProgress.startedAt);
+      setClockStartMs(Number.isFinite(resumedAt) ? resumedAt : Date.now());
+      setView("active");
+    });
+  }, [inProgress, requirePremium]);
 
   useFocusEffect(
     useCallback(() => {
@@ -472,15 +476,17 @@ export default function WorkoutScreen() {
     // Never create while in-progress status is unknown, or when Continue exists.
     if (inProgressLoading || inProgress) return;
 
-    const gen = ++startGenRef.current;
-    pendingStartPlanRef.current = plan;
-    setEntryMode("list");
-    setSelectedDay(plan);
-    setActiveExercises(plan.exercises);
-    setActiveSessionId(null);
-    setClockStartMs(Date.now());
-    setView("active");
-    createSessionInBackground(plan, gen);
+    requirePremium(() => {
+      const gen = ++startGenRef.current;
+      pendingStartPlanRef.current = plan;
+      setEntryMode("list");
+      setSelectedDay(plan);
+      setActiveExercises(plan.exercises);
+      setActiveSessionId(null);
+      setClockStartMs(Date.now());
+      setView("active");
+      createSessionInBackground(plan, gen);
+    });
   };
 
   const handleRetryCreateSession = () => {

@@ -135,6 +135,8 @@ model User {
    injuries        String[]          @default([])
    reminderEnabled Boolean?          @default(true)
    reminderHour    Int?
+   /** breakfast | lunch | snack | dinner | workout. Empty = none scheduled. */
+   reminderSlots   String[]          @default(["breakfast", "lunch", "snack", "dinner", "workout"])
    /** User-entered or range-midpoint BF%. Null = BMI estimate. */
    bodyFatPercent  Decimal?          @db.Decimal(4, 1)
    bodyFatSource   BodyFatSource?

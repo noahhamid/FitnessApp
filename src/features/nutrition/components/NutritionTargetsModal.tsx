@@ -9,6 +9,7 @@ import type { BodyFatSource } from "@/src/features/profile/services/profile.serv
 type Props = {
   visible: boolean;
   onClose: () => void;
+  onUpdateProfile: () => void;
   goals: NutritionGoals | null;
   goalId: string | null | undefined;
   daysPerWeek: number | null | undefined;
@@ -34,6 +35,7 @@ function Row({ label, value }: { label: string; value: string }) {
 export function NutritionTargetsModal({
   visible,
   onClose,
+  onUpdateProfile,
   goals,
   goalId,
   daysPerWeek,
@@ -104,6 +106,15 @@ export function NutritionTargetsModal({
               goal.
             </Text>
           )}
+
+          <Pressable
+            onPress={onUpdateProfile}
+            style={styles.updateBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Update profile"
+          >
+            <Text style={styles.updateBtnText}>Update profile</Text>
+          </Pressable>
         </Pressable>
       </Pressable>
     </Modal>
@@ -211,6 +222,18 @@ function makeStyles(T: AppTheme) {
       color: T.faint,
       lineHeight: 17,
       marginTop: T.space.lg,
+    },
+    updateBtn: {
+      marginTop: T.space.lg,
+      backgroundColor: T.accent,
+      borderRadius: T.radius.md,
+      paddingVertical: 14,
+      alignItems: "center",
+    },
+    updateBtnText: {
+      fontFamily: T.bodyBold,
+      fontSize: 14,
+      color: T.onAccent,
     },
   });
 }

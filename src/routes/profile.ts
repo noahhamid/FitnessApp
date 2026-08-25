@@ -43,6 +43,10 @@ const profileSchema = z.object({
   injuries: z.array(z.string()).optional(),
   reminderEnabled: z.boolean().nullable().optional(),
   reminderHour: z.number().int().min(0).max(23).nullable().optional(),
+  reminderSlots: z
+    .array(z.enum(["breakfast", "lunch", "snack", "dinner", "workout"]))
+    .max(5)
+    .optional(),
   bodyFatPercent: z.number().min(5).max(50).nullable().optional(),
   bodyFatSource: z.enum(["measured", "range"]).nullable().optional(),
 });
@@ -67,6 +71,7 @@ function serializeProfile(row: {
   injuries: string[];
   reminderEnabled: boolean | null;
   reminderHour: number | null;
+  reminderSlots: string[];
   bodyFatPercent: { toString(): string } | null;
   bodyFatSource: string | null;
   updatedAt: Date;
@@ -92,6 +97,7 @@ function serializeProfile(row: {
     injuries: row.injuries,
     reminderEnabled: row.reminderEnabled,
     reminderHour: row.reminderHour,
+    reminderSlots: row.reminderSlots,
     bodyFatPercent:
       row.bodyFatPercent != null ? Number(row.bodyFatPercent.toString()) : null,
     bodyFatSource: row.bodyFatSource,
@@ -180,6 +186,9 @@ profileRouter.put("/", async (c) => {
       reminderEnabled: data.reminderEnabled,
     }),
     ...(data.reminderHour !== undefined && { reminderHour: data.reminderHour }),
+    ...(data.reminderSlots !== undefined && {
+      reminderSlots: data.reminderSlots,
+    }),
     ...(data.bodyFatPercent !== undefined && {
       bodyFatPercent: data.bodyFatPercent,
     }),

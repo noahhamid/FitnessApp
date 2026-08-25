@@ -50,6 +50,15 @@ export function signupDateOnly(
  * Mon–Sun window for a week offset. `weekEnd` is Sunday *inclusive* — the
  * DaySelector week row depends on that (Sunday-visibility fix).
  */
+/** How many weeks `dateStr` is from this week (0 = this week, -1 = last). */
+export function weekOffsetForDate(dateStr: string): number {
+  const selectedMonday = mondayContaining(dateStr);
+  const thisMonday = mondayOfWeek(0);
+  return Math.round(
+    (selectedMonday.getTime() - thisMonday.getTime()) / (7 * DAY_MS),
+  );
+}
+
 export function weekDatesFor(weekOffset: number): {
   weekStart: string;
   weekEnd: string;

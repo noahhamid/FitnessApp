@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import {
   RefreshControl,
   ScrollView,
@@ -24,14 +24,8 @@ import {
 } from "@/src/features/progress/hooks/useProgress";
 import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import { weekScheduleStats } from "@/src/features/progress/lib/analytics";
-import {
-  dayLabel,
-  formatWeekLabel,
-  minWeekOffsetSince,
-  shiftDateStr,
-  signupDateOnly,
-  weekDatesFor,
-} from "@/src/lib/week-days";
+import { dayLabel, formatWeekLabel } from "@/src/lib/week-days";
+import { useDiaryDate } from "@/src/hooks/useDiaryDate";
 import { ProgressCoachCard } from "../components/ProgressCoachCard";
 import { UpNextWorkoutCard } from "../components/UpNextWorkoutCard";
 import { ContinueWorkoutCard } from "@/src/features/workout/components/ContinueWorkoutCard";
@@ -41,6 +35,11 @@ import {
   TodayChecklistCard,
   type ChecklistStepKey,
 } from "../components/TodayChecklistCard";
+import { ReminderNudgeCard } from "../components/ReminderNudgeCard";
+import { useDailyReminderStatus } from "../hooks/useDailyReminderStatus";
+import { getReminderContent } from "@/src/lib/reminder-content";
+import { suggestMealSlotForQuickAdd } from "@/src/lib/meal-workout-reminders";
+import { useUserProfile } from "@/src/features/profile/hooks/useUserProfile";
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { useCoachCard } from "../hooks/useCoachCard";
@@ -57,6 +56,7 @@ import {
   usePullToRefresh,
 } from "@/src/hooks/usePullToRefresh";
 import { tabContentBottomPad } from "@/src/lib/tab-chrome";
+import { useRequirePremium } from "@/src/features/billing/useRequirePremium";
 
 function SectionSkeleton({
   height,
@@ -101,13 +101,22 @@ export default function DashboardScreen() {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const today = localDateOnly();
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [weekOffset, setWeekOffset] = useState(0);
-
   const { user } = useAuth();
-  const joinDate = signupDateOnly(user?.createdAt);
-  const minWeekOffset = minWeekOffsetSince(user?.createdAt);
+  const requirePremium = useRequirePremium();
+  const {
+    today,
+    selectedDate,
+    setSelectedDate,
+    weekOffset,
+    weekStart,
+    weekEnd,
+    weekDates,
+    canGoPrevWeek,
+    canGoNextWeek,
+    shiftWeek,
+    isToday,
+    joinDate,
+  } = useDiaryDate(user?.createdAt);
   const { inProgress, isLoading: inProgressLoading } = useInProgressSession();
   const { data: personalRecords } = usePersonalRecords();
 
@@ -127,32 +136,11 @@ export default function DashboardScreen() {
   );
   const { refreshing, onRefresh } = usePullToRefresh(refreshDashboard);
 
-  const { weekStart, weekEnd, weekDates } = useMemo(
-    () => weekDatesFor(weekOffset),
-    [weekOffset],
-  );
-
-  const canGoPrevWeek =
-    minWeekOffset == null ? true : weekOffset > minWeekOffset;
-  const canGoNextWeek = weekOffset < 0;
-
-  const shiftWeek = (delta: number) => {
-    const next = weekOffset + delta;
-    if (minWeekOffset != null && next < minWeekOffset) return;
-    if (next > 0) return;
-    setWeekOffset(next);
-    setSelectedDate((prev) => {
-      const shifted = shiftDateStr(prev, delta * 7);
-      if (joinDate && shifted < joinDate) return joinDate;
-      if (shifted > today) return today;
-      return shifted;
-    });
-  };
-
   const { data: weekSessions } = useWorkoutHistory(weekStart, weekEnd);
   const { data: daySessions } = useWorkoutHistory(selectedDate, selectedDate);
   const { streakDays } = useWorkoutStreak();
   const { data: apiPlan } = useWorkoutPlan();
+  const { data: profile } = useUserProfile();
 
   const workoutDates = useMemo(() => {
     const set = new Set<string>();
@@ -189,7 +177,6 @@ export default function DashboardScreen() {
   );
 
   const activeDayIndex = days.findIndex((d) => d.date === selectedDate);
-  const isToday = selectedDate === today;
 
   const { data: water } = useWater(selectedDate);
   const { data: mealsForDay } = useMealLog(selectedDate);
@@ -198,6 +185,7 @@ export default function DashboardScreen() {
   const loggedMealTypes = new Set((mealsForDay ?? []).map((m) => m.meal));
   const breakfastDone = loggedMealTypes.has("Breakfast");
   const lunchDone = loggedMealTypes.has("Lunch");
+  const snackDone = loggedMealTypes.has("Snack");
   const dinnerDone = loggedMealTypes.has("Dinner");
 
   const workoutCompletedForDay = workoutDates.has(selectedDate);
@@ -227,6 +215,12 @@ export default function DashboardScreen() {
   } = useTodaysWorkoutSummary(selectedDate);
 
   const isRestDay = todaysWorkoutDay?.kind === "rest";
+  const reminderState = useDailyReminderStatus({
+    workoutDone: workoutCompletedForDay || !!isRestDay,
+    mealsLogged: (mealsForDay ?? []).length > 0,
+    reminderEnabled: profile?.reminderEnabled,
+  });
+  const reminderContent = getReminderContent(reminderState);
   const showContinue = isToday && !inProgressLoading && !!inProgress;
   const showWorkoutSkeleton =
     workoutSummaryLoading || (isToday && inProgressLoading);
@@ -236,21 +230,37 @@ export default function DashboardScreen() {
       ? todaysWorkoutDay.minutes
       : null;
 
-  function openMealLog(slot: "Breakfast" | "Lunch" | "Dinner") {
+  function openMealLog(slot: "Breakfast" | "Lunch" | "Dinner" | "Snack") {
     router.push({
       pathname: "/log-meal",
       params: { slot, date: selectedDate },
     });
   }
 
+  function goTrain(resume?: boolean) {
+    requirePremium(() =>
+      router.push(
+        resume
+          ? { pathname: "/(app)/(tabs)/train", params: { resume: "1" } }
+          : "/(app)/(tabs)/train",
+      ),
+    );
+  }
+
   function handleChecklistPress(key: ChecklistStepKey) {
     if (dayKind !== "today") return;
     if (key === "workout") {
-      router.push("/(app)/(tabs)/train");
+      goTrain();
       return;
     }
     const slot =
-      key === "breakfast" ? "Breakfast" : key === "lunch" ? "Lunch" : "Dinner";
+      key === "breakfast"
+        ? "Breakfast"
+        : key === "lunch"
+          ? "Lunch"
+          : key === "snack"
+            ? "Snack"
+            : "Dinner";
     openMealLog(slot);
   }
 
@@ -349,12 +359,7 @@ export default function DashboardScreen() {
               }
               exercises={inProgress.plan.exercises}
               personalRecords={personalRecords}
-              onPress={() =>
-                router.push({
-                  pathname: "/(app)/(tabs)/train",
-                  params: { resume: "1" },
-                })
-              }
+              onPress={() => goTrain(true)}
             />
           </>
         ) : todaysWorkoutDay ? (
@@ -390,9 +395,7 @@ export default function DashboardScreen() {
                 completed={workoutCompletedForDay}
                 onPress={() => router.push("/(app)/(tabs)/train")}
                 onStartPress={
-                  workoutCompletedForDay
-                    ? undefined
-                    : () => router.push("/(app)/(tabs)/train")
+                  workoutCompletedForDay ? undefined : () => goTrain()
                 }
               />
             )}
@@ -404,6 +407,7 @@ export default function DashboardScreen() {
           workoutDone={workoutCompletedForDay || !!isRestDay}
           breakfastDone={breakfastDone}
           lunchDone={lunchDone}
+          snackDone={snackDone}
           dinnerDone={dinnerDone}
           waterGlasses={water?.glasses ?? 0}
           onStepPress={
@@ -415,6 +419,22 @@ export default function DashboardScreen() {
               : undefined
           }
         />
+
+        {dayKind === "today" && reminderContent ? (
+          <ReminderNudgeCard
+            content={reminderContent}
+            onPress={() => {
+              if (reminderContent.navigateTo === "/log-meal") {
+                const filled = Object.fromEntries(
+                  (mealsForDay ?? []).map((meal) => [meal.meal, true]),
+                );
+                openMealLog(suggestMealSlotForQuickAdd(filled));
+                return;
+              }
+              goTrain();
+            }}
+          />
+        ) : null}
 
         {coachLoading ? (
           <SectionSkeleton height={168} />

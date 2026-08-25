@@ -26,6 +26,7 @@ export type UserProfile = {
   injuries: string[];
   reminderEnabled: boolean | null;
   reminderHour: number | null;
+  reminderSlots: string[];
   bodyFatPercent: number | null;
   bodyFatSource: BodyFatSource | null;
   updatedAt: string;
@@ -55,6 +56,7 @@ export async function saveUserProfile(data: {
   injuries?: string[];
   reminderEnabled?: boolean;
   reminderHour?: number;
+  reminderSlots?: string[];
   bodyFatPercent?: number | null;
   bodyFatSource?: BodyFatSource | null;
 }) {

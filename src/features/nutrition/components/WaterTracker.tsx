@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Droplet, Plus } from "lucide-react-native";
+import { Droplet, Minus, Plus } from "lucide-react-native";
 import {
   Animated,
   Easing,
@@ -17,6 +17,7 @@ type Props = {
   glasses: number;
   total: number;
   onAdd: () => void;
+  onRemove: () => void;
 };
 
 /** Same cool-blue well as TodaySnapshotRow water — light/dark safe. */
@@ -65,7 +66,7 @@ function Dash({
   );
 }
 
-export function WaterTracker({ glasses, total, onAdd }: Props) {
+export function WaterTracker({ glasses, total, onAdd, onRemove }: Props) {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
   const well = WATER_WELL[resolved];
 
@@ -141,24 +142,36 @@ export function WaterTracker({ glasses, total, onAdd }: Props) {
         </View>
       </View>
 
-      <View style={styles.addWrap}>
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.risingDrop,
-            {
-              opacity: dropOpacity,
-              transform: [{ translateY: dropY }, { scale: 0.85 }],
-            },
-          ]}
+      <View style={styles.controls}>
+        <PressableScale
+          onPress={onRemove}
+          disabled={glasses <= 0}
+          scaleTo={0.9}
+          style={styles.addPressable}
         >
-          <Droplet size={12} color={well.icon} strokeWidth={2.4} fill={well.icon} />
-        </Animated.View>
-        <PressableScale onPress={handleAdd} scaleTo={0.9} style={styles.addPressable}>
-          <Animated.View style={[styles.add, { transform: [{ scale: btnScale }] }]}>
-            <Plus size={15} color={T.onAccent} strokeWidth={2.4} />
-          </Animated.View>
+          <View style={[styles.remove, glasses <= 0 && styles.removeDisabled]}>
+            <Minus size={15} color={T.white} strokeWidth={2.4} />
+          </View>
         </PressableScale>
+        <View style={styles.addWrap}>
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.risingDrop,
+              {
+                opacity: dropOpacity,
+                transform: [{ translateY: dropY }, { scale: 0.85 }],
+              },
+            ]}
+          >
+            <Droplet size={12} color={well.icon} strokeWidth={2.4} fill={well.icon} />
+          </Animated.View>
+          <PressableScale onPress={handleAdd} scaleTo={0.9} style={styles.addPressable}>
+            <Animated.View style={[styles.add, { transform: [{ scale: btnScale }] }]}>
+              <Plus size={15} color={T.onAccent} strokeWidth={2.4} />
+            </Animated.View>
+          </PressableScale>
+        </View>
       </View>
     </GlassSurface>
   );
@@ -192,12 +205,17 @@ function makeStyles(T: AppTheme) {
     value: { fontFamily: T.bodyMed, fontSize: 11, color: T.muted },
     dashes: { flexDirection: "row", gap: 4 },
     dash: { height: 6, flex: 1, borderRadius: 3 },
+    controls: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      zIndex: 1,
+    },
     addWrap: {
       width: 30,
       height: 30,
       alignItems: "center",
       justifyContent: "center",
-      zIndex: 1,
     },
     risingDrop: {
       position: "absolute",
@@ -213,5 +231,16 @@ function makeStyles(T: AppTheme) {
       alignItems: "center",
       justifyContent: "center",
     },
+    remove: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: T.accentTint,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: T.accentLine,
+    },
+    removeDisabled: { opacity: 0.35 },
   });
 }

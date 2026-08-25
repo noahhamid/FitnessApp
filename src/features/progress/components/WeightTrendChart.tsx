@@ -7,6 +7,7 @@ import Svg, {
   Defs,
   LinearGradient,
   Stop,
+  Text as SvgText,
 } from "react-native-svg";
 import { Scale } from "lucide-react-native";
 import type { WeightLogEntry } from "../hooks/useProgress";
@@ -17,17 +18,25 @@ import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
 interface Props {
   entries: WeightLogEntry[]; // ascending by date, last 8 weeks worth
   height?: number;
+  goalKg?: number | null;
 }
 
-export function WeightTrendChart({ entries, height = 140 }: Props) {
+export function WeightTrendChart({ entries, height = 140, goalKg }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
   const width = 320; // logical width, SVG scales via viewBox anyway
+  const hasGoal = goalKg != null && Number.isFinite(goalKg);
 
-  const { points, minW, maxW } = useMemo(() => {
+  const { points, minW, maxW, goalY } = useMemo(() => {
     if (entries.length === 0)
-      return { points: [] as { x: number; y: number }[], minW: 0, maxW: 0 };
+      return {
+        points: [] as { x: number; y: number }[],
+        minW: 0,
+        maxW: 0,
+        goalY: null as number | null,
+      };
 
     const weights = entries.map((e) => e.weight);
+    if (hasGoal) weights.push(goalKg as number);
     const min = Math.min(...weights);
     const max = Math.max(...weights);
     const range = max - min || 1; // avoid divide-by-zero for a flat line
@@ -47,8 +56,12 @@ export function WeightTrendChart({ entries, height = 140 }: Props) {
       return { x, y };
     });
 
-    return { points: pts, minW: min, maxW: max };
-  }, [entries, height]);
+    const nextGoalY = hasGoal
+      ? padY + usableH - (((goalKg as number) - min) / range) * usableH
+      : null;
+
+    return { points: pts, minW: min, maxW: max, goalY: nextGoalY };
+  }, [entries, goalKg, hasGoal, height]);
 
   if (entries.length === 0) {
     return (
@@ -105,6 +118,30 @@ export function WeightTrendChart({ entries, height = 140 }: Props) {
           stroke={T.border}
           strokeWidth={1}
         />
+
+        {goalY != null && hasGoal ? (
+          <>
+            <Line
+              x1={12}
+              y1={goalY}
+              x2={width - 12}
+              y2={goalY}
+              stroke={T.muted}
+              strokeWidth={1.25}
+              strokeDasharray="5,4"
+            />
+            <SvgText
+              x={width - 12}
+              y={goalY - 5}
+              fill={T.muted}
+              fontSize={10}
+              fontFamily={T.bodyMed}
+              textAnchor="end"
+            >
+              {`Goal ${Number(goalKg).toFixed(1)} kg`}
+            </SvgText>
+          </>
+        ) : null}
 
         <Path d={fillPath} fill="url(#weightFillGrad)" />
         <Path

@@ -21,14 +21,14 @@ import { PressableScale } from "../components/PressableScale";
 import { useAddMeal } from "../hooks/useNutrition";
 import { scanFoodImage, uploadMealPhoto } from "../services/nutrition.service";
 import type { FoodScanResult, MealType } from "../types/nutrition.types";
+import {
+  firstRouteParam,
+  mealSlotFromParam,
+} from "../lib/meal-route-params";
+import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import * as ImageManipulator from "expo-image-manipulator";
 
 const MEAL_SLOTS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"];
-
-function todayStr(): string {
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
-}
 
 type Status = "idle" | "capturing" | "analyzing" | "reviewing" | "error";
 
@@ -36,10 +36,8 @@ export default function ScanMealScreen() {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
   const router = useRouter();
   const params = useLocalSearchParams<{ slot?: string; date?: string }>();
-  const logDate = params.date ?? todayStr();
-  const initialSlot = MEAL_SLOTS.includes(params.slot as MealType)
-    ? (params.slot as MealType)
-    : "Breakfast";
+  const logDate = firstRouteParam(params.date) ?? localDateOnly();
+  const initialSlot = mealSlotFromParam(params.slot);
 
   const [status, setStatus] = useState<Status>("idle");
   const [photoUri, setPhotoUri] = useState<string | null>(null);

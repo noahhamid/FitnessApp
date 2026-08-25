@@ -13,6 +13,7 @@ import {
   Dumbbell,
   Coffee,
   UtensilsCrossed,
+  Egg,
   Moon,
   Droplet,
   Minus,
@@ -26,13 +27,19 @@ import { PressableScale } from "./PressableScale";
 import { GlassSurface } from "./GlassSurface";
 
 export type ChecklistDayKind = "today" | "past" | "future";
-export type ChecklistStepKey = "workout" | "breakfast" | "lunch" | "dinner";
+export type ChecklistStepKey =
+  | "workout"
+  | "breakfast"
+  | "lunch"
+  | "snack"
+  | "dinner";
 
 type Props = {
   dayKind: ChecklistDayKind;
   workoutDone: boolean;
   breakfastDone: boolean;
   lunchDone: boolean;
+  snackDone: boolean;
   dinnerDone: boolean;
   waterGlasses: number;
   waterTotal?: number;
@@ -41,12 +48,19 @@ type Props = {
   isLoading?: boolean;
 };
 
-const STEPS: ChecklistStepKey[] = ["workout", "breakfast", "lunch", "dinner"];
+const STEPS: ChecklistStepKey[] = [
+  "workout",
+  "breakfast",
+  "lunch",
+  "snack",
+  "dinner",
+];
 
 const STEP_LABEL: Record<ChecklistStepKey, string> = {
   workout: "Workout",
   breakfast: "Breakfast",
   lunch: "Lunch",
+  snack: "Snack",
   dinner: "Dinner",
 };
 
@@ -54,6 +68,7 @@ const STEP_ICON: Record<ChecklistStepKey, React.ComponentType<LucideProps>> = {
   workout: Dumbbell,
   breakfast: Coffee,
   lunch: UtensilsCrossed,
+  snack: Egg,
   dinner: Moon,
 };
 
@@ -65,6 +80,10 @@ const STEP_SEMANTIC = {
   lunch: {
     light: { bg: "rgba(46,150,90,0.14)", border: "rgba(46,150,90,0.30)", icon: "#2A8F52" },
     dark: { bg: "rgba(80,220,140,0.18)", border: "rgba(80,220,140,0.34)", icon: "#5EE09A" },
+  },
+  snack: {
+    light: { bg: "rgba(200,120,70,0.14)", border: "rgba(200,120,70,0.30)", icon: "#C46A2E" },
+    dark: { bg: "rgba(255,170,110,0.18)", border: "rgba(255,170,110,0.34)", icon: "#FFB06A" },
   },
   dinner: {
     light: { bg: "rgba(80,90,190,0.14)", border: "rgba(80,90,190,0.30)", icon: "#4A55B0" },
@@ -94,6 +113,7 @@ export function nextChecklistAction(input: {
   workoutDone: boolean;
   breakfastDone: boolean;
   lunchDone: boolean;
+  snackDone: boolean;
   dinnerDone: boolean;
   isRestDay?: boolean;
 }): { key: ChecklistStepKey | "complete"; label: string } {
@@ -102,6 +122,7 @@ export function nextChecklistAction(input: {
   }
   if (!input.breakfastDone) return { key: "breakfast", label: "Log breakfast" };
   if (!input.lunchDone) return { key: "lunch", label: "Log lunch" };
+  if (!input.snackDone) return { key: "snack", label: "Log snack" };
   if (!input.dinnerDone) return { key: "dinner", label: "Log dinner" };
   return { key: "complete", label: "Day complete" };
 }
@@ -111,6 +132,7 @@ export function TodayChecklistCard({
   workoutDone,
   breakfastDone,
   lunchDone,
+  snackDone,
   dinnerDone,
   waterGlasses,
   waterTotal = 8,
@@ -126,9 +148,11 @@ export function TodayChecklistCard({
     workout: workoutDone,
     breakfast: breakfastDone,
     lunch: lunchDone,
+    snack: snackDone,
     dinner: dinnerDone,
   };
-  const complete = workoutDone && breakfastDone && lunchDone && dinnerDone;
+  const complete =
+    workoutDone && breakfastDone && lunchDone && snackDone && dinnerDone;
   const currentStep: ChecklistStepKey | null =
     STEPS.find((k) => !doneMap[k]) ?? null;
   const isActionable = dayKind === "today" && !complete && !isLoading;

@@ -35,6 +35,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { AppThemeProvider, useTheme } from "@/src/context/ThemeContext";
 import { AppSafeAreaChrome } from "@/src/components/AppSafeAreaChrome";
+import { IapProvider } from "@/src/features/billing/IapProvider";
 
 import * as WebBrowser from "expo-web-browser";
 import { Sentry, sentryEnabled } from "@/src/lib/sentry";
@@ -69,6 +70,13 @@ function AppShell() {
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(app)" />
+          <Stack.Screen
+            name="paywall"
+            options={{
+              presentation: "fullScreenModal",
+              animation: "slide_from_bottom",
+            }}
+          />
           <Stack.Screen name="+not-found" />
         </Stack>
       </ThemeProvider>
@@ -120,7 +128,9 @@ function RootLayout() {
     <SafeAreaProvider>
       <AppThemeProvider>
         <QueryClientProvider client={queryClient}>
-          <AppShell />
+          <IapProvider>
+            <AppShell />
+          </IapProvider>
         </QueryClientProvider>
       </AppThemeProvider>
     </SafeAreaProvider>
