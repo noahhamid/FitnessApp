@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -21,6 +20,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useWaterResync } from "@/src/features/nutrition/hooks/useNutrition";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
+import { resolveAssetUri } from "@/src/lib/resolve-asset";
 import { MealHeader } from "../components/MealHeader";
 import { DaySelector } from "../components/DaySelector";
 import { DailySummaryCard } from "../components/DailySummaryCard";
@@ -83,7 +83,7 @@ let nutritionSuggestionUri: string | undefined;
 
 function getNutritionSuggestionUri(): string {
   if (nutritionSuggestionUri === undefined) {
-    nutritionSuggestionUri = Image.resolveAssetSource(NUTRITION_SUGGESTION).uri;
+    nutritionSuggestionUri = resolveAssetUri(NUTRITION_SUGGESTION);
   }
   return nutritionSuggestionUri;
 }

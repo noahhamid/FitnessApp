@@ -13,17 +13,19 @@ const APP_VERIFY_EMAIL_URL = "com.exo.fitness://verify-email";
  * Keep all better-auth imports inside this async factory — never top-level.
  */
 async function createAuth() {
-  const [{ betterAuth }, { prismaAdapter }, { expo }] = await Promise.all([
-    import("better-auth"),
-    import("better-auth/adapters/prisma"),
-    import("@better-auth/expo"),
-  ]);
+  const [{ betterAuth }, { prismaAdapter }, { expo }, { bearer }] =
+    await Promise.all([
+      import("better-auth"),
+      import("better-auth/adapters/prisma"),
+      import("@better-auth/expo"),
+      import("better-auth/plugins"),
+    ]);
 
   return betterAuth({
     baseURL: process.env.BETTER_AUTH_URL,
     secret: process.env.BETTER_AUTH_SECRET,
 
-    plugins: [expo()],
+    plugins: [expo(), bearer()],
 
     database: prismaAdapter(prisma, {
       provider: "postgresql",
@@ -173,8 +175,12 @@ async function createAuth() {
       "com.exo.fitness://",
       "com.exo.fitness://*",
       "http://localhost:8081",
+      "http://localhost:8080",
+      "http://localhost:19006",
       "http://localhost:3000",
       "http://127.0.0.1:8081",
+      "http://127.0.0.1:8080",
+      "http://127.0.0.1:19006",
       "http://127.0.0.1:3000",
       "https://appleid.apple.com",
       "exp://",

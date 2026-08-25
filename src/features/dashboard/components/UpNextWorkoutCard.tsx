@@ -7,7 +7,6 @@ import {
   Easing,
   StyleProp,
   ViewStyle,
-  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -20,6 +19,7 @@ import {
 } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
+import { resolveAssetUri } from "@/src/lib/resolve-asset";
 import { PressableScale } from "./PressableScale";
 
 // `require` at module scope is fine; resolveAssetSource must stay lazy
@@ -30,7 +30,7 @@ let restDayCoverUri: string | undefined;
 /** Local rest-day / recovery cover URI. */
 export function getRestDayImageUrl(): string {
   if (restDayCoverUri === undefined) {
-    restDayCoverUri = Image.resolveAssetSource(REST_DAY_COVER).uri;
+    restDayCoverUri = resolveAssetUri(REST_DAY_COVER);
   }
   return restDayCoverUri;
 }

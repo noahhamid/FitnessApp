@@ -164,7 +164,15 @@ export function VerifyEmailForm() {
 
                 <Pressable
                   style={s.linkBtn}
-                  onPress={() => void navigateAfterAuth(params)}
+                  onPress={() => {
+                    void navigateAfterAuth(params).catch((e) => {
+                      setError(
+                        e instanceof Error
+                          ? e.message
+                          : "Could not continue. Try signing in.",
+                      );
+                    });
+                  }}
                 >
                   <Text style={s.linkText}>I&apos;ll confirm later</Text>
                 </Pressable>

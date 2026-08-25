@@ -31,12 +31,17 @@ const CORS_ALLOW = new Set([
 
 function corsOrigin(origin: string): string | undefined {
   if (!origin) return origin;
-  if (CORS_ALLOW.has(origin.replace(/\/$/, ""))) return origin;
+  const normalized = origin.replace(/\/$/, "");
+  if (CORS_ALLOW.has(normalized)) return origin;
+  // Expo web / Vite / Metro may use any localhost port.
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalized)) {
+    return origin;
+  }
   if (origin.startsWith("com.exo.fitness://") || origin.startsWith("exp://")) {
     return origin;
   }
   const extra = process.env.BETTER_AUTH_URL?.replace(/\/$/, "");
-  if (extra && origin.replace(/\/$/, "") === extra) return origin;
+  if (extra && normalized === extra) return origin;
   return undefined;
 }
 
@@ -46,6 +51,7 @@ app.use(
     origin: (origin) => corsOrigin(origin) ?? "",
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    exposeHeaders: ["set-auth-token"],
     credentials: true,
   }),
 );

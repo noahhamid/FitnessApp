@@ -59,7 +59,7 @@ export function SocialAuthButtons({
   const { styles: s } = useOnboardingStyles(makeStyles);
   const busy = disabled || googleLoading || appleLoading;
   const [appleAvailable, setAppleAvailable] = useState(Platform.OS === "ios");
-  const googleAvailable = !isExpoGo();
+  const googleAvailable = Platform.OS !== "web" && !isExpoGo();
 
   useEffect(() => {
     if (Platform.OS !== "ios") return;

@@ -33,6 +33,9 @@ export function AppSafeAreaChrome({ children }: Props) {
   const statusH = insets.top;
 
   useEffect(() => {
+    // Native status-bar / system-UI APIs are unavailable on web.
+    if (Platform.OS === "web") return;
+
     RNStatusBar.setBarStyle(barStyle, true);
     if (Platform.OS === "android") {
       RNStatusBar.setTranslucent(true);

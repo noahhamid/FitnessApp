@@ -30,6 +30,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useMemo } from "react";
+import { Platform } from "react-native";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
@@ -40,7 +41,7 @@ import * as WebBrowser from "expo-web-browser";
 import { LoadingScreen } from "@/src/ui/components/LoadingScreen";
 import { Sentry, sentryEnabled } from "@/src/lib/sentry";
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 const queryClient = new QueryClient();
 
@@ -100,17 +101,19 @@ function RootLayout() {
     "PlusJakartaSans-Bold": PlusJakartaSans_700Bold,
   });
 
+  // Custom Tabs warm-up is Android/iOS only — throws on web.
   useEffect(() => {
-    WebBrowser.warmUpAsync();
+    if (Platform.OS === "web") return;
+    void WebBrowser.warmUpAsync();
     return () => {
-      WebBrowser.coolDownAsync();
+      void WebBrowser.coolDownAsync();
     };
   }, []);
 
   // Hand off from the native splash as soon as we have something rendered, so
   // our own loading screen covers the wait for fonts rather than a blank view.
   useEffect(() => {
-    SplashScreen.hideAsync();
+    void SplashScreen.hideAsync().catch(() => undefined);
   }, []);
 
   if (!loaded && !err) return <LoadingScreen />;

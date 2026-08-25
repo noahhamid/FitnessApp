@@ -5,6 +5,11 @@ import {
   DISPLAY_NAME_MAX_LENGTH,
   normalizeDisplayFirstName,
 } from "@/src/lib/display-name";
+import {
+  clearSessionToken,
+  persistTokenFromAuthData,
+} from "@/src/lib/session-token";
+import { invalidateAuthHeaderCache } from "@/src/lib/api";
 import { NativeModules, Platform } from "react-native";
 
 type GoogleSignInSdk = typeof import("@react-native-google-signin/google-signin");
@@ -74,8 +79,10 @@ function throwIfAuthError(error: AuthClientError): void {
 }
 
 export async function signIn(email: string, password: string): Promise<void> {
-  const { error } = await authClient.signIn.email({ email, password });
+  const { data, error } = await authClient.signIn.email({ email, password });
   throwIfAuthError(error);
+  await persistTokenFromAuthData(data);
+  invalidateAuthHeaderCache();
 }
 
 // ── Sign up ───────────────────────────────────────────────────────────────────
@@ -94,12 +101,14 @@ export async function signUp(
   name?: string,
 ): Promise<void> {
   const firstName = name ? normalizeDisplayFirstName(name) : "";
-  const { error } = await authClient.signUp.email({
+  const { data, error } = await authClient.signUp.email({
     email,
     password,
     name: firstName || email.split("@")[0],
   });
   throwIfAuthError(error);
+  await persistTokenFromAuthData(data);
+  invalidateAuthHeaderCache();
 }
 
 export function isEmailNotVerifiedError(error: unknown): boolean {
@@ -116,10 +125,12 @@ export async function sendVerificationEmail(email: string): Promise<void> {
 }
 
 export async function verifyEmail(token: string): Promise<void> {
-  const { error } = await authClient.verifyEmail({
+  const { data, error } = await authClient.verifyEmail({
     query: { token },
   });
   throwIfAuthError(error);
+  await persistTokenFromAuthData(data);
+  invalidateAuthHeaderCache();
 }
 
 /**
@@ -198,11 +209,13 @@ export async function signInWithGoogle(): Promise<void> {
 
     const givenName = response.data.user.givenName;
 
-    const { error } = await authClient.signIn.social({
+    const { data, error } = await authClient.signIn.social({
       provider: "google",
       idToken: { token: idToken },
     });
     throwIfAuthError(error);
+    await persistTokenFromAuthData(data);
+    invalidateAuthHeaderCache();
 
     await ensureOAuthFirstName(givenName);
   } catch (e) {
@@ -252,7 +265,7 @@ export async function signInWithApple(): Promise<void> {
       throw new Error("Apple did not return an identity token.");
     }
 
-    const { error } = await authClient.signIn.social({
+    const { data, error } = await authClient.signIn.social({
       provider: "apple",
       idToken: {
         token: credential.identityToken,
@@ -260,6 +273,8 @@ export async function signInWithApple(): Promise<void> {
       },
     });
     throwIfAuthError(error);
+    await persistTokenFromAuthData(data);
+    invalidateAuthHeaderCache();
 
     await ensureOAuthFirstName(credential.fullName?.givenName);
   } catch (e) {
@@ -291,6 +306,8 @@ export async function signOut(): Promise<void> {
   }
 
   const { error } = await authClient.signOut();
+  await clearSessionToken();
+  invalidateAuthHeaderCache();
   throwIfAuthError(error);
 }
 

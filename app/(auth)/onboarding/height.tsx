@@ -25,6 +25,7 @@ import {
   type LayoutChangeEvent,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { resolveAssetSize } from "@/src/lib/resolve-asset";
 
 /** Meter extremities differ by gender (adult ranges with a little headroom). */
 const HEIGHT_BY_GENDER = {
@@ -101,11 +102,7 @@ function containLetterboxTop(
 }
 
 function assetSize(source: ImageSourcePropType) {
-  const resolved = Image.resolveAssetSource(source);
-  return {
-    width: resolved?.width ?? 1024,
-    height: resolved?.height ?? 1536,
-  };
+  return resolveAssetSize(source, { width: 1024, height: 1536 });
 }
 
 /**

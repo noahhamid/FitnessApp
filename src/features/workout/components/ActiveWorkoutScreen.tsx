@@ -50,7 +50,7 @@ import {
   useUpdateSessionExercise,
 } from "../hooks/useWorkoutSession";
 import { topInset } from "@/src/lib/safe-area";
-import { imageForMuscleGroup } from "@/src/lib/workout-plan-adapter";
+import { imageForExercise } from "@/src/lib/workout-plan-adapter";
 import type { LibraryExercise } from "../hooks/useExerciseLibrary";
 import { useWallClockElapsed } from "@/src/hooks/useWallClockElapsed";
 import {
@@ -247,7 +247,7 @@ function LibraryModalBody({
     return (
       <ExerciseDetailCard
         exercise={viewing}
-        imageUrl={imageForMuscleGroup(viewing.muscleGroup)}
+        imageUrl={imageForExercise(viewing.name)}
         addedToToday={alreadyIn}
         allowRemove={false}
         showStart={false}
@@ -1260,7 +1260,7 @@ export function ActiveWorkoutScreen({
                         >
                           <Image
                             source={{
-                              uri: imageForMuscleGroup(ex.muscleGroup),
+                              uri: imageForExercise(ex.name),
                             }}
                             style={s.exThumb}
                             accessibilityIgnoresInvertColors

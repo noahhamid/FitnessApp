@@ -27,6 +27,7 @@ import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
 import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import { api } from "@/src/lib/api";
+import { resolveAssetUri } from "@/src/lib/resolve-asset";
 import { WorkoutTabHeader } from "../components/WorkoutTabHeader";
 import { WorkoutPlanCard } from "../components/WorkoutPlanCard";
 import { WorkoutDetailScreen } from "../components/WorkoutDetailScreen";
@@ -61,7 +62,7 @@ import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import {
   adaptPlanDay,
   adaptLibraryExercise,
-  imageForMuscleGroup,
+  imageForExercise,
 } from "@/src/lib/workout-plan-adapter";
 import {
   getTodaysPlanDayIndex,
@@ -93,7 +94,7 @@ let avatarPlaceholderUri: string | undefined;
 
 function getAvatarPlaceholderUri(): string {
   if (avatarPlaceholderUri === undefined) {
-    avatarPlaceholderUri = Image.resolveAssetSource(AVATAR_PLACEHOLDER).uri;
+    avatarPlaceholderUri = resolveAssetUri(AVATAR_PLACEHOLDER);
   }
   return avatarPlaceholderUri;
 }
@@ -695,7 +696,7 @@ export default function WorkoutScreen() {
     return (
       <ExerciseDetailCard
         exercise={viewingExercise}
-        imageUrl={imageForMuscleGroup(viewingExercise.muscleGroup)}
+        imageUrl={imageForExercise(viewingExercise.name)}
         addedToToday={addedNames.has(viewingExercise.name)}
         // Mid-workout library modal (ActiveWorkoutScreen) passes
         // showStart={false} / allowRemove={false}. Today browse omits
@@ -735,7 +736,7 @@ export default function WorkoutScreen() {
             id: `standalone-${viewingExercise.id}`,
             title: viewingExercise.name,
             tag: "Extra",
-            coverImage: imageForMuscleGroup(viewingExercise.muscleGroup),
+            coverImage: imageForExercise(viewingExercise.name),
             exercises: [
               adaptLibraryExercise(
                 viewingExercise,
