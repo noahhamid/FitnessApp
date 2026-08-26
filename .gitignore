@@ -40,8 +40,9 @@ pnpm-workspace.yaml
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
+# local env files (.env.example is the committed checklist)
+.env*
+!.env.example
 
 # Upstream exercises-dataset dump (17MB+) — regenerate curated seed from it locally
 /data/exercises-dataset.json
@@ -62,5 +63,4 @@ app-example
 /android
 
 .vercel
-.env*
 api/handler.cjs

@@ -12,12 +12,12 @@ import { StatusBar, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const BASE = [
-  { id: "chest", label: "Chest", imageOffsetY: 18 },
-  { id: "back", label: "Back", imageOffsetY: 18 },
-  { id: "arms", label: "Arms", imageOffsetY: 32 },
-  { id: "abs", label: "Abs", imageOffsetY: 8 },
+  { id: "chest", label: "Chest" },
+  { id: "back", label: "Back" },
+  { id: "arms", label: "Arms" },
+  { id: "abs", label: "Abs" },
   { id: "glutes", label: "Glutes" },
-  { id: "legs", label: "Legs", imageOffsetY: -20 },
+  { id: "legs", label: "Legs" },
   { id: "full_body", label: "Full Body", fullWidth: true },
 ] as const;
 
@@ -59,9 +59,6 @@ export default function OnboardingFocusAreasScreen() {
           multiple
           selectAllId="full_body"
           columns={2}
-          imagePlacement="background"
-          imageFit="cover"
-          revealImageOnSelect
         />
       </View>
 
@@ -86,7 +83,7 @@ const s = StyleSheet.create({
   },
   body: {
     flex: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     paddingTop: 4,
     paddingBottom: 20,
     minHeight: 0,

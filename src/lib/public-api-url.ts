@@ -12,3 +12,11 @@ export function publicApiBase(): string {
     PRODUCTION_API_URL
   );
 }
+
+export function privacyPageUrl(): string {
+  return `${publicApiBase()}/privacy`;
+}
+
+export function termsPageUrl(): string {
+  return `${publicApiBase()}/terms`;
+}

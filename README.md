@@ -1,6 +1,26 @@
-# Exo
+# PotentialPeak
 
-Fitness app (Expo / React Native + Hono on Vercel). Display name is **Exo**; Expo slug and API host remain `potential-peak`.
+Fitness app (Expo / React Native + Hono on Vercel). Store name is **PotentialPeak**; bundle id is `com.exo.fitness`.
+
+## Store subscriptions
+
+Create these exact product IDs in App Store Connect and Google Play Console. The app will not charge until they exist and the app is a store/TestFlight build.
+
+| Plan | Product ID |
+|---|---|
+| Monthly | `com.exo.fitness.premium.monthly` |
+| Annual | `com.exo.fitness.premium.annual` |
+
+Paste these listing URLs (same copy as in the app):
+
+- Privacy: https://potentialpeak-app-puce.vercel.app/privacy
+- Terms: https://potentialpeak-app-puce.vercel.app/terms
+
+Apple: one subscription group, auto-renewable, paid-apps agreement + banking. Google: one subscription with monthly and annual base plans using those IDs.
+
+## Email (Resend)
+
+Production email sign-up needs a **verified domain** on `RESEND_FROM_EMAIL`. Until then, use Google / Apple sign-in or the Resend account-owner inbox.
 
 ## Demo build (Android APK)
 

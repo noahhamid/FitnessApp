@@ -69,8 +69,6 @@ export default function OnboardingGoalDetailScreen() {
           options={options}
           selected={selected}
           onChange={setSelected}
-          imagePlacement="inside"
-          imageFit="cover"
         />
       </View>
 

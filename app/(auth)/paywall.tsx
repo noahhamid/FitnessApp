@@ -21,7 +21,7 @@ export default function OnboardingPaywallScreen() {
   const alreadyAuthed = !!session?.user;
   const gender = Array.isArray(params.gender) ? params.gender[0] : params.gender;
 
-  async function continueOnboarding(purchased: boolean) {
+  async function continueOnboarding() {
     if (leaving) return;
     setLeaving(true);
     setSaveError(null);
@@ -29,7 +29,6 @@ export default function OnboardingPaywallScreen() {
     const nextParams = onboardingParamsForNavigation({
       ...params,
       onboardingComplete: "1",
-      ...(purchased ? { offerAccepted: "1" } : {}),
     });
     await saveOnboardingDraft(nextParams);
 
@@ -59,8 +58,8 @@ export default function OnboardingPaywallScreen() {
       gender={gender}
       leaving={leaving}
       saveError={saveError}
-      onUnlocked={() => void continueOnboarding(true)}
-      onLeaveWithoutPurchase={() => void continueOnboarding(false)}
+      onUnlocked={() => void continueOnboarding()}
+      onLeaveWithoutPurchase={() => void continueOnboarding()}
     />
   );
 }

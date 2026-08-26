@@ -16,9 +16,9 @@ export type LegalDocument = {
 
 export const PRIVACY_POLICY: LegalDocument = {
   title: "Privacy Policy",
-  updated: "August 17, 2026",
+  updated: "August 25, 2026",
   intro: [
-    'This Privacy Policy explains how Exo ("we," "us," "the app") collects, uses, and protects your information.',
+    'This Privacy Policy explains how PotentialPeak ("we," "us," "the app") collects, uses, and protects your information.',
   ],
   sections: [
     {
@@ -39,6 +39,10 @@ export const PRIVACY_POLICY: LegalDocument = {
         {
           type: "p",
           text: "**Technical information:** basic crash and error data (via Sentry) to help us fix bugs. This does not include your personal health data.",
+        },
+        {
+          type: "p",
+          text: "**Purchases:** if you subscribe to PotentialPeak Pro, Apple or Google process the payment. We do not collect or store your full card number. The store may tell the app whether a subscription is active so we can unlock Pro features.",
         },
       ],
     },
@@ -61,8 +65,8 @@ export const PRIVACY_POLICY: LegalDocument = {
         {
           type: "ul",
           items: [
-            "**Google** — for optional sign-in, and for AI-powered food recognition (Gemini) when you use the meal scanner",
-            "**Apple** — for optional Sign in with Apple on iOS",
+            "**Google** — for optional sign-in, AI-powered food recognition (Gemini) when you use the meal scanner, and Google Play Billing if you subscribe on Android",
+            "**Apple** — for optional Sign in with Apple on iOS, and App Store billing if you subscribe on iOS",
             "**Resend** — to send account-related emails (verification, password reset, account deletion confirmation)",
             "**Vercel** — to host our backend and store meal photos",
             "**Neon** — to store your data in our database",
@@ -71,7 +75,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         },
         {
           type: "p",
-          text: "Each of these providers has its own privacy practices governing how they handle data on our behalf.",
+          text: "Each of these providers has its own privacy practices governing how they handle data on our behalf. Payment details stay with Apple or Google; we do not see full payment-card numbers.",
         },
       ],
     },
@@ -80,7 +84,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "You can delete your account at any time from Profile → Delete Account. When you do, your account and all associated data (workouts, meals, weight logs, and progress) are permanently deleted from our systems, with the exception of technical logs that may briefly persist for security purposes before automatically expiring.",
+          text: "You can delete your account at any time from Profile → Delete Account. When you do, your account and all associated data (workouts, meals, weight logs, and progress) are permanently deleted from our systems, with the exception of technical logs that may briefly persist for security purposes before automatically expiring. Deleting your PotentialPeak account does not cancel a store subscription — manage that in your Apple or Google account settings.",
         },
       ],
     },
@@ -98,7 +102,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "Exo is not intended for children under 13 (or the relevant age of consent in your region). We do not knowingly collect data from children.",
+          text: "PotentialPeak is not intended for children under 13 (or the relevant age of consent in your region). We do not knowingly collect data from children.",
         },
       ],
     },
@@ -125,15 +129,15 @@ export const PRIVACY_POLICY: LegalDocument = {
 
 export const TERMS_OF_SERVICE: LegalDocument = {
   title: "Terms of Service",
-  updated: "August 17, 2026",
-  intro: ["By using Exo, you agree to these terms."],
+  updated: "August 25, 2026",
+  intro: ["By using PotentialPeak, you agree to these terms."],
   sections: [
     {
-      heading: "Using Exo",
+      heading: "Using PotentialPeak",
       blocks: [
         {
           type: "p",
-          text: "Exo provides workout planning, nutrition tracking, and fitness progress tools. You must be at least 13 years old (or the applicable age in your region) to use the app.",
+          text: "PotentialPeak provides workout planning, nutrition tracking, and fitness progress tools. You must be at least 13 years old (or the applicable age in your region) to use the app.",
         },
       ],
     },
@@ -142,7 +146,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "Exo provides general fitness and nutrition guidance based on the information you provide. It is not medical advice. Consult a doctor before starting any new exercise or diet program, especially if you have a pre-existing health condition. Nutritional targets and workout suggestions are estimates, not personalized medical recommendations.",
+          text: "PotentialPeak provides general fitness and nutrition guidance based on the information you provide. It is not medical advice. Consult a doctor before starting any new exercise or diet program, especially if you have a pre-existing health condition. Nutritional targets and workout suggestions are estimates, not personalized medical recommendations.",
         },
       ],
     },
@@ -156,11 +160,32 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       ],
     },
     {
+      heading: "Subscriptions and Billing",
+      blocks: [
+        {
+          type: "p",
+          text: "PotentialPeak Pro is an optional auto-renewing subscription. Monthly and annual plans are offered. The price and duration shown on the paywall at the time of purchase are the terms that apply to that subscription.",
+        },
+        {
+          type: "p",
+          text: "Payment is charged to your Apple ID or Google account when you confirm the purchase. The subscription renews automatically at the then-current price unless you cancel at least 24 hours before the end of the current period.",
+        },
+        {
+          type: "ul",
+          items: [
+            "**Cancel:** turn off auto-renew in your App Store or Google Play subscription settings. Deleting your PotentialPeak account does not cancel the store subscription.",
+            "**Restore:** if you reinstall the app or switch devices, use Restore purchases in Profile (or on the paywall) to unlock Pro again on that device.",
+            "**Refunds:** refunds are handled by Apple or Google under their store policies, not by PotentialPeak directly.",
+          ],
+        },
+      ],
+    },
+    {
       heading: "Acceptable Use",
       blocks: [
         {
           type: "p",
-          text: "Don't use Exo to upload harmful, illegal, or abusive content, including through the meal-photo scanner. We reserve the right to suspend accounts that misuse the service.",
+          text: "Don't use PotentialPeak to upload harmful, illegal, or abusive content, including through the meal-photo scanner. We reserve the right to suspend accounts that misuse the service.",
         },
       ],
     },
@@ -169,7 +194,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: 'Exo is provided "as is." We work hard to keep it accurate and reliable, but we don\'t guarantee the app will be error-free or that workout/nutrition suggestions will produce specific results. Use of the app, including any exercise performed based on its suggestions, is at your own risk.',
+          text: 'PotentialPeak is provided "as is." We work hard to keep it accurate and reliable, but we don\'t guarantee the app will be error-free or that workout/nutrition suggestions will produce specific results. Use of the app, including any exercise performed based on its suggestions, is at your own risk.',
         },
       ],
     },
@@ -187,7 +212,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "You can delete your account at any time. We may suspend or terminate accounts that violate these terms.",
+          text: "You can delete your account at any time. We may suspend or terminate accounts that violate these terms. Ending your PotentialPeak account does not by itself cancel an active store subscription.",
         },
       ],
     },

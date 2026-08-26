@@ -6,6 +6,7 @@ import { prisma } from "../lib/prisma";
 import { err, ok } from "../lib/response";
 import { isParseFail, parseJson, parseQuery } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
+import { requirePremium } from "../middleware/requirePremium";
 import type { AppEnv } from "../types/hono";
 import { GYM_FOODS } from "../lib/gymFoods";
 import {
@@ -519,6 +520,8 @@ async function freshAdaptiveSuggestion(userId: string): Promise<
     })),
     goalId: profile.goalId,
     currentCalories: nutritionGoal.calories,
+    tdee: nutritionGoal.tdee,
+    bmr: nutritionGoal.bmr,
     asOf,
   });
 
@@ -565,7 +568,7 @@ nutritionRouter.get("/adaptive-suggestion", async (c) => {
  * data; rejects if the client's suggestedCalories no longer matches within
  * APPLY_SUGGESTION_TOLERANCE_KCAL (stale / no longer valid).
  */
-nutritionRouter.patch("/goals/apply-suggestion", async (c) => {
+nutritionRouter.patch("/goals/apply-suggestion", requirePremium, async (c) => {
   const parsed = await parseJson(c, applySuggestionSchema);
   if (isParseFail(parsed)) return parsed.response;
 

@@ -43,7 +43,7 @@ type Props = {
   /** "cover" crops the artwork to fill each card, i.e. zooms in. */
   imageFit?: "contain" | "cover";
   /**
-   * "breakout" = subject rises above the card (gender / goals).
+   * Defaults to "breakout" so chips match gender / goals.
    * "inside" = clipped chip. "background" = full-bleed shaded photo.
    */
   imagePlacement?: "breakout" | "inside" | "background";
@@ -134,8 +134,8 @@ export function ChipSelect({
   exclusiveId,
   selectAllId,
   columns = 2,
-  imageFit = "cover",
-  imagePlacement = "inside",
+  imageFit = "contain",
+  imagePlacement = "breakout",
   revealImageOnSelect = false,
   style,
 }: Props) {

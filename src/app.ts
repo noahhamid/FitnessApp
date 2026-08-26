@@ -4,10 +4,12 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { aiRouter } from "./routes/ai";
 import { authRouter } from "./routes/auth";
+import { billingRouter } from "./routes/billing";
 import { nutritionRouter } from "./routes/nutrition";
 import { profileRouter } from "./routes/profile";
 import { weightRouter } from "./routes/weight";
 import { workoutsRouter } from "./routes/workouts";
+import { PRIVACY_HTML, TERMS_HTML } from "./lib/legal-html";
 import { PRODUCTION_API_URL } from "./lib/public-api-url";
 import { ok } from "./lib/response";
 
@@ -51,6 +53,7 @@ app.use(
 );
 
 app.route("/api/auth", authRouter);
+app.route("/api/billing", billingRouter);
 app.route("/api/ai", aiRouter);
 app.route("/api/nutrition", nutritionRouter);
 app.route("/api/profile", profileRouter);
@@ -71,6 +74,10 @@ if (!process.env.VERCEL) {
 }
 
 app.get("/health", (c) => ok(c, { ok: true }));
+
+/** Public legal pages for App Store Connect / Play Console listing URLs. */
+app.get("/privacy", (c) => c.html(PRIVACY_HTML));
+app.get("/terms", (c) => c.html(TERMS_HTML));
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 

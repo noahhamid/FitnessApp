@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   ImageBackground,
+  Linking,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -15,6 +16,7 @@ import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { FloatingPaywall } from "./FloatingPaywall";
 import { useIap } from "./IapContext";
+import { privacyPageUrl, termsPageUrl } from "@/src/lib/public-api-url";
 import {
   PREMIUM_ANNUAL_SKU,
   PREMIUM_MONTHLY_SKU,
@@ -226,7 +228,20 @@ export function PaywallFlow({
 
             <Text style={s.legal}>
               Auto-renews until cancelled. Payment is charged to your Apple or
-              Google account. Manage in store settings.
+              Google account. Manage in store settings.{" "}
+              <Text
+                style={s.legalLink}
+                onPress={() => void Linking.openURL(privacyPageUrl())}
+              >
+                Privacy
+              </Text>
+              {" · "}
+              <Text
+                style={s.legalLink}
+                onPress={() => void Linking.openURL(termsPageUrl())}
+              >
+                Terms
+              </Text>
             </Text>
           </View>
         </SafeAreaView>
@@ -386,6 +401,12 @@ function makeStyles(C: OnboardingColors) {
       fontSize: 11,
       color: C.muted2,
       textAlign: "center",
+    },
+    legalLink: {
+      fontFamily: FONTS.medium,
+      fontSize: 11,
+      color: C.text,
+      textDecorationLine: "underline",
     },
     pressed: {
       opacity: 0.85,

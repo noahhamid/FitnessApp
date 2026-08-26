@@ -3,6 +3,7 @@ import { z } from "zod";
 import { err, ok } from "../lib/response";
 import { isParseFail, parseJson } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
+import { requirePremium } from "../middleware/requirePremium";
 import type { AppEnv } from "../types/hono";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
@@ -129,7 +130,7 @@ export const aiRouter = new Hono<AppEnv>().use("*", requireAuth);
 // POST /api/ai/food-scan
 // Body: { base64: string, mimeType: string }
 // Response: { name, cal, protein, carbs, fat }
-aiRouter.post("/food-scan", async (c) => {
+aiRouter.post("/food-scan", requirePremium, async (c) => {
   const user = getUser(c);
   if (!checkRateLimit(user.id)) {
     return err(c, "Too many scans. Try again in an hour.", 429);

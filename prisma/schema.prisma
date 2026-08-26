@@ -108,6 +108,7 @@ model User {
   waterLogs WaterLog[]
   workoutPlan WorkoutPlan?
   nutritionAdjustmentLogs NutritionAdjustmentLog[]
+  entitlement     UserEntitlement?
 
   @@map("user")
 }
@@ -143,6 +144,23 @@ model User {
    updatedAt DateTime @updatedAt
    @@map("user_profile")
  }
+
+/// Device-reported store subscription. Apple/Google still take payment;
+/// this row is how we know which account is Pro and gate paid APIs.
+model UserEntitlement {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isPremium     Boolean   @default(false)
+  productId     String?
+  platform      String?
+  transactionId String?
+  expiresAt     DateTime?
+  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime  @default(now())
+
+  @@map("user_entitlement")
+}
 
 model Session {
   id        String   @id @default(cuid())

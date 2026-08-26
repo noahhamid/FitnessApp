@@ -8,12 +8,14 @@ import {
 } from "react";
 import { ErrorCode, useIAP, type ProductSubscription } from "expo-iap";
 import { IapContext, type IapContextValue, type StoreProduct } from "./IapContext";
+import { authClient } from "@/src/lib/auth";
 import {
   PREMIUM_ANNUAL_SKU,
   PREMIUM_SKUS,
   isPremiumSku,
   type PremiumSku,
 } from "./skus";
+import { syncEntitlement } from "./sync-entitlement";
 
 function toStoreProduct(product: ProductSubscription): StoreProduct {
   return {
@@ -39,12 +41,16 @@ export function IapProvider({ children }: { children: ReactNode }) {
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [storeChecked, setStoreChecked] = useState(false);
   const purchaseWaiter = useRef<((ok: boolean) => void) | null>(null);
 
   const resolvePurchase = useCallback((ok: boolean) => {
     purchaseWaiter.current?.(ok);
     purchaseWaiter.current = null;
   }, []);
+
+  const { data: session } = authClient.useSession();
+  const signedIn = Boolean(session?.user);
 
   const {
     connected,
@@ -91,9 +97,34 @@ export function IapProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!connected) return;
-    void fetchProducts({ skus: [...PREMIUM_SKUS], type: "subs" });
-    void getActiveSubscriptions([...PREMIUM_SKUS]);
+    void (async () => {
+      try {
+        await fetchProducts({ skus: [...PREMIUM_SKUS], type: "subs" });
+        await getActiveSubscriptions([...PREMIUM_SKUS]);
+      } finally {
+        setStoreChecked(true);
+      }
+    })();
   }, [connected, fetchProducts, getActiveSubscriptions]);
+
+  const entitlementKey = useMemo(
+    () =>
+      activeSubscriptions
+        .map(
+          (sub) =>
+            `${sub.productId}:${sub.isActive}:${sub.transactionId}:${sub.expirationDateIOS ?? ""}`,
+        )
+        .sort()
+        .join("|"),
+    [activeSubscriptions],
+  );
+
+  useEffect(() => {
+    if (!connected || !signedIn || !storeChecked) return;
+    void syncEntitlement(activeSubscriptions).catch(() => {
+      // Device unlock still works; the next launch retries the server row.
+    });
+  }, [activeSubscriptions, connected, entitlementKey, signedIn, storeChecked]);
 
   const products = useMemo(
     () =>

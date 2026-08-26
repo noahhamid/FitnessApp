@@ -57,8 +57,6 @@ export default function OnboardingInjuriesScreen() {
           multiple
           exclusiveId="none"
           columns={2}
-          imagePlacement="background"
-          imageFit="cover"
         />
       </View>
 
@@ -83,7 +81,7 @@ const s = StyleSheet.create({
   },
   body: {
     flex: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     paddingTop: 4,
     paddingBottom: 20,
     minHeight: 0,

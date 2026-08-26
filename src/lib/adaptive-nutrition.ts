@@ -35,13 +35,31 @@ export const MAX_ADJUSTMENT_FRACTION = 0.1;
 export const APPLY_SUGGESTION_TOLERANCE_KCAL = 25;
 
 /**
- * Absolute floor for suggested daily calories.
- *
- * REVIEW BEFORE SHIPPING TO REAL USERS — this is a conservative engineering
- * fallback, NOT a verified medical / dietetic minimum. Individual needs vary
- * (sex, size, age, lean mass). Do not treat 1500 as clinically endorsed.
+ * Never suggest below this fraction of TDEE (maintenance). Matches the
+ * default lose factor in nutrition-calc (20% deficit).
  */
+export const ADAPTIVE_FLOOR_OF_TDEE = 0.8;
+
+/** If TDEE is missing, never go below this multiple of BMR. */
+export const ADAPTIVE_FLOOR_OF_BMR = 1.2;
+
+/** Last resort when BMR and TDEE are both missing (old / incomplete goals). */
 export const MINIMUM_SAFE_CALORIES_FALLBACK = 1500;
+
+export function adaptiveCalorieFloor(input: {
+  tdee?: number | null;
+  bmr?: number | null;
+}): number {
+  const tdee = input.tdee;
+  if (tdee != null && Number.isFinite(tdee) && tdee > 0) {
+    return Math.round(tdee * ADAPTIVE_FLOOR_OF_TDEE);
+  }
+  const bmr = input.bmr;
+  if (bmr != null && Number.isFinite(bmr) && bmr > 0) {
+    return Math.round(bmr * ADAPTIVE_FLOOR_OF_BMR);
+  }
+  return MINIMUM_SAFE_CALORIES_FALLBACK;
+}
 
 /**
  * Expected weekly change as a FRACTION of current bodyweight (not flat kg).
@@ -125,10 +143,7 @@ export type AdaptiveSuggestion =
       explanation: string;
       /** True if ±10% cap shrunk |uncappedDelta|. */
       capApplied: boolean;
-      /**
-       * True if suggested calories were raised to
-       * MINIMUM_SAFE_CALORIES_FALLBACK after other math.
-       */
+      /** True if suggested calories were raised to the TDEE/BMR floor. */
       floorApplied: boolean;
     };
 
@@ -219,12 +234,16 @@ function buildExplanation(
  * @param entries - WeightLog rows (any order); filtered to `asOf`−14d here.
  * @param goalId - lose | build | endure | health
  * @param currentCalories - NutritionGoal.calories (current daily target)
+ * @param tdee - stored maintenance estimate; floor is 80% of this
+ * @param bmr - used only when TDEE is missing
  * @param asOf - YYYY-MM-DD end of window (defaults handled by caller)
  */
 export function computeAdaptiveSuggestion(input: {
   entries: WeightSample[];
   goalId: GoalId | string | null | undefined;
   currentCalories: number | null | undefined;
+  tdee?: number | null;
+  bmr?: number | null;
   asOf: string; // YYYY-MM-DD
 }): AdaptiveSuggestion {
   const { entries, asOf } = input;
@@ -353,9 +372,13 @@ export function computeAdaptiveSuggestion(input: {
   let suggestedCalories = Math.round(currentCalories + cappedDelta);
   let floorApplied = false;
 
-  // ── 6. Safety floor ─────────────────────────────────────────────────────
-  if (suggestedCalories < MINIMUM_SAFE_CALORIES_FALLBACK) {
-    suggestedCalories = MINIMUM_SAFE_CALORIES_FALLBACK;
+  // ── 6. Safety floor — 80% of TDEE, else 1.2× BMR, else 1500 ─────────────
+  const calorieFloor = adaptiveCalorieFloor({
+    tdee: input.tdee,
+    bmr: input.bmr,
+  });
+  if (suggestedCalories < calorieFloor) {
+    suggestedCalories = calorieFloor;
     floorApplied = true;
   }
 
