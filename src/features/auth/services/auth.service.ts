@@ -67,8 +67,10 @@ type AuthClientError = {
 
 function throwIfAuthError(error: AuthClientError): void {
   if (!error) return;
-  if (error.status === 429 || /too many requests/i.test(error.message ?? "")) {
-    throw new Error("Too many tries. Wait a few minutes and try again.");
+  if (error.status === 429 || /too many (requests|attempts)/i.test(error.message ?? "")) {
+    throw new Error(
+      "Too many tries — wait about a minute, then tap once. During dev, use the link printed in the API terminal instead of resending.",
+    );
   }
   if (/invalid token/i.test(error.message ?? "")) {
     throw new Error(
@@ -83,6 +85,7 @@ export async function signIn(email: string, password: string): Promise<void> {
   throwIfAuthError(error);
   await persistTokenFromAuthData(data);
   invalidateAuthHeaderCache();
+  await refreshAuthSession();
 }
 
 // ── Sign up ───────────────────────────────────────────────────────────────────
@@ -109,6 +112,7 @@ export async function signUp(
   throwIfAuthError(error);
   await persistTokenFromAuthData(data);
   invalidateAuthHeaderCache();
+  await refreshAuthSession();
 }
 
 export function isEmailNotVerifiedError(error: unknown): boolean {
@@ -131,6 +135,7 @@ export async function verifyEmail(token: string): Promise<void> {
   throwIfAuthError(error);
   await persistTokenFromAuthData(data);
   invalidateAuthHeaderCache();
+  await refreshAuthSession();
 }
 
 /**
@@ -353,6 +358,15 @@ export async function deleteAccount(token?: string): Promise<{
 export async function getSession() {
   const { data } = await authClient.getSession();
   return data;
+}
+
+/** Re-fetch session after persisting a bearer token (Expo / cross-origin web). */
+export async function refreshAuthSession(): Promise<boolean> {
+  invalidateAuthHeaderCache();
+  const { readSessionToken } = await import("@/src/lib/session-token");
+  const session = await getSession();
+  if (session?.user) return true;
+  return !!(await readSessionToken());
 }
 
 // ── Password reset ────────────────────────────────────────────────────────────

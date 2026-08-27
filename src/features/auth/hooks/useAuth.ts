@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { readSessionToken } from "@/src/lib/session-token";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -72,10 +73,20 @@ export function useAuthSession() {
 
 export function useAuth() {
   const { session, isPending } = useAuthSession();
+  const [hasStoredToken, setHasStoredToken] = useState(false);
   const { onboarded, setOnboarded, goalId, setGoalId } = useAuthStore();
-  const queryClient = useQueryClient();
 
-  const hasSession = !!session?.user;
+  useEffect(() => {
+    let active = true;
+    void readSessionToken().then((token) => {
+      if (active) setHasStoredToken(!!token);
+    });
+    return () => {
+      active = false;
+    };
+  }, [session, isPending]);
+
+  const hasSession = !!session?.user || hasStoredToken;
 
   // Sync onboarding state from user metadata when session changes
   useEffect(() => {

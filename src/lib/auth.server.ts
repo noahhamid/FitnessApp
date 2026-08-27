@@ -1,8 +1,13 @@
 import { prisma } from "./prisma";
 import { normalizeDisplayFirstName } from "./display-name";
-import { sendAuthEmail } from "./send-auth-email";
+import { logEmailVerificationLink, sendAuthEmail } from "./send-auth-email";
 
 const APP_VERIFY_EMAIL_URL = "com.exo.fitness://verify-email";
+
+const authRateLimitEnabled =
+  process.env.DISABLE_AUTH_RATE_LIMIT !== "true" &&
+  process.env.NODE_ENV === "production" &&
+  process.env.VERCEL_ENV === "production";
 
 async function createAuth() {
   const [{ betterAuth }, { prismaAdapter }, { expo }, { bearer }] =
@@ -76,7 +81,10 @@ async function createAuth() {
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 8,
-      requireEmailVerification: process.env.NODE_ENV === "production",
+      // When true, sign-up returns no session (Better Auth skips auto sign-in) and
+      // sign-in is blocked until verify — breaks "confirm later" on mobile.
+      requireEmailVerification:
+        process.env.REQUIRE_EMAIL_VERIFICATION === "true",
       sendResetPassword: async ({ user, url }) => {
         await sendAuthEmail({
           to: user.email,
@@ -93,11 +101,22 @@ async function createAuth() {
     },
 
     emailVerification: {
-      sendOnSignUp: process.env.NODE_ENV === "production",
+      // Send + log verification links on sign-up in dev too (see logEmailVerificationLink).
+      sendOnSignUp: true,
       sendOnSignIn: process.env.NODE_ENV === "production",
       autoSignInAfterVerification: true,
       sendVerificationEmail: async ({ user, token }) => {
         const verifyUrl = `${APP_VERIFY_EMAIL_URL}?token=${encodeURIComponent(token)}`;
+        logEmailVerificationLink({
+          email: user.email,
+          token,
+          appDeepLink: verifyUrl,
+          apiBaseUrl: process.env.BETTER_AUTH_URL,
+        });
+        // Local dev: link is in the API terminal — skip Resend so we don't hit email rate limits.
+        if (process.env.NODE_ENV !== "production") {
+          return;
+        }
         await sendAuthEmail({
           to: user.email,
           subject: "Welcome to PotentialPeak Fitness! Please verify your email",
@@ -146,18 +165,20 @@ async function createAuth() {
       },
     },
     rateLimit: {
-      enabled: true,
+      enabled: authRateLimitEnabled,
       storage: "database",
       window: 60,
       max: 100,
-      customRules: {
-        "/sign-in/email": { window: 15 * 60, max: 8 },
-        "/sign-up/email": { window: 15 * 60, max: 5 },
-        "/forget-password*": { window: 15 * 60, max: 5 },
-        "/request-password-reset": { window: 15 * 60, max: 5 },
-        "/send-verification-email": { window: 15 * 60, max: 5 },
-        "/reset-password": { window: 15 * 60, max: 8 },
-      },
+      customRules: authRateLimitEnabled
+        ? {
+            "/sign-in/email": { window: 15 * 60, max: 8 },
+            "/sign-up/email": { window: 15 * 60, max: 5 },
+            "/forget-password*": { window: 15 * 60, max: 5 },
+            "/request-password-reset": { window: 15 * 60, max: 5 },
+            "/send-verification-email": { window: 15 * 60, max: 5 },
+            "/reset-password": { window: 15 * 60, max: 8 },
+          }
+        : {},
     },
 
     trustedOrigins: [

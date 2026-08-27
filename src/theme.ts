@@ -135,8 +135,8 @@ export const darkTheme = {
   // Single red accent, same value the onboarding flow uses.
   accent: immersiveDark.accentOnDark,
   accentTint: "rgba(229,57,53,0.14)",
-  // Solid elevated surface → darkPanel (glass is translucent)
-  bgElevated: immersiveDark.darkPanel,
+  // Solid elevated surface — slightly lighter than bg for card depth
+  bgElevated: "#1A1B22",
   accentSoft: "rgba(229,57,53,0.14)", // alias of accentTint
   muted: immersiveDark.onDarkMuted,
 

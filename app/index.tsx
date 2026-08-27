@@ -1,6 +1,11 @@
 import { useAuth, useAuthHydration } from "@/src/features/auth/hooks/useAuth";
 import { useAuthStore } from "@/src/features/auth/hooks/useAuth";
 import { fetchUserProfile } from "@/src/features/profile/services/profile.service";
+import { clearOnboardingDraft, loadOnboardingDraft } from "@/src/features/auth/services/onboarding-draft.service";
+import {
+  hasCompletedOnboardingPayload,
+  saveCompletedOnboardingPayload,
+} from "@/src/features/auth/services/onboarding-payload.service";
 import { shouldRedirectToVerifyEmail } from "@/src/lib/email-verification";
 import { isOnboardingProfileComplete } from "@/src/lib/onboarding-complete";
 import { LoadingScreen } from "@/src/ui/components/LoadingScreen";
@@ -33,11 +38,34 @@ export default function Index() {
       try {
         const profile = await fetchUserProfile();
         if (!active) return;
-        const complete = isOnboardingProfileComplete(profile);
+
+        let complete = isOnboardingProfileComplete(profile);
+        const draft = await loadOnboardingDraft();
+        if (!complete && hasCompletedOnboardingPayload(draft)) {
+          const saved = await saveCompletedOnboardingPayload(draft, {
+            sessionWaitAttempts: 24,
+          });
+          if (saved) {
+            complete = true;
+            await clearOnboardingDraft();
+          }
+        }
+
+        const localOnboarded = useAuthStore.getState().onboarded;
+        const pendingDraft =
+          !complete && localOnboarded ? await loadOnboardingDraft() : null;
+        if (
+          !complete &&
+          localOnboarded &&
+          pendingDraft &&
+          hasCompletedOnboardingPayload(pendingDraft)
+        ) {
+          // User chose "confirm later" — keep them in while profile sync catches up.
+          complete = true;
+        }
+
         setBackendProfileComplete(complete);
         setBackendCheckFailed(false);
-        // Trust the server when we actually reached it — a leftover local
-        // "quiz done" flag must not send someone into the app with no profile.
         setOnboarded(complete);
       } catch {
         if (!active) return;

@@ -1,0 +1,31 @@
+{
+  "curated": 174,
+  "filesOnDisk": 175,
+  "mappedEntries": 174,
+  "withImage": 174,
+  "needImage": 0,
+  "unusedOnDisk": [
+    "Bench Hip Extension.jpg",
+    "Glute Bridge March.jpg",
+    "incline_db_press_1787657401926.jpg"
+  ],
+  "sharedFiles": [
+    {
+      "file": "Barbell Bench Squat.jpg",
+      "keys": [
+        "barbell bench squat",
+        "barbell full squat"
+      ]
+    },
+    {
+      "file": "Barbell Front Chest Squat.jpg",
+      "keys": [
+        "barbell front chest squat",
+        "barbell front squat"
+      ]
+    }
+  ],
+  "needByMuscle": {},
+  "next10": [],
+  "allNeed": []
+}

@@ -62,9 +62,8 @@ import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import {
   adaptPlanDay,
   adaptLibraryExercise,
-  imageForExercise,
   estimateWorkoutMinutes,
-  imageForMuscleGroup,
+  imageForExercise,
 } from "@/src/lib/workout-plan-adapter";
 import {
   getTodaysPlanDayIndex,

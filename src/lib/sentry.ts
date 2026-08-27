@@ -14,7 +14,7 @@ if (sentryEnabled) {
     dsn,
     tracesSampleRate: 0.15,
     enableAutoSessionTracking: true,
-    debug: __DEV__,
+    debug: false,
   });
 }
 

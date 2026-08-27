@@ -4,6 +4,7 @@ import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ActivityIndicator,
   ImageBackground,
@@ -26,18 +27,20 @@ import { SocialAuthButtons } from "./SocialAuthButtons";
 import {
   AuthCancelledError,
   SIGN_UP_NAME_MAX_LENGTH,
+  isEmailNotVerifiedError,
   normalizeSignUpFirstName,
+  signIn,
   signInWithApple,
   signInWithGoogle,
   signUp,
 } from "../services/auth.service";
 import { navigateAfterAuth } from "../services/post-auth-navigation";
+import { savePendingSignUp } from "../services/pending-signup.service";
 import {
   hasCompletedOnboardingPayload,
   onboardingParamsForNavigation,
   type OnboardingAuthParams,
 } from "../services/onboarding-payload.service";
-import { clientRequiresEmailVerification } from "@/src/lib/email-verification";
 
 function heroScrim(bgHex: string, resolved: "light" | "dark") {
   const hex = bgHex.replace("#", "");
@@ -59,6 +62,7 @@ function heroScrim(bgHex: string, resolved: "light" | "dark") {
 }
 
 export function SignUpForm() {
+  const queryClient = useQueryClient();
   const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
   const params = useLocalSearchParams<OnboardingAuthParams>();
   const insets = useSafeAreaInsets();
@@ -91,15 +95,26 @@ export function SignUpForm() {
     try {
       if (!accountCreated) {
         await signUp(email, password, firstName);
+        await savePendingSignUp(email.trim(), password);
         setAccountCreated(true);
       }
-      router.replace({
-        pathname: "/(auth)/verify-email",
-        params: {
-          ...onboardingParamsForNavigation(params),
+      // Local API returns a session on sign-up; production may not until verify.
+      // One sign-in attempt fills the gap when the API allows it.
+      try {
+        await signIn(email.trim(), password);
+      } catch (e) {
+        if (!isEmailNotVerifiedError(e)) {
+          /* already signed in, or rate-limited — continue to navigate */
+        }
+      }
+      await queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
+      await navigateAfterAuth(
+        {
+          ...params,
           email: encodeURIComponent(email.trim()),
         },
-      });
+        { isNewAccount: true },
+      );
     } catch (e) {
       setError(
         e instanceof Error

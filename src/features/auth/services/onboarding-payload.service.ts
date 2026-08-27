@@ -129,9 +129,9 @@ export function isOnboardingRetake(params: OnboardingAuthParams): boolean {
   return single(params.retake) === "1";
 }
 
-async function waitForSession(): Promise<boolean> {
+async function waitForSession(maxAttempts = 12): Promise<boolean> {
   const { readSessionToken } = await import("@/src/lib/session-token");
-  for (let attempt = 0; attempt < 12; attempt += 1) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const session = await getSession();
     if (session?.user) return true;
     if (await readSessionToken()) return true;
@@ -147,10 +147,11 @@ async function waitForSession(): Promise<boolean> {
  */
 export async function saveCompletedOnboardingPayload(
   params: OnboardingAuthParams,
+  options?: { sessionWaitAttempts?: number },
 ): Promise<boolean> {
   if (!hasCompletedOnboardingPayload(params)) return false;
 
-  const ready = await waitForSession();
+  const ready = await waitForSession(options?.sessionWaitAttempts ?? 12);
   if (!ready) return false;
   const gender = single(params.gender);
   const experience = single(params.experience);

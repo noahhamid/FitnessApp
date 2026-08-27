@@ -56,6 +56,7 @@ export function VerifyEmailForm() {
 
   const [loading, setLoading] = useState(!!token);
   const [resending, setResending] = useState(false);
+  const [continuing, setContinuing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const verifying = useRef(false);
 
@@ -101,6 +102,23 @@ export function VerifyEmailForm() {
     }
   }
 
+  async function handleConfirmLater() {
+    if (continuing) return;
+    setContinuing(true);
+    setError(null);
+    try {
+      await navigateAfterAuth(params, { deferEmailVerification: true });
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Could not continue. Check your connection and try again.",
+      );
+    } finally {
+      setContinuing(false);
+    }
+  }
+
   return (
     <View style={s.root}>
       <KeyboardAvoidingView
@@ -137,9 +155,13 @@ export function VerifyEmailForm() {
             <Text style={s.sub}>
               {loading
                 ? "Confirming your email…"
-                : email
-                  ? `We sent a link to ${email}. Open it on this phone to continue.`
-                  : "Open the link we sent to your email on this phone to continue."}
+                : __DEV__
+                  ? email
+                    ? `Dev mode: tap Resend once, then copy the App: link from the API terminal for ${email}.`
+                    : "Dev mode: tap Resend once, then copy the App: link from the API terminal."
+                  : email
+                    ? `We sent a link to ${email}. Open it on this phone to continue.`
+                    : "Open the link we sent to your email on this phone to continue."}
             </Text>
 
             {error ? <Text style={s.errorText}>{error}</Text> : null}
@@ -163,18 +185,15 @@ export function VerifyEmailForm() {
                 ) : null}
 
                 <Pressable
+                  disabled={continuing || resending}
                   style={s.linkBtn}
-                  onPress={() => {
-                    void navigateAfterAuth(params).catch((e) => {
-                      setError(
-                        e instanceof Error
-                          ? e.message
-                          : "Could not continue. Try signing in.",
-                      );
-                    });
-                  }}
+                  onPress={() => void handleConfirmLater()}
                 >
-                  <Text style={s.linkText}>I&apos;ll confirm later</Text>
+                  {continuing ? (
+                    <ActivityIndicator color={C.muted} size="small" />
+                  ) : (
+                    <Text style={s.linkText}>I&apos;ll confirm later</Text>
+                  )}
                 </Pressable>
 
                 <Pressable

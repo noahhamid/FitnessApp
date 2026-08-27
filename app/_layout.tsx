@@ -120,11 +120,11 @@ function RootLayout() {
   // Keep the native splash up until index / LoadingScreen / welcome hide it.
   // Do not swap in a second logo plate while fonts load (guests go to welcome).
   useEffect(() => {
-  if (!loaded && !err) return;
-  void SplashScreen.hideAsync().catch(() => undefined);
-}, [loaded, err]);
+    if (!loaded && !err) return;
+    void SplashScreen.hideAsync().catch(() => undefined);
+  }, [loaded, err]);
 
-if (!loaded && !err) return <LoadingScreen />;
+  if (!loaded && !err) return <LoadingScreen />;
 
   return (
     <SafeAreaProvider>
