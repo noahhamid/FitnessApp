@@ -12,15 +12,13 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
+import { resolveAssetUri } from "@/src/lib/resolve-asset";
 import { PressableScale } from "./PressableScale";
 
 // `require` is fine at module scope; resolveAssetSource must stay lazy —
 // export:embed evaluates modules in Node without RN Image natives.
 const MANUAL_MEAL_ASSET = require("../../../../assets/images/meal.png");
-const MANUAL_MEAL_URI =
-  typeof Image.resolveAssetSource === "function"
-    ? (Image.resolveAssetSource(MANUAL_MEAL_ASSET)?.uri ?? "")
-    : "";
+const MANUAL_MEAL_URI = resolveAssetUri(MANUAL_MEAL_ASSET);
 
 export type MealMacros = { carbs: number; protein: number; fat: number };
 

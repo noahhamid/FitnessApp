@@ -1,0 +1,535 @@
+{
+  "strategy": "LIGHT cut: only true visual twins / synonyms (same soft-3D silhouette). Kept distinct equipment and clearly different shapes (chin-up vs pull-up, front vs back squat, RDL vs conventional DL, side plank, etc.).",
+  "before": 203,
+  "after": 148,
+  "cutCount": 55,
+  "keepByMuscle": {
+    "chest": 12,
+    "back": 16,
+    "shoulders": 14,
+    "quads": 10,
+    "hamstrings": 16,
+    "glutes": 16,
+    "calves": 16,
+    "biceps": 19,
+    "triceps": 13,
+    "core": 16
+  },
+  "warnings": [],
+  "imagesOnDisk": 64,
+  "keepWithImage": 36,
+  "keepNeedImage": 112,
+  "nextToGenerate": [
+    "Chest Dip",
+    "Diamond Push-up",
+    "Elbow Lift - Reverse Push-up",
+    "Push-up",
+    "Dumbbell Bench Press",
+    "Dumbbell Decline Fly",
+    "Dumbbell Incline Breeding",
+    "Dumbbell One Arm Bench Fly",
+    "Barbell Bench Press",
+    "Barbell Decline Pullover"
+  ],
+  "allRemaining": [
+    "Chest Dip",
+    "Diamond Push-up",
+    "Elbow Lift - Reverse Push-up",
+    "Push-up",
+    "Dumbbell Bench Press",
+    "Dumbbell Decline Fly",
+    "Dumbbell Incline Breeding",
+    "Dumbbell One Arm Bench Fly",
+    "Barbell Bench Press",
+    "Barbell Decline Pullover",
+    "Cable Bench Press",
+    "Floor Fly (with Barbell)",
+    "Barbell Seated Overhead Press",
+    "Cable Shoulder Press",
+    "One Leg Squat",
+    "Barbell Lunge",
+    "Glute-ham Raise",
+    "Inverse Leg Curl (bench Support)",
+    "Inverse Leg Curl (on Pull-up Cable Machine)",
+    "Kick Out Sit",
+    "Self Assisted Inverse Leg Curl",
+    "Single Leg Platform Slide",
+    "Standing Single Leg Curl",
+    "Dumbbell Deadlift",
+    "Dumbbell Romanian Deadlift",
+    "Dumbbell Single Leg Deadlift",
+    "Barbell Deadlift",
+    "Barbell Good Morning",
+    "Barbell Romanian Deadlift",
+    "Barbell Single Leg Deadlift",
+    "Barbell Sumo Deadlift",
+    "Cable Deadlift",
+    "Basic Toe Touch",
+    "Bench Hip Extension",
+    "Bent Knee Lying Twist",
+    "Glute Bridge March",
+    "Low Glute Bridge on Floor",
+    "Rear Decline Bridge",
+    "Band Bent-over Hip Extension",
+    "Band Hip Lift",
+    "Dumbbell Clean",
+    "Dumbbell One Arm Snatch",
+    "Dumbbell Sumo Pull Through",
+    "Exercise Ball One Legged Diagonal Kick Hamstring Curl",
+    "Kettlebell Swing",
+    "Barbell Glute Bridge",
+    "Barbell Rack Pull",
+    "Cable Standing Hip Extension",
+    "Ankle Circles",
+    "Bodyweight Standing Calf Raise",
+    "Donkey Calf Raise",
+    "One Leg Floor Calf Raise",
+    "Standing Calf Raise (on a Staircase)",
+    "Band Single Leg Calf Raise",
+    "Band Single Leg Reverse Calf Raise",
+    "Dumbbell Seated Calf Raise",
+    "Dumbbell Single Leg Calf Raise",
+    "Exercise Ball on the Wall Calf Raise",
+    "Single Leg Calf Raise (on a Dumbbell)",
+    "Barbell Floor Calf Raise",
+    "Barbell Seated Calf Raise",
+    "Barbell Standing Leg Calf Raise",
+    "Barbell Standing Rocking Leg Calf Raise",
+    "Cable Standing Calf Raise",
+    "Biceps Leg Concentration Curl",
+    "Biceps Pull-up",
+    "Bodyweight Side Lying Biceps Curl",
+    "Dumbbell Biceps Curl",
+    "Dumbbell Biceps Curl Reverse",
+    "Dumbbell Biceps Curl Squat",
+    "Dumbbell Concentration Curl",
+    "Dumbbell Hammer Curl",
+    "Dumbbell High Curl",
+    "Dumbbell Incline Curl",
+    "Dumbbell Lying Supine Curl",
+    "Dumbbell Lying Wide Curl",
+    "Barbell Alternate Biceps Curl",
+    "Barbell Curl",
+    "Barbell Drag Curl",
+    "Barbell Lying Preacher Curl",
+    "Barbell Prone Incline Curl",
+    "Barbell Reverse Curl",
+    "Cable Curl",
+    "Close-grip Push-up",
+    "One Arm Dip",
+    "Reverse Dip",
+    "Triceps Dip",
+    "Dumbbell Incline Two Arm Extension",
+    "Dumbbell Kickback",
+    "Dumbbell Lying Triceps Extension",
+    "Dumbbell Seated Bench Extension",
+    "Push-up Close-grip Off Dumbbell",
+    "Barbell Incline Reverse-grip Press",
+    "Barbell Lying Triceps Extension",
+    "Cable Kickback",
+    "Cable One Arm Tricep Pushdown",
+    "Bodyweight Incline Side Plank",
+    "Front Plank with Twist",
+    "Power Point Plank",
+    "Push-up to Side Plank",
+    "Reverse Plank with Leg Lift",
+    "Side Plank Hip Adduction",
+    "Band Bicycle Crunch",
+    "Band Jack Knife Sit-up",
+    "Band Push Sit-up",
+    "Band Standing Crunch",
+    "Crunch (on Stability Ball)",
+    "Dumbbell Side Plank with Rear Fly",
+    "Roller Reverse Crunch",
+    "Barbell Press Sit-up",
+    "Cable Kneeling Crunch",
+    "Cable Side Crunch"
+  ],
+  "cuts": [
+    {
+      "name": "Barbell Pendlay Row",
+      "muscleGroup": "back",
+      "minEquipment": "full_gym",
+      "keepInstead": "Barbell Bent Over Row",
+      "reason": "Looked like a normal bent-over row."
+    },
+    {
+      "name": "Dumbbell Reverse Grip Row",
+      "muscleGroup": "back",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Bent Over Row",
+      "reason": "Same bent-over row; grip not visible."
+    },
+    {
+      "name": "Inverted Row Bent Knees",
+      "muscleGroup": "back",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Inverted Row",
+      "reason": "Same under-bar row; knees barely changed the icon."
+    },
+    {
+      "name": "Inverted Row on Bench",
+      "muscleGroup": "back",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Inverted Row",
+      "reason": "Same under-bar row silhouette."
+    },
+    {
+      "name": "Biceps Narrow Pull-ups",
+      "muscleGroup": "biceps",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Biceps Pull-up",
+      "reason": "Same underhand/narrow pull-up chin-up style icon."
+    },
+    {
+      "name": "Cable Standing One Leg Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "full_gym",
+      "keepInstead": "Cable Standing Calf Raise",
+      "reason": "Same standing cable calf raise."
+    },
+    {
+      "name": "Dumbbell Seated One Leg Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Seated Calf Raise",
+      "reason": "Same seated calf raise."
+    },
+    {
+      "name": "One Leg Donkey Calf Raise",
+      "muscleGroup": "calves",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Donkey Calf Raise",
+      "reason": "Same donkey calf raise."
+    },
+    {
+      "name": "Standing Calves",
+      "muscleGroup": "calves",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Bodyweight Standing Calf Raise",
+      "reason": "Same standing calf raise."
+    },
+    {
+      "name": "Barbell Guillotine Bench Press",
+      "muscleGroup": "chest",
+      "minEquipment": "full_gym",
+      "keepInstead": "Barbell Bench Press",
+      "reason": "Same flat bench press icon."
+    },
+    {
+      "name": "Barbell Wide Bench Press",
+      "muscleGroup": "chest",
+      "minEquipment": "full_gym",
+      "keepInstead": "Barbell Bench Press",
+      "reason": "Same flat bench press icon; grip width not readable."
+    },
+    {
+      "name": "Chest Dip on Straight Bar",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Chest Dip",
+      "reason": "Same dip body path."
+    },
+    {
+      "name": "Chest Tap Push-up",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Push-up",
+      "reason": "Generated as a messy push-up."
+    },
+    {
+      "name": "Clock Push-up",
+      "muscleGroup": "chest",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Push-up",
+      "reason": "Generated as a messy push-up."
+    },
+    {
+      "name": "Dumbbell Decline One Arm Fly",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Decline Fly",
+      "reason": "Same decline fly silhouette as the two-arm version."
+    },
+    {
+      "name": "Dumbbell Decline Twist Fly",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Decline Fly",
+      "reason": "Same decline fly; twist not visible in your generated set."
+    },
+    {
+      "name": "Dumbbell Reverse Bench Press",
+      "muscleGroup": "chest",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Bench Press",
+      "reason": "Same DB press; reverse grip not readable."
+    },
+    {
+      "name": "Cable Reverse Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "full_gym",
+      "keepInstead": "Cable Kneeling Crunch",
+      "reason": "Same cable crunch pattern."
+    },
+    {
+      "name": "Cable Seated Crunch",
+      "muscleGroup": "core",
+      "minEquipment": "full_gym",
+      "keepInstead": "Cable Kneeling Crunch",
+      "reason": "Same cable crunch pattern."
+    },
+    {
+      "name": "Kneeling Plank Tap Shoulder",
+      "muscleGroup": "core",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Shoulder Tap",
+      "reason": "Same shoulder-tap plank."
+    },
+    {
+      "name": "Weighted Front Plank",
+      "muscleGroup": "core",
+      "minEquipment": "full_gym",
+      "keepInstead": "Power Point Plank",
+      "reason": "Same front plank line."
+    },
+    {
+      "name": "Barbell Glute Bridge Two Legs on Bench",
+      "muscleGroup": "glutes",
+      "minEquipment": "full_gym",
+      "keepInstead": "Barbell Glute Bridge",
+      "reason": "Same loaded bridge."
+    },
+    {
+      "name": "Barbell Seated Good Morning",
+      "muscleGroup": "glutes",
+      "minEquipment": "full_gym",
+      "keepInstead": "Barbell Good Morning",
+      "reason": "Same good-morning hinge."
+    },
+    {
+      "name": "Barbell Stiff Leg Good Morning",
+      "muscleGroup": "glutes",
+      "minEquipment": "full_gym",
+      "keepInstead": "Barbell Good Morning",
+      "reason": "Same good-morning hinge."
+    },
+    {
+      "name": "Glute Bridge Two Legs on Bench",
+      "muscleGroup": "glutes",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Low Glute Bridge on Floor",
+      "reason": "Same bridge line."
+    },
+    {
+      "name": "Band Stiff Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Romanian Deadlift",
+      "reason": "Same hinge silhouette."
+    },
+    {
+      "name": "Band Straight Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Romanian Deadlift",
+      "reason": "Same hinge silhouette."
+    },
+    {
+      "name": "Dumbbell Stiff Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Romanian Deadlift",
+      "reason": "RDL / stiff-leg / straight-leg render as the same hip-hinge icon."
+    },
+    {
+      "name": "Dumbbell Straight Leg Deadlift",
+      "muscleGroup": "hamstrings",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Romanian Deadlift",
+      "reason": "Same hip-hinge icon as RDL."
+    },
+    {
+      "name": "Barbell Bench Front Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "full_gym",
+      "keepInstead": "Barbell Front Squat",
+      "reason": "Same front squat in a rack."
+    },
+    {
+      "name": "Barbell Bench Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "full_gym",
+      "keepInstead": "Barbell Full Squat",
+      "reason": "Same back squat in a rack."
+    },
+    {
+      "name": "Barbell Front Chest Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "full_gym",
+      "keepInstead": "Barbell Front Squat",
+      "reason": "Same front squat; cross-arm vs clean grip not clear in icons."
+    },
+    {
+      "name": "Bodyweight Drop Jump Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Jump Squat",
+      "reason": "Same squat→jump silhouette (your gens looked identical)."
+    },
+    {
+      "name": "Dumbbell Bench Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Squat",
+      "reason": "Bench-touch squat looked like a normal DB squat."
+    },
+    {
+      "name": "Dumbbell Plyo Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Jump Squat",
+      "reason": "Same squat→jump; DBs mid-air didn’t differentiate."
+    },
+    {
+      "name": "Dumbbell Rear Lunge",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Lunge",
+      "reason": "Forward vs reverse lunge not reliable in static 3/4 icons."
+    },
+    {
+      "name": "Dumbbell Single Leg Squat",
+      "muscleGroup": "quads",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "One Leg Squat",
+      "reason": "Same single-leg squat body."
+    },
+    {
+      "name": "Lunge with Jump",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Forward Lunge",
+      "reason": "Jumping lunge still read as a lunge."
+    },
+    {
+      "name": "Lunge with Twist",
+      "muscleGroup": "quads",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Forward Lunge",
+      "reason": "Twist usually missing; looked like a plain lunge."
+    },
+    {
+      "name": "Barbell Upright Row",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "keepInstead": "Dumbbell Upright Row",
+      "reason": "Same upright-row body shape."
+    },
+    {
+      "name": "Cable One Arm Lateral Raise",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "keepInstead": "Cable Lateral Raise",
+      "reason": "Same cable lateral with full tower; one vs two arms washed out."
+    },
+    {
+      "name": "Cable Supine Reverse Fly",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "keepInstead": "Cable Cross-over Revers Fly",
+      "reason": "Both reverse-fly on cables; crossover is the clearer full-machine icon."
+    },
+    {
+      "name": "Cable Upright Row",
+      "muscleGroup": "shoulders",
+      "minEquipment": "full_gym",
+      "keepInstead": "Dumbbell Upright Row",
+      "reason": "Same upright-row body shape."
+    },
+    {
+      "name": "Dumbbell One Arm Lateral Raise",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Lateral Raise",
+      "reason": "Your generated one-arm vs two-arm lateral raises looked the same in 3/4 view."
+    },
+    {
+      "name": "Dumbbell One Arm Upright Row",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Upright Row",
+      "reason": "Same upright-row pose; one-arm version looked incomplete/identical."
+    },
+    {
+      "name": "Dumbbell Rear Lateral Raise",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Rear Fly",
+      "reason": "Same exercise as rear fly / reverse fly."
+    },
+    {
+      "name": "Dumbbell Reverse Fly",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Rear Fly",
+      "reason": "Industry synonym for rear delt / reverse fly — identical bent-over arms-out pose."
+    },
+    {
+      "name": "Dumbbell Rotation Reverse Fly",
+      "muscleGroup": "shoulders",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Rear Fly",
+      "reason": "Same reverse fly; end wrist rotate not visible in a still icon."
+    },
+    {
+      "name": "Barbell Lying Extension",
+      "muscleGroup": "triceps",
+      "minEquipment": "full_gym",
+      "keepInstead": "Barbell Lying Triceps Extension",
+      "reason": "Same skull-crusher (synonym name)."
+    },
+    {
+      "name": "Bench Dip (knees Bent)",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Triceps Dip",
+      "reason": "Same dip path."
+    },
+    {
+      "name": "Bench Dip on Floor",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Triceps Dip",
+      "reason": "Same dip path."
+    },
+    {
+      "name": "Cable Two Arm Tricep Kickback",
+      "muscleGroup": "triceps",
+      "minEquipment": "full_gym",
+      "keepInstead": "Cable Kickback",
+      "reason": "Same kickback arm path."
+    },
+    {
+      "name": "Dumbbell Lying Single Extension",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Lying Triceps Extension",
+      "reason": "Same skull-crusher."
+    },
+    {
+      "name": "Dumbbell One Arm Kickback",
+      "muscleGroup": "triceps",
+      "minEquipment": "home_dumbbells",
+      "keepInstead": "Dumbbell Kickback",
+      "reason": "Same kickback."
+    },
+    {
+      "name": "Three Bench Dip",
+      "muscleGroup": "triceps",
+      "minEquipment": "bodyweight",
+      "keepInstead": "Triceps Dip",
+      "reason": "Same dip path."
+    }
+  ]
+}

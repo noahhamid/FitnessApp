@@ -16,7 +16,7 @@ import {
   formatMuscleGroup,
   formatMovementPattern,
 } from "../lib/muscle-icons";
-import { imageForMuscleGroup } from "@/src/lib/workout-plan-adapter";
+import { imageForExercise } from "@/src/lib/workout-plan-adapter";
 
 const MUSCLE_GROUP_CATEGORIES = [
   "All",
@@ -113,7 +113,7 @@ export function ExerciseLibrarySection({ onView }: Props) {
             >
               <View style={s.iconWrap}>
                 <Image
-                  source={{ uri: imageForMuscleGroup(ex.muscleGroup) }}
+                  source={{ uri: imageForExercise(ex.name) }}
                   style={s.rowIcon}
                   accessibilityIgnoresInvertColors
                 />

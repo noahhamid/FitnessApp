@@ -1,16 +1,20 @@
 import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
 import { AUTH_STORAGE_PREFIX, authClient } from "./auth-client";
-import { PRODUCTION_API_URL } from "./public-api-url";
+import { getClientApiUrl } from "./public-api-url";
+import {
+  clearSessionToken,
+  readSessionToken,
+  SESSION_TOKEN_KEY,
+} from "./session-token";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? PRODUCTION_API_URL;
+const API_URL = getClientApiUrl();
 
 type ApiEnvelope<T> = { data: T };
 type ApiFailure = { error: string };
 
 const SESSION_COOKIE_KEY = `${AUTH_STORAGE_PREFIX}_cookie`;
 const SESSION_DATA_KEY = `${AUTH_STORAGE_PREFIX}_session_data`;
-const SESSION_TOKEN_KEY = `${AUTH_STORAGE_PREFIX}_session_token`;
 
 let handlingUnauthorized = false;
 
@@ -34,19 +38,35 @@ function parseSessionToken(cookieHeader: string): string | null {
 async function computeAuthHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = {};
 
-  const fromClient = authClient.getCookie?.();
-  const cookie =
+  const fromClient = (
+    authClient as { getCookie?: () => string | null | undefined }
+  ).getCookie?.();
+  let cookie =
     typeof fromClient === "string" && fromClient.length > 0
       ? fromClient
-      : await SecureStore.getItemAsync(SESSION_COOKIE_KEY);
+      : null;
+  if (!cookie) {
+    try {
+      cookie = await SecureStore.getItemAsync(SESSION_COOKIE_KEY);
+    } catch {
+      cookie = null;
+    }
+  }
 
-  let token = await SecureStore.getItemAsync(SESSION_TOKEN_KEY);
+  let token = await readSessionToken();
   if (!token && cookie) {
     token = parseSessionToken(cookie);
   }
 
   if (cookie) headers.Cookie = cookie;
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+    // Until / after bearer plugin is live on Vercel, also send the token as a
+    // session cookie so auth.api.getSession() can resolve it.
+    if (!headers.Cookie) {
+      headers.Cookie = `better-auth.session_token=${token}`;
+    }
+  }
 
   return headers;
 }
@@ -74,11 +94,16 @@ export function invalidateAuthHeaderCache(): void {
 }
 
 async function clearSessionStorage(): Promise<void> {
-  await Promise.all([
-    SecureStore.deleteItemAsync(SESSION_COOKIE_KEY),
-    SecureStore.deleteItemAsync(SESSION_DATA_KEY),
-    SecureStore.deleteItemAsync(SESSION_TOKEN_KEY),
-  ]);
+  await clearSessionToken();
+  try {
+    await Promise.all([
+      SecureStore.deleteItemAsync(SESSION_COOKIE_KEY),
+      SecureStore.deleteItemAsync(SESSION_DATA_KEY),
+      SecureStore.deleteItemAsync(SESSION_TOKEN_KEY),
+    ]);
+  } catch {
+    // SecureStore is a stub on web — token already cleared above.
+  }
 }
 
 async function handleUnauthorized(): Promise<void> {

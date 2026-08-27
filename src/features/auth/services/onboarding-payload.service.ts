@@ -32,6 +32,9 @@ export type OnboardingAuthParams = {
   equipment?: string | string[];
   reminderEnabled?: string | string[];
   reminderHour?: string | string[];
+
+  /** "1" if user accepted the paywall discount offer. */
+  offerAccepted?: string | string[];
   /** "1" when an existing user is redo-ing the quiz from settings. */
   retake?: string | string[];
 };
@@ -126,26 +129,29 @@ export function isOnboardingRetake(params: OnboardingAuthParams): boolean {
   return single(params.retake) === "1";
 }
 
-async function waitForSession() {
-  for (let attempt = 0; attempt < 8; attempt += 1) {
+async function waitForSession(): Promise<boolean> {
+  const { readSessionToken } = await import("@/src/lib/session-token");
+  for (let attempt = 0; attempt < 12; attempt += 1) {
     const session = await getSession();
-    if (session?.user) return;
-    await new Promise((resolve) => setTimeout(resolve, 125));
+    if (session?.user) return true;
+    if (await readSessionToken()) return true;
+    await new Promise((resolve) => setTimeout(resolve, 150));
   }
-  throw new Error("Your session was created but is not available yet.");
+  return false;
 }
 
 /**
  * Persist the values collected before authentication. Backend profile routes
  * require a session, so this must run only after sign-up/sign-in succeeds.
+ * Returns false when no session/token is available yet (e.g. email verify pending).
  */
 export async function saveCompletedOnboardingPayload(
   params: OnboardingAuthParams,
-): Promise<void> {
-  if (!hasCompletedOnboardingPayload(params)) return;
+): Promise<boolean> {
+  if (!hasCompletedOnboardingPayload(params)) return false;
 
-  await waitForSession();
-
+  const ready = await waitForSession();
+  if (!ready) return false;
   const gender = single(params.gender);
   const experience = single(params.experience);
   const equipment = single(params.equipment);
@@ -187,4 +193,5 @@ export async function saveCompletedOnboardingPayload(
     bodyFatPercent: hasBodyFat ? bodyFatPercent : null,
     bodyFatSource: hasBodyFat ? (bodyFatSource ?? "range") : null,
   });
+  return true;
 }

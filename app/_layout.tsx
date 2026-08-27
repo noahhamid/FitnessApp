@@ -30,17 +30,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useMemo } from "react";
+import { Platform } from "react-native";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { AppThemeProvider, useTheme } from "@/src/context/ThemeContext";
 import { AppSafeAreaChrome } from "@/src/components/AppSafeAreaChrome";
 import { IapProvider } from "@/src/features/billing/IapProvider";
-
+import { LoadingScreen } from "@/src/ui/components/LoadingScreen";
 import * as WebBrowser from "expo-web-browser";
 import { Sentry, sentryEnabled } from "@/src/lib/sentry";
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 const queryClient = new QueryClient();
 
@@ -107,22 +108,23 @@ function RootLayout() {
     "PlusJakartaSans-Bold": PlusJakartaSans_700Bold,
   });
 
+  // Custom Tabs warm-up is Android/iOS only — throws on web.
   useEffect(() => {
-    WebBrowser.warmUpAsync();
+    if (Platform.OS === "web") return;
+    void WebBrowser.warmUpAsync();
     return () => {
-      WebBrowser.coolDownAsync();
+      void WebBrowser.coolDownAsync();
     };
   }, []);
 
   // Keep the native splash up until index / LoadingScreen / welcome hide it.
   // Do not swap in a second logo plate while fonts load (guests go to welcome).
   useEffect(() => {
-    if (!loaded && !err) return;
-    const t = setTimeout(() => {
-      void SplashScreen.hideAsync();
-    }, 4000);
-    return () => clearTimeout(t);
-  }, [loaded, err]);
+  if (!loaded && !err) return;
+  void SplashScreen.hideAsync().catch(() => undefined);
+}, [loaded, err]);
+
+if (!loaded && !err) return <LoadingScreen />;
 
   return (
     <SafeAreaProvider>

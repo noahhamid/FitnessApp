@@ -5,6 +5,7 @@ import { useAuthStore } from "../hooks/useAuth";
 import {
   clearOnboardingDraft,
   loadOnboardingDraft,
+  saveOnboardingDraft,
 } from "./onboarding-draft.service";
 import {
   hasCompletedOnboardingPayload,
@@ -12,6 +13,10 @@ import {
   saveCompletedOnboardingPayload,
   type OnboardingAuthParams,
 } from "./onboarding-payload.service";
+
+function single(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 /** Shared routing after email or social sign-in / sign-up. */
 export async function navigateAfterAuth(
@@ -25,10 +30,25 @@ export async function navigateAfterAuth(
   };
 
   if (hasCompletedOnboardingPayload(merged)) {
-    await saveCompletedOnboardingPayload(merged);
-    await clearOnboardingDraft();
-    useAuthStore.getState().setOnboarded(true);
-    router.replace("/(app)/(tabs)");
+    const saved = await saveCompletedOnboardingPayload(merged);
+    if (saved) {
+      await clearOnboardingDraft();
+      useAuthStore.getState().setOnboarded(true);
+      router.replace("/(app)/(tabs)");
+      return;
+    }
+    // Account exists but session/token not ready yet (email verify pending,
+    // or web cross-origin cookie lag). Keep the draft and wait for confirm.
+    await saveOnboardingDraft(merged);
+    useAuthStore.getState().setOnboarded(false);
+    const email = single(merged.email);
+    router.replace({
+      pathname: "/(auth)/verify-email",
+      params: {
+        ...onboardingParamsForNavigation(merged),
+        ...(email ? { email: encodeURIComponent(email) } : {}),
+      },
+    });
     return;
   }
 

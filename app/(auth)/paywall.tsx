@@ -34,7 +34,14 @@ export default function OnboardingPaywallScreen() {
 
     if (alreadyAuthed) {
       try {
-        await saveCompletedOnboardingPayload(nextParams);
+        const saved = await saveCompletedOnboardingPayload(nextParams);
+        if (!saved) {
+          setSaveError(
+            "Signed in, but we couldn't save your plan yet. Confirm your email, then try again.",
+          );
+          setLeaving(false);
+          return;
+        }
         await clearOnboardingDraft();
         useAuthStore.getState().setOnboarded(true);
         router.replace("/(app)/(tabs)");

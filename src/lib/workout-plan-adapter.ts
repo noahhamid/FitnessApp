@@ -1,6 +1,7 @@
 import type { WorkoutPlan, Exercise, ExerciseType } from "@/src/features/workout/data/workouts";
-import { Image } from "react-native";
+import { imageForExercise } from "@/src/features/workout/constants/exercise-images";
 import { dayTitleFromMuscleGroups } from "@/src/lib/plan-day-title";
+import { resolveAssetUri } from "@/src/lib/resolve-asset";
 
 // ── Types matching the real backend response (GET /api/workouts/plan) ──
 export interface ApiPlanExercise {
@@ -57,17 +58,15 @@ const LEGS_DAY_COVER = require("../../assets/images/legs-day-cover.jpg");
 const UPPER_DAY_COVER = require("../../assets/images/upper-day-cover.jpg");
 const FULL_BODY_COVER = require("../../assets/images/full-body-cover.jpg");
 
-function resolveAssetUri(asset: number): string {
-  const resolve = Image.resolveAssetSource;
-  if (typeof resolve !== "function") return "";
-  return resolve(asset)?.uri ?? "";
+function resolveLocalAssetUri(asset: number): string {
+  return resolveAssetUri(asset);
 }
 
 type LazyAssetUri = { asset: number; uri?: string };
 
 function resolveLazyAssetUri(slot: LazyAssetUri): string {
   if (slot.uri === undefined) {
-    slot.uri = resolveAssetUri(slot.asset);
+    slot.uri = resolveLocalAssetUri(slot.asset);
   }
   return slot.uri;
 }
@@ -83,10 +82,13 @@ const COVER_BY_LABEL_HINT: { match: RegExp; slot: LazyAssetUri }[] = [
   { match: /full body/i, slot: { asset: FULL_BODY_COVER } },
 ];
 
-/** Single shared local placeholder for every exercise / muscle-group tile. */
+/** Fallback when no exercise name is available (covers, rest tiles, etc.). */
 export function imageForMuscleGroup(_muscleGroup?: string): string {
   return resolveLazyAssetUri(exercisePlaceholder);
 }
+
+/** Prefer per-exercise soft-3D art; falls back to shared placeholder. */
+export { imageForExercise };
 
 function coverImageForDay(title: string, storedLabel: string): string {
   const hit = COVER_BY_LABEL_HINT.find(
@@ -135,7 +137,7 @@ function adaptExercise(ex: ApiPlanExercise, goalId: string): Exercise {
       ? { reps: midReps }
       : { durationSec: ex.targetRepsMin || 40 }),
     restSec: REST_SEC_BY_GOAL[goalId] ?? 60,
-    imageUrl: imageForMuscleGroup(ex.muscleGroup),
+    imageUrl: imageForExercise(ex.exerciseName),
     instructions:
       CUE_BY_PATTERN[ex.movementPattern] ??
       "Focus on controlled form and full range of motion.",
@@ -208,7 +210,7 @@ export function adaptLibraryExercise(
     sets: DEFAULT_SETS,
     ...(type === "reps" ? { reps: DEFAULT_REPS } : { durationSec: 40 }),
     restSec: REST_SEC_BY_GOAL[goalId] ?? 60,
-    imageUrl: imageForMuscleGroup(ex.muscleGroup),
+    imageUrl: imageForExercise(ex.name),
     instructions:
       ex.instructions?.trim() ||
       CUE_BY_PATTERN[ex.movementPattern] ||

@@ -27,6 +27,7 @@ import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
 import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import { api } from "@/src/lib/api";
+import { resolveAssetUri } from "@/src/lib/resolve-asset";
 import { WorkoutTabHeader } from "../components/WorkoutTabHeader";
 import { WorkoutPlanCard } from "../components/WorkoutPlanCard";
 import { WorkoutDetailScreen } from "../components/WorkoutDetailScreen";
@@ -61,6 +62,7 @@ import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import {
   adaptPlanDay,
   adaptLibraryExercise,
+  imageForExercise,
   estimateWorkoutMinutes,
   imageForMuscleGroup,
 } from "@/src/lib/workout-plan-adapter";
@@ -93,6 +95,18 @@ function openPlanEditor() {
 
 /** Flip to `true` in __DEV__ to verify failed background session UX (banner + Alert). */
 const FORCE_SESSION_CREATE_FAIL = false;
+
+// `require` at module scope is fine; resolveAssetSource must stay lazy
+// (breaks `expo export:embed` if called at import time).
+const AVATAR_PLACEHOLDER = require("../../../../assets/images/avatar-placeholder.jpg");
+let avatarPlaceholderUri: string | undefined;
+
+function getAvatarPlaceholderUri(): string {
+  if (avatarPlaceholderUri === undefined) {
+    avatarPlaceholderUri = resolveAssetUri(AVATAR_PLACEHOLDER);
+  }
+  return avatarPlaceholderUri;
+}
 
 /** Resolve a plan exercise to LibraryExercise shape for ExerciseDetailCard. */
 function toLibraryExercise(
@@ -712,7 +726,7 @@ export default function WorkoutScreen() {
     return (
       <ExerciseDetailCard
         exercise={viewingExercise}
-        imageUrl={imageForMuscleGroup(viewingExercise.muscleGroup)}
+        imageUrl={imageForExercise(viewingExercise.name)}
         addedToToday={addedNames.has(viewingExercise.name)}
         // Mid-workout library modal (ActiveWorkoutScreen) passes
         // showStart={false} / allowRemove={false}. Today browse omits
@@ -752,7 +766,7 @@ export default function WorkoutScreen() {
             id: `standalone-${viewingExercise.id}`,
             title: viewingExercise.name,
             tag: "Extra",
-            coverImage: imageForMuscleGroup(viewingExercise.muscleGroup),
+            coverImage: imageForExercise(viewingExercise.name),
             exercises: [
               adaptLibraryExercise(
                 viewingExercise,

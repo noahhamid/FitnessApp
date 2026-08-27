@@ -16,7 +16,7 @@ import {
 import {
   adaptLibraryExercise,
   adaptPlanDay,
-  imageForMuscleGroup,
+  imageForExercise,
 } from "@/src/lib/workout-plan-adapter";
 import { dayTitleFromMuscleGroups } from "@/src/lib/plan-day-title";
 import { getTodaysPlanDayIndex } from "@/src/lib/plan-day-selection";
@@ -255,8 +255,8 @@ export function useInProgressSession() {
         ).coverImage;
       }
     }
-    if (!coverImage && exercises[0]?.muscleGroup) {
-      coverImage = imageForMuscleGroup(exercises[0].muscleGroup);
+    if (!coverImage && exercises[0]?.name) {
+      coverImage = imageForExercise(exercises[0].name);
     }
 
     const plan: WorkoutPlan = {
