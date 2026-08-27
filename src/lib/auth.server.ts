@@ -4,10 +4,8 @@ import { logEmailVerificationLink, sendAuthEmail } from "./send-auth-email";
 
 const APP_VERIFY_EMAIL_URL = "com.exo.fitness://verify-email";
 
-const authRateLimitEnabled =
-  process.env.DISABLE_AUTH_RATE_LIMIT !== "true" &&
-  process.env.NODE_ENV === "production" &&
-  process.env.VERCEL_ENV === "production";
+/** Opt-in only. Default off so local + preview deploys don't lock you out while testing auth. */
+const authRateLimitEnabled = process.env.ENABLE_AUTH_RATE_LIMIT === "true";
 
 async function createAuth() {
   const [{ betterAuth }, { prismaAdapter }, { expo }, { bearer }] =

@@ -10,6 +10,7 @@ import {
   persistTokenFromAuthData,
 } from "@/src/lib/session-token";
 import { invalidateAuthHeaderCache } from "@/src/lib/api";
+import { getClientApiUrl } from "@/src/lib/public-api-url";
 import { NativeModules, Platform } from "react-native";
 
 type GoogleSignInSdk = typeof import("@react-native-google-signin/google-signin");
@@ -68,8 +69,9 @@ type AuthClientError = {
 function throwIfAuthError(error: AuthClientError): void {
   if (!error) return;
   if (error.status === 429 || /too many (requests|attempts)/i.test(error.message ?? "")) {
+    const api = getClientApiUrl();
     throw new Error(
-      "Too many tries — wait about a minute, then tap once. During dev, use the link printed in the API terminal instead of resending.",
+      `Too many tries on ${api}. Wait 60s, or make sure Expo uses your local API (192.168.1.8:3000).`,
     );
   }
   if (/invalid token/i.test(error.message ?? "")) {

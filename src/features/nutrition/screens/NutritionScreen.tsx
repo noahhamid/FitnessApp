@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Pressable,
   RefreshControl,
@@ -33,7 +33,6 @@ import { WeeklyTrendCard } from "../components/WeeklyTrendCard";
 import { NutritionTargetsModal } from "../components/NutritionTargetsModal";
 import { AdaptiveCalorieCard } from "../components/AdaptiveCalorieCard";
 import { useProfile } from "@/src/features/auth/hooks/useProfile";
-import { useRequirePremium } from "@/src/features/billing/useRequirePremium";
 import { goalLabel } from "@/src/features/auth/services/goals.service";
 
 import {
@@ -50,10 +49,16 @@ import {
 } from "../hooks/useNutrition";
 import type { MealLogEntry, MealType } from "../types/nutrition.types";
 import { GYM_FOODS } from "@/src/lib/gymFoods";
-import { dayLabel, formatWeekLabel } from "@/src/lib/week-days";
-import { currentMealSlot } from "@/src/lib/meal-workout-reminders";
+import {
+  dayLabel,
+  formatWeekLabel,
+  minWeekOffsetSince,
+  shiftDateStr,
+  signupDateOnly,
+  weekDatesFor,
+} from "@/src/lib/week-days";
+import { suggestMealSlotForQuickAdd } from "@/src/lib/meal-workout-reminders";
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
-import { useDiaryDate } from "@/src/hooks/useDiaryDate";
 import {
   invalidateQueryPrefixes,
   usePullToRefresh,
@@ -82,6 +87,11 @@ function getNutritionSuggestionUri(): string {
   return nutritionSuggestionUri;
 }
 
+function todayStr(): string {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+}
+
 function toDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -103,20 +113,10 @@ export default function MealScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const {
-    today,
-    selectedDate,
-    setSelectedDate,
-    weekOffset,
-    weekStart,
-    weekEnd,
-    weekDates,
-    canGoPrevWeek,
-    canGoNextWeek,
-    shiftWeek,
-    isToday,
-    joinDate,
-  } = useDiaryDate(user?.createdAt);
+  const joinDate = signupDateOnly(user?.createdAt);
+  const minWeekOffset = minWeekOffsetSince(user?.createdAt);
+  const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [weekOffset, setWeekOffset] = useState(0);
   const [targetsOpen, setTargetsOpen] = useState(false);
   const [adaptiveDismissed, setAdaptiveDismissed] = useState(false);
   const deleteMeal = useDeleteMeal(selectedDate);
@@ -132,9 +132,31 @@ export default function MealScreen() {
   );
   const { refreshing, onRefresh } = usePullToRefresh(refreshNutrition);
 
+  const { weekStart, weekEnd, weekDates } = useMemo(
+    () => weekDatesFor(weekOffset),
+    [weekOffset],
+  );
+
+  const canGoPrevWeek =
+    minWeekOffset == null ? true : weekOffset > minWeekOffset;
+  const canGoNextWeek = weekOffset < 0;
+
+  const shiftWeek = (delta: number) => {
+    const next = weekOffset + delta;
+    if (minWeekOffset != null && next < minWeekOffset) return;
+    if (next > 0) return;
+    setWeekOffset(next);
+    setSelectedDate((prev) => {
+      const shifted = shiftDateStr(prev, delta * 7);
+      if (joinDate && shifted < joinDate) return joinDate;
+      const today = todayStr();
+      if (shifted > today) return today;
+      return shifted;
+    });
+  };
+
   const { data: goals } = useNutritionGoals();
   const { data: profile } = useProfile();
-  const requirePremium = useRequirePremium();
   const { data: meals = [] } = useMealLog(selectedDate);
   const { data: totals } = useDailyTotals(selectedDate);
   const { data: water } = useWater(selectedDate);
@@ -150,37 +172,12 @@ export default function MealScreen() {
   const applyAdaptive = useApplyAdaptiveSuggestion();
 
   const mealsBySlot = useMemo(() => {
-    const map: Record<MealType, MealLogEntry[]> = {
-      Breakfast: [],
-      Lunch: [],
-      Dinner: [],
-      Snack: [],
-    };
+    const map: Partial<Record<MealType, MealLogEntry>> = {};
     for (const entry of meals) {
-      map[entry.meal]?.push(entry);
+      if (!map[entry.meal]) map[entry.meal] = entry;
     }
     return map;
   }, [meals]);
-
-  const firstEmptySlot =
-    MEAL_SLOTS.find((s) => mealsBySlot[s].length === 0) ?? "Snack";
-  const quickAddSlot = isToday ? currentMealSlot() : firstEmptySlot;
-
-  function openLogMeal(slot: MealType) {
-    router.push({
-      pathname: "/log-meal",
-      params: { slot, date: selectedDate },
-    });
-  }
-
-  function openScanMeal(slot: MealType) {
-    requirePremium(() =>
-      router.push({
-        pathname: "/scan-meal",
-        params: { slot, date: selectedDate },
-      }),
-    );
-  }
 
   const openMealActions = useCallback(
     (entry: MealLogEntry) => {
@@ -244,8 +241,9 @@ export default function MealScreen() {
   }, [weekDots]);
 
   const days = useMemo(
-    () =>
-      weekDates.map((d, i) => {
+    () => {
+      const today = todayStr();
+      return weekDates.map((d, i) => {
         const date = toDateStr(d);
         // Prefer date-key match; fall back to index in the Mon–Sun window
         // (API builds end-6…end, so Sunday is always the last slot).
@@ -256,10 +254,11 @@ export default function MealScreen() {
           num: d.getDate(),
           hasLog,
           date,
-          disabled: joinDate ? date < joinDate : false,
+          disabled: date > today,
         };
-      }),
-    [weekDates, loggedByDate, weekDots, joinDate],
+      });
+    },
+    [weekDates, loggedByDate, weekDots],
   );
 
   const activeDayIndex = days.findIndex((d) => d.date === selectedDate);
@@ -285,7 +284,7 @@ export default function MealScreen() {
 
       <MealHeader
         eyebrow={`${dayLabel(selectedDate)} · Diet`}
-        title={isToday ? "Today's plate" : "Plate"}
+        title="Today's plate"
         caloriesLeft={caloriesLeft}
       />
 
@@ -342,11 +341,9 @@ export default function MealScreen() {
             applying={applyAdaptive.isPending}
             error={applyAdaptive.isError}
             onApply={() =>
-              requirePremium(() =>
-                applyAdaptive.mutate(adaptive.suggestedCalories, {
-                  onSuccess: () => setAdaptiveDismissed(true),
-                }),
-              )
+              applyAdaptive.mutate(adaptive.suggestedCalories, {
+                onSuccess: () => setAdaptiveDismissed(true),
+              })
             }
             onDismiss={() => setAdaptiveDismissed(true)}
           />
@@ -355,8 +352,7 @@ export default function MealScreen() {
         <WaterTracker
           glasses={water?.glasses ?? 0}
           total={WATER_GOAL_GLASSES}
-          onAdd={() => adjustWater.mutate(1)}
-          onRemove={() => adjustWater.mutate(-1)}
+          onAdjust={(delta) => adjustWater.mutate(delta)}
         />
 
         <LogActionsRow
@@ -364,23 +360,29 @@ export default function MealScreen() {
             {
               key: "scan",
               label: "Scan food",
-              icon: LOG_ACTION_ICONS.camera,
+              appIcon: "scan",
               primary: true,
-              onPress: () => openScanMeal(quickAddSlot),
+              onPress: () =>
+                router.push({
+                  pathname: "/scan-meal",
+                  params: { date: selectedDate },
+                }),
             },
             {
               key: "manual",
               label: "Manual",
               icon: LOG_ACTION_ICONS.manual,
-              onPress: () => openLogMeal(quickAddSlot),
+              onPress: () =>
+                router.push({
+                  pathname: "/log-meal",
+                  params: { date: selectedDate },
+                }),
             },
           ]}
         />
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            {isToday ? "Today's meals" : "Meals"}
-          </Text>
+          <Text style={styles.sectionTitle}>Today's meals</Text>
           <Pressable
             onPress={() =>
               router.push({
@@ -395,60 +397,49 @@ export default function MealScreen() {
         </View>
 
         {MEAL_SLOTS.map((slot, i) => {
-          const entries = mealsBySlot[slot];
+          const entry = mealsBySlot[slot];
           return (
-            <FadeInUp key={slot} delay={i * 70} style={styles.slotGroup}>
-              {entries.length === 0 ? (
+            <FadeInUp key={slot} delay={i * 70}>
+              {entry ? (
+                <MealPhotoCard
+                  slot={entry.meal}
+                  name={entry.name}
+                  time={formatTime(entry.logged_at)}
+                  calories={entry.cal}
+                  macros={{
+                    carbs: entry.carbs,
+                    protein: entry.protein,
+                    fat: entry.fat,
+                  }}
+                  imageUrl={entry.image_url ?? undefined}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/log-meal",
+                      params: {
+                        id: entry.id,
+                        slot: entry.meal,
+                        date: selectedDate,
+                        name: entry.name,
+                        cal: String(entry.cal),
+                        protein: String(entry.protein),
+                        carbs: String(entry.carbs),
+                        fat: String(entry.fat),
+                      },
+                    })
+                  }
+                  entranceDelay={0}
+                />
+              ) : (
                 <EmptyMealSlot
                   slot={slot}
                   recommendedRange={RECOMMENDED_RANGE[slot]}
-                  onAdd={() => openLogMeal(slot)}
+                  onAdd={() =>
+                    router.push({
+                      pathname: "/log-meal",
+                      params: { slot, date: selectedDate },
+                    })
+                  }
                 />
-              ) : (
-                <>
-                  {entries.map((entry) => (
-                    <MealPhotoCard
-                      key={entry.id}
-                      slot={entry.meal}
-                      name={entry.name}
-                      time={formatTime(entry.logged_at)}
-                      calories={entry.cal}
-                      macros={{
-                        carbs: entry.carbs,
-                        protein: entry.protein,
-                        fat: entry.fat,
-                      }}
-                      imageUrl={entry.image_url ?? undefined}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/log-meal",
-                          params: {
-                            id: entry.id,
-                            slot: entry.meal,
-                            date: selectedDate,
-                            name: entry.name,
-                            cal: String(entry.cal),
-                            protein: String(entry.protein),
-                            carbs: String(entry.carbs),
-                            fat: String(entry.fat),
-                          },
-                        })
-                      }
-                      entranceDelay={0}
-                    />
-                  ))}
-                  <Pressable
-                    onPress={() => openLogMeal(slot)}
-                    hitSlop={8}
-                    style={styles.addAnother}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Add another ${slot}`}
-                  >
-                    <Text style={styles.addAnotherText}>
-                      + Add another {slot.toLowerCase()}
-                    </Text>
-                  </Pressable>
-                </>
               )}
             </FadeInUp>
           );
@@ -462,7 +453,8 @@ export default function MealScreen() {
             suggestions={suggestion.suggestions}
             onSelect={(s) => {
               const food = GYM_FOODS.find((f) => f.name === s.label);
-              const emptySlot = isToday ? currentMealSlot() : firstEmptySlot;
+              const emptySlot =
+                MEAL_SLOTS.find((slot) => !mealsBySlot[slot]) ?? "Snack";
               router.push({
                 pathname: "/log-meal",
                 params: {
@@ -484,9 +476,7 @@ export default function MealScreen() {
         )}
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            {weekOffset === 0 ? "This week" : "Week"}
-          </Text>
+          <Text style={styles.sectionTitle}>This week</Text>
           <Pressable
             onPress={() =>
               router.push({
@@ -515,13 +505,6 @@ export default function MealScreen() {
       <NutritionTargetsModal
         visible={targetsOpen}
         onClose={() => setTargetsOpen(false)}
-        onUpdateProfile={() => {
-          setTargetsOpen(false);
-          router.push({
-            pathname: "/(app)/(tabs)/profile",
-            params: { editPlan: "1" },
-          });
-        }}
         goals={goals ?? null}
         goalId={profile?.goalId}
         daysPerWeek={profile?.daysPerWeek}
@@ -556,12 +539,5 @@ function makeStyles(T: AppTheme) {
   },
   sectionTitle: { fontFamily: T.display, fontSize: 18, color: T.white },
   sectionLink: { fontFamily: T.bodySemi, fontSize: 11, color: T.accent },
-  slotGroup: { gap: 10 },
-  addAnother: {
-    alignSelf: "flex-start",
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-  },
-  addAnotherText: { fontFamily: T.bodySemi, fontSize: 12, color: T.accent },
   });
 }

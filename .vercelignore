@@ -7,4 +7,6 @@ ios
 /uploads
 .cursor
 agent-transcripts
+assets/images/workout
+scripts/data
 !api/handler.cjs

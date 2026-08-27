@@ -33,6 +33,7 @@ import { WorkoutPlanCard } from "../components/WorkoutPlanCard";
 import { WorkoutDetailScreen } from "../components/WorkoutDetailScreen";
 import { ContinueWorkoutCard } from "../components/ContinueWorkoutCard";
 import { InProgressStatsRow } from "../components/InProgressStatsRow";
+import { UpNextWorkoutCard } from "@/src/features/dashboard/components/UpNextWorkoutCard";
 import {
   ActiveWorkoutScreen,
   type SetLog,
@@ -90,6 +91,15 @@ function openPlanEditor() {
     pathname: "/(app)/(tabs)/profile",
     params: { editPlan: "1" },
   });
+}
+
+/** Shorten long split names so they fit beside the Update plan chip. */
+function compactSplitLabel(label: string): string {
+  return label
+    .replace(/Push\s*\/\s*Pull\s*\/\s*Legs/gi, "PPL")
+    .replace(/Upper\s*\/\s*Lower/gi, "Upper/Lower")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /** Flip to `true` in __DEV__ to verify failed background session UX (banner + Alert). */
@@ -315,6 +325,15 @@ export default function WorkoutScreen() {
     return done;
   }, [todaySessions, conditioning, cardio.justCompletedIndexes]);
 
+  const todayLiftingCompleted = useMemo(
+    () =>
+      (todaySessions ?? []).some(
+        (s) =>
+          s.notes !== CONDITIONING_SESSION_NOTES && !!s.completedAt,
+      ),
+    [todaySessions],
+  );
+
   const handleCardioComplete = useCallback(async () => {
     try {
       await cardio.complete();
@@ -374,6 +393,13 @@ export default function WorkoutScreen() {
   >("today");
 
   const handleCardPress = (plan: WorkoutPlan, from: "today" | "fullPlan") => {
+    // Already finished today — open a review of the plan, don't start again.
+    if (from === "today" && todayLiftingCompleted) {
+      setSelectedDay(plan);
+      setCameFrom("today");
+      setView("detail");
+      return;
+    }
     // Today's card is an entry point, not a preview — skip WorkoutDetailScreen
     // and start immediately (same path as detail's onStart). Full-plan days
     // still open the detail/preview screen for browsing.
@@ -575,8 +601,11 @@ export default function WorkoutScreen() {
     return (
       <WorkoutDetailScreen
         plan={selectedDay}
+        completed={
+          cameFrom === "today" ? todayLiftingCompleted : false
+        }
         onBack={() => {
-          setView(cameFrom);
+          setView("today");
           setSelectedDay(null);
         }}
         onStart={() => selectedDay && handleStart(selectedDay)}
@@ -667,14 +696,16 @@ export default function WorkoutScreen() {
             <Text style={s.sectionTitle}>Full plan</Text>
             {apiPlan && (
               <View style={s.splitTitleRow}>
-                <Text style={[s.splitSub, s.splitCopy]}>
-                  {apiPlan.splitLabel} · {apiPlan.daysPerWeek} days / week
+                <Text style={[s.splitSub, s.splitCopy]} numberOfLines={1}>
+                  {compactSplitLabel(apiPlan.splitLabel)} ·{" "}
+                  {apiPlan.daysPerWeek} days / week
                 </Text>
                 <Pressable
                   onPress={openPlanEditor}
                   hitSlop={8}
                   accessibilityRole="button"
                   accessibilityLabel="Update plan"
+                  style={s.updatePlanBtn}
                 >
                   <Text style={s.updatePlanText}>Update plan</Text>
                 </Pressable>
@@ -811,7 +842,9 @@ export default function WorkoutScreen() {
           {apiPlan && (
             <View style={s.splitTitleRow}>
               <View style={s.splitCopy}>
-                <Text style={s.splitLabel}>{apiPlan.splitLabel}</Text>
+                <Text style={s.splitLabel} numberOfLines={1}>
+                  {compactSplitLabel(apiPlan.splitLabel)}
+                </Text>
                 <Text style={s.splitSub}>
                   {apiPlan.daysPerWeek} days / week
                 </Text>
@@ -821,6 +854,7 @@ export default function WorkoutScreen() {
                 hitSlop={8}
                 accessibilityRole="button"
                 accessibilityLabel="Update plan"
+                style={s.updatePlanBtn}
               >
                 <Text style={s.updatePlanText}>Update plan</Text>
               </Pressable>
@@ -898,18 +932,8 @@ export default function WorkoutScreen() {
                 <Reveal delay={140}>
                   <Text style={s.sectionTitle}>Today</Text>
                 </Reveal>
-                <Reveal delay={180}>
-                  <View style={s.restCard}>
-                    <View style={s.restIconWrap}>
-                      <Moon size={20} color={T.accent} strokeWidth={2} />
-                    </View>
-                    <Text style={s.restTitle}>Rest day</Text>
-                    <Text style={s.restBody}>
-                      No session on the schedule — let the work from earlier in
-                      the week settle. Browse the library if you still want to
-                      move.
-                    </Text>
-                  </View>
+                <Reveal delay={180} style={{ marginBottom: 16 }}>
+                  <UpNextWorkoutCard variant="rest" />
                 </Reveal>
               </>
             )}
@@ -928,7 +952,10 @@ export default function WorkoutScreen() {
                     exerciseCount={todaysWorkout.exercises.length}
                     muscles={muscleSummary(todaysWorkout)}
                     imageUrl={todaysWorkout.coverImage}
-                    ctaLabel="Start workout"
+                    completed={todayLiftingCompleted}
+                    ctaLabel={
+                      todayLiftingCompleted ? undefined : "Start workout"
+                    }
                     entranceDelay={0}
                     onPress={() => handleCardPress(todaysWorkout, "today")}
                   />
@@ -998,17 +1025,26 @@ function makeStyles(T: AppTheme) {
     gap: 12,
   },
   splitCopy: { flex: 1, minWidth: 0 },
+  updatePlanBtn: {
+    flexShrink: 0,
+    backgroundColor: T.accentTint,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: T.accentLine,
+    borderRadius: T.radius.pill,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
   updatePlanText: {
     color: T.accent,
-    fontFamily: T.display,
-    fontSize: 13,
+    fontFamily: T.bodyBold,
+    fontSize: 12.5,
     letterSpacing: -0.1,
   },
   splitLabel: {
-    color: T.accent,
-    fontFamily: T.display,
-    fontSize: 15,
-    letterSpacing: -0.2,
+    color: T.white,
+    fontFamily: T.displaySemi,
+    fontSize: 18,
+    letterSpacing: -0.3,
   },
   splitSub: { color: T.faint, fontSize: 12, marginTop: 2 },
   sectionTitle: {
@@ -1076,42 +1112,6 @@ function makeStyles(T: AppTheme) {
     left: 0,
     right: 0,
     height: 260,
-  },
-  restCard: {
-    backgroundColor: T.bgElevated,
-    borderWidth: 1,
-    borderColor: T.glassBorder,
-    borderRadius: T.radius.md,
-    paddingVertical: 28,
-    paddingHorizontal: 22,
-    alignItems: "center",
-    gap: 8,
-    ...T.shadow.card,
-  },
-  restIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: T.radius.sm,
-    backgroundColor: T.ringGlass,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: T.ringBorder,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-  },
-  restTitle: {
-    fontFamily: T.displaySemi,
-    fontSize: 18,
-    color: T.white,
-    letterSpacing: -0.3,
-  },
-  restBody: {
-    fontFamily: T.bodyMed,
-    fontSize: 13,
-    color: T.muted,
-    textAlign: "center",
-    lineHeight: 19,
-    maxWidth: 280,
   },
   restRow: {
     flexDirection: "row",

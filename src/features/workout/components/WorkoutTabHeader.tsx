@@ -6,7 +6,6 @@ import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
 import { useWorkoutStreak } from "../hooks/useWorkoutStreak";
 import { StreakPill } from "@/src/components/StreakPill";
-import { BrandWordmark } from "@/src/components/BrandWordmark";
 
 type Props = {
   title?: string;
@@ -25,12 +24,9 @@ export function WorkoutTabHeader({
   return (
     <View style={[s.row, { paddingTop: topInset(insets.top) + 8 }]}>
       <View style={s.copy}>
-        <View style={s.heading}>
-          <BrandWordmark size={22} />
-          <Text style={s.title} numberOfLines={1}>
-            {title}
-          </Text>
-        </View>
+        <Text style={s.title} numberOfLines={1}>
+          {title}
+        </Text>
         <Text style={s.subtitle} numberOfLines={1}>
           {subtitle}
         </Text>
@@ -51,17 +47,10 @@ function makeStyles(T: AppTheme) {
       gap: 10,
     },
     copy: { flex: 1, minWidth: 0, gap: 4 },
-    heading: {
-      flexDirection: "row",
-      alignItems: "baseline",
-      flexWrap: "wrap",
-      gap: 8,
-      minWidth: 0,
-    },
     title: {
       fontFamily: T.displayBold,
-      fontSize: 22,
-      letterSpacing: -0.3,
+      fontSize: 28,
+      letterSpacing: -0.5,
       color: T.white,
       flexShrink: 1,
     },

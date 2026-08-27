@@ -170,10 +170,11 @@ export default function DashboardScreen() {
           num: d.getDate(),
           hasLog: workoutDates.has(date),
           date,
-          disabled: joinDate ? date < joinDate : false,
+          // Only future days are blocked — past days stay tappable to review.
+          disabled: date > today,
         };
       }),
-    [weekDates, workoutDates, joinDate],
+    [weekDates, workoutDates, today],
   );
 
   const activeDayIndex = days.findIndex((d) => d.date === selectedDate);
@@ -201,7 +202,6 @@ export default function DashboardScreen() {
 
   const {
     isLoading: coachLoading,
-    hasEnoughData,
     progressValue,
     sparklinePoints,
     coachHeadline,
@@ -438,7 +438,7 @@ export default function DashboardScreen() {
 
         {coachLoading ? (
           <SectionSkeleton height={168} />
-        ) : hasEnoughData ? (
+        ) : (
           <ProgressCoachCard
             progressLabel="Weight this month"
             progressValue={progressValue}
@@ -447,7 +447,7 @@ export default function DashboardScreen() {
             coachBody={coachBody}
             goalHit={goalHit}
           />
-        ) : null}
+        )}
       </ScrollView>
     </SafeAreaView>
   );

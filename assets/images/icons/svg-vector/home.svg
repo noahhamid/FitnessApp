@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+      
+  <defs>
+    <!-- Core Brand Gradients -->
+    <!-- Primary Red 3D Jelly Gradient (Top-Left lit to Bottom-Right deep) -->
+    <linearGradient id="redJelly" x1="0.15" y1="0.1" x2="0.85" y2="0.95">
+      <stop offset="0%" stop-color="#FF5C5C" />
+      <stop offset="35%" stop-color="#E53935" />
+      <stop offset="85%" stop-color="#C62828" />
+      <stop offset="100%" stop-color="#9E1616" />
+    </linearGradient>
+
+    <!-- Secondary Lighter Red for raised surfaces -->
+    <linearGradient id="redJellyLight" x1="0.2" y1="0.1" x2="0.8" y2="0.9">
+      <stop offset="0%" stop-color="#FF7575" />
+      <stop offset="40%" stop-color="#EF4444" />
+      <stop offset="100%" stop-color="#D32F2F" />
+    </linearGradient>
+
+    <!-- Soft Clean White 3D Gradient -->
+    <linearGradient id="whiteJelly" x1="0.2" y1="0.1" x2="0.8" y2="0.9">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="60%" stop-color="#FFF5F5" />
+      <stop offset="100%" stop-color="#F2E6E6" />
+    </linearGradient>
+
+    <!-- Gloss Specular Highlight (Pure White to Transparent) -->
+    <linearGradient id="topGloss" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Soft Pink Accent Highlight (#FFB3B0) -->
+    <linearGradient id="pinkAccent" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0%" stop-color="#FFE0DE" stop-opacity="0.95" />
+      <stop offset="50%" stop-color="#FFB3B0" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#FFB3B0" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Radial Bevel Gloss -->
+    <radialGradient id="radialGloss" cx="35%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8" />
+      <stop offset="40%" stop-color="#FFFFFF" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Dark Red Contact Shadow Filter -->
+    <filter id="contactShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="14" />
+      <feColorMatrix type="matrix" values="
+        0 0 0 0 0.58
+        0 0 0 0 0.08
+        0 0 0 0 0.08
+        0 0 0 0.32 0" />
+      <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+    </filter>
+
+    <!-- Element Drop Shadow (for white elements casting soft shadow on red) -->
+    <filter id="softInnerShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#8E1414" flood-opacity="0.35" />
+    </filter>
+
+    <!-- Shadow for floating white parts -->
+    <filter id="whitePartShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#801010" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+      <!-- Soft Dark-Red Contact Shadow -->
+      <ellipse cx="256" cy="460" rx="145" ry="24" fill="#8C1313" opacity="0.32" filter="blur(14px)" />
+
+      <!-- Chimney -->
+      <g>
+        <rect x="318" y="140" width="46" height="85" rx="14" fill="url(#redJelly)" />
+        <rect x="312" y="132" width="58" height="20" rx="10" fill="url(#redJellyLight)" />
+        <!-- Chimney steam puff -->
+        <circle cx="342" cy="108" r="14" fill="url(#whiteJelly)" opacity="0.9" filter="url(#whitePartShadow)" />
+        <circle cx="355" cy="85" r="10" fill="url(#whiteJelly)" opacity="0.75" />
+      </g>
+
+      <!-- House Main Body (Base) -->
+      <rect x="124" y="240" width="264" height="195" rx="44" fill="url(#redJelly)" />
+      <!-- Subtle body bottom rim shadow -->
+      <path d="M 124 395 C 124 419, 143 435, 168 435 L 344 435 C 369 435, 388 419, 388 395 Z" fill="#8E1414" opacity="0.4" />
+
+      <!-- Roof: Plump Rounded 3D Peak -->
+      <path d="M 98 252 
+               L 226 122 
+               C 243 105, 269 105, 286 122 
+               L 414 252 
+               C 426 264, 418 284, 400 284 
+               L 112 284 
+               C 94 284, 86 264, 98 252 Z" 
+            fill="url(#redJellyLight)" 
+            filter="drop-shadow(0px 10px 12px rgba(120, 15, 15, 0.35))" />
+
+      <!-- Attic / Roof Window: Clean White Round Jelly Window -->
+      <circle cx="256" cy="205" r="34" fill="url(#whiteJelly)" filter="url(#softInnerShadow)" />
+      <!-- Inner window ring & cross detail -->
+      <circle cx="256" cy="205" r="25" fill="#FFF5F5" />
+      <path d="M 233 205 L 279 205 M 256 182 L 256 228" stroke="#E53935" stroke-width="6" stroke-linecap="round" />
+      <!-- Window Specular Gloss -->
+      <path d="M 240 185 C 248 178, 264 178, 272 185" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none" />
+
+      <!-- Front Door: Clean White Rounded Arch Doorway -->
+      <rect x="216" y="324" width="80" height="111" rx="40" fill="url(#whiteJelly)" filter="url(#softInnerShadow)" />
+      <!-- Inner door panel -->
+      <rect x="226" y="336" width="60" height="88" rx="30" fill="#FFF0F0" />
+      <!-- Door Knob (Red jelly dot) -->
+      <circle cx="270" cy="382" r="7" fill="url(#redJelly)" />
+      <circle cx="268" cy="380" r="2.5" fill="#FFFFFF" />
+
+      <!-- Roof Gloss Specular Highlights -->
+      <!-- Left roof slope gloss -->
+      <path d="M 125 242 L 235 130 C 244 122, 252 122, 256 128 L 244 146 L 145 250 Z" fill="url(#topGloss)" opacity="0.8" />
+      <!-- Main body top-left gloss streak -->
+      <rect x="144" y="295" width="18" height="95" rx="9" fill="url(#pinkAccent)" />
+      <rect x="146" y="300" width="8" height="60" rx="4" fill="#FFFFFF" opacity="0.85" />
+    </svg>

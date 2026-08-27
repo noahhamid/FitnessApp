@@ -21,7 +21,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -41,25 +40,6 @@ import {
 } from "@/src/lib/plan-day-selection";
 import { workoutPlanQueryKey } from "@/src/features/workout/hooks/useWorkoutPlan";
 import { startOnboardingRetake } from "@/src/features/auth/services/onboarding-draft.service";
-import { useIap } from "@/src/features/billing/IapContext";
-import {
-  normalizeReminderSlots,
-  type ReminderSlot,
-} from "@/src/lib/meal-workout-reminders";
-
-const REMINDER_SLOT_OPTIONS: { id: ReminderSlot; label: string }[] = [
-  { id: "breakfast", label: "Breakfast" },
-  { id: "lunch", label: "Lunch" },
-  { id: "snack", label: "Snack" },
-  { id: "dinner", label: "Dinner" },
-  { id: "workout", label: "Workout" },
-];
-
-const REMINDER_HOUR_OPTIONS = [
-  { hour: 7, label: "Morning", hint: "7:00" },
-  { hour: 14, label: "Afternoon", hint: "14:00" },
-  { hour: 19, label: "Evening", hint: "19:00" },
-] as const;
 
 const GOALS = [
   { id: "lose", label: "Lose Weight", icon: "trending-down-outline" as const },
@@ -121,18 +101,6 @@ const SETTINGS = [
     label: "Training Setup",
     sub: null,
     icon: "barbell-outline" as const,
-  },
-  {
-    id: "pro",
-    label: "PotentialPeak Pro",
-    sub: null,
-    icon: "diamond-outline" as const,
-  },
-  {
-    id: "restore",
-    label: "Restore purchases",
-    sub: "Unlock Pro on this device",
-    icon: "refresh-circle-outline" as const,
   },
   {
     id: "restart",
@@ -242,7 +210,6 @@ export default function ProfileScreen() {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { user, isPending: authPending } = useAuth();
-  const { restore, error: iapError, isPremium } = useIap();
   const signOutMutation = useSignOut();
   const deleteAccountMutation = useDeleteAccount();
   const qc = useQueryClient();
@@ -269,11 +236,6 @@ export default function ProfileScreen() {
   const [equipmentInput, setEquipmentInput] =
     useState<EquipmentAccess>("full_gym");
   const [daysInput, setDaysInput] = useState<number[]>([]);
-  const [reminderEnabledInput, setReminderEnabledInput] = useState(true);
-  const [reminderHourInput, setReminderHourInput] = useState(7);
-  const [reminderSlotsInput, setReminderSlotsInput] = useState<ReminderSlot[]>(
-    () => normalizeReminderSlots(null),
-  );
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -312,8 +274,7 @@ export default function ProfileScreen() {
       ? (weightKg / Math.pow(heightCm / 100, 2)).toFixed(1)
       : null;
 
-  useEffect(() => {
-    if (editMode) return;
+  const applyProfileToInputs = useCallback(() => {
     setNameInput(name);
     setWeightInput(weightKg > 0 ? String(Number(weightKg.toFixed(2))) : "");
     setHeightInput(heightCm > 0 ? String(heightCm) : "");
@@ -340,23 +301,38 @@ export default function ProfileScreen() {
         : "full_gym",
     );
     setDaysInput(scheduledDays);
-    setReminderEnabledInput(profile?.reminderEnabled !== false);
-    setReminderHourInput(profile?.reminderHour ?? 7);
-    setReminderSlotsInput(normalizeReminderSlots(profile?.reminderSlots));
   }, [
     ageYears,
-    editMode,
     heightCm,
     name,
-    profile?.equipment,
-    profile?.experience,
-    profile?.goalId,
-    profile?.reminderEnabled,
-    profile?.reminderHour,
-    profile?.reminderSlots,
+    profile,
     scheduledDays,
     weightKg,
   ]);
+
+  // Keep form fields mirrored while browsing; never overwrite mid-edit.
+  const editSeededRef = useRef(false);
+  useEffect(() => {
+    if (!editMode) {
+      editSeededRef.current = false;
+      applyProfileToInputs();
+      return;
+    }
+    // Entered edit before profile finished loading — seed once data arrives.
+    if (editSeededRef.current || profilePending) return;
+    applyProfileToInputs();
+    editSeededRef.current = true;
+  }, [applyProfileToInputs, editMode, profilePending]);
+
+  function beginEdit() {
+    if (!profilePending) {
+      applyProfileToInputs();
+      editSeededRef.current = true;
+    } else {
+      editSeededRef.current = false;
+    }
+    setEditMode(true);
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -364,24 +340,18 @@ export default function ProfileScreen() {
         ? params.editPlan[0]
         : params.editPlan;
       if (flag !== "1") return;
-      setEditMode(true);
+      beginEdit();
       router.setParams({ editPlan: undefined });
+      // beginEdit closes over latest seed helpers via render; param gate is enough.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.editPlan]),
   );
 
-  const toggleReminderSlot = (slot: ReminderSlot) => {
-    setReminderSlotsInput((current) =>
-      current.includes(slot)
-        ? current.filter((s) => s !== slot)
-        : [...current, slot],
-    );
-  };
-
-  /** One session is the floor — matches onboarding and the plan generator. */
+  /** Two sessions is the floor the plan generator supports. */
   const toggleTrainingDay = (index: number) => {
     setDaysInput((current) => {
       if (current.includes(index)) {
-        if (current.length <= 1) return current;
+        if (current.length <= 2) return current;
         return current.filter((d) => d !== index);
       }
       return [...current, index].sort((a, b) => a - b);
@@ -419,8 +389,13 @@ export default function ProfileScreen() {
     setSaveState("saving");
     try {
       const scheduleChanged =
-        daysInput.length >= 1 &&
+        daysInput.length >= 2 &&
         daysInput.join(",") !== scheduledDays.join(",");
+      const planInputsChanged =
+        scheduleChanged ||
+        goalInput !== (profile?.goalId as GoalId | null) ||
+        experienceInput !== profile?.experience ||
+        equipmentInput !== profile?.equipment;
 
       await saveUserProfile({
         name: nextName,
@@ -430,9 +405,6 @@ export default function ProfileScreen() {
         age: savedAge,
         experience: experienceInput,
         equipment: equipmentInput,
-        reminderEnabled: reminderEnabledInput,
-        reminderHour: reminderHourInput,
-        reminderSlots: reminderSlotsInput,
         ...(scheduleChanged && { trainingDays: daysInput }),
       });
       await qc.invalidateQueries({ queryKey: ["auth", "session"] });
@@ -440,8 +412,10 @@ export default function ProfileScreen() {
       // Server PUT /api/profile already upserts NutritionGoal via
       // computeNutritionTargets — refresh clients; do not recompute here.
       await qc.invalidateQueries({ queryKey: ["nutrition", "goals"] });
-      // Any complete profile PUT rebuilds the split server-side.
-      await qc.invalidateQueries({ queryKey: workoutPlanQueryKey });
+      if (planInputsChanged) {
+        // Goal, days, level, or equipment regenerates the split server-side.
+        await qc.invalidateQueries({ queryKey: workoutPlanQueryKey });
+      }
       setSaveState("saved");
       saveTimeoutRef.current = setTimeout(() => {
         setSaveState("idle");
@@ -492,7 +466,7 @@ export default function ProfileScreen() {
               <TouchableOpacity
                 style={[styles.editBtn, editMode && styles.editBtnActive]}
                 onPress={() =>
-                  editMode ? void handleSaveProfile() : setEditMode(true)
+                  editMode ? void handleSaveProfile() : beginEdit()
                 }
                 disabled={saveState === "saving"}
                 activeOpacity={0.8}
@@ -738,89 +712,9 @@ export default function ProfileScreen() {
                 ))}
               </View>
               <Text style={styles.weekdayHint}>
-                {daysInput.length} {daysInput.length === 1 ? "day" : "days"} a
-                week. Changing goal, days, level, or equipment rebuilds your
-                split, so today's workout may differ.
+                {daysInput.length} days a week. Changing goal, days, level, or
+                equipment rebuilds your split, so today's workout may differ.
               </Text>
-
-              <View style={styles.reminderMasterRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.editFieldLabel}>Notifications</Text>
-                  <Text style={styles.weekdayHint}>
-                    Meal and workout pings for slots you leave on.
-                  </Text>
-                </View>
-                <Switch
-                  value={reminderEnabledInput}
-                  onValueChange={setReminderEnabledInput}
-                  trackColor={{ false: T.border, true: T.accent }}
-                  thumbColor={T.white}
-                />
-              </View>
-
-              {reminderEnabledInput ? (
-                <>
-                  <Text style={styles.editFieldLabel}>Remind me about</Text>
-                  <View style={styles.goalGrid}>
-                    {REMINDER_SLOT_OPTIONS.map((option) => {
-                      const active = reminderSlotsInput.includes(option.id);
-                      return (
-                        <TouchableOpacity
-                          key={option.id}
-                          onPress={() => toggleReminderSlot(option.id)}
-                          activeOpacity={0.75}
-                          style={[
-                            styles.goalChip,
-                            active && styles.goalChipActive,
-                          ]}
-                          accessibilityRole="checkbox"
-                          accessibilityState={{ checked: active }}
-                        >
-                          <Text
-                            style={[
-                              styles.goalChipText,
-                              active && { color: T.accent },
-                            ]}
-                          >
-                            {option.label}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-
-                  {reminderSlotsInput.includes("workout") ? (
-                    <>
-                      <Text style={styles.editFieldLabel}>Workout time</Text>
-                      <View style={styles.goalGrid}>
-                        {REMINDER_HOUR_OPTIONS.map((option) => {
-                          const active = reminderHourInput === option.hour;
-                          return (
-                            <TouchableOpacity
-                              key={option.hour}
-                              onPress={() => setReminderHourInput(option.hour)}
-                              activeOpacity={0.75}
-                              style={[
-                                styles.goalChip,
-                                active && styles.goalChipActive,
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.goalChipText,
-                                  active && { color: T.accent },
-                                ]}
-                              >
-                                {option.label} · {option.hint}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    </>
-                  ) : null}
-                </>
-              ) : null}
             </GlassSurface>
           )}
 
@@ -865,11 +759,7 @@ export default function ProfileScreen() {
                       : "Not set"
                     : setting.id === "training"
                       ? `${experienceLabel(profile?.experience)} · ${equipmentLabel(profile?.equipment)}`
-                      : setting.id === "pro"
-                        ? isPremium
-                          ? "Active"
-                          : "Subscribe"
-                        : null;
+                      : null;
 
               return (
                 <TouchableOpacity
@@ -884,21 +774,6 @@ export default function ProfileScreen() {
                       setting.id === "training"
                     ) {
                       setEditMode(true);
-                    } else if (setting.id === "pro") {
-                      if (!isPremium) router.push("/paywall");
-                    } else if (setting.id === "restore") {
-                      void (async () => {
-                        const unlocked = await restore();
-                        Alert.alert(
-                          unlocked || isPremium
-                            ? "Purchases restored"
-                            : "Nothing to restore",
-                          unlocked || isPremium
-                            ? "PotentialPeak Pro is active on this device."
-                            : iapError ??
-                                "No active subscription found for this store account.",
-                        );
-                      })();
                     } else if (setting.id === "restart") {
                       Alert.alert(
                         "Restart setup?",
@@ -1250,12 +1125,6 @@ function makeStyles(T: AppTheme) {
       lineHeight: 15,
       color: T.muted,
       marginTop: 6,
-    },
-    reminderMasterRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      marginTop: 8,
     },
 
     sectionLabel: {

@@ -3,8 +3,15 @@ import { expoClient } from "@better-auth/expo/client";
 import type { BetterAuthClientPlugin } from "better-auth/client";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { applyDevLanApiUrlOverride } from "./dev-api-url";
 import { getClientApiUrl } from "./public-api-url";
 import { persistSessionToken, readSessionToken } from "./session-token";
+
+// Before createAuthClient — force Expo Go onto the Metro host's :3000 API.
+const devApi = applyDevLanApiUrlOverride();
+if (devApi) {
+  console.log(`[auth] Using local API: ${devApi}`);
+}
 
 const baseURL = getClientApiUrl();
 

@@ -52,6 +52,9 @@ async function withSessionTokenInBody(
 }
 
 authRouter.on(["GET", "POST"], "/*", async (c) => {
+  const path = new URL(c.req.url).pathname;
+  console.log(`[auth] ${c.req.method} ${path}`);
+
   const auth = await getAuth();
   const response = await auth.handler(c.req.raw);
 

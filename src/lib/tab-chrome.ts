@@ -1,37 +1,37 @@
 import { bottomInset } from "@/src/lib/safe-area";
 
-/** Floating tab pill geometry — keep in sync with `app/(app)/(tabs)/_layout.tsx`. */
-export const TAB_PILL_H = 64;
-export const TAB_PILL_H_MARGIN = 20;
-export const TAB_PILL_BOTTOM_GAP = 10;
-/** Extra clearance above the pill so content doesn't sit under its shadow. */
-export const TAB_CHROME_PEEK = 8;
-/** Breathing room between last content and the tab pill. */
-export const TAB_CONTENT_GAP = 20;
-
+/** Notched floating pill + raised center FAB — sync with tabs `_layout.tsx`. */
+export const TAB_BAR_H = 64;
+export const TAB_FAB_SIZE = 56;
+/** @deprecated Alias for older imports. */
+export const TAB_PILL_H = TAB_BAR_H;
+export const TAB_PILL_H_MARGIN = 18;
+export const TAB_PILL_BOTTOM_GAP = 0;
+/** Extra clearance for the FAB that sits above the pill. */
+export const TAB_CHROME_PEEK = TAB_FAB_SIZE / 2 + 8;
+/** Breathing room between last content and the tab bar. */
+export const TAB_CONTENT_GAP = 16;
 
 /**
- * Full height of the bottom tab chrome dock (safe inset + gap + pill + peek).
+ * Full height of the bottom tab chrome dock (FAB peek + bar + safe inset).
  */
 export function tabChromeDockHeight(insetsBottom: number): number {
   return (
-    bottomInset(insetsBottom) +
-    TAB_PILL_BOTTOM_GAP +
-    TAB_PILL_H +
-    TAB_CHROME_PEEK
+    TAB_CHROME_PEEK +
+    TAB_BAR_H +
+    bottomInset(insetsBottom)
   );
 }
 
 /**
  * Distance from the physical screen bottom to the top edge of the tab pill.
- * Floating docks that sit *above* the pill should use this as their `bottom`.
  */
 export function tabPillTopFromBottom(insetsBottom: number): number {
-  return bottomInset(insetsBottom) + TAB_PILL_BOTTOM_GAP + TAB_PILL_H;
+  return TAB_BAR_H + bottomInset(insetsBottom);
 }
 
 /**
- * Scroll/content padding so the last card clears the tab pill
+ * Scroll/content padding so the last card clears the tab bar
  * (and optional floating bar above it).
  */
 export function tabContentBottomPad(

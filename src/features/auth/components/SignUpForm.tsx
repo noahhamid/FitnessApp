@@ -41,6 +41,7 @@ import {
   onboardingParamsForNavigation,
   type OnboardingAuthParams,
 } from "../services/onboarding-payload.service";
+import { getClientApiUrl } from "@/src/lib/public-api-url";
 
 function heroScrim(bgHex: string, resolved: "light" | "dark") {
   const hex = bgHex.replace("#", "");
@@ -86,6 +87,7 @@ export function SignUpForm() {
     firstName.length > 0 && email.length > 3 && password.length >= 8;
   const completingOnboarding = hasCompletedOnboardingPayload(params);
   const busy = loading || googleLoading || appleLoading;
+  const apiHost = __DEV__ ? getClientApiUrl() : null;
 
   async function handleContinue() {
     if (!canContinue) return;
@@ -287,6 +289,9 @@ export function SignUpForm() {
             </View>
 
             {error ? <Text style={s.errorText}>{error}</Text> : null}
+            {apiHost ? (
+              <Text style={s.apiHint}>API: {apiHost}</Text>
+            ) : null}
 
             <Pressable
               disabled={!canContinue || busy}
@@ -430,6 +435,13 @@ function makeStyles(C: OnboardingColors) {
       fontFamily: FONTS.regular,
       fontSize: 13,
       color: C.red,
+      marginBottom: 12,
+      textAlign: "center",
+    },
+    apiHint: {
+      fontFamily: FONTS.regular,
+      fontSize: 11,
+      color: C.muted,
       marginBottom: 12,
       textAlign: "center",
     },

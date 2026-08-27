@@ -1,23 +1,24 @@
-/** Print verify links in the API terminal during local dev (skip prod unless forced). */
+/** Always print verify links in the local API terminal. */
 export function logEmailVerificationLink(input: {
   email: string;
   token: string;
   appDeepLink: string;
   apiBaseUrl?: string;
 }): void {
-  const logInProd = process.env.LOG_AUTH_LINKS === "true";
-  if (process.env.NODE_ENV === "production" && !logInProd) return;
-
   const apiUrl = input.apiBaseUrl
     ? `${input.apiBaseUrl.replace(/\/$/, "")}/api/auth/verify-email?token=${encodeURIComponent(input.token)}`
     : null;
 
-  console.log("\n========== EMAIL VERIFICATION LINK ==========");
+  // Visible even if stdout is buffered oddly on Windows.
+  console.log("");
+  console.log("========== EMAIL VERIFICATION LINK ==========");
   console.log(`Email:  ${input.email}`);
   console.log(`Token:  ${input.token}`);
   console.log(`App:    ${input.appDeepLink}`);
   if (apiUrl) console.log(`API:    ${apiUrl}`);
-  console.log("=============================================\n");
+  console.log("Open the App: URL on your phone to verify.");
+  console.log("=============================================");
+  console.log("");
 }
 
 export async function sendAuthEmail(input: {

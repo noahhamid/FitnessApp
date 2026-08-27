@@ -36,12 +36,26 @@ export function useCoachCard() {
     );
   }, [recentSessions, apiPlan?.daysPerWeek, apiPlan?.trainingDays]);
 
-  const { sparklinePoints, progressValue, hasEnoughData } = useMemo(() => {
-    if (!weightEntries || weightEntries.length < 2) {
-      return { sparklinePoints: [], progressValue: "—", hasEnoughData: false };
+  const { sparklinePoints, progressValue, latestWeight } = useMemo(() => {
+    if (!weightEntries || weightEntries.length === 0) {
+      return {
+        sparklinePoints: [] as number[],
+        progressValue: "—",
+        latestWeight: null as number | null,
+      };
     }
 
     const weights = weightEntries.map((e) => e.weight);
+    const latest = weights[weights.length - 1];
+
+    if (weights.length < 2) {
+      return {
+        sparklinePoints: [],
+        progressValue: `${latest.toFixed(1)} kg`,
+        latestWeight: latest,
+      };
+    }
+
     const min = Math.min(...weights);
     const max = Math.max(...weights);
     const range = max - min || 1;
@@ -50,28 +64,36 @@ export function useCoachCard() {
     // downward). Losing weight visually reads as the line trending up.
     const points = weights.map((w) => ((w - min) / range) * SPARK_HEIGHT);
 
-    const delta = weights[weights.length - 1] - weights[0];
+    const delta = latest - weights[0];
     const formattedDelta =
       delta === 0 ? "No change" : `${delta > 0 ? "+" : ""}${delta.toFixed(1)} kg`;
 
-    return { sparklinePoints: points, progressValue: formattedDelta, hasEnoughData: true };
+    return {
+      sparklinePoints: points,
+      progressValue: formattedDelta,
+      latestWeight: latest,
+    };
   }, [weightEntries]);
 
   const coach = useMemo(() => {
     const { target, completed, missed } = weekStats;
     const remaining = Math.max(0, target - completed);
+    const weightBit =
+      latestWeight != null
+        ? `You're at ${latestWeight.toFixed(1)} kg. `
+        : "";
 
     if (target === 0) {
       return {
         headline: "Complete onboarding to set a weekly training target.",
-        body: "Once your plan is set, this card tracks your pace toward it.",
+        body: `${weightBit}Once your plan is set, this card tracks your pace toward it.`,
       };
     }
 
     if (remaining === 0) {
       return {
         headline: "You've hit your training goal this week",
-        body: "Great consistency — keep the momentum into next week.",
+        body: `${weightBit}Great consistency — keep the momentum into next week.`,
       };
     }
 
@@ -79,14 +101,14 @@ export function useCoachCard() {
     return {
       headline: `${remaining} more ${remaining === 1 ? "workout" : "workouts"} to hit your weekly goal.`,
       body: onPace
-        ? "You're on pace — a session today keeps things on track."
-        : "You're behind pace this week — worth fitting in an extra session if you can.",
+        ? `${weightBit}You're on pace — a session today keeps things on track.`
+        : `${weightBit}You're behind pace this week — worth fitting in an extra session if you can.`,
     };
-  }, [weekStats]);
+  }, [weekStats, latestWeight]);
 
   return {
     isLoading: weightLoading,
-    hasEnoughData,
+    hasEnoughData: true,
     progressValue,
     sparklinePoints,
     coachHeadline: coach.headline,

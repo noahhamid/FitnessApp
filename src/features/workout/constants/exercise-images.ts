@@ -204,6 +204,27 @@ const BY_NAME: Record<string, number> = {
   // —— Calves (remaining) ——
   "dumbbell single leg calf raise": require("../../../../assets/images/workout/Dumbbell Single Leg Calf Raise.jpg"),
   "barbell standing rocking leg calf raise": require("../../../../assets/images/workout/Barbell Standing Rocking Leg Calf Raise.jpg"),
+
+  // —— Legacy plan-name aliases (old short names still on live plans) ——
+  // Without these, imageForExercise falls back to exercise-placeholder.jpg.
+  "barbell back squat": require("../../../../assets/images/workout/Barbell Bench Squat.jpg"),
+  "barbell row": require("../../../../assets/images/workout/barbell_overhand_row_1787655901024.jpg"),
+  "overhead barbell press": require("../../../../assets/images/workout/Barbell Seated Overhead Press.jpg"),
+  "cable triceps pushdown": require("../../../../assets/images/workout/Cable One Arm Tricep Pushdown.jpg"),
+  "glute bridge": require("../../../../assets/images/workout/Low Glute Bridge on Floor.jpg"),
+  "standing calf raise": require("../../../../assets/images/workout/Bodyweight Standing Calf Raise.jpg"),
+  "dumbbell curl": require("../../../../assets/images/workout/Dumbbell Biceps Curl.jpg"),
+  "dumbbell row": require("../../../../assets/images/workout/bent_over_db_row_1787654893738.jpg"),
+  "dumbbell shoulder press": require("../../../../assets/images/workout/dumbbell_seated_shoulder_press.jpg"),
+  "goblet squat": require("../../../../assets/images/workout/dumbbell_goblet_squat.jpg"),
+  "barbell romanian deadlift": require("../../../../assets/images/workout/dumbbell_romanian_deadlift.jpg"),
+  "barbell lying extension": require("../../../../assets/images/workout/Barbell Lying Triceps Extension.jpg"),
+  "barbell bench front squat": require("../../../../assets/images/workout/Barbell Front Chest Squat.jpg"),
+  "hanging leg raise": require("../../../../assets/images/workout/Kick Out Sit.jpg"),
+  "lat pulldown": require("../../../../assets/images/workout/overhand_pullup_char_1787654696447.jpg"),
+  "band stiff leg deadlift": require("../../../../assets/images/workout/Dumbbell Deadlift.jpg"),
+  "band straight leg deadlift": require("../../../../assets/images/workout/Dumbbell Deadlift.jpg"),
+  "barbell alternate biceps curl": require("../../../../assets/images/workout/Barbell Curl.jpg"),
 };
 
 type LazyUri = { asset: number; uri?: string };

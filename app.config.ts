@@ -84,6 +84,15 @@ const config: ExpoConfig = {
       },
     ],
     [
+      "expo-camera",
+      {
+        cameraPermission:
+          "Exo uses the camera so you can photograph meals for calorie and macro estimates.",
+        microphonePermission: false,
+        recordAudioAndroid: false,
+      },
+    ],
+    [
       "expo-notifications",
       {
         color: "#E53935",

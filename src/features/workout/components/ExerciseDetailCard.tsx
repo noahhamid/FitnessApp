@@ -9,12 +9,13 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronLeft, Check, Dumbbell, Info, ListOrdered } from "lucide-react-native";
+import { ChevronLeft, Check, Dumbbell, Info } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { LibraryExercise } from "../hooks/useExerciseLibrary";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
+import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import {
   formatEquipmentLabel,
   formatPatternLabel,
@@ -83,35 +84,47 @@ export function ExerciseDetailCard({
     <View style={s.screen}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 36 }}
+        contentContainerStyle={{
+          paddingBottom: tabContentBottomPad(insets.bottom),
+        }}
       >
-        <View style={s.heroWrap}>
+        <View
+          style={[
+            s.heroWrap,
+            { height: 300 + topInset(insets.top) + 52 },
+          ]}
+        >
           <Image
             source={{ uri: imageUrl }}
-            style={s.heroImage}
-            resizeMode="cover"
+            style={[
+              s.heroImage,
+              { top: topInset(insets.top) + 52, height: 300 },
+            ]}
+            resizeMode="contain"
           />
           <LinearGradient
-            colors={["rgba(14,14,16,0.05)", "rgba(14,14,16,0.55)", T.bg]}
-            locations={[0, 0.55, 1]}
-            style={s.heroGradient}
+            colors={["rgba(14,14,16,0.06)", "transparent", T.bg]}
+            locations={[0, 0.65, 1]}
+            style={[
+              s.heroGradient,
+              { top: topInset(insets.top) + 52, height: 300 },
+            ]}
           />
           <Pressable
-            style={[s.backBtn, { top: topInset(insets.top) + 8 }]}
+            style={[s.backBtn, { top: topInset(insets.top) + 60 }]}
             onPress={onBack}
             hitSlop={8}
           >
             <ChevronLeft size={20} color={T.onImage} />
           </Pressable>
-          <View style={s.heroCaption}>
-            <View style={s.tagPill}>
-              <Text style={s.tagText}>{exercise.muscleGroup}</Text>
-            </View>
-            <Text style={s.title}>{exercise.name}</Text>
-          </View>
         </View>
 
         <View style={s.content}>
+          <View style={s.tagPill}>
+            <Text style={s.tagText}>{exercise.muscleGroup}</Text>
+          </View>
+          <Text style={s.title}>{exercise.name}</Text>
+
           <View style={s.metaRow}>
             <View style={s.metaChip}>
               <Dumbbell size={14} color={T.accent} strokeWidth={2.2} />
@@ -129,44 +142,40 @@ export function ExerciseDetailCard({
             </View>
           </View>
 
-          {steps.length > 0 ? (
-            <View style={s.section}>
-              <View style={s.sectionHeader}>
-                <ListOrdered size={16} color={T.accent} strokeWidth={2.2} />
-                <Text style={s.sectionTitle}>How to perform</Text>
-              </View>
-              <View style={s.stepsCard}>
-                {steps.map((step, index) => (
-                  <View
-                    key={`${index}-${step.slice(0, 12)}`}
+          {(steps.length > 0 || tips.length > 0) && (
+            <View style={s.aboutCard}>
+              {steps.length > 0 ? (
+                <>
+                  <Text style={s.aboutLabel}>How to perform</Text>
+                  {steps.slice(0, 4).map((step, index) => (
+                    <Text
+                      key={`${index}-${step.slice(0, 12)}`}
+                      style={s.aboutLine}
+                      numberOfLines={2}
+                    >
+                      <Text style={s.aboutIndex}>{index + 1}. </Text>
+                      {step}
+                    </Text>
+                  ))}
+                </>
+              ) : null}
+              {tips.length > 0 ? (
+                <>
+                  <Text
                     style={[
-                      s.stepRow,
-                      index < steps.length - 1 && s.stepRowBorder,
+                      s.aboutLabel,
+                      steps.length > 0 && s.aboutLabelSpaced,
                     ]}
                   >
-                    <View style={s.stepBadge}>
-                      <Text style={s.stepBadgeText}>{index + 1}</Text>
-                    </View>
-                    <Text style={s.stepText}>{step}</Text>
-                  </View>
-                ))}
-              </View>
+                    Form tip
+                  </Text>
+                  <Text style={s.aboutLine} numberOfLines={2}>
+                    {tips[0].body}
+                  </Text>
+                </>
+              ) : null}
             </View>
-          ) : null}
-
-          {tips.length > 0 ? (
-            <View style={s.section}>
-              <Text style={s.sectionTitlePlain}>Form tips</Text>
-              <View style={s.tipsGrid}>
-                {tips.map((tip) => (
-                  <View key={tip.title} style={s.tipCard}>
-                    <Text style={s.tipTitle}>{tip.title}</Text>
-                    <Text style={s.tipBody}>{tip.body}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : null}
+          )}
 
           <View style={s.actions}>
             {showStart && (
@@ -231,16 +240,16 @@ export function ExerciseDetailCard({
 function makeStyles(T: AppTheme) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: T.bg },
-    heroWrap: { height: 280, position: "relative" },
-    heroImage: { width: "100%", height: "100%" },
-    heroGradient: {
-      ...StyleSheet.absoluteFillObject,
+    heroWrap: {
+      position: "relative",
+      backgroundColor: T.bg,
+      overflow: "hidden",
     },
-    heroCaption: {
+    heroImage: { position: "absolute", left: 0, right: 0, width: "100%" },
+    heroGradient: {
       position: "absolute",
-      left: 20,
-      right: 20,
-      bottom: 18,
+      left: 0,
+      right: 0,
     },
     backBtn: {
       position: "absolute",
@@ -252,7 +261,7 @@ function makeStyles(T: AppTheme) {
       alignItems: "center",
       justifyContent: "center",
     },
-    content: { paddingHorizontal: 20, paddingTop: 8 },
+    content: { paddingHorizontal: 20, paddingTop: 16 },
     tagPill: {
       alignSelf: "flex-start",
       backgroundColor: T.accentTint,
@@ -270,11 +279,12 @@ function makeStyles(T: AppTheme) {
     title: {
       fontFamily: T.displayBold,
       fontSize: 28,
-      color: T.onImage,
+      color: T.white,
       letterSpacing: -0.6,
       lineHeight: 32,
+      marginBottom: 18,
     },
-    metaRow: { flexDirection: "row", gap: 10, marginBottom: 22 },
+    metaRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
     metaChip: {
       flex: 1,
       backgroundColor: T.bgElevated,
@@ -299,81 +309,32 @@ function makeStyles(T: AppTheme) {
       fontSize: 14,
       color: T.white,
     },
-    section: { marginBottom: 22 },
-    sectionHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      marginBottom: 12,
-    },
-    sectionTitle: {
-      fontFamily: T.displaySemi,
-      fontSize: 17,
-      color: T.white,
-      letterSpacing: -0.2,
-    },
-    sectionTitlePlain: {
-      fontFamily: T.displaySemi,
-      fontSize: 17,
-      color: T.white,
-      letterSpacing: -0.2,
-      marginBottom: 12,
-    },
-    stepsCard: {
+    aboutCard: {
       backgroundColor: T.bgElevated,
-      borderRadius: 18,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: T.glassBorder,
-      overflow: "hidden",
-    },
-    stepRow: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      gap: 12,
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-    },
-    stepRowBorder: {
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: T.glassBorder,
-    },
-    stepBadge: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      backgroundColor: T.accentTint,
-      alignItems: "center",
-      justifyContent: "center",
-      marginTop: 1,
-    },
-    stepBadgeText: {
-      fontFamily: T.bodyBold,
-      fontSize: 12,
-      color: T.accent,
-    },
-    stepText: {
-      flex: 1,
-      fontFamily: T.body,
-      fontSize: 14.5,
-      lineHeight: 21,
-      color: T.white,
-    },
-    tipsGrid: { gap: 10 },
-    tipCard: {
-      backgroundColor: T.accentTint,
       borderRadius: 16,
-      paddingHorizontal: 16,
-      paddingVertical: 14,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: T.glassBorder,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      gap: 6,
+      marginBottom: 18,
     },
-    tipTitle: {
+    aboutLabel: {
       fontFamily: T.bodyBold,
-      fontSize: 13,
+      fontSize: 10,
+      letterSpacing: 0.9,
       color: T.accent,
-      marginBottom: 4,
+      textTransform: "uppercase",
+      marginBottom: 2,
     },
-    tipBody: {
+    aboutLabelSpaced: {
+      marginTop: 8,
+    },
+    aboutIndex: {
+      fontFamily: T.bodyBold,
+      color: T.accent,
+    },
+    aboutLine: {
       fontFamily: T.body,
       fontSize: 13.5,
       lineHeight: 19,

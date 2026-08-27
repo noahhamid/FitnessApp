@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+      
+  <defs>
+    <!-- Core Brand Gradients -->
+    <!-- Primary Red 3D Jelly Gradient (Top-Left lit to Bottom-Right deep) -->
+    <linearGradient id="redJelly" x1="0.15" y1="0.1" x2="0.85" y2="0.95">
+      <stop offset="0%" stop-color="#FF5C5C" />
+      <stop offset="35%" stop-color="#E53935" />
+      <stop offset="85%" stop-color="#C62828" />
+      <stop offset="100%" stop-color="#9E1616" />
+    </linearGradient>
+
+    <!-- Secondary Lighter Red for raised surfaces -->
+    <linearGradient id="redJellyLight" x1="0.2" y1="0.1" x2="0.8" y2="0.9">
+      <stop offset="0%" stop-color="#FF7575" />
+      <stop offset="40%" stop-color="#EF4444" />
+      <stop offset="100%" stop-color="#D32F2F" />
+    </linearGradient>
+
+    <!-- Soft Clean White 3D Gradient -->
+    <linearGradient id="whiteJelly" x1="0.2" y1="0.1" x2="0.8" y2="0.9">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="60%" stop-color="#FFF5F5" />
+      <stop offset="100%" stop-color="#F2E6E6" />
+    </linearGradient>
+
+    <!-- Gloss Specular Highlight (Pure White to Transparent) -->
+    <linearGradient id="topGloss" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Soft Pink Accent Highlight (#FFB3B0) -->
+    <linearGradient id="pinkAccent" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0%" stop-color="#FFE0DE" stop-opacity="0.95" />
+      <stop offset="50%" stop-color="#FFB3B0" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#FFB3B0" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Radial Bevel Gloss -->
+    <radialGradient id="radialGloss" cx="35%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8" />
+      <stop offset="40%" stop-color="#FFFFFF" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Dark Red Contact Shadow Filter -->
+    <filter id="contactShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="14" />
+      <feColorMatrix type="matrix" values="
+        0 0 0 0 0.58
+        0 0 0 0 0.08
+        0 0 0 0 0.08
+        0 0 0 0.32 0" />
+      <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+    </filter>
+
+    <!-- Element Drop Shadow (for white elements casting soft shadow on red) -->
+    <filter id="softInnerShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#8E1414" flood-opacity="0.35" />
+    </filter>
+
+    <!-- Shadow for floating white parts -->
+    <filter id="whitePartShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#801010" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+      <!-- Soft Dark-Red Contact Shadow -->
+      <ellipse cx="256" cy="460" rx="145" ry="24" fill="#8C1313" opacity="0.32" filter="blur(14px)" />
+
+      <!-- Circular 3D Jelly Badge (Brand Coral-Red) - NO square frame -->
+      <circle cx="256" cy="250" r="182" fill="url(#redJelly)" filter="drop-shadow(0px 12px 18px rgba(120, 15, 15, 0.45))" />
+
+      <!-- Badge Rim & Depth Gradient Ring -->
+      <circle cx="256" cy="250" r="172" fill="none" stroke="url(#redJellyLight)" stroke-width="10" />
+
+      <!-- Clip Path for clean avatar shoulders within the round badge -->
+      <clipPath id="avatarBadgeClip">
+        <circle cx="256" cy="250" r="176" />
+      </clipPath>
+
+      <g clip-path="url(#avatarBadgeClip)">
+        <!-- Clean White 3D Avatar Person Silhouette -->
+        <!-- Torso / Shoulders -->
+        <path d="M 130 440 
+                 C 130 325, 205 300, 256 300 
+                 C 307 300, 382 325, 382 440 
+                 Z" 
+              fill="url(#whiteJelly)" 
+              filter="drop-shadow(0px -4px 12px rgba(100, 10, 10, 0.25))" />
+
+        <!-- Subtle collar neckline cutout / accent in Coral Red -->
+        <path d="M 232 300 C 232 328, 280 328, 280 300 Z" fill="#E53935" opacity="0.85" />
+
+        <!-- Head: Soft 3D White Sphere -->
+        <circle cx="256" cy="205" r="62" fill="url(#whiteJelly)" filter="drop-shadow(0px 8px 12px rgba(120, 15, 15, 0.35))" />
+        
+        <!-- Head Specular Highlight (Pure White) -->
+        <ellipse cx="240" cy="180" rx="20" ry="12" transform="rotate(-30 240 180)" fill="#FFFFFF" opacity="0.9" />
+        <!-- Head soft cheek blush in light pink -->
+        <circle cx="225" cy="218" r="8" fill="#FFB3B0" opacity="0.6" />
+        <circle cx="287" cy="218" r="8" fill="#FFB3B0" opacity="0.6" />
+
+        <!-- Torso Specular Highlight Streak -->
+        <path d="M 175 390 C 190 350, 220 335, 256 335" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.85" />
+      </g>
+
+      <!-- Glossy Jelly Specular Reflection across Top-Left of Red Badge -->
+      <path d="M 140 160 C 185 105, 275 90, 345 125 C 290 115, 195 135, 140 160 Z" fill="url(#topGloss)" opacity="0.9" />
+      <!-- Left Rim Soft Specular Glow -->
+      <path d="M 100 240 C 100 185, 130 140, 175 110" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" fill="none" opacity="0.8" />
+      <!-- Pink accent rim -->
+      <path d="M 108 270 C 105 210, 135 155, 185 125" stroke="url(#pinkAccent)" stroke-width="22" stroke-linecap="round" fill="none" />
+    </svg>

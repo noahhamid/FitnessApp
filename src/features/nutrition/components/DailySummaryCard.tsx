@@ -1,4 +1,3 @@
-import { Wheat, Egg, Droplet } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
@@ -35,19 +34,19 @@ export function DailySummaryCard({
         <CalorieRing consumed={consumed} goal={calorieGoal} />
         <View style={styles.macros}>
           <MacroBar
-            icon={Wheat}
+            icon="carbs"
             label="Carbs"
             value={carbs.value}
             goal={carbs.goal}
           />
           <MacroBar
-            icon={Egg}
+            icon="protein"
             label="Protein"
             value={protein.value}
             goal={protein.goal}
           />
           <MacroBar
-            icon={Droplet}
+            icon="fat"
             label="Fat"
             value={fat.value}
             goal={fat.goal}

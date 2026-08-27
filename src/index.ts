@@ -10,12 +10,31 @@ config({ path: ".env.local" });
  */
 const isVercel = process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV);
 
-if (!isVercel) {
+/** Avoid double-listen when the module is evaluated twice in one process. */
+const g = globalThis as typeof globalThis & { __ppApiServer?: boolean };
+
+if (!isVercel && !g.__ppApiServer) {
+  g.__ppApiServer = true;
   const port = Number(process.env.PORT ?? 3000);
   /** Bind all interfaces so LAN devices (Expo Go on physical hardware) can reach the API. */
   const hostname = process.env.HOST ?? "0.0.0.0";
-  console.log(`Server listening on http://${hostname}:${port}`);
-  serve({ fetch: app.fetch, port, hostname });
+
+  const server = serve({ fetch: app.fetch, port, hostname }, (info) => {
+    console.log(`API ready — http://${hostname}:${info.port}`);
+    console.log("Verification links will print here when you sign up / resend.");
+  });
+
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(
+        `\nPort ${port} is already in use.\n` +
+          `Run:  npm run free:port\n` +
+          `Then: npm run dev:server\n`,
+      );
+      process.exit(1);
+    }
+    throw err;
+  });
 }
 
 export default app;

@@ -336,7 +336,11 @@ nutritionRouter.post("/water", async (c) => {
   const existing = await prisma.waterLog.findUnique({
     where: { userId_logDate: { userId: user.id, logDate } },
   });
-  const nextGlasses = Math.max(0, (existing?.glasses ?? 0) + parsed.data.delta);
+  const WATER_MAX = 8;
+  const nextGlasses = Math.max(
+    0,
+    Math.min(WATER_MAX, (existing?.glasses ?? 0) + parsed.data.delta),
+  );
 
   const log = await prisma.waterLog.upsert({
     where: { userId_logDate: { userId: user.id, logDate } },

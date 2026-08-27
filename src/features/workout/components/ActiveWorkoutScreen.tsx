@@ -36,6 +36,7 @@ import {
   Plus,
   Flag,
   ChevronLeft,
+  ChevronDown,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { WorkoutPlan, type Exercise } from "../data/workouts";
@@ -60,11 +61,10 @@ import {
 } from "@/src/lib/session-timer-notification";
 
 /** Hero photo band — image is clipped here, not full-screen absoluteFill.
- *  Panel starts just below with a slight overlap so the sheet sits on the
- *  faded edge of the photo (not fighting a full-bleed image behind content). */
+ *  Panel top is computed at render from safe-area + hero offset. */
 const WIN_H = Dimensions.get("window").height;
-const HERO_BAND_H = Math.round(WIN_H * 0.3);
-const PANEL_TOP = HERO_BAND_H - 28;
+/** Compact band so the sheet + exercise title stay fully on screen. */
+const HERO_BAND_H = Math.round(WIN_H * 0.26);
 
 type Phase = "exercise" | "rest" | "done";
 /** list = home base; focus = logging one exercise (manual tap or auto-play). */
@@ -528,6 +528,8 @@ export function ActiveWorkoutScreen({
       : Date.now(),
   );
   const [secsLeft, setSecsLeft] = useState<number | null>(null);
+  /** Rest ring denominator — can diverge from plan rest when +/- adjusts. */
+  const [restTotalSec, setRestTotalSec] = useState(60);
 
   const selected =
     exercises.find((e) => e.id === selectedId) ?? null;
@@ -671,7 +673,9 @@ export function ActiveWorkoutScreen({
     // Rest must keep ticking even after the just-finished set made
     // selectedComplete true (auto-play rests before jumping ahead).
     if (phase === "rest") {
-      setSecsLeft(selected.restSec);
+      const total = Math.max(5, selected.restSec || 60);
+      setRestTotalSec(total);
+      setSecsLeft(total);
       return;
     }
     if (selectedComplete) {
@@ -882,6 +886,11 @@ export function ActiveWorkoutScreen({
     setScreenMode("focus");
     setPhase("exercise");
     setPaused(false);
+    // List scroll offset must not carry into focus — otherwise the
+    // exercise title sits above the viewport (common after "Start workout").
+    requestAnimationFrame(() => {
+      panelScrollRef.current?.scrollTo({ y: 0, animated: false });
+    });
   };
 
   /** After rest ends: next set of same exercise, or (auto) next incomplete. */
@@ -958,6 +967,14 @@ export function ActiveWorkoutScreen({
   };
 
   const onCompletePress = () => {
+    if (selected?.type === "reps" && currentWeight <= 0) {
+      haptic(Haptics.ImpactFeedbackStyle.Light);
+      Alert.alert(
+        "Set your weight",
+        "Dial in the kg before tapping Done — next set.",
+      );
+      return;
+    }
     haptic(Haptics.ImpactFeedbackStyle.Medium);
     Animated.sequence([
       Animated.timing(btnScale, {
@@ -971,6 +988,14 @@ export function ActiveWorkoutScreen({
         useNativeDriver: true,
       }),
     ]).start(completeCurrentSet);
+  };
+
+  const adjustRestBy = (delta: number) => {
+    haptic(Haptics.ImpactFeedbackStyle.Light);
+    setSecsLeft((prev) => Math.max(5, Math.min(600, (prev ?? 0) + delta)));
+    if (delta > 0) {
+      setRestTotalSec((total) => Math.min(600, total + delta));
+    }
   };
 
   const onHoldTogglePress = () => {
@@ -1054,23 +1079,47 @@ export function ActiveWorkoutScreen({
 
   const incompleteCount = exercises.filter((e) => !isExComplete(e)).length;
 
+  // Hero sits under the close/pause row; sheet starts just below it so the
+  // exercise title inside the panel is never clipped by the photo.
+  const heroTop = safeTop + 52;
+  const heroHeight = Math.max(120, HERO_BAND_H);
+  const panelTop = heroTop + heroHeight + 4;
+
+  const [listOverflows, setListOverflows] = useState(false);
+  const [listNearBottom, setListNearBottom] = useState(false);
+  const listViewportH = useRef(0);
+  const listContentH = useRef(0);
+  const panelScrollRef = useRef<ScrollView>(null);
+
+  const syncListOverflow = () => {
+    setListOverflows(listContentH.current > listViewportH.current + 12);
+  };
+
+  useEffect(() => {
+    if (screenMode !== "focus") return;
+    panelScrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [screenMode, selectedId]);
+
   return (
     <View style={s.screen}>
-      {/* Hero photo band only — not full-screen; panel sits below on solid dark. */}
-      <View style={[s.heroBand, { height: HERO_BAND_H }]} pointerEvents="none">
+      {/* Hero sits below the close/pause row so art doesn't collide with controls. */}
+      <View
+        style={[s.heroBand, { top: heroTop, height: heroHeight }]}
+        pointerEvents="none"
+      >
         <Animated.Image
           source={{ uri: heroImage }}
           style={[s.bgImage, { transform: [{ scale: imgScale }] }]}
-          resizeMode="cover"
+          resizeMode="contain"
         />
         <LinearGradient
           colors={[
-            "rgba(8,9,11,0.55)",
-            "rgba(8,9,11,0.15)",
-            "rgba(8,9,11,0.55)",
+            "rgba(8,9,11,0.25)",
+            "transparent",
+            "rgba(8,9,11,0.2)",
             T.darkBg,
           ]}
-          locations={[0, 0.35, 0.72, 1]}
+          locations={[0, 0.35, 0.82, 1]}
           style={StyleSheet.absoluteFillObject}
         />
       </View>
@@ -1157,44 +1206,65 @@ export function ActiveWorkoutScreen({
         <View style={s.progressTrack}>
           <Animated.View style={[s.progressFill, { width: barPct }]} />
         </View>
-
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            s.heroWrap,
-            { opacity: exFade, transform: [{ translateY: exSlide }] },
-          ]}
-        >
-          <Text style={s.heroTitle} numberOfLines={2}>
-            {screenMode === "focus" && selected
-              ? selected.name
-              : "Your workout"}
-          </Text>
-          <Text style={s.heroSub} numberOfLines={1}>
-            {screenMode === "focus" && selected
-              ? `${selected.sets} sets · ${
-                  selected.type === "reps"
-                    ? `${selected.reps} reps`
-                    : `${selected.durationSec}s hold`
-                } · ${doneForSelected}/${selected.sets} done`
-              : `${doneSets}/${totalSets} sets · ${incompleteCount} left`}
-          </Text>
-        </Animated.View>
       </View>
 
       <Animated.View
         style={[
           s.panelOuter,
-          { top: PANEL_TOP, transform: [{ translateY: panelY }] },
+          { top: panelTop, transform: [{ translateY: panelY }] },
         ]}
       >
         <View style={[s.panel, { paddingBottom: insets.bottom + 18 }]}>
+          <View style={s.sheetHandle} />
           <ScrollView
+            ref={panelScrollRef}
             style={s.panelScroll}
             contentContainerStyle={s.panelScrollContent}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={screenMode === "list"}
             keyboardShouldPersistTaps="handled"
+            scrollEnabled
+            bounces={screenMode === "list"}
+            onLayout={(e) => {
+              listViewportH.current = e.nativeEvent.layout.height;
+              syncListOverflow();
+            }}
+            onContentSizeChange={(_w, h) => {
+              listContentH.current = h;
+              syncListOverflow();
+            }}
+            onScroll={(e) => {
+              const { contentOffset, contentSize, layoutMeasurement } =
+                e.nativeEvent;
+              const remaining =
+                contentSize.height -
+                layoutMeasurement.height -
+                contentOffset.y;
+              setListNearBottom(remaining < 28);
+            }}
+            scrollEventThrottle={16}
           >
+            <Animated.View
+              style={[
+                s.heroWrap,
+                { opacity: exFade, transform: [{ translateY: exSlide }] },
+              ]}
+            >
+              <Text style={s.heroTitle} numberOfLines={2}>
+                {screenMode === "focus" && selected
+                  ? selected.name
+                  : "Your workout"}
+              </Text>
+              <Text style={s.heroSub} numberOfLines={1}>
+                {screenMode === "focus" && selected
+                  ? `${selected.sets} sets · ${
+                      selected.type === "reps"
+                        ? `${selected.reps} reps`
+                        : `${selected.durationSec}s hold`
+                    } · ${doneForSelected}/${selected.sets} done`
+                  : `${doneSets}/${totalSets} sets · ${incompleteCount} left`}
+              </Text>
+            </Animated.View>
+
             {/* ── LIST (home base) ─────────────────────────────────────── */}
             {screenMode === "list" && (
               <>
@@ -1218,6 +1288,17 @@ export function ActiveWorkoutScreen({
                     <Text style={s.addExBtnText}>Add</Text>
                   </Pressable>
                 </View>
+
+                {listOverflows && (
+                  <View style={s.scrollHintRow} pointerEvents="none">
+                    <ChevronDown
+                      size={14}
+                      color={T.onDarkMuted}
+                      strokeWidth={2.4}
+                    />
+                    <Text style={s.scrollHintText}>Scroll for more</Text>
+                  </View>
+                )}
 
                 <PropExerciseOptIn
                   muscleGroups={sessionMuscleGroups}
@@ -1367,9 +1448,30 @@ export function ActiveWorkoutScreen({
                 <Text style={s.restEyebrow}>Rest</Text>
                 <CountdownRing
                   left={secsLeft ?? 0}
-                  total={selected.restSec}
+                  total={Math.max(restTotalSec, secsLeft ?? 0, 1)}
                   size={120}
                 />
+                <View style={s.restAdjustRow}>
+                  <TouchableOpacity
+                    style={s.restAdjustBtn}
+                    onPress={() => adjustRestBy(-5)}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel="Subtract 5 seconds rest"
+                  >
+                    <Minus size={16} color="#FFFFFF" strokeWidth={2.4} />
+                  </TouchableOpacity>
+                  <Text style={s.restAdjustLabel}>±5 sec</Text>
+                  <TouchableOpacity
+                    style={s.restAdjustBtn}
+                    onPress={() => adjustRestBy(5)}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel="Add 5 seconds rest"
+                  >
+                    <Plus size={16} color="#FFFFFF" strokeWidth={2.4} />
+                  </TouchableOpacity>
+                </View>
                 <Text style={s.restHint}>
                   {doneForSelected < selected.sets
                     ? `Next: set ${setNum} of ${selected.sets}`
@@ -1402,10 +1504,15 @@ export function ActiveWorkoutScreen({
                   {playMode === "auto" && (
                     <Text style={s.autoBadge}>AUTO</Text>
                   )}
-                  <Text style={s.cueLabel}>Form cue</Text>
-                  <Text style={s.exInstr} numberOfLines={3}>
-                    {selected.instructions}
-                  </Text>
+
+                  {!!selected.instructions?.trim() && (
+                    <View style={s.cueBox}>
+                      <Text style={s.cueLabel}>Form cue</Text>
+                      <Text style={s.exInstr} numberOfLines={2}>
+                        {selected.instructions.replace(/\s+/g, " ").trim()}
+                      </Text>
+                    </View>
+                  )}
 
                   <View style={s.statRow}>
                     <View style={s.statChip}>
@@ -1501,28 +1608,42 @@ export function ActiveWorkoutScreen({
                     </Animated.View>
                   )}
 
-                  <TouchableOpacity
-                    style={s.secondaryLink}
-                    onPress={() => markExerciseComplete(selected)}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Mark ${selected.name} complete`}
-                  >
-                    <Text style={s.secondaryLinkText}>Mark exercise complete</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={s.secondaryLink}
-                    onPress={returnToList}
-                    hitSlop={8}
-                  >
-                    <Text style={s.secondaryLinkText}>
-                      Back to exercise list
-                    </Text>
-                  </TouchableOpacity>
+                  <View style={s.focusLinks}>
+                    <TouchableOpacity
+                      style={s.secondaryLink}
+                      onPress={() => markExerciseComplete(selected)}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Mark ${selected.name} complete`}
+                    >
+                      <Text style={s.secondaryLinkText}>Mark complete</Text>
+                    </TouchableOpacity>
+                    <Text style={s.focusLinkDot}>·</Text>
+                    <TouchableOpacity
+                      style={s.secondaryLink}
+                      onPress={returnToList}
+                      hitSlop={8}
+                    >
+                      <Text style={s.secondaryLinkText}>Exercise list</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
           </ScrollView>
+
+          {screenMode === "list" && listOverflows && !listNearBottom && (
+            <LinearGradient
+              pointerEvents="none"
+              colors={["rgba(18,18,20,0)", T.darkPanel]}
+              style={s.listScrollFade}
+            >
+              <ChevronDown
+                size={18}
+                color="rgba(255,255,255,0.55)"
+                strokeWidth={2.4}
+              />
+            </LinearGradient>
+          )}
         </View>
       </Animated.View>
 
@@ -1571,8 +1692,13 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     overflow: "hidden",
+    backgroundColor: T.darkBg,
   },
-  bgImage: { ...StyleSheet.absoluteFillObject },
+  bgImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+  },
 
   topContent: {
     paddingHorizontal: 18,
@@ -1639,25 +1765,19 @@ const s = StyleSheet.create({
     borderRadius: 2,
   },
 
-  heroWrap: { paddingRight: 40, marginTop: 2 },
+  heroWrap: { paddingRight: 8, marginBottom: 6, paddingTop: 2 },
   heroTitle: {
     color: T.onDark,
     fontFamily: T.displayExtraBold,
-    fontSize: 27,
-    letterSpacing: -0.6,
-    lineHeight: 32,
-    textShadowColor: "rgba(0,0,0,0.45)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
+    fontSize: 22,
+    letterSpacing: -0.5,
+    lineHeight: 26,
   },
   heroSub: {
-    color: "rgba(255,255,255,0.75)",
+    color: "rgba(255,255,255,0.62)",
     fontFamily: T.bodyMed,
-    fontSize: 13,
-    marginTop: 4,
-    textShadowColor: "rgba(0,0,0,0.4)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
+    fontSize: 12.5,
+    marginTop: 3,
   },
 
   panelOuter: {
@@ -1665,7 +1785,7 @@ const s = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    // `top` set inline from PANEL_TOP (hero band − overlap)
+    // `top` set inline from hero offset + band height
     zIndex: 3,
   },
   panel: {
@@ -1676,7 +1796,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: T.darkPanelBorder,
     paddingHorizontal: 20,
-    paddingTop: 18,
+    paddingTop: 10,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -10 },
@@ -1684,8 +1804,37 @@ const s = StyleSheet.create({
     shadowRadius: 26,
     elevation: 20,
   },
+  sheetHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    marginBottom: 14,
+  },
   panelScroll: { flex: 1 },
-  panelScrollContent: { paddingBottom: 12, gap: 12 },
+  panelScrollContent: { paddingBottom: 28, gap: 12 },
+  listScrollFade: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 72,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingBottom: 14,
+  },
+  scrollHintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: -4,
+  },
+  scrollHintText: {
+    color: T.onDarkMuted,
+    fontFamily: T.bodyMed,
+    fontSize: 11.5,
+  },
 
   listHeaderRow: {
     flexDirection: "row",
@@ -1817,8 +1966,31 @@ const s = StyleSheet.create({
     fontSize: 14.5,
   },
 
-  activeBlock: { gap: 14, marginTop: 4 },
+  activeBlock: { gap: 12, marginTop: 2 },
   restBlock: { alignItems: "center", gap: 10, marginTop: 4 },
+  restAdjustRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginTop: 2,
+  },
+  restAdjustBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.18)",
+  },
+  restAdjustLabel: {
+    color: T.onDarkMuted,
+    fontFamily: T.bodySemi,
+    fontSize: 12,
+    minWidth: 52,
+    textAlign: "center",
+  },
   restHint: {
     color: T.onDarkMuted,
     fontFamily: T.bodyMed,
@@ -1832,19 +2004,39 @@ const s = StyleSheet.create({
     letterSpacing: 1.6,
   },
 
+  cueBox: {
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.08)",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
   cueLabel: {
     color: T.onDarkMuted,
     fontFamily: T.bodySemi,
     fontSize: 10,
-    letterSpacing: 1.4,
+    letterSpacing: 1.2,
     textTransform: "uppercase",
-    marginBottom: 6,
   },
   exInstr: {
-    color: T.onDarkMuted,
+    color: "rgba(255,255,255,0.78)",
     fontFamily: T.body,
-    fontSize: 12.5,
+    fontSize: 13,
     lineHeight: 18,
+  },
+
+  focusLinks: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 2,
+  },
+  focusLinkDot: {
+    color: T.onDarkMuted,
+    fontSize: 14,
   },
 
   statRow: {
@@ -1965,11 +2157,11 @@ const s = StyleSheet.create({
     fontSize: 14,
     letterSpacing: 0.1,
   },
-  secondaryLink: { alignItems: "center", paddingVertical: 8 },
+  secondaryLink: { alignItems: "center", paddingVertical: 4 },
   secondaryLinkText: {
     color: T.onDarkMuted,
     fontFamily: T.bodySemi,
-    fontSize: 13,
+    fontSize: 12.5,
   },
 
   restEyebrow: {
