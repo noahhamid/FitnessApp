@@ -23,9 +23,30 @@ const root = path.join(__dirname, "..");
 loadEnv({ path: path.join(root, ".env.local") });
 loadEnv({ path: path.join(root, ".env") });
 
-const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
-const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
-const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+/** Prefer CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name */
+function credentialsFromUrl(raw) {
+  const value = raw?.trim();
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "cloudinary:") return null;
+    const cloud = parsed.hostname?.trim();
+    const key = decodeURIComponent(parsed.username || "").trim();
+    const secret = decodeURIComponent(parsed.password || "").trim();
+    if (!cloud || !key || !secret) return null;
+    if (key.includes("<") || secret.includes("<")) return null;
+    return { cloudName: cloud, apiKey: key, apiSecret: secret };
+  } catch {
+    return null;
+  }
+}
+
+const fromUrl = credentialsFromUrl(process.env.CLOUDINARY_URL);
+const cloudName =
+  fromUrl?.cloudName || process.env.CLOUDINARY_CLOUD_NAME?.trim();
+const apiKey = fromUrl?.apiKey || process.env.CLOUDINARY_API_KEY?.trim();
+const apiSecret =
+  fromUrl?.apiSecret || process.env.CLOUDINARY_API_SECRET?.trim();
 const folder = (
   process.env.CLOUDINARY_FOLDER ??
   process.env.EXPO_PUBLIC_CLOUDINARY_FOLDER ??
@@ -36,10 +57,12 @@ const folder = (
 
 if (!cloudName || !apiKey || !apiSecret) {
   console.error(
-    "Missing Cloudinary credentials. Add to .env.local:\n" +
-      "  CLOUDINARY_CLOUD_NAME=\n" +
-      "  CLOUDINARY_API_KEY=\n" +
-      "  CLOUDINARY_API_SECRET=\n",
+    "Missing Cloudinary credentials. Add ONE of these to .env.local:\n\n" +
+      "  CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME\n\n" +
+      "or:\n\n" +
+      "  CLOUDINARY_CLOUD_NAME=...\n" +
+      "  CLOUDINARY_API_KEY=...\n" +
+      "  CLOUDINARY_API_SECRET=...\n",
   );
   process.exit(1);
 }
