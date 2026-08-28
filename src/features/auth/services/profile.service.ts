@@ -52,12 +52,8 @@ export async function upsertProfile(metrics: ProfileMetrics): Promise<void> {
         equipment: metrics.equipment,
       }),
     });
-  } catch (e) {
-    // TEMP: was silently swallowed before — logging so real failures
-    // are visible instead of masquerading as "offline". Once this is
-    // confirmed stable, this can go back to being fully silent if
-    // offline-first behavior is actually wanted.
-    console.log("saveUserProfile FAILED:", e);
+  } catch {
+    // Offline / transient — local cache below still updates for the quiz UI.
   }
 
   // Merge into existing cache rather than overwrite, since partial saves

@@ -186,7 +186,6 @@ export default function DashboardScreen() {
   const loggedMealTypes = new Set((mealsForDay ?? []).map((m) => m.meal));
   const breakfastDone = loggedMealTypes.has("Breakfast");
   const lunchDone = loggedMealTypes.has("Lunch");
-  const snackDone = loggedMealTypes.has("Snack");
   const dinnerDone = loggedMealTypes.has("Dinner");
 
   const workoutCompletedForDay = workoutDates.has(selectedDate);
@@ -258,9 +257,7 @@ export default function DashboardScreen() {
         ? "Breakfast"
         : key === "lunch"
           ? "Lunch"
-          : key === "snack"
-            ? "Snack"
-            : "Dinner";
+          : "Dinner";
     openMealLog(slot);
   }
 
@@ -407,7 +404,6 @@ export default function DashboardScreen() {
           workoutDone={workoutCompletedForDay || !!isRestDay}
           breakfastDone={breakfastDone}
           lunchDone={lunchDone}
-          snackDone={snackDone}
           dinnerDone={dinnerDone}
           waterGlasses={water?.glasses ?? 0}
           onStepPress={

@@ -272,7 +272,10 @@ export function ReadyScreen() {
                   ...params,
                   onboardingComplete: "1",
                 });
-                await saveCompletedOnboardingPayload(nextParams);
+                const saved = await saveCompletedOnboardingPayload(nextParams);
+                if (!saved) {
+                  throw new Error("Could not save your updated plan.");
+                }
                 await clearOnboardingDraft();
                 useAuthStore.getState().setOnboarded(true);
                 await queryClient.invalidateQueries({

@@ -1,15 +1,16 @@
-/** Always print verify links in the local API terminal. */
+/** Print verify links in local/dev API terminals only — never in production logs. */
 export function logEmailVerificationLink(input: {
   email: string;
   token: string;
   appDeepLink: string;
   apiBaseUrl?: string;
 }): void {
+  if (process.env.NODE_ENV === "production") return;
+
   const apiUrl = input.apiBaseUrl
     ? `${input.apiBaseUrl.replace(/\/$/, "")}/api/auth/verify-email?token=${encodeURIComponent(input.token)}`
     : null;
 
-  // Visible even if stdout is buffered oddly on Windows.
   console.log("");
   console.log("========== EMAIL VERIFICATION LINK ==========");
   console.log(`Email:  ${input.email}`);
@@ -31,9 +32,11 @@ export async function sendAuthEmail(input: {
   const sendFailed = new Error("Could not send email. Try again later.");
 
   if (!resendKey || !from) {
-    console.error(
-      "[auth-email] RESEND_API_KEY or RESEND_FROM_EMAIL is not set",
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.error(
+        "[auth-email] RESEND_API_KEY or RESEND_FROM_EMAIL is not set",
+      );
+    }
     throw sendFailed;
   }
 
@@ -52,7 +55,9 @@ export async function sendAuthEmail(input: {
   });
 
   if (!response.ok) {
-    console.error("[auth-email] Resend failed:", response.status);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[auth-email] Resend failed:", response.status);
+    }
     throw sendFailed;
   }
 }

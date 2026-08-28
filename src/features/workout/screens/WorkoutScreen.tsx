@@ -102,9 +102,6 @@ function compactSplitLabel(label: string): string {
     .trim();
 }
 
-/** Flip to `true` in __DEV__ to verify failed background session UX (banner + Alert). */
-const FORCE_SESSION_CREATE_FAIL = false;
-
 // `require` at module scope is fine; resolveAssetSource must stay lazy
 // (breaks `expo export:embed` if called at import time).
 const AVATAR_PLACEHOLDER = require("../../../../assets/images/avatar-placeholder.jpg");
@@ -456,9 +453,6 @@ export default function WorkoutScreen() {
 
     void (async () => {
       try {
-        if (FORCE_SESSION_CREATE_FAIL) {
-          throw new Error("Forced start failure (dev test)");
-        }
         const session = await startSession.mutateAsync({
           notes: plan.title,
           exercises: plan.exercises.map((ex) => ({ exerciseName: ex.name })),
@@ -488,9 +482,7 @@ export default function WorkoutScreen() {
         setSessionCreateError(null);
 
         if (todaysWorkout && plan.id === todaysWorkout.id) {
-          void clearAllExtras().catch((e) =>
-            console.log("Failed to clear today's extras after start:", e),
-          );
+          void clearAllExtras().catch(() => undefined);
         }
       } catch (e) {
         if (gen !== startGenRef.current) return;
@@ -498,7 +490,6 @@ export default function WorkoutScreen() {
           e instanceof Error
             ? e.message
             : "Couldn't save this workout to your account.";
-        console.log("Failed to start workout session:", e);
         setSessionCreating(false);
         setSessionCreateError(message);
         Alert.alert(
@@ -589,7 +580,6 @@ export default function WorkoutScreen() {
         ),
       });
     } catch (e) {
-      console.log("Failed to log completed workout:", e);
       throw e instanceof Error
         ? e
         : new Error("Couldn't save this workout. Try again.");

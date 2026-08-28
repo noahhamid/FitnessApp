@@ -4,9 +4,10 @@ import { resolveAssetUri } from "@/src/lib/resolve-asset";
  * Local soft-3D exercise illustrations.
  * Keys are lowercase exercise names matching curated-exercises.json.
  * One file → one exercise (shared only when same silhouette by design).
- * Fallback: assets/images/exercise-placeholder.jpg
+ * Unknown names fall back to the Push-up illustration (never the old
+ * photo-style exercise-placeholder.jpg).
  */
-const PLACEHOLDER = require("../../../../assets/images/exercise-placeholder.jpg");
+const PLACEHOLDER = require("../../../../assets/images/workout/standard_pushup_char_1787589367682.jpg");
 
 const BY_NAME: Record<string, number> = {
   // —— Chest ——
@@ -206,7 +207,7 @@ const BY_NAME: Record<string, number> = {
   "barbell standing rocking leg calf raise": require("../../../../assets/images/workout/Barbell Standing Rocking Leg Calf Raise.jpg"),
 
   // —— Legacy plan-name aliases (old short names still on live plans) ——
-  // Without these, imageForExercise falls back to exercise-placeholder.jpg.
+  // Without these, imageForExercise falls back to the Push-up soft-3D art.
   "barbell back squat": require("../../../../assets/images/workout/Barbell Bench Squat.jpg"),
   "barbell row": require("../../../../assets/images/workout/barbell_overhand_row_1787655901024.jpg"),
   "overhead barbell press": require("../../../../assets/images/workout/Barbell Seated Overhead Press.jpg"),

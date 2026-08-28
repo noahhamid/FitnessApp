@@ -43,7 +43,14 @@ import { Sentry, sentryEnabled } from "@/src/lib/sentry";
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      retry: 1,
+    },
+  },
+});
 
 function AppShell() {
   const { resolved, theme } = useTheme();

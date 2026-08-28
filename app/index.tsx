@@ -92,8 +92,16 @@ export default function Index() {
 
   if (!hydrated) return null;
   if (!hasSession) return <Redirect href="/(auth)/welcome" />;
-  if (shouldRedirectToVerifyEmail(user)) {
-    return <Redirect href="/(auth)/verify-email" />;
+  if (shouldRedirectToVerifyEmail(user, { allowDeferred: onboardingComplete })) {
+    const email = user?.email?.trim();
+    return (
+      <Redirect
+        href={{
+          pathname: "/(auth)/verify-email",
+          params: email ? { email: encodeURIComponent(email) } : undefined,
+        }}
+      />
+    );
   }
   if (!backendProfileLoaded) return <LoadingScreen />;
   if (!resolvedOnboarding) return <Redirect href="/(auth)/onboarding" />;

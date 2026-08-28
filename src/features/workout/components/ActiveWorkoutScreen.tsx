@@ -794,9 +794,6 @@ export function ActiveWorkoutScreen({
       ex.id.startsWith("live-") ||
       ex.id.startsWith("standalone-")
     ) {
-      console.log(
-        `[set-sync] skip "${ex.name}" — id ${ex.id} is not a WorkoutExercise row yet`,
-      );
       return;
     }
 
@@ -810,22 +807,9 @@ export function ActiveWorkoutScreen({
       }));
     if (sets.length === 0) return;
 
-    console.log(
-      `[set-sync] PATCH /api/workouts/${sessionId}/exercises/${ex.id} (${sets.length} set(s) for "${ex.name}")`,
-    );
     void updateSessionExercise
       .mutateAsync({ sessionId, exerciseId: ex.id, sets })
-      .then(() => {
-        console.log(
-          `[set-sync] ok — "${ex.name}" (${ex.id}) now has ${sets.length} set(s)`,
-        );
-      })
-      .catch((e) => {
-        console.log(
-          `[set-sync] failed for "${ex.name}" (${ex.id}):`,
-          e instanceof Error ? e.message : e,
-        );
-      });
+      .catch(() => undefined);
   };
 
   const markExerciseComplete = (ex: Exercise) => {

@@ -505,6 +505,13 @@ export default function MealScreen() {
       <NutritionTargetsModal
         visible={targetsOpen}
         onClose={() => setTargetsOpen(false)}
+        onUpdateProfile={() => {
+          setTargetsOpen(false);
+          router.push({
+            pathname: "/(app)/(tabs)/profile",
+            params: { editPlan: "1" },
+          });
+        }}
         goals={goals ?? null}
         goalId={profile?.goalId}
         daysPerWeek={profile?.daysPerWeek}

@@ -51,7 +51,6 @@ const REST_SEC_BY_GOAL: Record<string, number> = {
 // Shared local assets — do not use dataset GIFs/images (copyrighted).
 // Resolve lazily: EAS's Android eager bundle also evaluates this module in
 // Node (web.output: "server"), where Image.resolveAssetSource is missing.
-const EXERCISE_PLACEHOLDER = require("../../assets/images/exercise-placeholder.jpg");
 const PUSH_DAY_COVER = require("../../assets/images/push-day-cover.jpg");
 const PULL_DAY_COVER = require("../../assets/images/pull-day-cover.jpg");
 const LEGS_DAY_COVER = require("../../assets/images/legs-day-cover.jpg");
@@ -71,7 +70,6 @@ function resolveLazyAssetUri(slot: LazyAssetUri): string {
   return slot.uri;
 }
 
-const exercisePlaceholder: LazyAssetUri = { asset: EXERCISE_PLACEHOLDER };
 const defaultCover: LazyAssetUri = { asset: FULL_BODY_COVER };
 
 const COVER_BY_LABEL_HINT: { match: RegExp; slot: LazyAssetUri }[] = [
@@ -82,12 +80,7 @@ const COVER_BY_LABEL_HINT: { match: RegExp; slot: LazyAssetUri }[] = [
   { match: /full body/i, slot: { asset: FULL_BODY_COVER } },
 ];
 
-/** Fallback when no exercise name is available (covers, rest tiles, etc.). */
-export function imageForMuscleGroup(_muscleGroup?: string): string {
-  return resolveLazyAssetUri(exercisePlaceholder);
-}
-
-/** Prefer per-exercise soft-3D art; falls back to shared placeholder. */
+/** Prefer per-exercise soft-3D art; unknown names use Push-up art. */
 export { imageForExercise };
 
 function coverImageForDay(title: string, storedLabel: string): string {

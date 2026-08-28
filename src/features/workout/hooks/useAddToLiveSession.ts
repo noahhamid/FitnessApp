@@ -82,18 +82,13 @@ export function useAddToLiveSession(sessionId: string | null | undefined) {
     opts.onAfterOptimistic?.();
 
     try {
-      console.log(`Adding "${libEx.name}" to live session ${sessionId}…`);
       const created = await addToSession.mutateAsync({
         sessionId,
         exerciseName: libEx.name,
       });
       opts.onCommitted?.(optimistic.id, created.id);
-      console.log(
-        `Added "${libEx.name}" to live session ${sessionId} (exercise ${created.id}).`,
-      );
       return true;
     } catch (e) {
-      console.log("Failed to add exercise to session:", e);
       opts.onRollback?.(optimistic.id);
       setAddError(
         e instanceof Error ? e.message : "Couldn't add exercise — try again",

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { parseLogDate, todayLogDate } from "../lib/dates";
+import { isoDate, parseLogDate, requestLogDate } from "../lib/dates";
 import { storeMealPhoto } from "../lib/meal-photo-storage";
 import { prisma } from "../lib/prisma";
 import { err, ok } from "../lib/response";
@@ -94,7 +94,7 @@ function serializeMealLog(entry: {
 }) {
   return {
     ...entry,
-    logDate: entry.logDate.toISOString().slice(0, 10),
+    logDate: isoDate(entry.logDate),
     loggedAt: entry.loggedAt.toISOString(),
     protein: Number(entry.protein),
     carbs: Number(entry.carbs),
@@ -168,7 +168,7 @@ nutritionRouter.get("/log", async (c) => {
   }
 
   // Single-day mode (unchanged) ? defaults to today when date omitted.
-  const singleStr = dateStr ?? todayLogDate();
+  const singleStr = dateStr ?? requestLogDate(c);
   const logDate = parseLogDate(singleStr);
   if (!logDate) return err(c, "Invalid date format", 400);
 
@@ -288,7 +288,7 @@ nutritionRouter.get("/totals", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
   if (isParseFail(query)) return query.response;
 
-  const dateStr = query.data.date ?? todayLogDate();
+  const dateStr = query.data.date ?? requestLogDate(c);
   const logDate = parseLogDate(dateStr);
   if (!logDate) return err(c, "Invalid date format", 400);
 
@@ -312,7 +312,7 @@ nutritionRouter.get("/water", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
   if (isParseFail(query)) return query.response;
 
-  const dateStr = query.data.date ?? todayLogDate();
+  const dateStr = query.data.date ?? requestLogDate(c);
   const logDate = parseLogDate(dateStr);
   if (!logDate) return err(c, "Invalid date format", 400);
 
@@ -328,7 +328,7 @@ nutritionRouter.post("/water", async (c) => {
   const parsed = await parseJson(c, waterAdjustSchema);
   if (isParseFail(parsed)) return parsed.response;
 
-  const dateStr = parsed.data.logDate ?? todayLogDate();
+  const dateStr = parsed.data.logDate ?? requestLogDate(c);
   const logDate = parseLogDate(dateStr);
   if (!logDate) return err(c, "Invalid logDate", 400);
 
@@ -352,15 +352,11 @@ nutritionRouter.post("/water", async (c) => {
 });
 
 // ?? Weekly trend + streak ???????????????????????????????????????????????
-function isoDate(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
-
 nutritionRouter.get("/weekly", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
   if (isParseFail(query)) return query.response;
 
-  const endStr = query.data.date ?? todayLogDate();
+  const endStr = query.data.date ?? requestLogDate(c);
   const end = parseLogDate(endStr);
   if (!end) return err(c, "Invalid date format", 400);
 
@@ -410,7 +406,7 @@ nutritionRouter.get("/suggestions", async (c) => {
   const query = parseQuery(c, logDateQuerySchema);
   if (isParseFail(query)) return query.response;
 
-  const dateStr = query.data.date ?? todayLogDate();
+  const dateStr = query.data.date ?? requestLogDate(c);
   const logDate = parseLogDate(dateStr);
   if (!logDate) return err(c, "Invalid date format", 400);
 
@@ -466,7 +462,10 @@ nutritionRouter.get("/suggestions", async (c) => {
 });
 
 /** Fresh adaptive suggestion for a user ? shared by GET and apply. */
-async function freshAdaptiveSuggestion(userId: string): Promise<
+async function freshAdaptiveSuggestion(
+  userId: string,
+  asOf: string,
+): Promise<
   | { ok: false; reason: "missing_profile" | "missing_nutrition_goal" }
   | {
       ok: true;
@@ -503,7 +502,6 @@ async function freshAdaptiveSuggestion(userId: string): Promise<
     return { ok: false, reason: "missing_nutrition_goal" };
   }
 
-  const asOf = todayLogDate();
   const windowStart = parseLogDate(asOf)!;
   windowStart.setUTCDate(
     windowStart.getUTCDate() - (ADAPTIVE_WINDOW_DAYS - 1),
@@ -519,7 +517,7 @@ async function freshAdaptiveSuggestion(userId: string): Promise<
 
   const suggestion = computeAdaptiveSuggestion({
     entries: logs.map((row) => ({
-      logDate: row.logDate.toISOString().slice(0, 10),
+      logDate: isoDate(row.logDate),
       weightKg: Number(row.weight),
     })),
     goalId: profile.goalId,
@@ -555,7 +553,7 @@ async function freshAdaptiveSuggestion(userId: string): Promise<
 // Adaptive calorie suggestion (read-only; never mutates NutritionGoal).
 nutritionRouter.get("/adaptive-suggestion", async (c) => {
   const user = getUser(c);
-  const fresh = await freshAdaptiveSuggestion(user.id);
+  const fresh = await freshAdaptiveSuggestion(user.id, requestLogDate(c));
 
   if (fresh.ok === false) {
     return ok(c, {
@@ -579,7 +577,7 @@ nutritionRouter.patch("/goals/apply-suggestion", requirePremium, async (c) => {
   const user = getUser(c);
   const clientSuggested = parsed.data.suggestedCalories;
 
-  const fresh = await freshAdaptiveSuggestion(user.id);
+  const fresh = await freshAdaptiveSuggestion(user.id, requestLogDate(c));
   if (fresh.ok === false) {
     return err(
       c,

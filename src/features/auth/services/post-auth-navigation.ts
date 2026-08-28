@@ -38,7 +38,7 @@ async function hasActiveSession(): Promise<boolean> {
 /** Try stored sign-up credentials (same device, right after register). */
 async function tryPendingSignIn(): Promise<boolean> {
   const pending = await loadPendingSignUp();
-  if (!pending) return false;
+  if (!pending?.password) return false;
   try {
     await signIn(pending.email, pending.password);
     await clearPendingSignUp();

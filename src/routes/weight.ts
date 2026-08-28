@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { parseLogDate, todayLogDate } from "../lib/dates";
+import { isoDate, parseLogDate, requestLogDate } from "../lib/dates";
 import { prisma } from "../lib/prisma";
 import { err, ok } from "../lib/response";
 import { isParseFail, parseJson, parseQuery } from "../lib/validate";
@@ -35,7 +35,7 @@ function serializeWeightLog(entry: {
 }) {
   return {
     ...entry,
-    logDate: entry.logDate.toISOString().slice(0, 10),
+    logDate: isoDate(entry.logDate),
     weight: Number(entry.weight),
   };
 }
@@ -89,7 +89,7 @@ weightRouter.post("/log", async (c) => {
   const parsed = await parseJson(c, weightLogSchema);
   if (isParseFail(parsed)) return parsed.response;
 
-  const dateStr = parsed.data.logDate ?? todayLogDate();
+  const dateStr = parsed.data.logDate ?? requestLogDate(c);
   const logDate = parseLogDate(dateStr);
   if (!logDate) return err(c, "Invalid logDate", 400);
 

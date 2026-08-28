@@ -2,7 +2,10 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { readSessionToken } from "@/src/lib/session-token";
+import {
+  clearSessionToken,
+  readSessionToken,
+} from "@/src/lib/session-token";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -86,7 +89,26 @@ export function useAuth() {
     };
   }, [session, isPending]);
 
-  const hasSession = !!session?.user || hasStoredToken;
+  // Stale bearer alone must not unlock the app — once session resolve finishes
+  // with no user, drop the dead token so we don't flash tabs then 401-kick.
+  useEffect(() => {
+    if (isPending) return;
+    if (session?.user) return;
+    if (!hasStoredToken) return;
+    let active = true;
+    void clearSessionToken()
+      .then(() => invalidateAuthHeaderCache())
+      .then(() => {
+        if (active) setHasStoredToken(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isPending, session?.user, hasStoredToken]);
+
+  // While session is still resolving, a stored token keeps splash/loading;
+  // after resolve, only a real user counts as signed in.
+  const hasSession = !!session?.user || (hasStoredToken && isPending);
 
   // Sync onboarding state from user metadata when session changes
   useEffect(() => {

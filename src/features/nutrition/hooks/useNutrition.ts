@@ -239,6 +239,20 @@ export function useAdjustWater(date = today(), maxGlasses = 8) {
     [date, maxGlasses, mutation, qc],
   );
 
+  useEffect(() => {
+    return () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
+      }
+      const leftover = pendingDelta.current;
+      pendingDelta.current = 0;
+      if (leftover !== 0) {
+        void adjustWater(leftover, date).catch(() => undefined);
+      }
+    };
+  }, [date]);
+
   return { ...mutation, mutate: add };
 }
 

@@ -5,6 +5,7 @@ const KEY = "exo_fitness_pending_signup";
 
 export type PendingSignUp = {
   email: string;
+  /** Empty on web — never store passwords in localStorage. */
   password: string;
   createdAt: number;
 };
@@ -56,7 +57,8 @@ export async function savePendingSignUp(
 ): Promise<void> {
   const payload: PendingSignUp = {
     email: email.trim().toLowerCase(),
-    password,
+    // Native: SecureStore. Web: email only — never persist passwords in localStorage.
+    password: Platform.OS === "web" ? "" : password,
     createdAt: Date.now(),
   };
   await writeRaw(JSON.stringify(payload));
@@ -67,10 +69,15 @@ export async function loadPendingSignUp(): Promise<PendingSignUp | null> {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as PendingSignUp;
-    if (!parsed.email || !parsed.password) return null;
+    if (!parsed.email) return null;
     if (Date.now() - parsed.createdAt > TTL_MS) {
       await clearPendingSignUp();
       return null;
+    }
+    // Legacy web entries may still have a password — strip it.
+    if (Platform.OS === "web" && parsed.password) {
+      parsed.password = "";
+      await writeRaw(JSON.stringify(parsed));
     }
     return parsed;
   } catch {

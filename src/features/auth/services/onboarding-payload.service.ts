@@ -196,3 +196,38 @@ export async function saveCompletedOnboardingPayload(
   });
   return true;
 }
+
+/**
+ * Retry saving a completed onboarding draft while the user is already in
+ * the app (e.g. after "confirm later"). Index only runs on cold entry.
+ */
+export async function flushDeferredOnboardingIfNeeded(): Promise<boolean> {
+  const { clearOnboardingDraft, loadOnboardingDraft } = await import(
+    "./onboarding-draft.service"
+  );
+  const { fetchUserProfile } = await import(
+    "@/src/features/profile/services/profile.service"
+  );
+  const { isOnboardingProfileComplete } = await import(
+    "@/src/lib/onboarding-complete"
+  );
+
+  const draft = await loadOnboardingDraft();
+  if (!hasCompletedOnboardingPayload(draft)) return false;
+
+  try {
+    const profile = await fetchUserProfile();
+    if (isOnboardingProfileComplete(profile)) {
+      await clearOnboardingDraft();
+      return true;
+    }
+  } catch {
+    // Still try the draft save below.
+  }
+
+  const saved = await saveCompletedOnboardingPayload(draft, {
+    sessionWaitAttempts: 8,
+  });
+  if (saved) await clearOnboardingDraft();
+  return saved;
+}

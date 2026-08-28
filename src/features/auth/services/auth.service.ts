@@ -10,7 +10,6 @@ import {
   persistTokenFromAuthData,
 } from "@/src/lib/session-token";
 import { invalidateAuthHeaderCache } from "@/src/lib/api";
-import { getClientApiUrl } from "@/src/lib/public-api-url";
 import { NativeModules, Platform } from "react-native";
 
 type GoogleSignInSdk = typeof import("@react-native-google-signin/google-signin");
@@ -69,9 +68,8 @@ type AuthClientError = {
 function throwIfAuthError(error: AuthClientError): void {
   if (!error) return;
   if (error.status === 429 || /too many (requests|attempts)/i.test(error.message ?? "")) {
-    const api = getClientApiUrl();
     throw new Error(
-      `Too many tries on ${api}. Wait 60s, or make sure Expo uses your local API (192.168.1.8:3000).`,
+      "Too many tries. Wait about a minute, then try again.",
     );
   }
   if (/invalid token/i.test(error.message ?? "")) {
@@ -160,7 +158,7 @@ async function ensureOAuthFirstName(
 
   const { error } = await authClient.updateUser({ name: next });
   if (error) {
-    console.log("oauth: failed to trim display name", error.message);
+    // Display-name trim is best-effort; ignore failures quietly.
   }
 }
 
@@ -351,6 +349,8 @@ export async function deleteAccount(token?: string): Promise<{
   } catch {
     // Session may already be invalidated server-side.
   }
+  await clearSessionToken();
+  invalidateAuthHeaderCache();
 
   return { deleted: true, verificationEmailSent: false };
 }

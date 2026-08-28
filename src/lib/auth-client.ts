@@ -8,10 +8,7 @@ import { getClientApiUrl } from "./public-api-url";
 import { persistSessionToken, readSessionToken } from "./session-token";
 
 // Before createAuthClient — force Expo Go onto the Metro host's :3000 API.
-const devApi = applyDevLanApiUrlOverride();
-if (devApi) {
-  console.log(`[auth] Using local API: ${devApi}`);
-}
+applyDevLanApiUrlOverride();
 
 const baseURL = getClientApiUrl();
 

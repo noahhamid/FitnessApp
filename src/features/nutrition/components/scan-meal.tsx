@@ -268,13 +268,8 @@ export default function ScanMealScreen() {
   const analyzeBase64 = async (base64: string, mimeType: string, uri: string) => {
     setPhotoUri(uri);
     setStatus("analyzing");
-    const startedAt = Date.now();
     try {
-      console.log(
-        `[scan-meal] uploading ${(base64.length / 1024 / 1024).toFixed(2)}MB base64, mime=${mimeType}`,
-      );
       const scan = await scanFoodImage(base64, mimeType);
-      console.log(`[scan-meal] scan ok in ${Date.now() - startedAt}ms`);
       setResult(scan);
       setName(scan.name);
       setCal(String(scan.cal));
@@ -284,10 +279,6 @@ export default function ScanMealScreen() {
       setStatus("reviewing");
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
-      console.error(
-        `[scan-meal] scan failed after ${Date.now() - startedAt}ms:`,
-        detail,
-      );
       setStatus("error");
       setErrorMsg(`${detail} — try again or enter it manually.`);
     }
@@ -352,8 +343,8 @@ export default function ScanMealScreen() {
         if (prepared.base64) {
           imageUrl = await uploadMealPhoto(prepared.base64, "image/jpeg");
         }
-      } catch (e) {
-        console.error("[scan-meal] photo upload failed:", e);
+      } catch {
+        // Photo optional — meal still saves without cloud image.
       }
     }
 
