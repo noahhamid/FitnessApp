@@ -2,7 +2,6 @@
 
 import { authClient } from "@/src/lib/auth";
 import {
-  DISPLAY_NAME_MAX_LENGTH,
   normalizeDisplayFirstName,
 } from "@/src/lib/display-name";
 import {
@@ -89,9 +88,6 @@ export async function signIn(email: string, password: string): Promise<void> {
 }
 
 // ── Sign up ───────────────────────────────────────────────────────────────────
-
-/** @deprecated Use DISPLAY_NAME_MAX_LENGTH — kept for existing imports. */
-export const SIGN_UP_NAME_MAX_LENGTH = DISPLAY_NAME_MAX_LENGTH;
 
 /** Keep the first given name only (no family names) and clamp length. */
 export function normalizeSignUpFirstName(raw: string): string {

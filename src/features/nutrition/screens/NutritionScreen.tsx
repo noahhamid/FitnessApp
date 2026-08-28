@@ -283,7 +283,6 @@ export default function MealScreen() {
       />
 
       <MealHeader
-        eyebrow={`${dayLabel(selectedDate)} · Diet`}
         title="Today's plate"
         caloriesLeft={caloriesLeft}
       />

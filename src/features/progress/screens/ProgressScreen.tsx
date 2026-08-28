@@ -267,7 +267,6 @@ export default function ProgressScreen() {
         }
       >
         <PageHeader
-          eyebrow="Overview"
           subtitle="Body, training, and fuel — at a glance"
           title="Progress"
         />

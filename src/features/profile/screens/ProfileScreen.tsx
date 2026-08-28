@@ -452,14 +452,6 @@ export default function ProfileScreen() {
           showsVerticalScrollIndicator={false}
         >
           <PageHeader
-            eyebrow="Athlete profile"
-            eyebrowLeading={
-              <Ionicons
-                name="shield-checkmark-outline"
-                size={11}
-                color={T.muted}
-              />
-            }
             subtitle="Manage your account,"
             title="Account"
             action={

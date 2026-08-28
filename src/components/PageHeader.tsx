@@ -4,10 +4,6 @@ import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 
 type Props = {
-  /** @deprecated Unused — kept so call sites compile. */
-  eyebrow?: string;
-  /** @deprecated Unused — kept so call sites compile. */
-  eyebrowLeading?: ReactNode;
   /** Soft line under the heading (e.g. "Manage your account,"). */
   subtitle?: string;
   /** Large page title — displayBold 28 / -0.5. */

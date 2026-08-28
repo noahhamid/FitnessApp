@@ -26,7 +26,6 @@ import {
 import { SocialAuthButtons } from "./SocialAuthButtons";
 import {
   AuthCancelledError,
-  SIGN_UP_NAME_MAX_LENGTH,
   isEmailNotVerifiedError,
   normalizeSignUpFirstName,
   signIn,
@@ -34,6 +33,7 @@ import {
   signInWithGoogle,
   signUp,
 } from "../services/auth.service";
+import { DISPLAY_NAME_MAX_LENGTH } from "@/src/lib/display-name";
 import { navigateAfterAuth } from "../services/post-auth-navigation";
 import { savePendingSignUp } from "../services/pending-signup.service";
 import {
@@ -252,14 +252,14 @@ export function SignUpForm() {
               <TextInput
                 value={name}
                 onChangeText={(text) =>
-                  setName(text.slice(0, SIGN_UP_NAME_MAX_LENGTH))
+                  setName(text.slice(0, DISPLAY_NAME_MAX_LENGTH))
                 }
                 placeholder="First name"
                 placeholderTextColor={C.muted}
                 autoCapitalize="words"
                 autoComplete="given-name"
                 textContentType="givenName"
-                maxLength={SIGN_UP_NAME_MAX_LENGTH}
+                maxLength={DISPLAY_NAME_MAX_LENGTH}
                 style={s.input}
                 selectionColor={C.accent}
               />

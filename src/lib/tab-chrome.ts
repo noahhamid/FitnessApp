@@ -3,8 +3,6 @@ import { bottomInset } from "@/src/lib/safe-area";
 /** Notched floating pill + raised center FAB — sync with tabs `_layout.tsx`. */
 export const TAB_BAR_H = 64;
 export const TAB_FAB_SIZE = 56;
-/** @deprecated Alias for older imports. */
-export const TAB_PILL_H = TAB_BAR_H;
 export const TAB_PILL_H_MARGIN = 18;
 export const TAB_PILL_BOTTOM_GAP = 0;
 /** Extra clearance for the FAB that sits above the pill. */

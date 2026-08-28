@@ -4,8 +4,6 @@ import type { AppTheme } from "@/src/theme";
 import { AppIcon } from "@/src/components/AppIcon";
 
 type Props = {
-  /** Unused — kept for call-site compat. */
-  eyebrow?: string;
   title: string;
   caloriesLeft: number;
 };
