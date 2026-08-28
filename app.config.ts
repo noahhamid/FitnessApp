@@ -44,6 +44,11 @@ const config: ExpoConfig = {
     output: "server",
     favicon: "./assets/images/potentialpeak_logo.jpg",
   },
+  // Exercise JPGs (~34MB) load from Cloudinary — keep them off the APK/AAB.
+  assetBundlePatterns: [
+    "assets/**/*",
+    "!assets/images/workout/**",
+  ],
   plugins: [
     "./plugins/with-arm64-only",
     "expo-router",

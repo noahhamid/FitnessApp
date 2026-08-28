@@ -24,6 +24,8 @@
         "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potentialpeak-app-puce.vercel.app",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "571605491186-b04ac11j9h523q4v733k4g9726hupbh9.apps.googleusercontent.com",
         "EXPO_PUBLIC_SENTRY_DSN": "https://f8139614f0bbc1d1ec4a8f8881e558f9@o4511916203769856.ingest.de.sentry.io/4511916250759248",
+        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "",
+        "EXPO_PUBLIC_CLOUDINARY_FOLDER": "potential-peak/exercises",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
@@ -38,6 +40,8 @@
         "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potentialpeak-app-puce.vercel.app",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "571605491186-b04ac11j9h523q4v733k4g9726hupbh9.apps.googleusercontent.com",
         "EXPO_PUBLIC_SENTRY_DSN": "https://f8139614f0bbc1d1ec4a8f8881e558f9@o4511916203769856.ingest.de.sentry.io/4511916250759248",
+        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "",
+        "EXPO_PUBLIC_CLOUDINARY_FOLDER": "potential-peak/exercises",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     }
