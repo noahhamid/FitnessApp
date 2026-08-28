@@ -4,8 +4,10 @@ import { logEmailVerificationLink, sendAuthEmail } from "./send-auth-email";
 
 const APP_VERIFY_EMAIL_URL = "com.exo.fitness://verify-email";
 
-/** On in production; opt out with ENABLE_AUTH_RATE_LIMIT=false for local stress tests. */
+/** On in production. Opt out with ENABLE_AUTH_RATE_LIMIT=false or
+ *  DISABLE_AUTH_RATE_LIMIT=true (legacy Vercel flag). */
 const authRateLimitEnabled =
+  process.env.DISABLE_AUTH_RATE_LIMIT !== "true" &&
   process.env.ENABLE_AUTH_RATE_LIMIT !== "false" &&
   (process.env.NODE_ENV === "production" ||
     process.env.ENABLE_AUTH_RATE_LIMIT === "true");
@@ -172,8 +174,8 @@ async function createAuth() {
       max: 100,
       customRules: authRateLimitEnabled
         ? {
-            "/sign-in/email": { window: 15 * 60, max: 8 },
-            "/sign-up/email": { window: 15 * 60, max: 5 },
+            "/sign-in/email": { window: 15 * 60, max: 20 },
+            "/sign-up/email": { window: 15 * 60, max: 8 },
             "/forget-password*": { window: 15 * 60, max: 5 },
             "/request-password-reset": { window: 15 * 60, max: 5 },
             "/send-verification-email": { window: 15 * 60, max: 5 },
