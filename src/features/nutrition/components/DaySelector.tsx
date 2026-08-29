@@ -40,20 +40,6 @@ type Props = {
 };
 
 const INDICATOR_INSET = 2;
-const TOP_COUNT = 3;
-const ROW_GAP = 6;
-
-function cellFrame(index: number, width: number, rowHeight: number) {
-  const top = index < TOP_COUNT;
-  const count = top ? TOP_COUNT : 4;
-  const col = top ? index : index - TOP_COUNT;
-  const w = width / count;
-  return {
-    x: col * w,
-    y: top ? 0 : rowHeight + ROW_GAP,
-    w,
-  };
-}
 
 export function DaySelector({
   days,
@@ -69,17 +55,14 @@ export function DaySelector({
   const { T, styles } = useThemedStyles(makeStyles);
   const todayKey = localDateOnly();
   const selectedDate = days[activeIndex]?.date;
-  const [gridWidth, setGridWidth] = useState(0);
+  const [rowWidth, setRowWidth] = useState(0);
   const [rowHeight, setRowHeight] = useState(0);
+  // Always divide by 7 so a short/empty days array can't inflate cell width.
+  const itemWidth = rowWidth > 0 ? rowWidth / 7 : 0;
 
   const hasSelectionInWeek = activeIndex >= 0 && activeIndex < days.length;
-  const frame =
-    gridWidth > 0 && rowHeight > 0 && hasSelectionInWeek
-      ? cellFrame(activeIndex, gridWidth, rowHeight)
-      : null;
 
   const indicatorX = useRef(new Animated.Value(0)).current;
-  const indicatorY = useRef(new Animated.Value(0)).current;
   const indicatorWidth = useRef(new Animated.Value(0)).current;
   const indicatorScale = useRef(new Animated.Value(1)).current;
   // Keyed by date, created lazily — NOT a fixed-length array. If DaySelector
@@ -97,15 +80,13 @@ export function DaySelector({
   const hasMounted = useRef(false);
 
   useEffect(() => {
-    if (!frame) return;
+    if (itemWidth === 0 || !hasSelectionInWeek) return;
 
-    const targetX = frame.x + INDICATOR_INSET;
-    const targetY = frame.y;
-    const targetW = Math.max(0, frame.w - INDICATOR_INSET * 2);
+    const targetX = activeIndex * itemWidth + INDICATOR_INSET;
+    const targetW = Math.max(0, itemWidth - INDICATOR_INSET * 2);
 
     if (!hasMounted.current) {
       indicatorX.setValue(targetX);
-      indicatorY.setValue(targetY);
       indicatorWidth.setValue(targetW);
       hasMounted.current = true;
       return;
@@ -118,12 +99,6 @@ export function DaySelector({
         easing: Easing.out(Easing.cubic),
         useNativeDriver: false,
       }),
-      Animated.timing(indicatorY, {
-        toValue: targetY,
-        duration: 280,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: false,
-      }),
       Animated.timing(indicatorWidth, {
         toValue: targetW,
         duration: 280,
@@ -132,14 +107,13 @@ export function DaySelector({
       }),
     ]).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeIndex, gridWidth, rowHeight, hasSelectionInWeek]);
+  }, [activeIndex, itemWidth, hasSelectionInWeek]);
 
   // When the visible week changes, re-snap indicator if selection is in-week.
   useEffect(() => {
-    if (!frame) return;
-    indicatorX.setValue(frame.x + INDICATOR_INSET);
-    indicatorY.setValue(frame.y);
-    indicatorWidth.setValue(Math.max(0, frame.w - INDICATOR_INSET * 2));
+    if (itemWidth === 0 || !hasSelectionInWeek) return;
+    indicatorX.setValue(activeIndex * itemWidth + INDICATOR_INSET);
+    indicatorWidth.setValue(Math.max(0, itemWidth - INDICATOR_INSET * 2));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [days[0]?.date]);
 
@@ -168,13 +142,9 @@ export function DaySelector({
     ]).start();
   };
 
-  const handleGridLayout = (e: LayoutChangeEvent) => {
-    const { width } = e.nativeEvent.layout;
-    setGridWidth((prev) => (prev === width ? prev : width));
-  };
-
   const handleRowLayout = (e: LayoutChangeEvent) => {
-    const { height } = e.nativeEvent.layout;
+    const { width, height } = e.nativeEvent.layout;
+    setRowWidth((prev) => (prev === width ? prev : width));
     setRowHeight((prev) => (prev === height ? prev : height));
   };
 
@@ -184,59 +154,7 @@ export function DaySelector({
     pulse(dateKey);
   };
 
-  const ready = frame != null && rowHeight > 0;
-
-  const renderDay = (d: Day, i: number) => {
-    const active = i === activeIndex;
-    const isToday = d.date === todayKey;
-    const disabled = !!d.disabled;
-    return (
-      <View key={d.date} style={[styles.item, disabled && styles.itemDisabled]}>
-        {isToday && !disabled && (
-          <View
-            pointerEvents="none"
-            style={[styles.todayRing, active && styles.todayRingOnFill]}
-          />
-        )}
-        <PressableScale
-          onPress={() => handleSelect(i, d.date, disabled)}
-          scaleTo={disabled ? 1 : 0.94}
-          style={styles.pressableReset}
-        >
-          <View style={styles.day}>
-            <Text
-              style={[
-                styles.dname,
-                active && styles.dnameActive,
-                disabled && styles.dnameDisabled,
-              ]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.85}
-            >
-              {d.label}
-            </Text>
-            <Animated.Text
-              style={[
-                styles.dnum,
-                isToday && !active && !disabled && styles.dnumToday,
-                active && styles.dnumActive,
-                disabled && styles.dnumDisabled,
-                { transform: [{ scale: getNumberScale(d.date) }] },
-              ]}
-            >
-              {d.num}
-            </Animated.Text>
-            {d.hasLog && !disabled && (
-              <View
-                style={[styles.logDot, active && styles.logDotActive]}
-              />
-            )}
-          </View>
-        </PressableScale>
-      </View>
-    );
-  };
+  const ready = itemWidth > 0 && rowHeight > 0 && hasSelectionInWeek;
 
   return (
     <View style={styles.root}>
@@ -272,7 +190,7 @@ export function DaySelector({
         </Pressable>
       </View>
 
-      <View style={styles.wrap} onLayout={handleGridLayout}>
+      <View style={styles.wrap}>
         {ready && (
           <Animated.View
             pointerEvents="none"
@@ -283,7 +201,6 @@ export function DaySelector({
                 width: indicatorWidth,
                 transform: [
                   { translateX: indicatorX },
-                  { translateY: indicatorY },
                   { scale: indicatorScale },
                 ],
               },
@@ -292,10 +209,62 @@ export function DaySelector({
         )}
 
         <View style={styles.row} onLayout={handleRowLayout}>
-          {days.slice(0, TOP_COUNT).map((d, i) => renderDay(d, i))}
-        </View>
-        <View style={styles.row}>
-          {days.slice(TOP_COUNT).map((d, i) => renderDay(d, i + TOP_COUNT))}
+          {days.map((d, i) => {
+            const active = i === activeIndex;
+            const isToday = d.date === todayKey;
+            const disabled = !!d.disabled;
+            return (
+              <View key={d.date} style={[styles.item, disabled && styles.itemDisabled]}>
+                {/* Absolutely positioned so today's ring matches the selected
+                    pill's geometry without adding border box to the cell. */}
+                {isToday && !disabled && (
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.todayRing,
+                      active && styles.todayRingOnFill,
+                    ]}
+                  />
+                )}
+                <PressableScale
+                  onPress={() => handleSelect(i, d.date, disabled)}
+                  scaleTo={disabled ? 1 : 0.94}
+                  style={styles.pressableReset}
+                >
+                  <View style={styles.day}>
+                    <Text
+                      style={[
+                        styles.dname,
+                        active && styles.dnameActive,
+                        disabled && styles.dnameDisabled,
+                      ]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.85}
+                    >
+                      {d.label}
+                    </Text>
+                    <Animated.Text
+                      style={[
+                        styles.dnum,
+                        isToday && !active && !disabled && styles.dnumToday,
+                        active && styles.dnumActive,
+                        disabled && styles.dnumDisabled,
+                        { transform: [{ scale: getNumberScale(d.date) }] },
+                      ]}
+                    >
+                      {d.num}
+                    </Animated.Text>
+                    {d.hasLog && !disabled && (
+                      <View
+                        style={[styles.logDot, active && styles.logDotActive]}
+                      />
+                    )}
+                  </View>
+                </PressableScale>
+              </View>
+            );
+          })}
         </View>
       </View>
 
@@ -346,7 +315,6 @@ function makeStyles(T: AppTheme) {
       position: "relative",
       width: "100%",
       overflow: "hidden",
-      gap: ROW_GAP,
     },
     row: {
       flexDirection: "row",

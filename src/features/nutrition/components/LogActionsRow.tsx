@@ -1,21 +1,25 @@
 import { ComponentType } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Camera, Search, PenLine, LucideProps } from "lucide-react-native";
+import { PenLine, Search, type LucideProps } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
 import { PressableScale } from "./PressableScale";
+import { AppIcon } from "@/src/components/AppIcon";
+import type { AppIconName } from "@/src/lib/app-icons";
 
 type Action = {
   key: string;
   label: string;
-  icon: ComponentType<LucideProps>;
+  /** Lucide fallback (e.g. Manual). */
+  icon?: ComponentType<LucideProps>;
+  /** Glossy PNG (e.g. Scan food). */
+  appIcon?: AppIconName;
   primary?: boolean;
   onPress: () => void;
 };
 
 export const LOG_ACTION_ICONS = {
-  camera: Camera,
   search: Search,
   manual: PenLine,
 };
@@ -26,17 +30,21 @@ export function LogActionsRow({ actions }: { actions: Action[] }) {
   return (
     <View style={styles.row}>
       {actions.map((a) => {
-        const Icon = a.icon;
+        const LucideIcon = a.icon;
         const content = (
           <>
             <View
               style={[styles.iconWrap, a.primary && styles.iconWrapPrimary]}
             >
-              <Icon
-                size={16}
-                color={a.primary ? T.onAccent : T.accent}
-                strokeWidth={2.2}
-              />
+              {a.appIcon ? (
+                <AppIcon name={a.appIcon} size={28} />
+              ) : LucideIcon ? (
+                <LucideIcon
+                  size={18}
+                  color={a.primary ? T.onAccent : T.accent}
+                  strokeWidth={2.2}
+                />
+              ) : null}
             </View>
             <Text style={[styles.label, a.primary && styles.labelPrimary]}>
               {a.label}
@@ -88,9 +96,9 @@ function makeStyles(T: AppTheme) {
       elevation: 3,
     },
     iconWrap: {
-      width: 34,
-      height: 34,
-      borderRadius: 11,
+      width: 44,
+      height: 44,
+      borderRadius: 14,
       backgroundColor: T.ringGlass,
       borderWidth: 0.5,
       borderColor: T.ringBorder,
@@ -100,12 +108,12 @@ function makeStyles(T: AppTheme) {
       zIndex: 1,
     },
     iconWrapPrimary: {
-      backgroundColor: T.accentLine,
-      borderColor: T.accentLine,
+      backgroundColor: "rgba(255,255,255,0.18)",
+      borderColor: "rgba(255,255,255,0.28)",
     },
     label: {
       fontFamily: T.bodySemi,
-      fontSize: 11,
+      fontSize: 12,
       color: T.white,
       zIndex: 1,
     },

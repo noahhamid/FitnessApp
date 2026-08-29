@@ -129,9 +129,9 @@ export function isOnboardingRetake(params: OnboardingAuthParams): boolean {
   return single(params.retake) === "1";
 }
 
-async function waitForSession(): Promise<boolean> {
+async function waitForSession(maxAttempts = 12): Promise<boolean> {
   const { readSessionToken } = await import("@/src/lib/session-token");
-  for (let attempt = 0; attempt < 12; attempt += 1) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const session = await getSession();
     if (session?.user) return true;
     if (await readSessionToken()) return true;
@@ -147,10 +147,11 @@ async function waitForSession(): Promise<boolean> {
  */
 export async function saveCompletedOnboardingPayload(
   params: OnboardingAuthParams,
+  options?: { sessionWaitAttempts?: number },
 ): Promise<boolean> {
   if (!hasCompletedOnboardingPayload(params)) return false;
 
-  const ready = await waitForSession();
+  const ready = await waitForSession(options?.sessionWaitAttempts ?? 12);
   if (!ready) return false;
   const gender = single(params.gender);
   const experience = single(params.experience);
@@ -194,4 +195,39 @@ export async function saveCompletedOnboardingPayload(
     bodyFatSource: hasBodyFat ? (bodyFatSource ?? "range") : null,
   });
   return true;
+}
+
+/**
+ * Retry saving a completed onboarding draft while the user is already in
+ * the app (e.g. after "confirm later"). Index only runs on cold entry.
+ */
+export async function flushDeferredOnboardingIfNeeded(): Promise<boolean> {
+  const { clearOnboardingDraft, loadOnboardingDraft } = await import(
+    "./onboarding-draft.service"
+  );
+  const { fetchUserProfile } = await import(
+    "@/src/features/profile/services/profile.service"
+  );
+  const { isOnboardingProfileComplete } = await import(
+    "@/src/lib/onboarding-complete"
+  );
+
+  const draft = await loadOnboardingDraft();
+  if (!hasCompletedOnboardingPayload(draft)) return false;
+
+  try {
+    const profile = await fetchUserProfile();
+    if (isOnboardingProfileComplete(profile)) {
+      await clearOnboardingDraft();
+      return true;
+    }
+  } catch {
+    // Still try the draft save below.
+  }
+
+  const saved = await saveCompletedOnboardingPayload(draft, {
+    sessionWaitAttempts: 8,
+  });
+  if (saved) await clearOnboardingDraft();
+  return saved;
 }

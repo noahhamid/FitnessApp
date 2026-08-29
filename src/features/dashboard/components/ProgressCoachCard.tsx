@@ -53,18 +53,24 @@ export function ProgressCoachCard({
 
   const width = 220;
   const height = 26;
-  const step = width / (sparklinePoints.length - 1);
+  const hasSpark = sparklinePoints.length >= 2;
+  const step = hasSpark ? width / (sparklinePoints.length - 1) : 0;
 
   const coords = useMemo(
-    () => sparklinePoints.map((y, i) => ({ x: i * step, y })),
-    [sparklinePoints, step],
+    () =>
+      hasSpark
+        ? sparklinePoints.map((y, i) => ({ x: i * step, y }))
+        : [],
+    [sparklinePoints, step, hasSpark],
   );
   const points = coords.map((p) => `${p.x},${p.y}`).join(" ");
   const lineLength = useMemo(() => polylineLength(coords), [coords]);
 
-  const lastX = (sparklinePoints.length - 1) * step;
-  const lastY = sparklinePoints[sparklinePoints.length - 1];
-  const areaPoints = `0,${height} ${points} ${lastX},${height}`;
+  const lastX = hasSpark ? (sparklinePoints.length - 1) * step : 0;
+  const lastY = hasSpark ? sparklinePoints[sparklinePoints.length - 1] : 0;
+  const areaPoints = hasSpark
+    ? `0,${height} ${points} ${lastX},${height}`
+    : "";
 
   const entrance = useRef(new RNAnimated.Value(0)).current;
   const draw = useRef(new RNAnimated.Value(0)).current;
@@ -77,6 +83,8 @@ export function ProgressCoachCard({
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
+
+    if (!hasSpark) return;
 
     RNAnimated.timing(draw, {
       toValue: 1,
@@ -104,7 +112,7 @@ export function ProgressCoachCard({
     );
     loop.start();
     return () => loop.stop();
-  }, [lineLength]);
+  }, [lineLength, hasSpark]);
 
   const dashOffset = draw.interpolate({
     inputRange: [0, 1],
@@ -143,40 +151,46 @@ export function ProgressCoachCard({
               <Text style={styles.label}>{progressLabel}</Text>
               <Text style={styles.value}>{progressValue}</Text>
             </View>
-            <Svg
-              width="100%"
-              height={height}
-              viewBox={`0 0 ${width} ${height}`}
-              style={styles.spark}
-            >
-              <Defs>
-                <SvgLinearGradient id="sparkFade" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={T.accent} stopOpacity={0.28} />
-                  <Stop offset="1" stopColor={T.accent} stopOpacity={0} />
-                </SvgLinearGradient>
-              </Defs>
-              <Polygon points={areaPoints} fill="url(#sparkFade)" />
-              <AnimatedPolyline
-                points={points}
-                fill="none"
-                stroke={T.accent}
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray={lineLength}
-                strokeDashoffset={dashOffset}
-              />
-              <AnimatedCircle
-                cx={lastX}
-                cy={lastY}
-                r={haloRadius}
-                fill="none"
-                stroke={T.accent}
-                strokeWidth={1}
-                strokeOpacity={haloOpacity}
-              />
-              <Circle cx={lastX} cy={lastY} r={3} fill={T.accent} />
-            </Svg>
+            {hasSpark ? (
+              <Svg
+                width="100%"
+                height={height}
+                viewBox={`0 0 ${width} ${height}`}
+                style={styles.spark}
+              >
+                <Defs>
+                  <SvgLinearGradient id="sparkFade" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor={T.accent} stopOpacity={0.28} />
+                    <Stop offset="1" stopColor={T.accent} stopOpacity={0} />
+                  </SvgLinearGradient>
+                </Defs>
+                <Polygon points={areaPoints} fill="url(#sparkFade)" />
+                <AnimatedPolyline
+                  points={points}
+                  fill="none"
+                  stroke={T.accent}
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeDasharray={lineLength}
+                  strokeDashoffset={dashOffset}
+                />
+                <AnimatedCircle
+                  cx={lastX}
+                  cy={lastY}
+                  r={haloRadius}
+                  fill="none"
+                  stroke={T.accent}
+                  strokeWidth={1}
+                  strokeOpacity={haloOpacity}
+                />
+                <Circle cx={lastX} cy={lastY} r={3} fill={T.accent} />
+              </Svg>
+            ) : (
+              <Text style={styles.sparkEmpty}>
+                Log weight a couple times to unlock your trend.
+              </Text>
+            )}
           </View>
         </View>
 
@@ -241,6 +255,13 @@ function makeStyles(T: AppTheme) {
       letterSpacing: -0.1,
     },
     spark: { marginTop: 8 },
+    sparkEmpty: {
+      marginTop: 8,
+      fontFamily: T.bodyMed,
+      fontSize: 11.5,
+      color: T.faint,
+      lineHeight: 16,
+    },
     divider: {
       height: 1,
       backgroundColor: T.glassBorder,

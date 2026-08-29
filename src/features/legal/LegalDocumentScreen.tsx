@@ -74,7 +74,6 @@ export function LegalDocumentScreen({ document }: Props) {
         showsVerticalScrollIndicator={false}
       >
         <PageHeader
-          eyebrow="Legal"
           subtitle={`Last updated: ${document.updated}`}
           title={document.title}
         />

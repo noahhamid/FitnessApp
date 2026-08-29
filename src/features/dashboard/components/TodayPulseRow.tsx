@@ -1,9 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
-import { Clock, Flame } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
-import { useTheme } from "@/src/context/ThemeContext";
 import type { AppTheme } from "@/src/theme";
-import { STREAK_FLAME_ORANGE } from "@/src/components/StreakPill";
+import { AppIcon } from "@/src/components/AppIcon";
 import { GlassSurface } from "./GlassSurface";
 
 type Props = {
@@ -23,9 +21,7 @@ export function TodayPulseRow({
   isRestDay,
   streakDays,
 }: Props) {
-  const { T, styles: s } = useThemedStyles(makeStyles);
-  const { resolved } = useTheme();
-  const flame = STREAK_FLAME_ORANGE[resolved];
+  const { styles: s } = useThemedStyles(makeStyles);
 
   let durationValue: string;
   let durationLabel: string;
@@ -47,8 +43,8 @@ export function TodayPulseRow({
   return (
     <View style={s.row}>
       <GlassSurface style={s.tile}>
-        <View style={[s.iconWell, s.durationWell]}>
-          <Clock size={14} color={T.accent} strokeWidth={2.2} />
+        <View style={s.iconWell}>
+          <AppIcon name="clock" size={28} />
         </View>
         <View style={s.copy}>
           <Text style={s.value}>{durationValue}</Text>
@@ -57,8 +53,8 @@ export function TodayPulseRow({
       </GlassSurface>
 
       <GlassSurface style={s.tile}>
-        <View style={[s.iconWell, { backgroundColor: T.accentTint }]}>
-          <Flame size={14} color={flame} strokeWidth={2.2} />
+        <View style={s.iconWell}>
+          <AppIcon name="streak" size={28} />
         </View>
         <View style={s.copy}>
           <Text style={s.value}>{streakDays}</Text>
@@ -85,16 +81,11 @@ function makeStyles(T: AppTheme) {
       paddingHorizontal: 12,
     },
     iconWell: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       alignItems: "center",
       justifyContent: "center",
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: T.accentLine,
-    },
-    durationWell: {
-      backgroundColor: T.accentTint,
     },
     copy: { flex: 1, gap: 1 },
     value: {

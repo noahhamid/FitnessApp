@@ -57,7 +57,6 @@ function directedGoal(
   return targetKg < currentKg ? "lose" : "build";
 }
 
-/** @deprecated Prefer estimateTimeline — kept for any leftover call sites. */
 export function paceRateKgPerWeek(
   goalId: WeightGoalId,
   pace: Pace,
@@ -69,7 +68,6 @@ export function paceRateKgPerWeek(
   return RATE[goalId][pace];
 }
 
-/** @deprecated Linear boost — recomposition uses daysPerWeek as PAL instead. */
 export function frequencyBoost(daysPerWeek: number): number {
   const clamped = Math.max(1, Math.min(7, Math.round(daysPerWeek)));
   return 0.85 + 0.05 * clamped;

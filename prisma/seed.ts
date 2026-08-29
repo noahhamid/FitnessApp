@@ -64,6 +64,25 @@ async function main() {
     });
   }
 
+  const keepNames = new Set(EXERCISES.map((e) => e.name));
+  const stale = await prisma.exercise.findMany({
+    where: { name: { notIn: [...keepNames] } },
+    select: {
+      id: true,
+      name: true,
+      _count: { select: { planExercises: true } },
+    },
+  });
+
+  for (const ex of stale) {
+    if (ex._count.planExercises > 0) {
+      console.warn(`Skipping remove "${ex.name}" — still referenced in plans`);
+      continue;
+    }
+    await prisma.exercise.delete({ where: { id: ex.id } });
+    console.log(`Removed stale exercise: ${ex.name}`);
+  }
+
   console.log("Done.");
 }
 

@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, Clock, Flame, Repeat } from "lucide-react-native";
+import { CheckCircle2, ChevronLeft, Clock, Flame, Repeat } from "lucide-react-native";
 import { WorkoutPlan, Exercise } from "../data/workouts";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
@@ -20,6 +20,8 @@ type Props = {
   onBack: () => void;
   onStart: () => void;
   starting?: boolean;
+  /** Today's session already finished — review mode, no Start CTA. */
+  completed?: boolean;
   onExercisePress?: (exercise: Exercise) => void;
 };
 
@@ -34,13 +36,15 @@ const totalMinutesEstimate = (plan: WorkoutPlan) => {
 const ExerciseRow = ({
   exercise,
   index,
+  completed,
   onPress,
 }: {
   exercise: Exercise;
   index: number;
+  completed?: boolean;
   onPress?: () => void;
 }) => {
-  const { styles: s } = useThemedStyles(makeStyles);
+  const { T, styles: s } = useThemedStyles(makeStyles);
 
   return (
   <TouchableOpacity
@@ -51,19 +55,29 @@ const ExerciseRow = ({
     accessibilityRole={onPress ? "button" : undefined}
     accessibilityLabel={`View ${exercise.name}`}
   >
-    <Text style={s.exIndex}>{String(index + 1).padStart(2, "0")}</Text>
+    <Text style={[s.exIndex, completed && s.exIndexDone]}>
+      {completed ? "" : String(index + 1).padStart(2, "0")}
+    </Text>
+    {completed ? (
+      <View style={s.exDoneBadge}>
+        <CheckCircle2 size={16} color={T.accent} strokeWidth={2.4} />
+      </View>
+    ) : null}
     <Image
       source={{ uri: exercise.imageUrl }}
-      style={s.exImage}
+      style={[s.exImage, completed && s.exImageDone]}
       resizeMode="cover"
     />
     <View style={{ flex: 1 }}>
-      <Text style={s.exName}>{exercise.name}</Text>
+      <Text style={[s.exName, completed && s.exNameDone]}>{exercise.name}</Text>
       <Text style={s.exMeta}>
-        {exercise.sets} sets ·{" "}
-        {exercise.type === "reps"
-          ? `${exercise.reps} reps`
-          : `${exercise.durationSec}s hold`}
+        {completed
+          ? "Completed"
+          : `${exercise.sets} sets · ${
+              exercise.type === "reps"
+                ? `${exercise.reps} reps`
+                : `${exercise.durationSec}s hold`
+            }`}
       </Text>
     </View>
   </TouchableOpacity>
@@ -75,6 +89,7 @@ export function WorkoutDetailScreen({
   onBack,
   onStart,
   starting,
+  completed = false,
   onExercisePress,
 }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
@@ -88,15 +103,28 @@ export function WorkoutDetailScreen({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scrollContent}
       >
-        <View style={s.heroWrap}>
+        <View
+          style={[
+            s.heroWrap,
+            { height: 260 + topInset(insets.top) + 52 },
+          ]}
+        >
           <Image
             source={{ uri: plan.coverImage }}
-            style={s.heroImage}
+            style={[
+              s.heroImage,
+              { top: topInset(insets.top) + 52, height: 260 },
+            ]}
             resizeMode="cover"
           />
-          <View style={s.heroOverlay} />
+          <View
+            style={[
+              s.heroOverlay,
+              { top: topInset(insets.top) + 52, height: 260 },
+            ]}
+          />
           <TouchableOpacity
-            style={[s.backBtn, { top: topInset(insets.top) + 8 }]}
+            style={[s.backBtn, { top: topInset(insets.top) + 60 }]}
             activeOpacity={0.8}
             onPress={onBack}
           >
@@ -104,7 +132,9 @@ export function WorkoutDetailScreen({
           </TouchableOpacity>
           <View style={s.heroTextWrap}>
             <View style={s.tagPill}>
-              <Text style={s.tagText}>{plan.tag}</Text>
+              <Text style={s.tagText}>
+                {completed ? `Done · ${plan.tag}` : plan.tag}
+              </Text>
             </View>
             <Text style={s.heroTitle}>{plan.title}</Text>
           </View>
@@ -125,7 +155,9 @@ export function WorkoutDetailScreen({
           </View>
         </View>
 
-        <Text style={s.sectionTitle}>Exercises</Text>
+        <Text style={s.sectionTitle}>
+          {completed ? "Completed exercises" : "Exercises"}
+        </Text>
         <View style={s.exList}>
           {plan.exercises.map((ex, i) => {
             const prev = i > 0 ? plan.exercises[i - 1] : undefined;
@@ -139,6 +171,7 @@ export function WorkoutDetailScreen({
                 <ExerciseRow
                   exercise={ex}
                   index={i}
+                  completed={completed}
                   onPress={
                     onExercisePress ? () => onExercisePress(ex) : undefined
                   }
@@ -150,21 +183,28 @@ export function WorkoutDetailScreen({
       </ScrollView>
 
       <View style={[s.startBar, { bottom: Math.max(insets.bottom, 8) + 16 }]}>
-        <TouchableOpacity
-          style={[s.startBtn, starting && s.startBtnDisabled]}
-          activeOpacity={0.9}
-          onPress={onStart}
-          disabled={starting}
-        >
-          {starting ? (
-            <View style={s.startingRow}>
-              <ActivityIndicator color={T.onAccent} size="small" />
-              <Text style={s.startBtnText}>Starting...</Text>
-            </View>
-          ) : (
-            <Text style={s.startBtnText}>Start Workout</Text>
-          )}
-        </TouchableOpacity>
+        {completed ? (
+          <View style={s.doneBtn}>
+            <CheckCircle2 size={16} color={T.accent} strokeWidth={2.6} />
+            <Text style={s.doneBtnText}>Workout completed</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[s.startBtn, starting && s.startBtnDisabled]}
+            activeOpacity={0.9}
+            onPress={onStart}
+            disabled={starting}
+          >
+            {starting ? (
+              <View style={s.startingRow}>
+                <ActivityIndicator color={T.onAccent} size="small" />
+                <Text style={s.startBtnText}>Starting...</Text>
+              </View>
+            ) : (
+              <Text style={s.startBtnText}>Start Workout</Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -175,10 +215,12 @@ function makeStyles(T: AppTheme) {
   screen: { flex: 1, backgroundColor: T.bg },
   scrollContent: { paddingBottom: 120 },
 
-  heroWrap: { height: 260, position: "relative" },
-  heroImage: { width: "100%", height: "100%" },
+  heroWrap: { position: "relative", backgroundColor: T.bg },
+  heroImage: { position: "absolute", left: 0, right: 0, width: "100%" },
   heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    left: 0,
+    right: 0,
     backgroundColor: "rgba(10,10,10,0.28)",
   },
   backBtn: {
@@ -199,7 +241,7 @@ function makeStyles(T: AppTheme) {
   },
   tagPill: {
     alignSelf: "flex-start",
-    backgroundColor: T.accent,
+    backgroundColor: T.onImageGlass,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -207,26 +249,24 @@ function makeStyles(T: AppTheme) {
   },
   tagText: {
     fontFamily: T.bodyBold,
-    color: T.onAccent,
-    fontSize: 11,
-    letterSpacing: 0.4,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: T.onImage,
   },
   heroTitle: {
     fontFamily: T.displayBold,
+    fontSize: 28,
     color: T.onImage,
-    fontSize: 26,
-    letterSpacing: -0.4,
-    textShadowColor: "rgba(0,0,0,0.35)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
+    letterSpacing: -0.5,
   },
 
   statsRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
     paddingHorizontal: 20,
-    marginTop: 18,
-    marginBottom: 24,
+    marginTop: 16,
+    marginBottom: 8,
   },
   statChip: {
     flex: 1,
@@ -235,53 +275,73 @@ function makeStyles(T: AppTheme) {
     justifyContent: "center",
     gap: 6,
     backgroundColor: T.bgElevated,
-    borderWidth: 0.5,
+    borderRadius: 12,
+    paddingVertical: 10,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: T.glassBorder,
-    borderRadius: 16,
-    paddingVertical: 12,
   },
-  statValue: { fontFamily: T.bodyBold, color: T.white, fontSize: 12 },
+  statValue: {
+    fontFamily: T.bodySemi,
+    fontSize: 12.5,
+    color: T.white,
+  },
 
   sectionTitle: {
     fontFamily: T.displaySemi,
+    fontSize: 16,
     color: T.white,
-    fontSize: 18,
-    letterSpacing: -0.3,
     paddingHorizontal: 20,
-    marginBottom: 12,
+    marginTop: 18,
+    marginBottom: 10,
   },
   blockTitle: {
-    fontFamily: T.displaySemi,
-    color: T.white,
-    fontSize: 16,
-    letterSpacing: -0.2,
-    marginTop: 8,
-    marginBottom: 2,
+    fontFamily: T.bodyBold,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: T.muted,
+    marginBottom: 6,
+    marginTop: 4,
   },
-  exList: { paddingHorizontal: 20, gap: 10 },
+  exList: { paddingHorizontal: 20, gap: 8 },
   exRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: T.bgElevated,
-    borderWidth: 0.5,
-    borderColor: T.glassBorder,
-    borderRadius: 16,
-    padding: 10,
     gap: 12,
+    backgroundColor: T.bgElevated,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: T.glassBorder,
   },
   exIndex: {
     fontFamily: T.bodyBold,
-    color: T.faint,
     fontSize: 12,
-    width: 18,
-    fontVariant: ["tabular-nums"],
-  },
-  exImage: { width: 52, height: 52, borderRadius: 12 },
-  exName: { fontFamily: T.bodySemi, color: T.white, fontSize: 14 },
-  exMeta: {
-    fontFamily: T.bodyMed,
     color: T.muted,
+    width: 22,
+  },
+  exIndexDone: { width: 0 },
+  exDoneBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: T.accentTint,
+  },
+  exImage: { width: 48, height: 48, borderRadius: 10 },
+  exImageDone: { opacity: 0.85 },
+  exName: {
+    fontFamily: T.bodySemi,
+    fontSize: 14,
+    color: T.white,
+  },
+  exNameDone: { color: T.white },
+  exMeta: {
+    fontFamily: T.body,
     fontSize: 12,
+    color: T.muted,
     marginTop: 2,
   },
 
@@ -295,14 +355,29 @@ function makeStyles(T: AppTheme) {
     borderRadius: 999,
     paddingVertical: 16,
     alignItems: "center",
-    shadowColor: "#0A0A0A",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 3,
   },
-  startBtnDisabled: { opacity: 0.75 },
+  startBtnDisabled: { opacity: 0.7 },
+  startBtnText: {
+    fontFamily: T.bodyBold,
+    fontSize: 15,
+    color: T.onAccent,
+  },
   startingRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  startBtnText: { fontFamily: T.bodyBold, color: T.onAccent, fontSize: 15 },
+  doneBtn: {
+    backgroundColor: T.accentTint,
+    borderRadius: 999,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: T.accent,
+  },
+  doneBtnText: {
+    fontFamily: T.bodyBold,
+    fontSize: 15,
+    color: T.accent,
+  },
   });
 }

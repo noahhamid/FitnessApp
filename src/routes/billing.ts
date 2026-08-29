@@ -59,21 +59,36 @@ billingRouter.post("/sync", async (c) => {
     }))
     .find((sub) => pickActivePremium(sub));
 
+  const existing = await prisma.userEntitlement.findUnique({
+    where: { userId: user.id },
+  });
+
+  // Client-reported isActive alone is not a receipt. Refuse elevating
+  // non-premium → premium without a transactionId. Full App Store / Play
+  // verification still required for production-grade anti-spoof.
+  if (active && !active.transactionId && !isEntitlementActive(existing)) {
+    return err(c, "transactionId required to activate entitlement", 400);
+  }
+
+  // Allow deactivate always; allow refresh when already premium or when
+  // client supplies a transaction id (IAP restore path until server verify).
+  const grantPremium = Boolean(active);
+
   const row = await prisma.userEntitlement.upsert({
     where: { userId: user.id },
     create: {
       userId: user.id,
-      isPremium: Boolean(active),
+      isPremium: grantPremium,
       productId: active?.productId ?? null,
       platform,
       transactionId: active?.transactionId ?? null,
       expiresAt: active?.expiresAt ?? null,
     },
     update: {
-      isPremium: Boolean(active),
+      isPremium: grantPremium,
       productId: active?.productId ?? null,
       platform,
-      transactionId: active?.transactionId ?? null,
+      transactionId: active?.transactionId ?? existing?.transactionId ?? null,
       expiresAt: active?.expiresAt ?? null,
     },
   });

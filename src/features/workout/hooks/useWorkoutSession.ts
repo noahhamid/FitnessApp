@@ -39,6 +39,9 @@ function invalidateSessionQueries(qc: QueryClient) {
   // Prefix match — covers ProgressScreen's
   // ["workout-sessions", "recent-for-progress"] and any future list keys.
   void qc.invalidateQueries({ queryKey: ["workout-sessions"] });
+  // Dashboard "completed" + Train "today done" both read history.
+  void qc.invalidateQueries({ queryKey: ["workout-history"] });
+  void qc.invalidateQueries({ queryKey: ["personal-records"] });
 }
 
 /** Drop stale continue-card data immediately so Today doesn't flash the old card. */

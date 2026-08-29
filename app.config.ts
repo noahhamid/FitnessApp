@@ -44,6 +44,11 @@ const config: ExpoConfig = {
     output: "server",
     favicon: "./assets/images/potentialpeak_logo.jpg",
   },
+  // Exercise JPGs (~34MB) load from Cloudinary — keep them off the APK/AAB.
+  assetBundlePatterns: [
+    "assets/**/*",
+    "!assets/images/workout/**",
+  ],
   plugins: [
     "./plugins/with-arm64-only",
     "expo-router",
@@ -81,6 +86,15 @@ const config: ExpoConfig = {
           "Exo uses the camera so you can photograph meals for calorie and macro estimates.",
         photosPermission:
           "Exo accesses your photo library when you pick an existing meal photo to save in the app.",
+      },
+    ],
+    [
+      "expo-camera",
+      {
+        cameraPermission:
+          "Exo uses the camera so you can photograph meals for calorie and macro estimates.",
+        microphonePermission: false,
+        recordAudioAndroid: false,
       },
     ],
     [

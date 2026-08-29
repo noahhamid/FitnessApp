@@ -7,39 +7,23 @@ import {
   Easing,
   Pressable,
 } from "react-native";
-import {
-  CheckCircle2,
-  MinusCircle,
-  Dumbbell,
-  Coffee,
-  UtensilsCrossed,
-  Egg,
-  Moon,
-  Droplet,
-  Minus,
-  Plus,
-  type LucideProps,
-} from "lucide-react-native";
+import { MinusCircle, Minus, Plus } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import { useTheme } from "@/src/context/ThemeContext";
 import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "./PressableScale";
 import { GlassSurface } from "./GlassSurface";
+import { AppIcon } from "@/src/components/AppIcon";
+import type { AppIconName } from "@/src/lib/app-icons";
 
 export type ChecklistDayKind = "today" | "past" | "future";
-export type ChecklistStepKey =
-  | "workout"
-  | "breakfast"
-  | "lunch"
-  | "snack"
-  | "dinner";
+export type ChecklistStepKey = "workout" | "breakfast" | "lunch" | "dinner";
 
 type Props = {
   dayKind: ChecklistDayKind;
   workoutDone: boolean;
   breakfastDone: boolean;
   lunchDone: boolean;
-  snackDone: boolean;
   dinnerDone: boolean;
   waterGlasses: number;
   waterTotal?: number;
@@ -48,55 +32,44 @@ type Props = {
   isLoading?: boolean;
 };
 
-const STEPS: ChecklistStepKey[] = [
-  "workout",
-  "breakfast",
-  "lunch",
-  "snack",
-  "dinner",
-];
+const STEPS: ChecklistStepKey[] = ["workout", "breakfast", "lunch", "dinner"];
 
 const STEP_LABEL: Record<ChecklistStepKey, string> = {
   workout: "Workout",
   breakfast: "Breakfast",
   lunch: "Lunch",
-  snack: "Snack",
   dinner: "Dinner",
 };
 
-const STEP_ICON: Record<ChecklistStepKey, React.ComponentType<LucideProps>> = {
-  workout: Dumbbell,
-  breakfast: Coffee,
-  lunch: UtensilsCrossed,
-  snack: Egg,
-  dinner: Moon,
+/** Map checklist rows onto the generated glossy icon set. */
+const STEP_APP_ICON: Record<ChecklistStepKey, AppIconName> = {
+  workout: "train",
+  breakfast: "breakfast",
+  lunch: "meals",
+  dinner: "sleep",
 };
 
 const STEP_SEMANTIC = {
   breakfast: {
-    light: { bg: "rgba(232,140,60,0.16)", border: "rgba(232,140,60,0.32)", icon: "#D4842A" },
-    dark: { bg: "rgba(255,170,80,0.20)", border: "rgba(255,170,80,0.36)", icon: "#FFB35C" },
+    light: { bg: "rgba(232,140,60,0.16)", border: "rgba(232,140,60,0.32)" },
+    dark: { bg: "rgba(255,170,80,0.20)", border: "rgba(255,170,80,0.36)" },
   },
   lunch: {
-    light: { bg: "rgba(46,150,90,0.14)", border: "rgba(46,150,90,0.30)", icon: "#2A8F52" },
-    dark: { bg: "rgba(80,220,140,0.18)", border: "rgba(80,220,140,0.34)", icon: "#5EE09A" },
-  },
-  snack: {
-    light: { bg: "rgba(200,120,70,0.14)", border: "rgba(200,120,70,0.30)", icon: "#C46A2E" },
-    dark: { bg: "rgba(255,170,110,0.18)", border: "rgba(255,170,110,0.34)", icon: "#FFB06A" },
+    light: { bg: "rgba(46,150,90,0.14)", border: "rgba(46,150,90,0.30)" },
+    dark: { bg: "rgba(80,220,140,0.18)", border: "rgba(80,220,140,0.34)" },
   },
   dinner: {
-    light: { bg: "rgba(80,90,190,0.14)", border: "rgba(80,90,190,0.30)", icon: "#4A55B0" },
-    dark: { bg: "rgba(130,145,255,0.18)", border: "rgba(130,145,255,0.34)", icon: "#9AA6FF" },
+    light: { bg: "rgba(80,90,190,0.14)", border: "rgba(80,90,190,0.30)" },
+    dark: { bg: "rgba(130,145,255,0.18)", border: "rgba(130,145,255,0.34)" },
   },
 } as const;
 
 const WATER = {
-  light: { bg: "rgba(64,140,230,0.14)", border: "rgba(64,140,230,0.28)", icon: "#2F7FD4" },
-  dark: { bg: "rgba(70,150,255,0.18)", border: "rgba(70,150,255,0.32)", icon: "#6BA8FF" },
+  light: { bg: "rgba(64,140,230,0.14)", border: "rgba(64,140,230,0.28)" },
+  dark: { bg: "rgba(70,150,255,0.18)", border: "rgba(70,150,255,0.32)" },
 } as const;
 
-type WellColors = { bg: string; border: string; icon: string };
+type WellColors = { bg: string; border: string };
 
 function stepWellColors(
   key: ChecklistStepKey,
@@ -104,7 +77,7 @@ function stepWellColors(
   T: AppTheme,
 ): WellColors {
   if (key === "workout") {
-    return { bg: T.accentTint, border: T.accentLine, icon: T.accent };
+    return { bg: T.accentTint, border: T.accentLine };
   }
   return STEP_SEMANTIC[key][resolved];
 }
@@ -113,7 +86,6 @@ export function nextChecklistAction(input: {
   workoutDone: boolean;
   breakfastDone: boolean;
   lunchDone: boolean;
-  snackDone: boolean;
   dinnerDone: boolean;
   isRestDay?: boolean;
 }): { key: ChecklistStepKey | "complete"; label: string } {
@@ -122,7 +94,6 @@ export function nextChecklistAction(input: {
   }
   if (!input.breakfastDone) return { key: "breakfast", label: "Log breakfast" };
   if (!input.lunchDone) return { key: "lunch", label: "Log lunch" };
-  if (!input.snackDone) return { key: "snack", label: "Log snack" };
   if (!input.dinnerDone) return { key: "dinner", label: "Log dinner" };
   return { key: "complete", label: "Day complete" };
 }
@@ -132,7 +103,6 @@ export function TodayChecklistCard({
   workoutDone,
   breakfastDone,
   lunchDone,
-  snackDone,
   dinnerDone,
   waterGlasses,
   waterTotal = 8,
@@ -148,11 +118,9 @@ export function TodayChecklistCard({
     workout: workoutDone,
     breakfast: breakfastDone,
     lunch: lunchDone,
-    snack: snackDone,
     dinner: dinnerDone,
   };
-  const complete =
-    workoutDone && breakfastDone && lunchDone && snackDone && dinnerDone;
+  const complete = workoutDone && breakfastDone && lunchDone && dinnerDone;
   const currentStep: ChecklistStepKey | null =
     STEPS.find((k) => !doneMap[k]) ?? null;
   const isActionable = dayKind === "today" && !complete && !isLoading;
@@ -195,7 +163,7 @@ export function TodayChecklistCard({
       <View style={s.headerRow}>
         <Text style={s.headline}>{headline}</Text>
         {complete && !isLoading ? (
-          <CheckCircle2 size={16} color={T.accent} strokeWidth={2.2} />
+          <AppIcon name="check" size={28} />
         ) : dayKind === "past" && !complete ? (
           <MinusCircle size={16} color={T.faint} strokeWidth={2.2} />
         ) : null}
@@ -205,7 +173,7 @@ export function TodayChecklistCard({
         {STEPS.map((key) => {
           const done = doneMap[key];
           const colors = stepWellColors(key, resolved, T);
-          const StepIcon = STEP_ICON[key];
+          const iconName = STEP_APP_ICON[key];
           const isFocus = isActionable && currentStep === key;
           const row = (
             <Animated.View
@@ -223,17 +191,16 @@ export function TodayChecklistCard({
                     : s.stepWellPending,
                 ]}
               >
-                <StepIcon
-                  size={13}
-                  color={done ? colors.icon : T.faint}
-                  strokeWidth={2.2}
+                <AppIcon
+                  name={iconName}
+                  size={28}
                 />
               </View>
               <Text style={[s.stepLabel, done && s.stepLabelDone]}>
                 {STEP_LABEL[key]}
               </Text>
               {done ? (
-                <CheckCircle2 size={14} color={T.accent} strokeWidth={2.2} />
+                <AppIcon name="check" size={24} />
               ) : (
                 <View style={s.openDot} />
               )}
@@ -272,7 +239,7 @@ export function TodayChecklistCard({
             },
           ]}
         >
-          <Droplet size={13} color={waterColors.icon} strokeWidth={2.2} />
+          <AppIcon name="water" size={28} />
         </View>
         <View style={s.waterCopy}>
           <Text style={s.stepLabel}>Water</Text>
@@ -337,9 +304,9 @@ function makeStyles(T: AppTheme) {
     },
     stepRowDone: { opacity: 0.92 },
     stepWell: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       borderWidth: StyleSheet.hairlineWidth,
       alignItems: "center",
       justifyContent: "center",

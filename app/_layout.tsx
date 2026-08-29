@@ -43,7 +43,14 @@ import { Sentry, sentryEnabled } from "@/src/lib/sentry";
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      retry: 1,
+    },
+  },
+});
 
 function AppShell() {
   const { resolved, theme } = useTheme();
@@ -120,11 +127,11 @@ function RootLayout() {
   // Keep the native splash up until index / LoadingScreen / welcome hide it.
   // Do not swap in a second logo plate while fonts load (guests go to welcome).
   useEffect(() => {
-  if (!loaded && !err) return;
-  void SplashScreen.hideAsync().catch(() => undefined);
-}, [loaded, err]);
+    if (!loaded && !err) return;
+    void SplashScreen.hideAsync().catch(() => undefined);
+  }, [loaded, err]);
 
-if (!loaded && !err) return <LoadingScreen />;
+  if (!loaded && !err) return <LoadingScreen />;
 
   return (
     <SafeAreaProvider>

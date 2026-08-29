@@ -237,7 +237,6 @@ export function NotificationHistoryScreen() {
         showsVerticalScrollIndicator={false}
       >
         <PageHeader
-          eyebrow="Activity"
           subtitle="Meal and workout reminder history on this device"
           title="Reminder logs"
         />

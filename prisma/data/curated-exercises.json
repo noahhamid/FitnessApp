@@ -72,13 +72,6 @@
     "instructions": "Lie down on a decline bench with a dumbbell in one hand, resting it on your thigh. Using your thigh to help raise the dumbbell, lift it up to shoulder width with your palm facing your torso. Rotate your wrist so that the palm of your hand is facing forward. As you breathe in, lower the dumbbell slowly to the side until you feel a stretch in your chest. Exhale and use your chest muscles to bring the dumbbell back up to the starting position. Repeat for the desired number of repetitions, then switch arms."
   },
   {
-    "name": "Dumbbell Decline Twist Fly",
-    "muscleGroup": "chest",
-    "movementPattern": "carry",
-    "minEquipment": "home_dumbbells",
-    "instructions": "Lie down on a decline bench with your head lower than your hips. Hold a dumbbell in each hand with your palms facing each other and your arms extended straight up over your chest. Lower the dumbbells out to the sides in a wide arc until you feel a stretch in your chest. As you lower the dumbbells, twist your wrists so that your palms face forward at the bottom of the movement. Reverse the motion and bring the dumbbells back up to the starting position, squeezing your chest muscles at the top. Repeat for the desired number of repetitions."
-  },
-  {
     "name": "Dumbbell Incline Breeding",
     "muscleGroup": "chest",
     "movementPattern": "push",
@@ -112,20 +105,6 @@
     "movementPattern": "push",
     "minEquipment": "full_gym",
     "instructions": "Lie down on a decline bench with your head lower than your hips and your feet secured. Hold the barbell with a pronated grip (palms facing away from you) and your hands slightly wider than shoulder-width apart. Extend your arms above your chest, keeping a slight bend in your elbows. Lower the barbell in an arc motion behind your head, feeling a stretch in your chest and shoulders. Pause for a moment, then return the barbell to the starting position by reversing the motion. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Barbell Guillotine Bench Press",
-    "muscleGroup": "chest",
-    "movementPattern": "push",
-    "minEquipment": "full_gym",
-    "instructions": "Lie flat on a bench with your feet flat on the ground and your back pressed against the bench. Grasp the barbell with an overhand grip, slightly wider than shoulder-width apart. Lower the barbell slowly towards your neck, keeping your elbows pointed outwards. Pause for a moment when the barbell is just above your neck. Push the barbell back up to the starting position, fully extending your arms. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Barbell Wide Bench Press",
-    "muscleGroup": "chest",
-    "movementPattern": "push",
-    "minEquipment": "full_gym",
-    "instructions": "Lie flat on a bench with your feet flat on the ground and your back pressed against the bench. Grasp the barbell with a wide grip, slightly wider than shoulder-width apart. Lift the barbell off the rack and hold it directly above your chest with your arms fully extended. Lower the barbell slowly towards your chest, keeping your elbows slightly flared out. Pause for a moment when the barbell touches your chest, then push it back up to the starting position. Repeat for the desired number of repetitions."
   },
   {
     "name": "Cable Bench Press",
@@ -352,27 +331,6 @@
     "instructions": "Stand with your feet shoulder-width apart and hold a dumbbell in each hand. Bend your knees slightly and hinge forward at the hips, keeping your back straight. Extend your arms straight down towards the ground, palms facing each other. Keeping a slight bend in your elbows, lift your arms out to the sides and squeeze your shoulder blades together. Pause for a moment at the top, then slowly lower your arms back down to the starting position. Repeat for the desired number of repetitions."
   },
   {
-    "name": "Dumbbell Rear Lateral Raise",
-    "muscleGroup": "shoulders",
-    "movementPattern": "push",
-    "minEquipment": "home_dumbbells",
-    "instructions": "Stand with your feet shoulder-width apart and hold a dumbbell in each hand, palms facing your body. Bend your knees slightly and hinge forward at the hips, keeping your back straight and core engaged. Raise your arms out to the sides, keeping a slight bend in your elbows, until they are parallel to the floor. Pause for a moment at the top, then slowly lower your arms back down to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Dumbbell Reverse Fly",
-    "muscleGroup": "shoulders",
-    "movementPattern": "pull",
-    "minEquipment": "home_dumbbells",
-    "instructions": "Stand with your feet shoulder-width apart and hold a dumbbell in each hand. Bend your knees slightly and hinge forward at the hips, keeping your back straight. Extend your arms straight down in front of you, palms facing each other. Keeping a slight bend in your elbows, raise your arms out to the sides until they are parallel to the ground. Pause for a moment at the top, then slowly lower your arms back down to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Dumbbell Rotation Reverse Fly",
-    "muscleGroup": "shoulders",
-    "movementPattern": "pull",
-    "minEquipment": "home_dumbbells",
-    "instructions": "Stand with your feet shoulder-width apart and hold a dumbbell in each hand, palms facing inwards. Bend your knees slightly and hinge forward at the hips, keeping your back straight and chest up. Raise your arms out to the sides, keeping a slight bend in your elbows, until they are parallel to the floor. Rotate your arms so that your palms are facing downwards. Slowly lower your arms back to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
     "name": "Dumbbell Seated Shoulder Press",
     "muscleGroup": "shoulders",
     "movementPattern": "push",
@@ -450,13 +408,6 @@
     "instructions": "Stand with your feet shoulder-width apart, knees slightly bent, and hold the cable attachment with an overhand grip. Keep your back straight and your core engaged throughout the exercise. Pull the cable attachment straight up towards your chin, leading with your elbows. Pause for a moment at the top, squeezing your shoulder blades together. Slowly lower the cable attachment back down to the starting position. Repeat for the desired number of repetitions."
   },
   {
-    "name": "Bodyweight Drop Jump Squat",
-    "muscleGroup": "quads",
-    "movementPattern": "squat",
-    "minEquipment": "bodyweight",
-    "instructions": "Stand with your feet shoulder-width apart. Lower your body into a squat position by bending your knees and pushing your hips back. Jump up explosively, extending your hips, knees, and ankles. While in mid-air, quickly bring your feet together. Land softly on the balls of your feet and immediately drop back into a squat position. Repeat for the desired number of repetitions."
-  },
-  {
     "name": "Curtsey Squat",
     "muscleGroup": "quads",
     "movementPattern": "squat",
@@ -525,13 +476,6 @@
     "movementPattern": "squat",
     "minEquipment": "home_dumbbells",
     "instructions": "Stand with your feet shoulder-width apart, holding a dumbbell in each hand at your sides. Lower your body into a squat position by bending your knees and pushing your hips back. As you reach the bottom of the squat, explode upward, jumping off the ground. While in the air, quickly switch the position of your feet, landing with your opposite foot forward. Immediately lower your body back into a squat position and repeat the jump, switching your feet again. Continue alternating the position of your feet with each jump for the desired number of repetitions."
-  },
-  {
-    "name": "Dumbbell Rear Lunge",
-    "muscleGroup": "quads",
-    "movementPattern": "squat",
-    "minEquipment": "home_dumbbells",
-    "instructions": "Stand with your feet shoulder-width apart, holding a dumbbell in each hand. Take a step backward with your right foot, lowering your body into a lunge position. Bend your left knee and lower your body until your left thigh is parallel to the ground. Pause for a moment, then push through your left heel to return to the starting position. Repeat on the other side, stepping back with your left foot."
   },
   {
     "name": "Dumbbell Single Leg Squat",
@@ -658,20 +602,6 @@
     "instructions": "Stand with your feet hip-width apart, holding a dumbbell in your right hand. Shift your weight onto your left leg and lift your right foot slightly off the ground. Keeping your back straight, hinge forward at the hips and lower the dumbbell towards the ground. At the same time, extend your right leg straight behind you, maintaining a slight bend in your left knee. Lower the dumbbell until your torso and right leg are parallel to the ground. Pause for a moment, then engage your glutes and hamstrings to return to the starting position. Repeat for the desired number of repetitions, then switch sides."
   },
   {
-    "name": "Dumbbell Stiff Leg Deadlift",
-    "muscleGroup": "hamstrings",
-    "movementPattern": "hinge",
-    "minEquipment": "home_dumbbells",
-    "instructions": "Stand with your feet shoulder-width apart, holding a dumbbell in each hand with an overhand grip. Keeping your back straight and your core engaged, hinge at the hips and lower the dumbbells towards the ground, allowing a slight bend in your knees. Lower the dumbbells until you feel a stretch in your hamstrings, then squeeze your glutes and push through your heels to return to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Dumbbell Straight Leg Deadlift",
-    "muscleGroup": "hamstrings",
-    "movementPattern": "hinge",
-    "minEquipment": "home_dumbbells",
-    "instructions": "Stand with your feet shoulder-width apart, holding a dumbbell in each hand with an overhand grip. Keeping your back straight and your core engaged, hinge at the hips and lower the dumbbells towards the ground, allowing your torso to lean forward. Continue lowering the dumbbells until you feel a stretch in your hamstrings, keeping your knees slightly bent. Pause for a moment at the bottom, then engage your glutes and hamstrings to lift your torso back up to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
     "name": "Barbell Deadlift",
     "muscleGroup": "hamstrings",
     "movementPattern": "hinge",
@@ -684,13 +614,6 @@
     "movementPattern": "hinge",
     "minEquipment": "full_gym",
     "instructions": "Start by standing with your feet shoulder-width apart and the barbell resting on your upper back. Keeping your back straight and your core engaged, hinge forward at the hips, pushing your buttocks back as if you were trying to touch the wall behind you with your glutes. Lower your torso until it is parallel to the ground, feeling a stretch in your hamstrings. Pause for a moment, then return to the starting position by squeezing your glutes and pushing your hips forward. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Barbell Romanian Deadlift",
-    "muscleGroup": "hamstrings",
-    "movementPattern": "hinge",
-    "minEquipment": "full_gym",
-    "instructions": "Stand with your feet shoulder-width apart and your toes pointing forward. Hold the barbell with an overhand grip, hands slightly wider than shoulder-width apart. Bend at the hips, keeping your back straight and your knees slightly bent. Lower the barbell towards the ground, keeping it close to your body. Feel the stretch in your hamstrings as you lower the barbell. Once you feel a stretch in your hamstrings, push your hips forward and stand up straight. Squeeze your glutes at the top of the movement. Lower the barbell back down to the starting position and repeat for the desired number of repetitions."
   },
   {
     "name": "Barbell Single Leg Deadlift",
@@ -721,26 +644,11 @@
     "instructions": "Stand with your feet shoulder-width apart and your arms by your sides. Bend forward at the waist, keeping your back straight and your knees slightly bent. Reach down towards your toes with your hands, keeping your legs as straight as possible. Pause for a moment at the bottom, then slowly return to the starting position. Repeat for the desired number of repetitions."
   },
   {
-    "name": "Bench Hip Extension",
-    "needsProp": true,
-    "muscleGroup": "glutes",
-    "movementPattern": "hinge",
-    "minEquipment": "bodyweight",
-    "instructions": "Sit on a bench with your back against the bench and your feet flat on the ground. Place your hands on the bench for support. Engage your glutes and hamstrings, then lift your hips off the bench until your body forms a straight line from your knees to your shoulders. Pause for a moment at the top, then slowly lower your hips back down to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
     "name": "Bent Knee Lying Twist",
     "muscleGroup": "glutes",
     "movementPattern": "carry",
     "minEquipment": "bodyweight",
     "instructions": "Lie flat on your back with your knees bent and feet flat on the ground. Extend your arms out to the sides, perpendicular to your body. Keeping your knees together, slowly lower them to one side, aiming to touch the ground with your knees. Pause for a moment, then engage your core and slowly lift your knees back to the starting position. Repeat the movement to the other side. Continue alternating sides for the desired number of repetitions."
-  },
-  {
-    "name": "Glute Bridge March",
-    "muscleGroup": "glutes",
-    "movementPattern": "hinge",
-    "minEquipment": "bodyweight",
-    "instructions": "Lie flat on your back with your knees bent and feet flat on the ground. Engage your glutes and lift your hips off the ground, forming a straight line from your knees to your shoulders. While keeping your hips lifted, lift one foot off the ground and bring your knee towards your chest. Lower your foot back to the ground and repeat the movement with the other leg. Continue alternating legs in a marching motion while maintaining the bridge position. Repeat for the desired number of repetitions."
   },
   {
     "name": "Glute Bridge Two Legs on Bench",
@@ -756,14 +664,6 @@
     "movementPattern": "hinge",
     "minEquipment": "bodyweight",
     "instructions": "Lie flat on your back with your knees bent and feet flat on the ground. Place your arms by your sides, palms facing down. Engage your glutes and core, then lift your hips off the ground until your body forms a straight line from your knees to your shoulders. Pause for a moment at the top, squeezing your glutes. Slowly lower your hips back down to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Rear Decline Bridge",
-    "needsProp": true,
-    "muscleGroup": "glutes",
-    "movementPattern": "hinge",
-    "minEquipment": "bodyweight",
-    "instructions": "Lie on your back with your feet flat on the ground and your knees bent. Place your arms by your sides with your palms facing down. Engage your glutes and hamstrings, and lift your hips off the ground until your body forms a straight line from your knees to your shoulders. Hold this position for a few seconds, then slowly lower your hips back down to the starting position. Repeat for the desired number of repetitions."
   },
   {
     "name": "Band Bent-over Hip Extension",
@@ -829,27 +729,6 @@
     "instructions": "Start by sitting on the edge of a bench with your upper back resting against it and your feet flat on the ground, hip-width apart. Place a barbell across your hips, holding it securely with both hands. Engage your glutes and core muscles, then press through your heels to lift your hips off the bench, creating a straight line from your knees to your shoulders. Pause for a moment at the top, squeezing your glutes. Slowly lower your hips back down to the starting position. Repeat for the desired number of repetitions."
   },
   {
-    "name": "Barbell Rack Pull",
-    "muscleGroup": "glutes",
-    "movementPattern": "hinge",
-    "minEquipment": "full_gym",
-    "instructions": "Set up a barbell on a rack at knee height. Stand with your feet shoulder-width apart, toes pointing slightly outwards. Bend at the hips and knees to lower yourself down and grip the barbell with an overhand grip, hands shoulder-width apart. Engage your core and lift the barbell by extending your hips and knees, pulling your shoulders back and squeezing your glutes at the top. Lower the barbell back down to the starting position by bending at the hips and knees. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Barbell Seated Good Morning",
-    "muscleGroup": "glutes",
-    "movementPattern": "hinge",
-    "minEquipment": "full_gym",
-    "instructions": "Sit on a bench with your feet flat on the ground and a barbell resting on your upper back. Keep your back straight and your chest up. Slowly hinge forward at the hips, lowering your torso towards the ground. Pause for a moment at the bottom, then push through your heels to return to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Barbell Stiff Leg Good Morning",
-    "muscleGroup": "glutes",
-    "movementPattern": "hinge",
-    "minEquipment": "full_gym",
-    "instructions": "Stand with your feet shoulder-width apart and your knees slightly bent. Hold the barbell across your upper back, resting it on your traps. Keeping your back straight, hinge forward at the hips, pushing your glutes back. Lower your torso until it is parallel to the ground, feeling a stretch in your hamstrings. Engage your glutes and hamstrings to return to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
     "name": "Cable Standing Hip Extension",
     "muscleGroup": "glutes",
     "movementPattern": "hinge",
@@ -891,21 +770,6 @@
     "movementPattern": "squat",
     "minEquipment": "bodyweight",
     "instructions": "Stand with your feet hip-width apart and place your hands on a wall or sturdy object for balance. Lift one foot off the ground and balance on the other foot. Slowly raise your heel off the ground, lifting your body up onto the ball of your foot. Pause for a moment at the top, then slowly lower your heel back down to the starting position. Repeat for the desired number of repetitions, then switch legs and repeat."
-  },
-  {
-    "name": "Standing Calf Raise (on a Staircase)",
-    "needsProp": true,
-    "muscleGroup": "calves",
-    "movementPattern": "squat",
-    "minEquipment": "bodyweight",
-    "instructions": "Stand on the edge of a step or a sturdy platform with your heels hanging off and your toes on the step. Hold onto a railing or wall for balance if needed. Slowly raise your heels as high as possible, lifting your body weight onto the balls of your feet. Pause for a moment at the top, then slowly lower your heels back down to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Standing Calves",
-    "muscleGroup": "calves",
-    "movementPattern": "squat",
-    "minEquipment": "bodyweight",
-    "instructions": "Stand with your feet shoulder-width apart, toes pointing forward. Raise your heels off the ground as high as possible, standing on your toes. Hold the position for a moment, then slowly lower your heels back down to the starting position. Repeat for the desired number of repetitions."
   },
   {
     "name": "Band Single Leg Calf Raise",
@@ -992,35 +856,12 @@
     "instructions": "Stand facing a cable machine with your feet shoulder-width apart. Hold onto the cable machine handles or attach a cable ankle strap to your ankles. Raise your heels off the ground by extending your ankles as high as possible. Pause for a moment at the top, then slowly lower your heels back down to the starting position. Repeat for the desired number of repetitions."
   },
   {
-    "name": "Cable Standing One Leg Calf Raise",
-    "muscleGroup": "calves",
-    "movementPattern": "squat",
-    "minEquipment": "full_gym",
-    "instructions": "Stand facing a cable machine with your feet shoulder-width apart. Hold onto the cable machine for support. Lift one leg off the ground and balance on the other leg. Slowly raise your heel off the ground, lifting your body up onto your toes. Pause for a moment at the top, then slowly lower your heel back down to the starting position. Repeat for the desired number of repetitions, then switch legs."
-  },
-  {
     "name": "Biceps Leg Concentration Curl",
     "needsProp": true,
     "muscleGroup": "biceps",
     "movementPattern": "pull",
     "minEquipment": "bodyweight",
     "instructions": "Sit on a bench with your legs spread apart and your feet flat on the ground. Hold a dumbbell in one hand and place your elbow on the inside of your thigh, just above the knee. With your palm facing up, curl the dumbbell towards your shoulder while keeping your upper arm stationary. Squeeze your biceps at the top of the movement, then slowly lower the dumbbell back to the starting position. Repeat for the desired number of repetitions, then switch arms."
-  },
-  {
-    "name": "Biceps Narrow Pull-ups",
-    "needsProp": true,
-    "muscleGroup": "biceps",
-    "movementPattern": "pull",
-    "minEquipment": "bodyweight",
-    "instructions": "Hang from a pull-up bar with your palms facing towards you and your hands shoulder-width apart. Engage your core and pull yourself up towards the bar, focusing on using your biceps to lift your body. Pause for a moment at the top, then slowly lower yourself back down to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Biceps Pull-up",
-    "needsProp": true,
-    "muscleGroup": "biceps",
-    "movementPattern": "pull",
-    "minEquipment": "bodyweight",
-    "instructions": "Hang from a pull-up bar with your palms facing away from you and your hands shoulder-width apart. Engage your core and pull yourself up by bending your elbows, bringing your chest towards the bar. Pause at the top of the movement, then slowly lower yourself back down to the starting position. Repeat for the desired number of repetitions."
   },
   {
     "name": "Bodyweight Side Lying Biceps Curl",
@@ -1091,13 +932,6 @@
     "movementPattern": "pull",
     "minEquipment": "home_dumbbells",
     "instructions": "Lie flat on a bench with a dumbbell in each hand, palms facing up and arms fully extended. Keeping your upper arms stationary, exhale and curl the weights while contracting your biceps. Continue to raise the weights until your biceps are fully contracted and the dumbbells are at shoulder level. Hold the contracted position for a brief pause as you squeeze your biceps. Inhale and slowly begin to lower the dumbbells back to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Barbell Alternate Biceps Curl",
-    "muscleGroup": "biceps",
-    "movementPattern": "pull",
-    "minEquipment": "full_gym",
-    "instructions": "Stand up straight with your feet shoulder-width apart and hold a barbell in each hand, palms facing forward. Keep your upper arms stationary and exhale as you curl the weights while contracting your biceps. Continue to raise the barbells until your biceps are fully contracted and the barbells are at shoulder level. Hold the contracted position for a brief pause as you squeeze your biceps. Inhale as you slowly begin to lower the barbells back to the starting position. Repeat for the desired number of repetitions, alternating arms."
   },
   {
     "name": "Barbell Curl",
@@ -1173,28 +1007,12 @@
     "instructions": "Stand facing away from a bench or chair, with your feet shoulder-width apart. Place one hand on the bench or chair behind you, fingers pointing towards your body. Extend your legs out in front of you, keeping your heels on the ground. Bend your elbows and lower your body towards the ground, keeping your back close to the bench or chair. Pause for a moment at the bottom, then push through your palms to straighten your arms and return to the starting position. Repeat for the desired number of repetitions, then switch sides and repeat with the other arm."
   },
   {
-    "name": "Reverse Dip",
-    "needsProp": true,
-    "muscleGroup": "triceps",
-    "movementPattern": "push",
-    "minEquipment": "bodyweight",
-    "instructions": "Position yourself between two parallel bars with your arms fully extended and your body straight. Lower your body by bending your elbows until your upper arms are parallel to the ground. Pause for a moment, then push yourself back up to the starting position by straightening your arms. Repeat for the desired number of repetitions."
-  },
-  {
     "name": "Three Bench Dip",
     "needsProp": true,
     "muscleGroup": "triceps",
     "movementPattern": "push",
     "minEquipment": "bodyweight",
     "instructions": "Sit on a bench with your hands gripping the edge, fingers pointing forward. Slide your butt off the bench, supporting your weight with your hands. Bend your elbows and lower your body until your upper arms are parallel to the ground. Push yourself back up to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Triceps Dip",
-    "needsProp": true,
-    "muscleGroup": "triceps",
-    "movementPattern": "push",
-    "minEquipment": "bodyweight",
-    "instructions": "Sit on the edge of a bench or chair with your hands gripping the edge, fingers pointing forward. Slide your butt off the bench, supporting your weight with your hands. Bend your elbows and lower your body towards the ground, keeping your back close to the bench. Pause for a moment at the bottom, then push yourself back up to the starting position. Repeat for the desired number of repetitions."
   },
   {
     "name": "Dumbbell Incline Two Arm Extension",
@@ -1251,13 +1069,6 @@
     "movementPattern": "push",
     "minEquipment": "full_gym",
     "instructions": "Set up an incline bench at a 45-degree angle. Lie back on the bench and grasp the barbell with a reverse grip, hands slightly wider than shoulder-width apart. Unrack the barbell and lower it towards your upper chest, keeping your elbows tucked in. Pause for a moment at the bottom, then push the barbell back up to the starting position. Repeat for the desired number of repetitions."
-  },
-  {
-    "name": "Barbell Lying Extension",
-    "muscleGroup": "triceps",
-    "movementPattern": "push",
-    "minEquipment": "full_gym",
-    "instructions": "Lie flat on a bench with your feet flat on the ground and your head at the end of the bench. Hold the barbell with an overhand grip, hands shoulder-width apart, and extend your arms straight up over your chest. Keeping your upper arms stationary, slowly lower the barbell towards your forehead by bending your elbows. Pause for a moment, then extend your arms back up to the starting position. Repeat for the desired number of repetitions."
   },
   {
     "name": "Barbell Lying Triceps Extension",

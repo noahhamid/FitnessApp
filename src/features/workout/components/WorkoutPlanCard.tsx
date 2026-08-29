@@ -11,7 +11,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Dumbbell, Play } from "lucide-react-native";
+import { Dumbbell, Play, CheckCircle2 } from "lucide-react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 
@@ -24,6 +24,8 @@ type Props = {
   imageUrl: string;
   /** When set, shows the accent CTA under the metadata (Today). Omit on browse/full-plan. */
   ctaLabel?: string;
+  /** Today's lifting session already finished — show completed state instead of Start. */
+  completed?: boolean;
   onPress?: () => void;
   entranceDelay?: number;
   style?: StyleProp<ViewStyle>;
@@ -46,6 +48,7 @@ function WorkoutPlanCardBase({
   muscles,
   imageUrl,
   ctaLabel,
+  completed = false,
   onPress,
   entranceDelay = 0,
   style,
@@ -194,17 +197,28 @@ function WorkoutPlanCardBase({
 
             <View style={s.tagPill}>
               <Text style={s.tagText} numberOfLines={1}>
-                {tag}
+                {completed ? `Done · ${tag}` : tag}
               </Text>
             </View>
 
-            <View style={s.playBtn} pointerEvents="none">
-              <Play
-                size={22}
-                color={T.onImage}
-                strokeWidth={2.4}
-                fill={T.onImage}
-              />
+            <View
+              style={[s.playBtn, completed && s.playBtnDone]}
+              pointerEvents="none"
+            >
+              {completed ? (
+                <CheckCircle2
+                  size={22}
+                  color={T.accent}
+                  strokeWidth={2.4}
+                />
+              ) : (
+                <Play
+                  size={22}
+                  color={T.onImage}
+                  strokeWidth={2.4}
+                  fill={T.onImage}
+                />
+              )}
             </View>
           </View>
         </Pressable>
@@ -224,7 +238,12 @@ function WorkoutPlanCardBase({
             {meta}
           </Text>
 
-          {ctaLabel ? (
+          {completed ? (
+            <View style={s.doneCta}>
+              <CheckCircle2 size={14} color={T.accent} strokeWidth={2.5} />
+              <Text style={s.doneCtaText}>Completed</Text>
+            </View>
+          ) : ctaLabel ? (
             <Pressable
               onPress={onPress}
               disabled={!onPress}
@@ -312,6 +331,11 @@ function makeStyles(T: AppTheme) {
       justifyContent: "center",
       paddingLeft: 2,
     },
+    playBtnDone: {
+      paddingLeft: 0,
+      backgroundColor: T.accentTint,
+      borderColor: T.accent,
+    },
     body: {
       paddingHorizontal: 14,
       paddingTop: 14,
@@ -343,6 +367,23 @@ function makeStyles(T: AppTheme) {
       fontFamily: T.bodySemi,
       fontSize: 14,
       color: T.onAccent,
+    },
+    doneCta: {
+      marginTop: 8,
+      height: 40,
+      borderRadius: T.radius.sm,
+      backgroundColor: T.accentTint,
+      borderWidth: 1,
+      borderColor: T.accent,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    doneCtaText: {
+      fontFamily: T.bodySemi,
+      fontSize: 14,
+      color: T.accent,
     },
   });
 }

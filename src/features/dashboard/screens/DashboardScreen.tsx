@@ -170,10 +170,11 @@ export default function DashboardScreen() {
           num: d.getDate(),
           hasLog: workoutDates.has(date),
           date,
-          disabled: joinDate ? date < joinDate : false,
+          // Only future days are blocked — past days stay tappable to review.
+          disabled: date > today,
         };
       }),
-    [weekDates, workoutDates, joinDate],
+    [weekDates, workoutDates, today],
   );
 
   const activeDayIndex = days.findIndex((d) => d.date === selectedDate);
@@ -185,7 +186,6 @@ export default function DashboardScreen() {
   const loggedMealTypes = new Set((mealsForDay ?? []).map((m) => m.meal));
   const breakfastDone = loggedMealTypes.has("Breakfast");
   const lunchDone = loggedMealTypes.has("Lunch");
-  const snackDone = loggedMealTypes.has("Snack");
   const dinnerDone = loggedMealTypes.has("Dinner");
 
   const workoutCompletedForDay = workoutDates.has(selectedDate);
@@ -201,7 +201,6 @@ export default function DashboardScreen() {
 
   const {
     isLoading: coachLoading,
-    hasEnoughData,
     progressValue,
     sparklinePoints,
     coachHeadline,
@@ -258,9 +257,7 @@ export default function DashboardScreen() {
         ? "Breakfast"
         : key === "lunch"
           ? "Lunch"
-          : key === "snack"
-            ? "Snack"
-            : "Dinner";
+          : "Dinner";
     openMealLog(slot);
   }
 
@@ -407,7 +404,6 @@ export default function DashboardScreen() {
           workoutDone={workoutCompletedForDay || !!isRestDay}
           breakfastDone={breakfastDone}
           lunchDone={lunchDone}
-          snackDone={snackDone}
           dinnerDone={dinnerDone}
           waterGlasses={water?.glasses ?? 0}
           onStepPress={
@@ -438,7 +434,7 @@ export default function DashboardScreen() {
 
         {coachLoading ? (
           <SectionSkeleton height={168} />
-        ) : hasEnoughData ? (
+        ) : (
           <ProgressCoachCard
             progressLabel="Weight this month"
             progressValue={progressValue}
@@ -447,7 +443,7 @@ export default function DashboardScreen() {
             coachBody={coachBody}
             goalHit={goalHit}
           />
-        ) : null}
+        )}
       </ScrollView>
     </SafeAreaView>
   );

@@ -6,8 +6,6 @@ import type { AppTheme } from "@/src/theme";
 import { getGreeting } from "@/src/lib/greeting";
 import { fullDayLabel } from "@/src/lib/week-days";
 import { localDateOnly } from "@/src/features/progress/lib/localDate";
-import { BrandWordmark } from "@/src/components/BrandWordmark";
-
 type Props = {
   name: string;
   /** When false, omit greeting text. Default true. */
@@ -23,7 +21,7 @@ function onLogsPress() {
 }
 
 /**
- * Home header: PotentialPeak mark, then the existing salutations.
+ * Home header: greeting + date (no brand wordmark on tabs).
  */
 export function SimpleGreetingHeader({
   name,
@@ -38,7 +36,6 @@ export function SimpleGreetingHeader({
   return (
     <View style={s.row}>
       <View style={[s.left, leftNeedsGrow && s.leftGrow]}>
-        <BrandWordmark size={26} />
         {showGreeting || showDate ? (
           <View style={s.greetingStack}>
             {showGreeting ? (
@@ -94,8 +91,8 @@ function makeStyles(T: AppTheme) {
     },
     greeting: {
       fontFamily: T.displayBold,
-      fontSize: 18,
-      letterSpacing: -0.3,
+      fontSize: 22,
+      letterSpacing: -0.4,
       color: T.white,
     },
     date: {

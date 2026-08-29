@@ -3,6 +3,7 @@
   "compilerOptions": {
     "strict": true,
     "skipLibCheck": true,
+    "resolveJsonModule": true,
     "types": ["node"],
     "paths": {
       "@/*": [
@@ -26,7 +27,6 @@
   "exclude": [
     "node_modules",
     "__tests__",
-    "src/lib/workout-split.ts",
     "prisma/**",
     "prisma.config.ts",
     ".expo",

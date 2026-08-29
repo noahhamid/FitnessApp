@@ -17,20 +17,19 @@ function sessionTokenFromSetCookie(header: string | null): string | null {
   return match?.[1] ? decodeURIComponent(match[1].trim()) : null;
 }
 
-authRouter.on(["GET", "POST"], "/*", async (c) => {
-  const auth = await getAuth();
-  const response = await auth.handler(c.req.raw);
+function sessionTokenFromResponse(response: Response): string | null {
+  const fromHeader =
+    response.headers.get("set-auth-token") ??
+    response.headers.get("Set-Auth-Token");
+  if (fromHeader) return fromHeader;
+  return sessionTokenFromSetCookie(response.headers.get("set-cookie"));
+}
 
-  const path = new URL(c.req.url).pathname;
-  if (!path.includes("verify-email")) {
-    return response;
-  }
-
-  const sessionToken = sessionTokenFromSetCookie(
-    response.headers.get("set-cookie"),
-  );
-  if (!sessionToken) return response;
-
+/** Mobile/web clients store Bearer tokens — inject when Better Auth only sets cookies. */
+async function withSessionTokenInBody(
+  response: Response,
+  sessionToken: string,
+): Promise<Response> {
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) return response;
 
@@ -50,4 +49,14 @@ authRouter.on(["GET", "POST"], "/*", async (c) => {
   } catch {
     return response;
   }
+}
+
+authRouter.on(["GET", "POST"], "/*", async (c) => {
+  const auth = await getAuth();
+  const response = await auth.handler(c.req.raw);
+
+  const sessionToken = sessionTokenFromResponse(response);
+  if (!sessionToken) return response;
+
+  return withSessionTokenInBody(response, sessionToken);
 });

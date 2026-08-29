@@ -1,28 +1,22 @@
-import { Flame } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
-import { BrandWordmark } from "@/src/components/BrandWordmark";
+import { AppIcon } from "@/src/components/AppIcon";
 
 type Props = {
-  /** Unused — wordmark replaced the day eyebrow. Kept for call-site compat. */
-  eyebrow?: string;
   title: string;
   caloriesLeft: number;
 };
 
 export function MealHeader({ title, caloriesLeft }: Props) {
-  const { T, styles } = useThemedStyles(makeStyles);
+  const { styles } = useThemedStyles(makeStyles);
 
   return (
     <View style={styles.pageBlock}>
       <View style={styles.titleRow}>
-        <View style={styles.heading}>
-          <BrandWordmark size={22} />
-          <Text style={styles.title}>{title}</Text>
-        </View>
+        <Text style={styles.title}>{title}</Text>
         <View style={styles.calChip}>
-          <Flame size={12} color={T.onImage} strokeWidth={2.4} />
+          <AppIcon name="calories" size={18} />
           <Text style={styles.calChipText}>
             {caloriesLeft.toLocaleString()} left
           </Text>
@@ -45,20 +39,13 @@ function makeStyles(T: AppTheme) {
       alignItems: "center",
       gap: 10,
     },
-    heading: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "baseline",
-      flexWrap: "wrap",
-      gap: 8,
-      minWidth: 0,
-    },
     title: {
+      flex: 1,
       fontFamily: T.displayBold,
-      fontSize: 22,
+      fontSize: 28,
       color: T.white,
-      letterSpacing: -0.3,
-      flexShrink: 1,
+      letterSpacing: -0.5,
+      minWidth: 0,
     },
     calChip: {
       flexDirection: "row",

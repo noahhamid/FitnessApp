@@ -76,6 +76,17 @@ export function AppSafeAreaChrome({ children }: Props) {
           },
         ]}
       />
+      {/* Home-indicator / gesture strip — same solid treatment as the top. */}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.homeCover,
+          {
+            height: Math.max(insets.bottom, 0),
+            backgroundColor: chromeBg,
+          },
+        ]}
+      />
       <StatusBar style={isDark ? "light" : "dark"} backgroundColor={chromeBg} />
     </View>
   );
@@ -95,5 +106,12 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 40,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  homeCover: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 30,
   },
 });

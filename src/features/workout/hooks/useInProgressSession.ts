@@ -102,24 +102,8 @@ function estimateMinutes(plan: WorkoutPlan): number {
   return Math.round(seconds / 60);
 }
 
-/**
- * POST /:id/complete requires sets.min(1) per exercise. Prefer real
- * incremental-save payloads; only invent a single incomplete placeholder
- * when an exercise row has nothing logged yet so the stale session can
- * still finalize.
- */
-function exercisesForAutoComplete(session: RawSession) {
-  return session.exercises.map((se) => {
-    const sets = normalizeSets(se.sets);
-    return {
-      exerciseName: se.exerciseName,
-      sets: sets.length > 0 ? sets : [{ completed: false as const }],
-    };
-  });
-}
-
 /** Module-scoped — shared across every useInProgressSession mount (Dashboard
- * + Workout) so two hook instances can't double-POST the same stale id. */
+ * + Workout) so two hook instances can't double-DELETE the same stale id. */
 const attemptedExpireIds = new Set<string>();
 const inFlightExpireIds = new Set<string>();
 
@@ -135,10 +119,11 @@ export function useInProgressSession() {
 
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
+  // Past-day incomplete sessions are abandoned — delete them. Never POST
+  // /complete (that counted abandoned work as finished for streaks).
   useEffect(() => {
     const session = sessionQuery.data?.[0];
     if (!session || session.completedAt != null) return;
-    if (session.exercises.length === 0) return;
 
     const startedDay = localDateOnly(new Date(session.startedAt));
     const today = localDateOnly();
@@ -156,46 +141,34 @@ export function useInProgressSession() {
 
     void (async () => {
       try {
-        await api.post(`/api/workouts/${session.id}/complete`, {
-          exercises: exercisesForAutoComplete(session),
-        });
-        // Only clear if this stale id is still what's cached — a newer
-        // startSession may have replaced it while the POST was in flight.
+        await api.delete(`/api/workouts/${session.id}`);
         qc.setQueryData<RawSession[] | undefined>(
           ["in-progress-session"],
           (old) => {
             if (!old?.length) return old;
             if (old[0]?.id === session.id) return [];
-            return old;
+            return old.filter((s) => s.id !== session.id);
           },
         );
         void qc.invalidateQueries({ queryKey: ["in-progress-session"] });
-        void qc.invalidateQueries({ queryKey: ["workout-history"] });
-        void qc.invalidateQueries({ queryKey: ["workout-sessions"] });
-        void qc.invalidateQueries({ queryKey: ["week-overview"] });
-      } catch (e) {
-        // Allow one retry on the next foreground/focus cycle.
+      } catch {
+        // Allow one retry after the next failed-guard clear (foreground).
         attemptedExpireIds.delete(session.id);
-        console.log("Failed to auto-complete stale in-progress session:", e);
       } finally {
         inFlightExpireIds.delete(session.id);
       }
     })();
   }, [sessionQuery.data, qc]);
 
-  // App foreground: refetch in-progress, and clear attempt guards for ids
-  // that aren't mid-POST so a failed expire can retry once per focus.
+  // App foreground: refetch in-progress. Only re-arm expire for sessions
+  // that are still present and not mid-delete (failed deletes already clear
+  // their own attempt id in catch).
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next: AppStateStatus) => {
       if (
         appStateRef.current.match(/inactive|background/) &&
         next === "active"
       ) {
-        for (const id of [...attemptedExpireIds]) {
-          if (!inFlightExpireIds.has(id)) {
-            attemptedExpireIds.delete(id);
-          }
-        }
         void qc.invalidateQueries({ queryKey: ["in-progress-session"] });
       }
       appStateRef.current = next;
@@ -207,8 +180,8 @@ export function useInProgressSession() {
     const session = sessionQuery.data?.[0];
     if (!session || !allExercises) return null;
 
-    // Past-day incomplete sessions are auto-finalized by the expire
-    // effect — never surface them as Continue while that runs.
+    // Past-day incomplete sessions are deleted by the expire effect —
+    // never surface them as Continue while that runs.
     if (localDateOnly(new Date(session.startedAt)) !== localDateOnly()) {
       return null;
     }

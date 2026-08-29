@@ -3,7 +3,7 @@ import { PasswordInput } from "@/src/ui/components/PasswordInput";
 import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   ImageBackground,
@@ -30,13 +30,18 @@ import {
   signInWithApple,
   signInWithGoogle,
 } from "../services/auth.service";
-import { navigateAfterAuth } from "../services/post-auth-navigation";
+import { navigateAfterAuth, tryAutoSignInFromPending } from "../services/post-auth-navigation";
 import {
   hasCompletedOnboardingPayload,
   onboardingParamsForNavigation,
   type OnboardingAuthParams,
 } from "../services/onboarding-payload.service";
+import { loadPendingSignUp } from "../services/pending-signup.service";
 import { clientRequiresEmailVerification } from "@/src/lib/email-verification";
+
+function single(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 function heroScrim(bgHex: string, resolved: "light" | "dark") {
   const hex = bgHex.replace("#", "");
@@ -59,7 +64,9 @@ function heroScrim(bgHex: string, resolved: "light" | "dark") {
 
 export function SignInForm() {
   const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
-  const params = useLocalSearchParams<OnboardingAuthParams>();
+  const params = useLocalSearchParams<
+    OnboardingAuthParams & { autoSignIn?: string }
+  >();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const viewportHeight = height - insets.bottom;
@@ -75,9 +82,52 @@ export function SignInForm() {
   const [appleLoading, setAppleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
+  const autoSignInAttempted = useRef(false);
   const canContinue = email.length > 3 && password.length >= 8;
   const completingOnboarding = hasCompletedOnboardingPayload(params);
   const busy = loading || googleLoading || appleLoading;
+
+  useEffect(() => {
+    if (autoSignInAttempted.current) return;
+    if (single(params.autoSignIn) !== "1") return;
+    autoSignInAttempted.current = true;
+
+    async function autoSignIn() {
+      setLoading(true);
+      setError(null);
+      try {
+        const pending = await loadPendingSignUp();
+        const rawEmail = single(params.email);
+        const resolvedEmail = rawEmail
+          ? decodeURIComponent(rawEmail)
+          : pending?.email ?? "";
+        if (resolvedEmail) setEmail(resolvedEmail);
+        if (pending?.password) setPassword(pending.password);
+
+        const signedIn = await tryAutoSignInFromPending();
+        if (signedIn) {
+          setAuthenticated(true);
+          await navigateAfterAuth(params, { deferEmailVerification: true });
+          return;
+        }
+
+        if (pending || resolvedEmail) {
+          setError(
+            "Account ready — enter your password and tap Continue, or verify your email first if sign-in is blocked.",
+          );
+        }
+      } catch (e) {
+        setError(
+          e instanceof Error ? e.message : "Could not sign in automatically.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void autoSignIn();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.autoSignIn]);
 
   async function handleContinue() {
     if (!canContinue) return;

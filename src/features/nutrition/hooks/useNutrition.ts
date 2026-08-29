@@ -174,7 +174,7 @@ export function useWaterResync(date: string) {
   }, [date]);
 }
 
-export function useAdjustWater(date = today()) {
+export function useAdjustWater(date = today(), maxGlasses = 8) {
   const qc = useQueryClient();
   const pendingDelta = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -185,40 +185,73 @@ export function useAdjustWater(date = today()) {
     mutationFn: (delta: number) => adjustWater(delta, date),
 
     onSuccess: (data) => {
-      // Only let the most recently *sent* batch write the server's
-      // authoritative value. If an earlier batch's response arrives
-      // late (out of order), a newer batch is still in flight —
-      // isMutating will be > 1 — so we skip writing this stale one.
-      const stillMutating = qc.isMutating({ mutationKey });
-      if (stillMutating === 1) {
-        qc.setQueryData(KEYS.water(date), data);
+      // Never clobber UI with a stale server total while more taps are
+      // still queued (debounce) or another batch is in flight.
+      const inFlight = qc.isMutating({ mutationKey });
+      if (inFlight > 1) return;
+      if (pendingDelta.current !== 0 || timer.current != null) {
+        const merged = Math.max(
+          0,
+          Math.min(
+            maxGlasses,
+            (data.glasses ?? 0) + pendingDelta.current,
+          ),
+        );
+        qc.setQueryData(KEYS.water(date), { ...data, glasses: merged });
+        return;
       }
+      const glasses = Math.max(
+        0,
+        Math.min(maxGlasses, data.glasses ?? 0),
+      );
+      qc.setQueryData(KEYS.water(date), { ...data, glasses });
     },
 
     onError: (_err, sentDelta) => {
       qc.setQueryData<{ glasses: number }>(KEYS.water(date), (old) => ({
-        glasses: Math.max(0, (old?.glasses ?? 0) - sentDelta),
+        glasses: Math.max(
+          0,
+          Math.min(maxGlasses, (old?.glasses ?? 0) - sentDelta),
+        ),
       }));
     },
   });
 
   const add = useCallback(
     (delta: number) => {
-      qc.setQueryData<{ glasses: number }>(KEYS.water(date), (old) => ({
-        glasses: Math.max(0, (old?.glasses ?? 0) + delta),
-      }));
+      const current =
+        qc.getQueryData<{ glasses: number }>(KEYS.water(date))?.glasses ?? 0;
+      const next = Math.max(0, Math.min(maxGlasses, current + delta));
+      const applied = next - current;
+      if (applied === 0) return;
 
-      pendingDelta.current += delta;
+      qc.setQueryData(KEYS.water(date), { glasses: next });
+      pendingDelta.current += applied;
 
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => {
         const toSend = pendingDelta.current;
         pendingDelta.current = 0;
-        mutation.mutate(toSend);
-      }, 500);
+        timer.current = null;
+        if (toSend !== 0) mutation.mutate(toSend);
+      }, 450);
     },
-    [date],
+    [date, maxGlasses, mutation, qc],
   );
+
+  useEffect(() => {
+    return () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
+      }
+      const leftover = pendingDelta.current;
+      pendingDelta.current = 0;
+      if (leftover !== 0) {
+        void adjustWater(leftover, date).catch(() => undefined);
+      }
+    };
+  }, [date]);
 
   return { ...mutation, mutate: add };
 }

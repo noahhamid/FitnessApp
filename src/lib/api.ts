@@ -1,5 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
+import { localDateOnly } from "@/src/features/progress/lib/localDate";
 import { AUTH_STORAGE_PREFIX, authClient } from "./auth-client";
 import { getClientApiUrl } from "./public-api-url";
 import {
@@ -134,6 +135,8 @@ async function request<T>(
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      // Device calendar day — server must not invent "today" from UTC.
+      "X-Client-Calendar-Date": localDateOnly(),
       ...authHeaders,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,

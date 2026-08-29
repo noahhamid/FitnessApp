@@ -2,13 +2,8 @@ import type { ReactNode } from "react";
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
-import { BrandWordmark } from "@/src/components/BrandWordmark";
 
 type Props = {
-  /** @deprecated Replaced by the PotentialPeak wordmark. Kept so call sites compile. */
-  eyebrow?: string;
-  /** @deprecated Unused — wordmark replaced the eyebrow row. */
-  eyebrowLeading?: ReactNode;
   /** Soft line under the heading (e.g. "Manage your account,"). */
   subtitle?: string;
   /** Large page title — displayBold 28 / -0.5. */
@@ -19,7 +14,7 @@ type Props = {
 };
 
 /**
- * Shared page chrome: PotentialPeak + existing title (+ optional action).
+ * Shared page chrome: title (+ optional action). No brand wordmark on tabs.
  */
 export function PageHeader({
   subtitle,
@@ -33,7 +28,6 @@ export function PageHeader({
     <View style={[s.wrap, style]}>
       <View style={s.titleRow}>
         <View style={s.heading}>
-          <BrandWordmark size={22} />
           <Text style={s.title} numberOfLines={1}>
             {title}
           </Text>
@@ -66,10 +60,6 @@ function makeStyles(T: AppTheme) {
     },
     heading: {
       flex: 1,
-      flexDirection: "row",
-      alignItems: "baseline",
-      flexWrap: "wrap",
-      gap: 8,
       minWidth: 0,
     },
     subtitle: {

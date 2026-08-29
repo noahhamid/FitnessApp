@@ -2,7 +2,6 @@
 
 import { authClient } from "@/src/lib/auth";
 import {
-  DISPLAY_NAME_MAX_LENGTH,
   normalizeDisplayFirstName,
 } from "@/src/lib/display-name";
 import {
@@ -67,8 +66,10 @@ type AuthClientError = {
 
 function throwIfAuthError(error: AuthClientError): void {
   if (!error) return;
-  if (error.status === 429 || /too many requests/i.test(error.message ?? "")) {
-    throw new Error("Too many tries. Wait a few minutes and try again.");
+  if (error.status === 429 || /too many (requests|attempts)/i.test(error.message ?? "")) {
+    throw new Error(
+      "Too many tries. Wait about a minute, then try again.",
+    );
   }
   if (/invalid token/i.test(error.message ?? "")) {
     throw new Error(
@@ -83,12 +84,10 @@ export async function signIn(email: string, password: string): Promise<void> {
   throwIfAuthError(error);
   await persistTokenFromAuthData(data);
   invalidateAuthHeaderCache();
+  await refreshAuthSession();
 }
 
 // ── Sign up ───────────────────────────────────────────────────────────────────
-
-/** @deprecated Use DISPLAY_NAME_MAX_LENGTH — kept for existing imports. */
-export const SIGN_UP_NAME_MAX_LENGTH = DISPLAY_NAME_MAX_LENGTH;
 
 /** Keep the first given name only (no family names) and clamp length. */
 export function normalizeSignUpFirstName(raw: string): string {
@@ -109,6 +108,7 @@ export async function signUp(
   throwIfAuthError(error);
   await persistTokenFromAuthData(data);
   invalidateAuthHeaderCache();
+  await refreshAuthSession();
 }
 
 export function isEmailNotVerifiedError(error: unknown): boolean {
@@ -131,6 +131,7 @@ export async function verifyEmail(token: string): Promise<void> {
   throwIfAuthError(error);
   await persistTokenFromAuthData(data);
   invalidateAuthHeaderCache();
+  await refreshAuthSession();
 }
 
 /**
@@ -153,7 +154,7 @@ async function ensureOAuthFirstName(
 
   const { error } = await authClient.updateUser({ name: next });
   if (error) {
-    console.log("oauth: failed to trim display name", error.message);
+    // Display-name trim is best-effort; ignore failures quietly.
   }
 }
 
@@ -344,6 +345,8 @@ export async function deleteAccount(token?: string): Promise<{
   } catch {
     // Session may already be invalidated server-side.
   }
+  await clearSessionToken();
+  invalidateAuthHeaderCache();
 
   return { deleted: true, verificationEmailSent: false };
 }
@@ -353,6 +356,15 @@ export async function deleteAccount(token?: string): Promise<{
 export async function getSession() {
   const { data } = await authClient.getSession();
   return data;
+}
+
+/** Re-fetch session after persisting a bearer token (Expo / cross-origin web). */
+export async function refreshAuthSession(): Promise<boolean> {
+  invalidateAuthHeaderCache();
+  const { readSessionToken } = await import("@/src/lib/session-token");
+  const session = await getSession();
+  if (session?.user) return true;
+  return !!(await readSessionToken());
 }
 
 // ── Password reset ────────────────────────────────────────────────────────────

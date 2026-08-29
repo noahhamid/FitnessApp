@@ -135,15 +135,16 @@ export function DayDetailSheet(props: Props) {
 
 function makeStyles(T: AppTheme) {
   return StyleSheet.create({
-    backdrop: { flex: 1, backgroundColor: "rgba(10,10,10,0.45)" },
+    backdrop: { flex: 1, backgroundColor: "rgba(10,10,10,0.55)" },
     sheet: {
-      backgroundColor: T.glass,
+      backgroundColor: T.bgElevated,
       borderTopLeftRadius: T.radius.xl,
       borderTopRightRadius: T.radius.xl,
-      borderWidth: 0.5,
-      borderColor: T.glassBorder,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: T.border,
       paddingHorizontal: T.space.xl,
       paddingTop: T.space.md,
+      overflow: "hidden",
     },
     handle: {
       width: 36,

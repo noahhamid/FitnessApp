@@ -283,7 +283,3 @@ export async function addCustomFood(
   await writeCustomFoods([created, ...customFoods]);
   return created;
 }
-
-/** Legacy static exports for components not yet on hooks. */
-export const MEAL_LOG: MealLogEntry[] = [];
-export const FOOD_SEARCH = FOOD_SEARCH_SEED;
