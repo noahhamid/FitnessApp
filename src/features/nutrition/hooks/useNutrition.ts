@@ -1,9 +1,8 @@
 // src/features/nutrition/hooks/useNutrition.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { useCallback } from "react";
 import type {
   DailyTotals,
   MealLogEntry,
@@ -160,7 +159,7 @@ export function useWaterResync(date: string) {
   useFocusEffect(
     useCallback(() => {
       qc.invalidateQueries({ queryKey: KEYS.water(date) });
-    }, [date]),
+    }, [date, qc]),
   );
 
   useEffect(() => {
@@ -171,7 +170,7 @@ export function useWaterResync(date: string) {
       appState.current = next;
     });
     return () => sub.remove();
-  }, [date]);
+  }, [date, qc]);
 }
 
 export function useAdjustWater(date = today(), maxGlasses = 8) {

@@ -303,7 +303,7 @@ export default function LogMealScreen() {
 
           {(addMeal.isError || updateMeal.isError || deleteMeal.isError) && (
             <Text style={styles.error}>
-              Couldn't save that meal — try again.
+              {"Couldn't save that meal — try again."}
             </Text>
           )}
 

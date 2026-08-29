@@ -160,11 +160,14 @@ export function useConditioningRun() {
         },
       },
     );
+    // Re-bind only when the run identity changes, not on every tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [run?.startedAt, run?.label, run?.index]);
 
   useEffect(() => {
     if (!run) return;
     setSessionTimerPaused(run.pausedAt != null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `run` presence is implied
   }, [run?.pausedAt]);
 
   return {

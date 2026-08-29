@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useAddExerciseToSession } from "./useWorkoutSession";
 import { useWorkoutPlan } from "./useWorkoutPlan";
 import { adaptLibraryExercise } from "@/src/lib/workout-plan-adapter";
+import { useUserProfile } from "@/src/features/profile/hooks/useUserProfile";
 import type { Exercise } from "../data/workouts";
 
 export type LiveAddLibraryExercise = {
@@ -46,6 +47,7 @@ type AddOptions = {
 export function useAddToLiveSession(sessionId: string | null | undefined) {
   const addToSession = useAddExerciseToSession();
   const { data: apiPlan } = useWorkoutPlan();
+  const { data: profile } = useUserProfile();
   const [addingName, setAddingName] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
   // Synchronous guard — React state (`addingName`) only updates after
@@ -71,6 +73,7 @@ export function useAddToLiveSession(sessionId: string | null | undefined) {
     const adapted = adaptLibraryExercise(
       libEx,
       apiPlan?.goalId ?? "health",
+      profile?.gender,
     );
     const optimistic: Exercise = {
       ...adapted,

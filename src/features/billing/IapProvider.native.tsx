@@ -15,7 +15,11 @@ import {
   isPremiumSku,
   type PremiumSku,
 } from "./skus";
-import { syncEntitlement } from "./sync-entitlement";
+import {
+  fetchEntitlement,
+  syncEntitlement,
+  type StoreSubscription,
+} from "./sync-entitlement";
 
 function toStoreProduct(product: ProductSubscription): StoreProduct {
   return {
@@ -42,6 +46,7 @@ export function IapProvider({ children }: { children: ReactNode }) {
   const [restoring, setRestoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [storeChecked, setStoreChecked] = useState(false);
+  const [serverPremium, setServerPremium] = useState<boolean | null>(null);
   const purchaseWaiter = useRef<((ok: boolean) => void) | null>(null);
 
   const resolvePurchase = useCallback((ok: boolean) => {
@@ -60,7 +65,6 @@ export function IapProvider({ children }: { children: ReactNode }) {
     requestPurchase,
     finishTransaction,
     getActiveSubscriptions,
-    hasActiveSubscriptions,
     restorePurchases,
   } = useIAP({
     onPurchaseSuccess: async (purchase) => {
@@ -69,14 +73,41 @@ export function IapProvider({ children }: { children: ReactNode }) {
       } catch {
         // Already finished or store will retry.
       }
+      let confirmed = false;
       try {
-        await getActiveSubscriptions([...PREMIUM_SKUS]);
+        const latest = await getActiveSubscriptions([...PREMIUM_SKUS]);
+        const withPurchase: StoreSubscription[] = [
+          {
+            productId:
+              "productId" in purchase && typeof purchase.productId === "string"
+                ? purchase.productId
+                : undefined,
+            transactionId:
+              "transactionId" in purchase &&
+              typeof purchase.transactionId === "string"
+                ? purchase.transactionId
+                : undefined,
+            purchaseToken:
+              "purchaseToken" in purchase &&
+              typeof purchase.purchaseToken === "string"
+                ? purchase.purchaseToken
+                : undefined,
+            isActive: true,
+          },
+          ...((latest ?? []) as StoreSubscription[]),
+        ];
+        const result = await syncEntitlement(withPurchase);
+        setServerPremium(result.isPremium);
+        confirmed = result.isPremium;
+        if (!result.isPremium) {
+          setError("Purchase didn’t verify. Try Restore Purchases.");
+        }
       } catch {
-        // Entitlement refresh is best-effort; listener already granted.
+        setError("Couldn’t confirm the purchase. Try Restore Purchases.");
       }
       setPurchasing(false);
-      setError(null);
-      resolvePurchase(true);
+      if (confirmed) setError(null);
+      resolvePurchase(confirmed);
     },
     onPurchaseError: (purchaseError) => {
       setPurchasing(false);
@@ -85,9 +116,18 @@ export function IapProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (purchaseError.code === ErrorCode.AlreadyOwned) {
-        void getActiveSubscriptions([...PREMIUM_SKUS]);
-        setError(null);
-        resolvePurchase(true);
+        void (async () => {
+          try {
+            const latest = await getActiveSubscriptions([...PREMIUM_SKUS]);
+            const result = await syncEntitlement(
+              (latest ?? []) as StoreSubscription[],
+            );
+            setServerPremium(result.isPremium);
+            resolvePurchase(result.isPremium);
+          } catch {
+            resolvePurchase(false);
+          }
+        })();
         return;
       }
       setError(purchaseError.message || "Purchase failed. Try again.");
@@ -112,7 +152,7 @@ export function IapProvider({ children }: { children: ReactNode }) {
       activeSubscriptions
         .map(
           (sub) =>
-            `${sub.productId}:${sub.isActive}:${sub.transactionId}:${sub.expirationDateIOS ?? ""}`,
+            `${sub.productId}:${sub.isActive}:${sub.transactionId}:${sub.purchaseToken ?? ""}:${sub.expirationDateIOS ?? ""}`,
         )
         .sort()
         .join("|"),
@@ -120,10 +160,24 @@ export function IapProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    if (!signedIn) {
+      setServerPremium(null);
+      return;
+    }
+    void fetchEntitlement()
+      .then((row) => setServerPremium(row.isPremium))
+      .catch(() => {
+        // Keep last known server flag until a sync succeeds.
+      });
+  }, [signedIn]);
+
+  useEffect(() => {
     if (!connected || !signedIn || !storeChecked) return;
-    void syncEntitlement(activeSubscriptions).catch(() => {
-      // Device unlock still works; the next launch retries the server row.
-    });
+    void syncEntitlement(activeSubscriptions)
+      .then((row) => setServerPremium(row.isPremium))
+      .catch(() => {
+        // Next launch retries. UI follows the last verified server row.
+      });
   }, [activeSubscriptions, connected, entitlementKey, signedIn, storeChecked]);
 
   const products = useMemo(
@@ -134,7 +188,7 @@ export function IapProvider({ children }: { children: ReactNode }) {
     [subscriptions],
   );
 
-  const isPremium = useMemo(
+  const storePremium = useMemo(
     () =>
       activeSubscriptions.some((sub) => {
         const id =
@@ -145,6 +199,11 @@ export function IapProvider({ children }: { children: ReactNode }) {
       }),
     [activeSubscriptions],
   );
+
+  // After the API answers, it is the source of truth (store-verified).
+  // Before that, the store flag is only used so a paid user isn't locked
+  // out for one frame on cold start.
+  const isPremium = serverPremium ?? storePremium;
 
   const refresh = useCallback(async () => {
     if (!connected) return;
@@ -197,8 +256,13 @@ export function IapProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       await restorePurchases();
-      await getActiveSubscriptions([...PREMIUM_SKUS]);
-      return await hasActiveSubscriptions([...PREMIUM_SKUS]);
+      const latest = await getActiveSubscriptions([...PREMIUM_SKUS]);
+      const result = await syncEntitlement((latest ?? []) as StoreSubscription[]);
+      setServerPremium(result.isPremium);
+      if (!result.isPremium) {
+        setError("No verified subscription found for this account.");
+      }
+      return result.isPremium;
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Couldn’t restore purchases.",
@@ -207,7 +271,7 @@ export function IapProvider({ children }: { children: ReactNode }) {
     } finally {
       setRestoring(false);
     }
-  }, [connected, getActiveSubscriptions, hasActiveSubscriptions, restorePurchases]);
+  }, [connected, getActiveSubscriptions, restorePurchases]);
 
   const value = useMemo<IapContextValue>(
     () => ({

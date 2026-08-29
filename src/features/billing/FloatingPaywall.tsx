@@ -57,9 +57,10 @@ export function FloatingPaywall({
           </Pressable>
 
           <Text style={styles.kicker}>LAST CHANCE</Text>
-          <Text style={styles.title}>Unlock your full plan</Text>
+          <Text style={styles.title}>Unlock Pro</Text>
           <Text style={styles.body}>
-            Start workouts, scan meals, and let calories follow your weight.
+            Save workouts, scan meals, apply adaptive calories, and log
+            conditioning. Browsing the app stays free.
           </Text>
 
           <View style={styles.skus}>

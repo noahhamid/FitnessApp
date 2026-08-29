@@ -55,7 +55,7 @@ export function AdherenceCard({ sessions, daysPerWeek, trainingDays }: Props) {
       </View>
 
       <Text style={s.sub}>
-        Based on your {daysPerWeek}-day/week plan. Rest-day sessions aren't
+        Based on your {daysPerWeek}-day/week plan. Rest-day sessions aren&apos;t
         counted against you — this only tracks whether scheduled train days
         were completed.
       </Text>

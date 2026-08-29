@@ -184,7 +184,7 @@ nutritionRouter.get("/log", async (c) => {
  * Persist a meal-scan photo and return a fetchable URL for MealLog.imageUrl.
  * Production uses Vercel Blob; local/dev falls back to ./uploads/meals.
  */
-nutritionRouter.post("/meal-photo", async (c) => {
+nutritionRouter.post("/meal-photo", requirePremium, async (c) => {
   const parsed = await parseJson(c, mealPhotoSchema);
   if (isParseFail(parsed)) return parsed.response;
 

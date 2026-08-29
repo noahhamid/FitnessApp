@@ -1,4 +1,4 @@
-import { FONTS, useOnboardingColors, type OnboardingColors } from "@/src/ui/tokens";
+import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -7,7 +7,6 @@ import {
   Animated,
   StatusBar,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";

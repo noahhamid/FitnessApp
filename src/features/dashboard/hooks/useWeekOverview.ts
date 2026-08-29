@@ -29,15 +29,15 @@ function toDateStr(d: Date): string {
 }
 
 export function useWeekOverview() {
-  const monday = mondayOfThisWeek();
+  const mondayMs = useMemo(() => mondayOfThisWeek().getTime(), []);
   const weekDates = useMemo(
     () =>
       Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(monday);
+        const d = new Date(mondayMs);
         d.setDate(d.getDate() + i);
         return d;
       }),
-    [monday.getTime()],
+    [mondayMs],
   );
 
   const weekStart = toDateStr(weekDates[0]);

@@ -46,7 +46,7 @@ function DayDetailSheetBody({
     } else {
       translateY.setValue(400);
     }
-  }, [visible]);
+  }, [visible, translateY]);
 
   const handleClose = () => {
     Animated.timing(translateY, {
@@ -85,11 +85,11 @@ function DayDetailSheetBody({
               )}
               {session.exercises.map((ex) => {
                 const sets =
-                  (ex.sets as Array<{
+                  (ex.sets as {
                     weight?: number;
                     reps?: number;
                     completed?: boolean;
-                  }>) ?? [];
+                  }[]) ?? [];
                 const completedSets = sets.filter((st) => st.completed);
                 return (
                   <View key={ex.id} style={s.exRow}>

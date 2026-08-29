@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { err, ok } from "../lib/response";
 import { isParseFail, parseJson, parseQuery } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
+import { requirePremium } from "../middleware/requirePremium";
 import type { AppEnv } from "../types/hono";
 
 interface PersonalRecord {
@@ -104,12 +105,12 @@ function serializeSession(session: {
   completedAt: Date | null;
   notes: string | null;
   userId: string;
-  exercises?: Array<{
+  exercises?: {
     id: string;
     exerciseName: string;
     sets: unknown;
     sessionId: string;
-  }>;
+  }[];
 }) {
   return {
     ...session,
@@ -128,11 +129,11 @@ function serializePlan(plan: {
   experience: string;
   equipment: string;
   updatedAt: Date;
-  days: Array<{
+  days: {
     id: string;
     dayIndex: number;
     label: string;
-    exercises: Array<{
+    exercises: {
       id: string;
       orderIndex: number;
       targetSets: number;
@@ -140,8 +141,8 @@ function serializePlan(plan: {
       targetRepsMax: number;
       blockLabel: string | null;
       exercise: { id: string; name: string; muscleGroup: string; movementPattern: string };
-    }>;
-  }>;
+    }[];
+  }[];
 }, trainingDays: number[] = []) {
   return {
     id: plan.id,
@@ -256,7 +257,7 @@ const listSessions = async (c: Context<AppEnv>) => {
 };
 
 // Single path (not an array) — array form was parsed as middleware and broke requireAuth's `next`.
-workoutsRouter.post("/", createSession);
+workoutsRouter.post("/", requirePremium, createSession);
 workoutsRouter.get("/", listSessions);
 
 const countQuerySchema = z.object({
@@ -328,11 +329,11 @@ workoutsRouter.get("/last-performance", async (c) => {
     for (const exercise of session.exercises) {
       if (lastByExercise[exercise.exerciseName]) continue; // already found a more recent one
 
-      const sets = exercise.sets as Array<{
+      const sets = exercise.sets as {
         weight?: number;
         reps?: number;
         completed?: boolean;
-      }>;
+      }[];
       const lastCompletedSet = [...sets].reverse().find((s) => s.completed);
       if (lastCompletedSet) {
         lastByExercise[exercise.exerciseName] = {
@@ -410,11 +411,11 @@ workoutsRouter.get("/personal-records", async (c) => {
  
   for (const session of sessions) {
     for (const exercise of session.exercises) {
-      const sets = exercise.sets as Array<{
+      const sets = exercise.sets as {
         weight?: number;
         reps?: number;
         completed?: boolean;
-      }>;
+      }[];
  
       for (const set of sets) {
         if (!set.completed || set.weight == null || set.reps == null) continue;
@@ -463,7 +464,7 @@ workoutsRouter.get("/today-extras", async (c) => {
   return ok(c, extras);
 });
 
-workoutsRouter.post("/today-extras", async (c) => {
+workoutsRouter.post("/today-extras", requirePremium, async (c) => {
   const parsed = await parseJson(c, plannedExtraSchema);
   if (isParseFail(parsed)) return parsed.response;
 
@@ -498,7 +499,7 @@ workoutsRouter.post("/today-extras", async (c) => {
   }
 });
 
-workoutsRouter.delete("/today-extras/:extraId", async (c) => {
+workoutsRouter.delete("/today-extras/:extraId", requirePremium, async (c) => {
   const user = getUser(c);
   const extraId = c.req.param("extraId");
 
@@ -519,7 +520,7 @@ workoutsRouter.get("/:id", async (c) => {
   return ok(c, serializeSession(session));
 });
 
-workoutsRouter.patch("/:id", async (c) => {
+workoutsRouter.patch("/:id", requirePremium, async (c) => {
   const parsed = await parseJson(c, updateSessionSchema);
   if (isParseFail(parsed)) return parsed.response;
 
@@ -547,7 +548,7 @@ workoutsRouter.patch("/:id", async (c) => {
   return ok(c, serializeSession(session));
 });
 
-workoutsRouter.post("/:id/complete", async (c) => {
+workoutsRouter.post("/:id/complete", requirePremium, async (c) => {
   const parsed = await parseJson(c, completeSessionSchema);
   if (isParseFail(parsed)) return parsed.response;
 
@@ -585,7 +586,7 @@ workoutsRouter.post("/:id/complete", async (c) => {
   return ok(c, serializeSession(session));
 });
 
-workoutsRouter.delete("/:id", async (c) => {
+workoutsRouter.delete("/:id", requirePremium, async (c) => {
   const user = getUser(c);
   const sessionId = c.req.param("id");
 
@@ -598,7 +599,7 @@ workoutsRouter.delete("/:id", async (c) => {
   return ok(c, { deleted: true });
 });
 
-workoutsRouter.post("/:id/exercises", async (c) => {
+workoutsRouter.post("/:id/exercises", requirePremium, async (c) => {
   const parsed = await parseJson(c, exerciseCreateBodySchema);
   if (isParseFail(parsed)) return parsed.response;
 
@@ -621,7 +622,7 @@ workoutsRouter.post("/:id/exercises", async (c) => {
   return ok(c, exercise, 201);
 });
 
-workoutsRouter.patch("/:id/exercises/:exerciseId", async (c) => {
+workoutsRouter.patch("/:id/exercises/:exerciseId", requirePremium, async (c) => {
   const parsed = await parseJson(c, exerciseUpdateSchema);
   if (isParseFail(parsed)) return parsed.response;
 
@@ -650,7 +651,7 @@ workoutsRouter.patch("/:id/exercises/:exerciseId", async (c) => {
   return ok(c, updated);
 });
 
-workoutsRouter.delete("/:id/exercises/:exerciseId", async (c) => {
+workoutsRouter.delete("/:id/exercises/:exerciseId", requirePremium, async (c) => {
   const user = getUser(c);
   const sessionId = c.req.param("id");
   const exerciseId = c.req.param("exerciseId");

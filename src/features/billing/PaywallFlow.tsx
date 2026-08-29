@@ -24,13 +24,12 @@ import {
   type PremiumSku,
 } from "./skus";
 
+/** Matches what Pro actually unlocks (server + client gates). Browse stays free. */
 const PERKS = [
-  "Guided sessions, log every set, resume anytime",
-  "Snap a meal. Macros fill in for you",
-  "Calories that follow your weight, not a static plan",
-  "Know if you hit this week, streaks, calendar, PRs",
-  "Conditioning that fits around lifting, not instead of it",
-  "Reminders only on the days you actually train",
+  "Start, resume, and save guided lifting sessions",
+  "Scan a meal — calories and macros fill in",
+  "Apply calorie targets that follow your weight",
+  "Save conditioning so it counts on your week",
 ];
 
 const SKU_ORDER: PremiumSku[] = [PREMIUM_ANNUAL_SKU, PREMIUM_MONTHLY_SKU];
@@ -155,7 +154,11 @@ export function PaywallFlow({
               minimumFontScale={0.7}
               allowFontScaling={false}
             >
-              YOUR FULL PLAN IS READY.
+              PRO UNLOCKS WHAT YOU SAVE.
+            </Text>
+            <Text style={s.perkLead}>
+              Look around for free. Subscribe when you want to log workouts,
+              scan meals, or apply adaptive calories.
             </Text>
 
             <View style={s.perks}>
@@ -309,8 +312,16 @@ function makeStyles(C: OnboardingColors) {
       color: C.text,
       letterSpacing: -0.5,
       textAlign: "center",
-      marginBottom: 24,
+      marginBottom: 10,
       textTransform: "uppercase",
+    },
+    perkLead: {
+      fontFamily: FONTS.regular,
+      fontSize: 13,
+      lineHeight: 18,
+      color: C.muted,
+      textAlign: "center",
+      marginBottom: 18,
     },
     perks: {
       gap: 8,

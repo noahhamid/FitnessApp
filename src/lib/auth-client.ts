@@ -89,11 +89,12 @@ export const authClient = createAuthClient({
     credentials: "include",
   },
   plugins: [
+    // expo plugin types lag better-auth's BetterAuthClientPlugin.
     expoClient({
       scheme: APP_SCHEME,
       storagePrefix: AUTH_STORAGE_PREFIX,
       storage: Platform.OS === "web" ? webStorage : SecureStore,
-    }),
+    }) as any,
     bearerTokenPlugin(),
   ],
 });

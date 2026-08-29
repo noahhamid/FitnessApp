@@ -40,6 +40,7 @@ import {
 } from "@/src/lib/plan-day-selection";
 import { workoutPlanQueryKey } from "@/src/features/workout/hooks/useWorkoutPlan";
 import { startOnboardingRetake } from "@/src/features/auth/services/onboarding-draft.service";
+import { useIap } from "@/src/features/billing/IapContext";
 
 const GOALS = [
   { id: "lose", label: "Lose Weight", icon: "trending-down-outline" as const },
@@ -101,6 +102,12 @@ const SETTINGS = [
     label: "Training Setup",
     sub: null,
     icon: "barbell-outline" as const,
+  },
+  {
+    id: "restore",
+    label: "Restore purchases",
+    sub: null,
+    icon: "card-outline" as const,
   },
   {
     id: "restart",
@@ -212,6 +219,7 @@ export default function ProfileScreen() {
   const { user, isPending: authPending } = useAuth();
   const signOutMutation = useSignOut();
   const deleteAccountMutation = useDeleteAccount();
+  const { restore, restoring, isPremium } = useIap();
   const qc = useQueryClient();
   const params = useLocalSearchParams<{ editPlan?: string }>();
 
@@ -265,7 +273,7 @@ export default function ProfileScreen() {
   );
   const initials = (user?.name?.trim() ?? "A")
     .split(" ")
-    .map((w) => w[0])
+    .map((w: string) => w[0])
     .slice(0, 2)
     .join("")
     .toUpperCase();
@@ -705,7 +713,7 @@ export default function ProfileScreen() {
               </View>
               <Text style={styles.weekdayHint}>
                 {daysInput.length} days a week. Changing goal, days, level, or
-                equipment rebuilds your split, so today's workout may differ.
+                equipment rebuilds your split, so today&apos;s workout may differ.
               </Text>
             </GlassSurface>
           )}
@@ -751,7 +759,13 @@ export default function ProfileScreen() {
                       : "Not set"
                     : setting.id === "training"
                       ? `${experienceLabel(profile?.experience)} · ${equipmentLabel(profile?.equipment)}`
-                      : null;
+                      : setting.id === "restore"
+                        ? restoring
+                          ? "Restoring…"
+                          : isPremium
+                            ? "Pro is active"
+                            : "Unlock Pro on this device"
+                        : null;
 
               return (
                 <TouchableOpacity
@@ -766,6 +780,16 @@ export default function ProfileScreen() {
                       setting.id === "training"
                     ) {
                       setEditMode(true);
+                    } else if (setting.id === "restore") {
+                      if (restoring) return;
+                      void restore().then((ok) => {
+                        Alert.alert(
+                          ok ? "Purchases restored" : "Nothing to restore",
+                          ok
+                            ? "Pro is unlocked on this account."
+                            : "No verified subscription was found for this Apple or Google account.",
+                        );
+                      });
                     } else if (setting.id === "restart") {
                       Alert.alert(
                         "Restart setup?",

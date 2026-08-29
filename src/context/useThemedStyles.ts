@@ -13,6 +13,6 @@ export function useThemedStyles<S>(factory: (T: AppTheme) => S) {
   const ctx = useOptionalTheme();
   const T = ctx?.theme ?? lightTheme;
   const resolved = ctx?.resolved ?? "light";
-  const styles = useMemo(() => factory(T), [resolved, factory, T]);
+  const styles = useMemo(() => factory(T), [factory, T]);
   return { T, styles, resolved } as const;
 }

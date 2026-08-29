@@ -3,9 +3,10 @@ import { prisma } from "./prisma";
 
 export type EntitlementRow = {
   isPremium: boolean;
+  storeVerified?: boolean;
   productId: string | null;
   platform: string | null;
-  transactionId: string | null;
+  transactionId?: string | null;
   expiresAt: Date | null;
 };
 
@@ -13,6 +14,7 @@ export function isEntitlementActive(
   row: EntitlementRow | null | undefined,
 ): boolean {
   if (!row?.isPremium) return false;
+  if (row.storeVerified === false) return false;
   if (row.expiresAt && row.expiresAt.getTime() <= Date.now()) return false;
   return true;
 }

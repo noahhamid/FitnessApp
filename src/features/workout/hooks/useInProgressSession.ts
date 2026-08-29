@@ -22,6 +22,7 @@ import { dayTitleFromMuscleGroups } from "@/src/lib/plan-day-title";
 import { getTodaysPlanDayIndex } from "@/src/lib/plan-day-selection";
 import type { ExerciseLoggedSet, WorkoutPlan } from "../data/workouts";
 import { CONDITIONING_SESSION_NOTES } from "../services/conditioning-run.service";
+import { useUserProfile } from "@/src/features/profile/hooks/useUserProfile";
 
 type RawSet = ExerciseLoggedSet;
 
@@ -110,6 +111,7 @@ const inFlightExpireIds = new Set<string>();
 export function useInProgressSession() {
   const qc = useQueryClient();
   const { data: apiPlan } = useWorkoutPlan();
+  const { data: profile } = useUserProfile();
   const { data: allExercises } = useExerciseLibrary(); // unfiltered — need name lookups across all muscle groups
 
   const sessionQuery = useQuery({
@@ -205,6 +207,7 @@ export function useInProgressSession() {
           movementPattern: "carry",
         },
         apiPlan?.goalId ?? "health",
+        profile?.gender,
       );
       const loggedSets = normalizeSets(se.sets);
       return {
@@ -225,11 +228,12 @@ export function useInProgressSession() {
         coverImage = adaptPlanDay(
           apiPlan.days[todaysIndex],
           apiPlan.goalId,
+          profile?.gender,
         ).coverImage;
       }
     }
     if (!coverImage && exercises[0]?.name) {
-      coverImage = imageForExercise(exercises[0].name);
+      coverImage = imageForExercise(exercises[0].name, profile?.gender);
     }
 
     const plan: WorkoutPlan = {
@@ -267,7 +271,7 @@ export function useInProgressSession() {
       minutesLeft,
       estCalories,
     };
-  }, [sessionQuery.data, allExercises, apiPlan]);
+  }, [sessionQuery.data, allExercises, apiPlan, profile?.gender]);
 
   // Unknown until the session query settles — and, if today's incomplete
   // session exists, until the library is ready to build Continue (otherwise

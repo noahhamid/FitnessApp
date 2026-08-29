@@ -27,7 +27,7 @@ export function ConsistencyCard({
   targetPerWeek,
   weekDays,
 }: Props) {
-  const { T, styles: s } = useThemedStyles(makeStyles);
+  const { styles: s } = useThemedStyles(makeStyles);
   const todayKey = localDateOnly();
 
   return (

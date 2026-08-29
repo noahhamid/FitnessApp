@@ -32,7 +32,7 @@ export function StreakPill({
   label = "count",
   style,
 }: Props) {
-  const { T, styles: s } = useThemedStyles(makeStyles);
+  const { styles: s } = useThemedStyles(makeStyles);
   const { resolved } = useTheme();
   const flameColor = STREAK_FLAME_ORANGE[resolved];
   const text =

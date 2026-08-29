@@ -8,6 +8,7 @@ import {
 } from "@/src/lib/workout-plan-adapter";
 import { getPlanDayIndexForDate } from "@/src/lib/plan-day-selection";
 import { localDateOnly } from "@/src/features/progress/lib/localDate";
+import { useUserProfile } from "@/src/features/profile/hooks/useUserProfile";
 
 export type TodaysWorkoutDay =
   | {
@@ -22,6 +23,7 @@ export type TodaysWorkoutDay =
 
 export function useTodaysWorkoutSummary(dateStr?: string) {
   const { data: apiPlan, isLoading } = useWorkoutPlan();
+  const { data: profile } = useUserProfile();
   const { extras } = useTodayExtras();
   const includeExtras = !dateStr || dateStr === localDateOnly();
 
@@ -42,7 +44,7 @@ export function useTodaysWorkoutSummary(dateStr?: string) {
     const apiDay = apiPlan.days[dayIndex];
     if (!apiDay) return null;
 
-    const uiDay = adaptPlanDay(apiDay, apiPlan.goalId);
+    const uiDay = adaptPlanDay(apiDay, apiPlan.goalId, profile?.gender);
     const exercises =
       includeExtras && extras.length > 0
         ? [
@@ -56,6 +58,7 @@ export function useTodaysWorkoutSummary(dateStr?: string) {
                   movementPattern: e.movementPattern,
                 },
                 apiPlan.goalId,
+                profile?.gender,
               ),
             ),
           ]
@@ -69,7 +72,7 @@ export function useTodaysWorkoutSummary(dateStr?: string) {
       exerciseCount: exercises.length,
       imageUrl: uiDay.coverImage,
     };
-  }, [apiPlan, dateStr, extras, includeExtras]);
+  }, [apiPlan, dateStr, extras, includeExtras, profile?.gender]);
 
   // Back-compat alias used by older call sites expecting `summary`.
   const summary = day?.kind === "workout" ? day : null;

@@ -15,6 +15,6 @@ export function useOnboardingStyles<S>(
 ): { C: OnboardingColors; styles: S; resolved: "light" | "dark" } {
   const resolved = useSystemResolvedScheme();
   const C = getOnboardingColors(resolved);
-  const styles = useMemo(() => factory(C), [resolved, factory, C]);
+  const styles = useMemo(() => factory(C), [factory, C]);
   return { C, styles, resolved };
 }

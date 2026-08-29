@@ -14,7 +14,9 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { CameraView, useCameraPermissions } from "expo-camera";
+// Package is in package.json; local installs can miss the folder.
+// eslint-disable-next-line import/no-unresolved
+import { CameraView, useCameraPermissions, type CameraViewRef } from "expo-camera";
 import {
   ChevronLeft,
   RotateCcw,
@@ -30,6 +32,7 @@ import { AppIcon } from "@/src/components/AppIcon";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { PressableScale } from "../components/PressableScale";
+import { useIap } from "@/src/features/billing/IapContext";
 import { useAddMeal } from "../hooks/useNutrition";
 import { scanFoodImage, uploadMealPhoto } from "../services/nutrition.service";
 import type { FoodScanResult, MealType } from "../types/nutrition.types";
@@ -237,10 +240,10 @@ export default function ScanMealScreen() {
     : "Breakfast";
 
   const [permission, requestPermission] = useCameraPermissions();
-  const cameraRef = useRef<CameraView>(null);
+  const cameraRef = useRef<CameraViewRef>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [result, setResult] = useState<FoodScanResult | null>(null);
+  const [, setResult] = useState<FoodScanResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [capturingShot, setCapturingShot] = useState(false);
 
@@ -252,6 +255,13 @@ export default function ScanMealScreen() {
   const [fat, setFat] = useState("");
 
   const addMeal = useAddMeal();
+  const { isPremium } = useIap();
+
+  useEffect(() => {
+    if (!isPremium) {
+      router.replace("/paywall");
+    }
+  }, [isPremium, router]);
 
   const openCamera = async () => {
     setErrorMsg(null);
@@ -366,6 +376,8 @@ export default function ScanMealScreen() {
     );
   };
 
+  if (!isPremium) return null;
+
   return (
     <SafeAreaView
       edges={status === "camera" ? [] : ["top"]}
@@ -393,7 +405,7 @@ export default function ScanMealScreen() {
             <AppIcon name="scan" size={42} />
           </View>
           <Text style={styles.hint}>
-            Snap a photo of your meal and{"\n"}we'll estimate the macros.
+            Snap a photo of your meal and{"\n"}we&apos;ll estimate the macros.
           </Text>
           {errorMsg && <Text style={styles.error}>{errorMsg}</Text>}
           <PressableScale onPress={openCamera} style={styles.captureBtnPressable}>
@@ -555,7 +567,7 @@ export default function ScanMealScreen() {
 
           {addMeal.isError && (
             <Text style={styles.error}>
-              Couldn't save that meal — try again.
+              {"Couldn't save that meal — try again."}
             </Text>
           )}
 

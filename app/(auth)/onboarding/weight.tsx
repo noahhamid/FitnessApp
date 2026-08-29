@@ -4,7 +4,7 @@ import {
   HorizontalWeightScale,
   type HorizontalWeightScaleHandle,
 } from "@/src/ui/components/HorizontalWeightScale";
-import { FONTS, useOnboardingColors, type OnboardingColors } from "@/src/ui/tokens";
+import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useRef, useState } from "react";

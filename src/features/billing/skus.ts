@@ -1,4 +1,4 @@
-/** Store subscription IDs — create matching products in ASC / Play Console. */
+/** Store subscription IDs — must match App Store Connect / Play Console exactly. */
 export const PREMIUM_MONTHLY_SKU = "com.exo.fitness.premium.monthly";
 export const PREMIUM_ANNUAL_SKU = "com.exo.fitness.premium.annual";
 

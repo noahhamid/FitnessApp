@@ -40,7 +40,7 @@ export const HorizontalWeightScale = forwardRef<
   HorizontalWeightScaleHandle,
   Props
 >(function HorizontalWeightScale({ min, max, value, onChange }, ref) {
-  const { C, styles: s } = useOnboardingStyles(makeStyles);
+  const { styles: s } = useOnboardingStyles(makeStyles);
   const scrollRef = useRef<ScrollView>(null);
   const lastValue = useRef(value);
   const initialValue = useRef(value).current;

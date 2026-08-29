@@ -176,7 +176,7 @@ function IconMotion({
       entrance.stop();
       loop?.stop();
     };
-  }, [delay]);
+  }, [delay, anim, flicker, isFlame]);
 
   let transform: any[] = [{ scale: anim }];
 

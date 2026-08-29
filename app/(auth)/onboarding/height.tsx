@@ -6,7 +6,7 @@ import {
   HEIGHT_METER_VISIBLE,
   type HeightMeterHandle,
 } from "@/src/ui/components/HeightMeter";
-import { FONTS, useOnboardingColors, type OnboardingColors } from "@/src/ui/tokens";
+import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";

@@ -1,5 +1,8 @@
 import type { WorkoutPlan, Exercise, ExerciseType } from "@/src/features/workout/data/workouts";
-import { imageForExercise } from "@/src/features/workout/constants/exercise-images";
+import {
+  imageForExercise,
+  type ExerciseArtGender,
+} from "@/src/features/workout/constants/exercise-images";
 import { dayTitleFromMuscleGroups } from "@/src/lib/plan-day-title";
 import { resolveAssetUri } from "@/src/lib/resolve-asset";
 
@@ -117,7 +120,11 @@ function inferExerciseType(name: string): ExerciseType {
   return DURATION_NAME_HINTS.some((hint) => lower.includes(hint)) ? "duration" : "reps";
 }
 
-function adaptExercise(ex: ApiPlanExercise, goalId: string): Exercise {
+function adaptExercise(
+  ex: ApiPlanExercise,
+  goalId: string,
+  gender?: ExerciseArtGender,
+): Exercise {
   const type = inferExerciseType(ex.exerciseName);
   const midReps = Math.round((ex.targetRepsMin + ex.targetRepsMax) / 2);
 
@@ -130,7 +137,7 @@ function adaptExercise(ex: ApiPlanExercise, goalId: string): Exercise {
       ? { reps: midReps }
       : { durationSec: ex.targetRepsMin || 40 }),
     restSec: REST_SEC_BY_GOAL[goalId] ?? 60,
-    imageUrl: imageForExercise(ex.exerciseName),
+    imageUrl: imageForExercise(ex.exerciseName, gender),
     instructions:
       CUE_BY_PATTERN[ex.movementPattern] ??
       "Focus on controlled form and full range of motion.",
@@ -159,7 +166,11 @@ export function estimateWorkoutMinutes(
   return Math.round(seconds / 60);
 }
 
-export function adaptPlanDay(day: ApiPlanDay, goalId: string): WorkoutPlan {
+export function adaptPlanDay(
+  day: ApiPlanDay,
+  goalId: string,
+  gender?: ExerciseArtGender,
+): WorkoutPlan {
   const sorted = [...day.exercises].sort((a, b) => a.orderIndex - b.orderIndex);
   // Render-time title from actual muscles so stored "Upper A" / "Push" labels
   // update immediately without regenerating the plan.
@@ -172,7 +183,7 @@ export function adaptPlanDay(day: ApiPlanDay, goalId: string): WorkoutPlan {
     title,
     tag: goalId.charAt(0).toUpperCase() + goalId.slice(1),
     coverImage: coverImageForDay(title, day.label),
-    exercises: sorted.map((ex) => adaptExercise(ex, goalId)),
+    exercises: sorted.map((ex) => adaptExercise(ex, goalId, gender)),
   };
 }
 
@@ -193,6 +204,7 @@ const DEFAULT_REPS = 10;
 export function adaptLibraryExercise(
   ex: LibraryExerciseInput,
   goalId: string,
+  gender?: ExerciseArtGender,
 ): Exercise {
   const type = inferExerciseType(ex.name);
 
@@ -203,7 +215,7 @@ export function adaptLibraryExercise(
     sets: DEFAULT_SETS,
     ...(type === "reps" ? { reps: DEFAULT_REPS } : { durationSec: 40 }),
     restSec: REST_SEC_BY_GOAL[goalId] ?? 60,
-    imageUrl: imageForExercise(ex.name),
+    imageUrl: imageForExercise(ex.name, gender),
     instructions:
       ex.instructions?.trim() ||
       CUE_BY_PATTERN[ex.movementPattern] ||

@@ -1,8 +1,11 @@
 import rawIds from "./exercise-image-ids.json";
 
+export type ExerciseArtGender = "male" | "female" | null | undefined;
+
 type ExerciseImageIds = {
   placeholder: string;
   byName: Record<string, string>;
+  byNameFemale?: Record<string, string>;
 };
 
 const imageIds = rawIds as ExerciseImageIds;
@@ -34,14 +37,23 @@ function deliveryUrl(publicId: string): string {
   return `https://res.cloudinary.com/${CLOUD}/image/upload/${TRANSFORMS}/${path}`;
 }
 
-function publicIdFor(name?: string | null): string {
+function publicIdFor(
+  name?: string | null,
+  gender?: ExerciseArtGender,
+): string {
   const key = name?.trim().toLowerCase() ?? "";
+  if (gender === "female" && key && imageIds.byNameFemale?.[key]) {
+    return imageIds.byNameFemale[key];
+  }
   if (key && imageIds.byName[key]) return imageIds.byName[key];
   return imageIds.placeholder;
 }
 
 /** Resolved HTTPS URI for an exercise illustration (or shared placeholder). */
-export function imageForExercise(name?: string | null): string {
+export function imageForExercise(
+  name?: string | null,
+  gender?: ExerciseArtGender,
+): string {
   if (!CLOUD) {
     if (__DEV__) {
       console.warn(
@@ -50,16 +62,21 @@ export function imageForExercise(name?: string | null): string {
     }
     // Still return a well-formed URL so Image components don't crash;
     // without a cloud name this is intentionally invalid.
-    return deliveryUrl(publicIdFor(name)).replace(
+    return deliveryUrl(publicIdFor(name, gender)).replace(
       "res.cloudinary.com//",
       "res.cloudinary.com/missing-cloud/",
     );
   }
-  return deliveryUrl(publicIdFor(name));
+  return deliveryUrl(publicIdFor(name, gender));
 }
 
 /** Whether a dedicated illustration exists for this exercise name. */
-export function hasExerciseImage(name?: string | null): boolean {
+export function hasExerciseImage(
+  name?: string | null,
+  gender?: ExerciseArtGender,
+): boolean {
   const key = name?.trim().toLowerCase() ?? "";
-  return Boolean(key && imageIds.byName[key]);
+  if (!key) return false;
+  if (gender === "female" && imageIds.byNameFemale?.[key]) return true;
+  return Boolean(imageIds.byName[key]);
 }

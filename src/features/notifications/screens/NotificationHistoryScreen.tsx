@@ -245,7 +245,7 @@ export function NotificationHistoryScreen() {
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>No logs yet</Text>
             <Text style={styles.emptyBody}>
-              When meal and workout reminders are scheduled, they'll appear here
+              When meal and workout reminders are scheduled, they&apos;ll appear here
               as a simple log — including ones you handled before they fired.
             </Text>
           </View>

@@ -1,7 +1,7 @@
 import { OnboardingHeader } from "@/src/features/auth/components/OnboardingHeader";
 import { OnboardingNav } from "@/src/features/auth/components/OnboardingNav";
 import { NumberWheel } from "@/src/ui/components/NumberWheel";
-import { FONTS, useOnboardingColors, type OnboardingColors } from "@/src/ui/tokens";
+import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";

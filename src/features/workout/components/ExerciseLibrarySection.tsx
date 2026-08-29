@@ -17,6 +17,7 @@ import {
   formatMovementPattern,
 } from "../lib/muscle-icons";
 import { imageForExercise } from "@/src/lib/workout-plan-adapter";
+import { useUserProfile } from "@/src/features/profile/hooks/useUserProfile";
 
 const MUSCLE_GROUP_CATEGORIES = [
   "All",
@@ -51,6 +52,7 @@ interface Props {
 
 export function ExerciseLibrarySection({ onView }: Props) {
   const { T, styles: s } = useThemedStyles(makeStyles);
+  const { data: profile } = useUserProfile();
   const [category, setCategory] = useState("All");
   const muscleGroup = toApiMuscleGroup(category);
   const {
@@ -113,7 +115,7 @@ export function ExerciseLibrarySection({ onView }: Props) {
             >
               <View style={s.iconWrap}>
                 <Image
-                  source={{ uri: imageForExercise(ex.name) }}
+                  source={{ uri: imageForExercise(ex.name, profile?.gender) }}
                   style={s.rowIcon}
                   accessibilityIgnoresInvertColors
                 />

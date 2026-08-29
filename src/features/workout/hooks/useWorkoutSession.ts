@@ -124,17 +124,17 @@ export function useUpdateSessionExercise() {
       ),
     onSuccess: (_data, { sessionId, exerciseId, sets }) => {
       qc.setQueryData<
-        | Array<{
+        | {
             id: string;
             startedAt: string;
             completedAt: string | null;
             notes: string | null;
-            exercises: Array<{
+            exercises: {
               id: string;
               exerciseName: string;
               sets?: unknown;
-            }>;
-          }>
+            }[];
+          }[]
         | undefined
       >(["in-progress-session"], (old) => {
         if (!old?.length) return old;

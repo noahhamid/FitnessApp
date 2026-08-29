@@ -17,7 +17,7 @@ export function OnboardingNav({
   nextDisabled = false,
   centered = false,
 }: Props) {
-  const { C, styles } = useOnboardingStyles(makeStyles);
+  const { styles } = useOnboardingStyles(makeStyles);
 
   return (
     <View style={[styles.nav, centered && styles.navCentered]}>

@@ -66,7 +66,7 @@ const INJURY_LABELS: Record<string, string> = {
 };
 
 export function ReadyScreen() {
-  const { C, styles: s } = useOnboardingStyles(makeStyles);
+  const { styles: s } = useOnboardingStyles(makeStyles);
   const params = useLocalSearchParams<{
     goalId?: string;
     weightKg?: string;

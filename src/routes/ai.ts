@@ -70,7 +70,7 @@ function checkRateLimit(userId: string): boolean {
 }
 
 async function requestGemini(
-  parts: Array<Record<string, unknown>>,
+  parts: Record<string, unknown>[],
   config?: GeminiGenerationConfig,
 ): Promise<GeminiPayload> {
   const key = process.env.GEMINI_API_KEY;

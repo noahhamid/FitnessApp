@@ -1,6 +1,6 @@
 // src/features/auth/hooks/useAuth.ts
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
   clearSessionToken,
@@ -18,7 +18,6 @@ import {
   signOut,
   signInWithGoogle,
   signInWithApple,
-  getSession,
   deleteAccount,
 } from "../services/auth.service";
 
@@ -68,7 +67,7 @@ const SESSION_KEY = ["auth", "session"] as const;
 // ── useSession — reactive session from Better Auth ────────────────────────────
 
 export function useAuthSession() {
-  const { data: session, isPending, error } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
   return { session, isPending };
 }
 

@@ -16,7 +16,7 @@ type Props = {
 };
 
 export function StreakHeroCard({ streakDays, sessions }: Props) {
-  const { T, styles: s } = useThemedStyles(makeStyles);
+  const { styles: s } = useThemedStyles(makeStyles);
   const { resolved } = useTheme();
   const flame = STREAK_FLAME_ORANGE[resolved];
   const todayKey = localDateOnly();

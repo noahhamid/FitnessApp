@@ -126,7 +126,7 @@ function UpNextWorkoutCardBase(props: Props) {
       anim.stop();
       loop.stop();
     };
-  }, [isRest, completed]);
+  }, [isRest, completed, arrowNudge, entrance]);
 
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">(
     "loading",

@@ -66,7 +66,7 @@ type TickProps = {
 };
 
 const Tick = memo(function Tick({ value, onPress }: TickProps) {
-  const { C, styles: s } = useOnboardingStyles(makeStyles);
+  const { styles: s } = useOnboardingStyles(makeStyles);
   const isMajor = value % 10 === 0;
   const isMid = value % 5 === 0;
 
@@ -107,7 +107,7 @@ export const HeightMeter = forwardRef<HeightMeterHandle, Props>(
     ref,
   ) {
     const palette = useOnboardingColors();
-    const { C, styles: s } = useOnboardingStyles(makeStyles);
+    const { styles: s } = useOnboardingStyles(makeStyles);
     const resolvedBg = backgroundColor ?? palette.bg;
     // Descending so taller cm sits at the top of the scroll content.
     const values = useMemo(

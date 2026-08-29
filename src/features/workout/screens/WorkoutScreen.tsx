@@ -27,7 +27,6 @@ import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
 import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import { api } from "@/src/lib/api";
-import { resolveAssetUri } from "@/src/lib/resolve-asset";
 import { WorkoutTabHeader } from "../components/WorkoutTabHeader";
 import { WorkoutPlanCard } from "../components/WorkoutPlanCard";
 import { WorkoutDetailScreen } from "../components/WorkoutDetailScreen";
@@ -100,18 +99,6 @@ function compactSplitLabel(label: string): string {
     .replace(/Upper\s*\/\s*Lower/gi, "Upper/Lower")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-// `require` at module scope is fine; resolveAssetSource must stay lazy
-// (breaks `expo export:embed` if called at import time).
-const AVATAR_PLACEHOLDER = require("../../../../assets/images/avatar-placeholder.jpg");
-let avatarPlaceholderUri: string | undefined;
-
-function getAvatarPlaceholderUri(): string {
-  if (avatarPlaceholderUri === undefined) {
-    avatarPlaceholderUri = resolveAssetUri(AVATAR_PLACEHOLDER);
-  }
-  return avatarPlaceholderUri;
 }
 
 /** Resolve a plan exercise to LibraryExercise shape for ExerciseDetailCard. */
@@ -267,8 +254,10 @@ export default function WorkoutScreen() {
 
   const uiDays: WorkoutPlan[] = useMemo(() => {
     if (!apiPlan) return [];
-    return apiPlan.days.map((day) => adaptPlanDay(day, apiPlan.goalId));
-  }, [apiPlan]);
+    return apiPlan.days.map((day) =>
+      adaptPlanDay(day, apiPlan.goalId, profile?.gender),
+    );
+  }, [apiPlan, profile?.gender]);
 
   const daysPerWeek = apiPlan?.daysPerWeek ?? uiDays.length;
 
@@ -358,11 +347,12 @@ export default function WorkoutScreen() {
               movementPattern: e.movementPattern,
             },
             apiPlan?.goalId ?? "health",
+            profile?.gender,
           ),
         ),
       ],
     };
-  }, [baseTodaysWorkout, extras, apiPlan?.goalId]);
+  }, [baseTodaysWorkout, extras, apiPlan?.goalId, profile?.gender]);
 
   // Prefetch plan + today's cover while the Workout tab is focused so Start
   // doesn't wait on a cold plan fetch / image decode.
@@ -746,7 +736,7 @@ export default function WorkoutScreen() {
     return (
       <ExerciseDetailCard
         exercise={viewingExercise}
-        imageUrl={imageForExercise(viewingExercise.name)}
+        imageUrl={imageForExercise(viewingExercise.name, profile?.gender)}
         addedToToday={addedNames.has(viewingExercise.name)}
         // Mid-workout library modal (ActiveWorkoutScreen) passes
         // showStart={false} / allowRemove={false}. Today browse omits
@@ -786,11 +776,15 @@ export default function WorkoutScreen() {
             id: `standalone-${viewingExercise.id}`,
             title: viewingExercise.name,
             tag: "Extra",
-            coverImage: imageForExercise(viewingExercise.name),
+            coverImage: imageForExercise(
+              viewingExercise.name,
+              profile?.gender,
+            ),
             exercises: [
               adaptLibraryExercise(
                 viewingExercise,
                 apiPlan?.goalId ?? "health",
+                profile?.gender,
               ),
             ],
           };
@@ -860,7 +854,7 @@ export default function WorkoutScreen() {
 
         {!isLoading && error && (
           <View style={s.centerState}>
-            <Text style={s.emptyTitle}>Couldn't load your plan</Text>
+            <Text style={s.emptyTitle}>{"Couldn't load your plan"}</Text>
             <Text style={s.emptySubtitle}>
               Pull to refresh, or check your connection.
             </Text>
@@ -931,7 +925,7 @@ export default function WorkoutScreen() {
             {!inProgress && todaysWorkout && (
               <>
                 <Reveal delay={140}>
-                  <Text style={s.sectionTitle}>Today's workout</Text>
+                  <Text style={s.sectionTitle}>{"Today's workout"}</Text>
                 </Reveal>
 
                 <Reveal delay={180}>
@@ -967,14 +961,18 @@ export default function WorkoutScreen() {
                     completedIndexes={completedCardioIndexes}
                     paused={cardio.paused}
                     onStart={(session, index) => {
-                      void cardio.start(session, index);
+                      requirePremium(() => {
+                        void cardio.start(session, index);
+                      });
                     }}
                     onTogglePause={() => {
                       if (cardio.paused) void cardio.resume();
                       else void cardio.pause();
                     }}
                     onComplete={() => {
-                      void handleCardioComplete();
+                      requirePremium(() => {
+                        void handleCardioComplete();
+                      });
                     }}
                     onDiscard={() => {
                       void cardio.discard();

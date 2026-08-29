@@ -54,7 +54,7 @@ function WeightLogSheetBody({
     } else {
       translateY.setValue(400);
     }
-  }, [visible, initialWeight]);
+  }, [visible, initialWeight, translateY]);
 
   const handleClose = () => {
     Animated.timing(translateY, {

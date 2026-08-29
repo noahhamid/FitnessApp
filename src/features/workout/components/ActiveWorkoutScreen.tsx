@@ -52,6 +52,7 @@ import {
 } from "../hooks/useWorkoutSession";
 import { topInset } from "@/src/lib/safe-area";
 import { imageForExercise } from "@/src/lib/workout-plan-adapter";
+import { useUserProfile } from "@/src/features/profile/hooks/useUserProfile";
 import type { LibraryExercise } from "../hooks/useExerciseLibrary";
 import { useWallClockElapsed } from "@/src/hooks/useWallClockElapsed";
 import {
@@ -173,7 +174,7 @@ const CountdownRing = ({
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
-  }, [left]);
+  }, [left, prog, total]);
 
   const offset = prog.interpolate({
     inputRange: [0, 1],
@@ -238,6 +239,7 @@ function LibraryModalBody({
 }) {
   // Modal portal — useThemedStyles (not static light `T`) so dark mode applies.
   const { T: theme, styles: lib } = useThemedStyles(makeLibraryStyles);
+  const { data: profile } = useUserProfile();
   const insets = useSafeAreaInsets();
   const safeTop = topInset(insets.top);
   const [viewing, setViewing] = useState<LibraryExercise | null>(null);
@@ -247,7 +249,7 @@ function LibraryModalBody({
     return (
       <ExerciseDetailCard
         exercise={viewing}
-        imageUrl={imageForExercise(viewing.name)}
+        imageUrl={imageForExercise(viewing.name, profile?.gender)}
         addedToToday={alreadyIn}
         allowRemove={false}
         showStart={false}
@@ -401,6 +403,7 @@ export function ActiveWorkoutScreen({
 }: Props) {
   const insets = useSafeAreaInsets();
   const safeTop = topInset(insets.top);
+  const { data: profile } = useUserProfile();
   const {
     addExercise: addToLiveSession,
     addingName,
@@ -566,6 +569,7 @@ export function ActiveWorkoutScreen({
         onEnd: () => setPhase("done"),
       },
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- paused is written by this timer
   }, [phase, plan.title, sessionClockMs]);
 
   useEffect(() => {
@@ -633,6 +637,7 @@ export function ActiveWorkoutScreen({
     const last = lastPerformance?.[selected.name];
     setCurrentReps(selected.reps ?? last?.reps ?? 8);
     setCurrentWeight(last?.weight ?? 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset log fields when the exercise changes
   }, [selectedId]);
 
   // ── animated values ────────────────────────────────────────────────────────
@@ -654,6 +659,7 @@ export function ActiveWorkoutScreen({
       tension: 55,
       useNativeDriver: true,
     }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- panelY is a stable ref
   }, []);
 
   useEffect(() => {
@@ -663,6 +669,7 @@ export function ActiveWorkoutScreen({
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- barWidth is a stable ref
   }, [doneSets, totalSets]);
 
   useEffect(() => {
@@ -685,6 +692,7 @@ export function ActiveWorkoutScreen({
     if (phase === "exercise" && selected.type === "duration")
       setSecsLeft(selected.durationSec ?? 0);
     else setSecsLeft(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selected fields read via selectedId
   }, [phase, selectedId, doneForSelected, screenMode, selectedComplete]);
 
   const completeCurrentSetRef = useRef<() => void>(() => {});
@@ -728,6 +736,7 @@ export function ActiveWorkoutScreen({
         useNativeDriver: true,
       }),
     ]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- animation values are stable refs
   }, [selectedId, screenMode]);
 
   useEffect(() => {
@@ -743,6 +752,7 @@ export function ActiveWorkoutScreen({
         useNativeDriver: true,
       }),
     ]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setNumScale is a stable ref
   }, [setNum]);
 
   useEffect(() => {
@@ -765,6 +775,7 @@ export function ActiveWorkoutScreen({
     ]).start();
     const t = setTimeout(() => onLeaveAfterFinish(), 1500);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- doneOpacity/doneScale are stable refs
   }, [phase, onLeaveAfterFinish]);
 
   const logCurrentSet = (completed: boolean) => {
@@ -1170,7 +1181,7 @@ export function ActiveWorkoutScreen({
             accessibilityLabel="Retry saving workout"
           >
             <Text style={s.setupErrorText}>
-              Couldn't save this workout. Tap to retry.
+              {"Couldn't save this workout. Tap to retry."}
             </Text>
           </Pressable>
         )}
@@ -1182,7 +1193,7 @@ export function ActiveWorkoutScreen({
             accessibilityLabel="Retry finishing workout"
           >
             <Text style={s.setupErrorText}>
-              Couldn't save this workout. Tap to retry.
+              {"Couldn't save this workout. Tap to retry."}
             </Text>
           </Pressable>
         )}
@@ -1325,7 +1336,9 @@ export function ActiveWorkoutScreen({
                         >
                           <Image
                             source={{
-                              uri: imageForExercise(ex.name),
+                              uri:
+                                ex.imageUrl ||
+                                imageForExercise(ex.name, profile?.gender),
                             }}
                             style={s.exThumb}
                             accessibilityIgnoresInvertColors

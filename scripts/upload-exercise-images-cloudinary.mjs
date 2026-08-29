@@ -75,10 +75,30 @@ cloudinary.config({
 });
 
 const workoutDir = path.join(root, "assets", "images", "workout");
-const files = fs
-  .readdirSync(workoutDir)
-  .filter((f) => /\.(jpe?g|png|webp)$/i.test(f))
-  .sort();
+
+function collectUploads(dir, publicPrefix = "") {
+  const out = [];
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (ent.isDirectory()) {
+      if (ent.name === "woman_workouts") {
+        out.push(
+          ...collectUploads(path.join(dir, ent.name), "woman/"),
+        );
+      }
+      continue;
+    }
+    if (/\.(jpe?g|png|webp)$/i.test(ent.name)) {
+      out.push({
+        abs: path.join(dir, ent.name),
+        file: publicPrefix ? `${publicPrefix}${ent.name}` : ent.name,
+        publicId: `${publicPrefix}${path.parse(ent.name).name}`,
+      });
+    }
+  }
+  return out.sort((a, b) => a.file.localeCompare(b.file));
+}
+
+const files = collectUploads(workoutDir);
 
 if (files.length === 0) {
   console.error(`No images found in ${workoutDir}`);
@@ -92,23 +112,21 @@ console.log(
 let ok = 0;
 let fail = 0;
 
-for (const file of files) {
-  const abs = path.join(workoutDir, file);
-  const publicId = path.parse(file).name; // keep spaces; delivery encodes them
+for (const item of files) {
   try {
-    const result = await cloudinary.uploader.upload(abs, {
+    const result = await cloudinary.uploader.upload(item.abs, {
       folder,
-      public_id: publicId,
+      public_id: item.publicId,
       overwrite: true,
       resource_type: "image",
       invalidate: true,
     });
     ok += 1;
-    console.log(`  ✓ ${file} → ${result.secure_url}`);
+    console.log(`  ✓ ${item.file} → ${result.secure_url}`);
   } catch (err) {
     fail += 1;
     const message = err instanceof Error ? err.message : String(err);
-    console.error(`  ✗ ${file}: ${message}`);
+    console.error(`  ✗ ${item.file}: ${message}`);
   }
 }
 

@@ -13,7 +13,7 @@ type Props = {
 };
 
 export function MuscleBalanceCard({ sessions, nameToGroup }: Props) {
-  const { T, styles: s } = useThemedStyles(makeStyles);
+  const { styles: s } = useThemedStyles(makeStyles);
 
   const rows = useMemo(() => {
     const from = new Date();

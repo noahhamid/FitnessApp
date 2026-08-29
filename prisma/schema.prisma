@@ -145,19 +145,21 @@ model User {
    @@map("user_profile")
  }
 
-/// Device-reported store subscription. Apple/Google still take payment;
-/// this row is how we know which account is Pro and gate paid APIs.
+/// Store-verified subscription. Premium APIs require storeVerified + unexpired.
 model UserEntitlement {
-  id            String    @id @default(cuid())
-  userId        String    @unique
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  isPremium     Boolean   @default(false)
-  productId     String?
-  platform      String?
-  transactionId String?
-  expiresAt     DateTime?
-  updatedAt     DateTime  @updatedAt
-  createdAt     DateTime  @default(now())
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isPremium             Boolean   @default(false)
+  storeVerified         Boolean   @default(false)
+  productId             String?
+  platform              String?
+  transactionId         String?   @unique
+  originalTransactionId String?   @unique
+  purchaseToken         String?   @db.Text
+  expiresAt             DateTime?
+  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime  @default(now())
 
   @@map("user_entitlement")
 }

@@ -14,7 +14,7 @@ export function WeekAdherenceBar({
   target,
   onPressOverview,
 }: Props) {
-  const { T, styles: s } = useThemedStyles(makeStyles);
+  const { styles: s } = useThemedStyles(makeStyles);
   const safeTarget = Math.max(1, target);
   const ratio = Math.min(1, Math.max(0, completed / safeTarget));
   const label =

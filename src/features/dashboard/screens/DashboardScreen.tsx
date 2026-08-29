@@ -11,8 +11,6 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { useMealLog } from "@/src/features/nutrition/hooks/useNutrition";
-
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { DashboardHeader } from "../components/DashboardHeader";
@@ -49,6 +47,7 @@ import { useWorkoutStreak } from "@/src/features/workout/hooks/useWorkoutStreak"
 import { useWorkoutPlan } from "@/src/features/workout/hooks/useWorkoutPlan";
 import {
   useAdjustWater,
+  useMealLog,
   useWater,
 } from "@/src/features/nutrition/hooks/useNutrition";
 import {
@@ -115,7 +114,6 @@ export default function DashboardScreen() {
     canGoNextWeek,
     shiftWeek,
     isToday,
-    joinDate,
   } = useDiaryDate(user?.createdAt);
   const { inProgress, isLoading: inProgressLoading } = useInProgressSession();
   const { data: personalRecords } = usePersonalRecords();

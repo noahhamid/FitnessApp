@@ -18,6 +18,20 @@ Paste these listing URLs (same copy as in the app):
 
 Apple: one subscription group, auto-renewable, paid-apps agreement + banking. Google: one subscription with monthly and annual base plans using those IDs.
 
+The API does **not** trust the phone. It verifies the Apple JWS / Play purchase token, then writes `user_entitlement`. Pro workout and meal-scan APIs read that row.
+
+### What you still do by hand
+
+1. Create those two product IDs in App Store Connect and Play Console. Paid-apps / billing profile + banking must be active.
+2. Run the new Prisma migration on Neon (`npx prisma migrate deploy`) so `storeVerified` exists. Old client-claimed Pro rows are cleared.
+3. **Android:** Play Console → Setup → API access → link a Google Cloud project → create a service account with **View financial data** / **Manage orders and subscriptions** → download JSON. Put `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (or email + private key) on **Vercel** and redeploy.
+4. **iOS:** no key needed for purchase sync. In App Store Connect → your app → App Store Server Notifications, set Production and Sandbox to  
+   `https://potentialpeak-app-puce.vercel.app/api/billing/apple-notifications`
+5. **Play RTDN (optional but needed for instant refunds):** Play Console → Monetization setup → Real-time developer notifications → Pub/Sub topic, push endpoint  
+   `https://potentialpeak-app-puce.vercel.app/api/billing/google-rtdn`
+6. Sandbox / internal testing: use a TestFlight sandbox Apple ID and a Play license tester. Expo Go cannot buy these products.
+7. Local only: `IAP_SKIP_VERIFY=true` in `.env.local` lets the API accept a token without calling the stores. Never set this on Vercel production.
+
 ## Email (Resend)
 
 Production email sign-up needs a **verified domain** on `RESEND_FROM_EMAIL`. Until then, use Google / Apple sign-in or the Resend account-owner inbox.

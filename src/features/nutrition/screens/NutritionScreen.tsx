@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Pressable,
   RefreshControl,
@@ -7,16 +7,24 @@ import {
   StyleSheet,
   Text,
   View,
-  Alert,
-  Platform,
-  ActionSheetIOS,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useWaterResync } from "@/src/features/nutrition/hooks/useNutrition";
+import {
+  useWaterResync,
+  useMealLog,
+  useDailyTotals,
+  useNutritionGoals,
+  useWater,
+  useAdjustWater,
+  useWeeklyTrend,
+  useSuggestion,
+  useAdaptiveSuggestion,
+  useApplyAdaptiveSuggestion,
+} from "@/src/features/nutrition/hooks/useNutrition";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import { resolveAssetUri } from "@/src/lib/resolve-asset";
@@ -34,19 +42,6 @@ import { NutritionTargetsModal } from "../components/NutritionTargetsModal";
 import { AdaptiveCalorieCard } from "../components/AdaptiveCalorieCard";
 import { useProfile } from "@/src/features/auth/hooks/useProfile";
 import { goalLabel } from "@/src/features/auth/services/goals.service";
-
-import {
-  useMealLog,
-  useDailyTotals,
-  useNutritionGoals,
-  useWater,
-  useAdjustWater,
-  useWeeklyTrend,
-  useSuggestion,
-  useAdaptiveSuggestion,
-  useApplyAdaptiveSuggestion,
-  useDeleteMeal,
-} from "../hooks/useNutrition";
 import type { MealLogEntry, MealType } from "../types/nutrition.types";
 import { GYM_FOODS } from "@/src/lib/gymFoods";
 import {
@@ -57,13 +52,12 @@ import {
   signupDateOnly,
   weekDatesFor,
 } from "@/src/lib/week-days";
-import { suggestMealSlotForQuickAdd } from "@/src/lib/meal-workout-reminders";
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import {
   invalidateQueryPrefixes,
   usePullToRefresh,
 } from "@/src/hooks/usePullToRefresh";
-import { AdaptiveSuggestionCard } from "../components/AdaptiveSuggestionCard";
+import { useRequirePremium } from "@/src/features/billing/useRequirePremium";
 const WATER_GOAL_GLASSES = 8;
 const MEAL_SLOTS: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"];
 const RECOMMENDED_RANGE: Record<MealType, string> = {
@@ -103,23 +97,19 @@ function formatTime(iso: string): string {
   });
 }
 
-function dayNum(dateStr: string): number {
-  return new Date(dateStr + "T00:00:00").getDate();
-}
-
 export default function MealScreen() {
   const { T, styles, resolved } = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const requirePremium = useRequirePremium();
   const joinDate = signupDateOnly(user?.createdAt);
   const minWeekOffset = minWeekOffsetSince(user?.createdAt);
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [weekOffset, setWeekOffset] = useState(0);
   const [targetsOpen, setTargetsOpen] = useState(false);
   const [adaptiveDismissed, setAdaptiveDismissed] = useState(false);
-  const deleteMeal = useDeleteMeal(selectedDate);
 
   const refreshNutrition = useCallback(
     () =>
@@ -178,59 +168,6 @@ export default function MealScreen() {
     }
     return map;
   }, [meals]);
-
-  const openMealActions = useCallback(
-    (entry: MealLogEntry) => {
-      const goEdit = () => {
-        router.push({
-          pathname: "/log-meal",
-          params: {
-            id: entry.id,
-            slot: entry.meal,
-            date: entry.log_date,
-            name: entry.name,
-            cal: String(entry.cal),
-            protein: String(entry.protein),
-            carbs: String(entry.carbs),
-            fat: String(entry.fat),
-          },
-        });
-      };
-
-      const confirmDelete = () => {
-        Alert.alert("Delete this meal log?", "This cannot be undone.", [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: () => deleteMeal.mutate(entry.id),
-          },
-        ]);
-      };
-
-      if (Platform.OS === "ios") {
-        ActionSheetIOS.showActionSheetWithOptions(
-          {
-            options: ["Cancel", "Edit", "Delete"],
-            cancelButtonIndex: 0,
-            destructiveButtonIndex: 2,
-          },
-          (index) => {
-            if (index === 1) goEdit();
-            if (index === 2) confirmDelete();
-          },
-        );
-        return;
-      }
-
-      Alert.alert(entry.name, undefined, [
-        { text: "Cancel", style: "cancel" },
-        { text: "Edit", onPress: goEdit },
-        { text: "Delete", style: "destructive", onPress: confirmDelete },
-      ]);
-    },
-    [deleteMeal, router],
-  );
 
   const loggedByDate = useMemo(() => {
     const set = new Set<string>();
@@ -340,9 +277,11 @@ export default function MealScreen() {
             applying={applyAdaptive.isPending}
             error={applyAdaptive.isError}
             onApply={() =>
-              applyAdaptive.mutate(adaptive.suggestedCalories, {
-                onSuccess: () => setAdaptiveDismissed(true),
-              })
+              requirePremium(() =>
+                applyAdaptive.mutate(adaptive.suggestedCalories, {
+                  onSuccess: () => setAdaptiveDismissed(true),
+                }),
+              )
             }
             onDismiss={() => setAdaptiveDismissed(true)}
           />
@@ -362,10 +301,12 @@ export default function MealScreen() {
               appIcon: "scan",
               primary: true,
               onPress: () =>
-                router.push({
-                  pathname: "/scan-meal",
-                  params: { date: selectedDate },
-                }),
+                requirePremium(() =>
+                  router.push({
+                    pathname: "/scan-meal",
+                    params: { date: selectedDate },
+                  }),
+                ),
             },
             {
               key: "manual",
@@ -381,7 +322,7 @@ export default function MealScreen() {
         />
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Today's meals</Text>
+          <Text style={styles.sectionTitle}>{"Today's meals"}</Text>
           <Pressable
             onPress={() =>
               router.push({

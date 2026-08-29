@@ -76,6 +76,8 @@ export function ProgressCoachCard({
   const draw = useRef(new RNAnimated.Value(0)).current;
   const pulse = useRef(new RNAnimated.Value(0)).current;
 
+  // Animated values are stable refs; listing them keeps exhaustive-deps
+  // happy without restarting the entrance loop.
   useEffect(() => {
     RNAnimated.timing(entrance, {
       toValue: 1,
@@ -112,7 +114,7 @@ export function ProgressCoachCard({
     );
     loop.start();
     return () => loop.stop();
-  }, [lineLength, hasSpark]);
+  }, [lineLength, hasSpark, draw, entrance, pulse]);
 
   const dashOffset = draw.interpolate({
     inputRange: [0, 1],
@@ -203,7 +205,7 @@ export function ProgressCoachCard({
             ) : (
               <Sparkles size={11} color={T.accent} strokeWidth={2.2} />
             )}
-            <Text style={styles.eyebrow}>COACH'S NOTE</Text>
+            <Text style={styles.eyebrow}>{"COACH'S NOTE"}</Text>
           </View>
 
           <View style={styles.noteRow}>
