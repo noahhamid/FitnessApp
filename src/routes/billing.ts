@@ -131,7 +131,7 @@ billingRouter.post("/sync", requireAuth, async (c) => {
       purchaseToken: sub.purchaseToken!,
       transactionId: sub.transactionId,
     });
-    if (!verified.ok) {
+    if (verified.ok === false) {
       if (candidates.length === 1) {
         return err(c, verified.reason, 400);
       }
