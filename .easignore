@@ -1,0 +1,16 @@
+# Keep EAS upload small — exercise images are on Cloudinary
+assets/images/workout/
+data/
+uploads/
+.expo/
+.expo-web-test/
+.expo-web-test2/
+.pnpm-store/
+.vercel/
+.git/
+android/
+ios/
+*.apk
+scripts/data/
+agent-transcripts/
+__tests__/

@@ -20,8 +20,8 @@
       "node": "20.19.4",
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
-        "EXPO_PUBLIC_API_URL": "https://potentialpeak-app-puce.vercel.app",
-        "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potentialpeak-app-puce.vercel.app",
+        "EXPO_PUBLIC_API_URL": "https://potential-peak.vercel.app",
+        "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potential-peak.vercel.app",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "571605491186-b04ac11j9h523q4v733k4g9726hupbh9.apps.googleusercontent.com",
         "EXPO_PUBLIC_SENTRY_DSN": "https://f8139614f0bbc1d1ec4a8f8881e558f9@o4511916203769856.ingest.de.sentry.io/4511916250759248",
         "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "xxef7gz3",
@@ -36,8 +36,8 @@
       "node": "20.19.4",
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
-        "EXPO_PUBLIC_API_URL": "https://potentialpeak-app-puce.vercel.app",
-        "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potentialpeak-app-puce.vercel.app",
+        "EXPO_PUBLIC_API_URL": "https://potential-peak.vercel.app",
+        "EXPO_PUBLIC_BETTER_AUTH_URL": "https://potential-peak.vercel.app",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "571605491186-b04ac11j9h523q4v733k4g9726hupbh9.apps.googleusercontent.com",
         "EXPO_PUBLIC_SENTRY_DSN": "https://f8139614f0bbc1d1ec4a8f8881e558f9@o4511916203769856.ingest.de.sentry.io/4511916250759248",
         "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "xxef7gz3",
