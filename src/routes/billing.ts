@@ -131,13 +131,14 @@ billingRouter.post("/sync", requireAuth, async (c) => {
       purchaseToken: sub.purchaseToken!,
       transactionId: sub.transactionId,
     });
-    if (verified.ok) {
-      granted = verified.subscription;
+    if (!verified.ok) {
+      if (candidates.length === 1) {
+        return err(c, verified.reason, 400);
+      }
+      continue;
+    }
+    granted = verified.subscription;
       break;
-    }
-    else if (candidates.length === 1) {
-      return err(c, verified.reason, 400);
-    }
   }
 
   if (granted) {
