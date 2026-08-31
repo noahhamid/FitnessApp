@@ -135,7 +135,7 @@ billingRouter.post("/sync", requireAuth, async (c) => {
       granted = verified.subscription;
       break;
     }
-    if (candidates.length === 1) {
+    else if (candidates.length === 1) {
       return err(c, verified.reason, 400);
     }
   }
