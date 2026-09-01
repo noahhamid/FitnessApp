@@ -5,7 +5,7 @@
  * Keep this file free of `expo-*` / `react-native` imports — the API server
  * also loads it. Dev LAN detection lives in `dev-api-url.ts` (client only).
  */
-export const PRODUCTION_API_URL = "https://potentialpeak-app-puce.vercel.app";
+export const PRODUCTION_API_URL = "https://potential-peak.vercel.app";
 
 function stripTrailingSlash(url: string): string {
   return url.replace(/\/$/, "");
