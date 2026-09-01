@@ -27,7 +27,7 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, type ErrorBoundaryProps } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useMemo } from "react";
 import { Platform } from "react-native";
@@ -36,6 +36,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { AppThemeProvider, useTheme } from "@/src/context/ThemeContext";
 import { AppSafeAreaChrome } from "@/src/components/AppSafeAreaChrome";
+import {
+  AppErrorBoundary,
+  ErrorFallback,
+} from "@/src/components/AppErrorBoundary";
 import { IapProvider } from "@/src/features/billing/IapProvider";
 import { LoadingScreen } from "@/src/ui/components/LoadingScreen";
 import * as WebBrowser from "expo-web-browser";
@@ -138,12 +142,24 @@ function RootLayout() {
       <AppThemeProvider>
         <QueryClientProvider client={queryClient}>
           <IapProvider>
-            <AppShell />
+            {/* Inside the providers so retrying re-mounts the screens without
+                dropping the theme, session, or React Query cache. */}
+            <AppErrorBoundary>
+              <AppShell />
+            </AppErrorBoundary>
           </IapProvider>
         </QueryClientProvider>
       </AppThemeProvider>
     </SafeAreaProvider>
   );
+}
+
+/**
+ * expo-router renders this instead of a white screen when a route — or this
+ * layout's own provider tree — throws. `retry` clears the router's error state.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return <ErrorFallback error={error} retry={retry} />;
 }
 
 export default sentryEnabled ? Sentry.wrap(RootLayout) : RootLayout;

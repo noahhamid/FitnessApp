@@ -22,6 +22,7 @@ import { dayTitleFromMuscleGroups } from "@/src/lib/plan-day-title";
 import { getTodaysPlanDayIndex } from "@/src/lib/plan-day-selection";
 import type { ExerciseLoggedSet, WorkoutPlan } from "../data/workouts";
 import { CONDITIONING_SESSION_NOTES } from "../services/conditioning-run.service";
+import { loadActiveWorkout } from "../services/active-workout.service";
 import { useUserProfile } from "@/src/features/profile/hooks/useUserProfile";
 
 type RawSet = ExerciseLoggedSet;
@@ -36,6 +37,7 @@ interface RawSession {
 }
 
 export const inProgressSessionQueryKey = ["in-progress-session"] as const;
+export const activeWorkoutSnapshotQueryKey = ["active-workout-snapshot"] as const;
 
 const STALE_CARDIO_MS = 15_000;
 
@@ -119,6 +121,13 @@ export function useInProgressSession() {
     queryFn: fetchInProgressSessions,
   });
 
+  // Local mirror of the live workout. Reads from disk, so it resolves even
+  // with no signal — this is what recovers sets whose PATCH never landed.
+  const snapshotQuery = useQuery({
+    queryKey: activeWorkoutSnapshotQueryKey,
+    queryFn: loadActiveWorkout,
+  });
+
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   // Past-day incomplete sessions are abandoned — delete them. Never POST
@@ -172,6 +181,7 @@ export function useInProgressSession() {
         next === "active"
       ) {
         void qc.invalidateQueries({ queryKey: ["in-progress-session"] });
+        void qc.invalidateQueries({ queryKey: activeWorkoutSnapshotQueryKey });
       }
       appStateRef.current = next;
     });
@@ -189,6 +199,16 @@ export function useInProgressSession() {
     }
 
     const libraryByName = new Map(allExercises.map((ex) => [ex.name, ex]));
+
+    // Keyed by name, not id: the snapshot can hold pending-/live- ids that were
+    // never remapped to WorkoutExercise rows, and name is already the join key
+    // the set logs use. Ignore snapshots from any other session.
+    const snapshot = snapshotQuery.data;
+    const snapshotSetsByName = new Map<string, RawSet[]>(
+      snapshot?.sessionId === session.id
+        ? snapshot.exercises.map((ex) => [ex.name, normalizeSets(ex.sets)])
+        : [],
+    );
 
     // Reconstruct a WorkoutPlan-shaped object from the session's stored
     // exercise names, using library metadata where the name matches
@@ -209,7 +229,13 @@ export function useInProgressSession() {
         apiPlan?.goalId ?? "health",
         profile?.gender,
       );
-      const loggedSets = normalizeSets(se.sets);
+      // Whichever copy has more sets is the more recent truth: the server only
+      // falls behind when a PATCH failed, and the snapshot only when it was
+      // written before a successful sync.
+      const serverSets = normalizeSets(se.sets);
+      const diskSets = snapshotSetsByName.get(se.exerciseName) ?? [];
+      const loggedSets =
+        diskSets.length > serverSets.length ? diskSets : serverSets;
       return {
         ...adapted,
         id: se.id,
@@ -253,9 +279,11 @@ export function useInProgressSession() {
 
     // Real set completion (Stage 1 PATCH / resume hydration) — not wall-clock.
     const totalTargetSets = plan.exercises.reduce((a, e) => a + e.sets, 0);
-    const completedSets = session.exercises.reduce((a, se) => {
-      return a + countCompletedSets(normalizeSets(se.sets));
-    }, 0);
+    // From the merged exercises, so Continue reflects disk-recovered sets too.
+    const completedSets = exercises.reduce(
+      (a, ex) => a + countCompletedSets(ex.loggedSets ?? []),
+      0,
+    );
     const percent =
       totalTargetSets > 0
         ? Math.min(100, Math.round((completedSets / totalTargetSets) * 100))
@@ -271,7 +299,13 @@ export function useInProgressSession() {
       minutesLeft,
       estCalories,
     };
-  }, [sessionQuery.data, allExercises, apiPlan, profile?.gender]);
+  }, [
+    sessionQuery.data,
+    snapshotQuery.data,
+    allExercises,
+    apiPlan,
+    profile?.gender,
+  ]);
 
   // Unknown until the session query settles — and, if today's incomplete
   // session exists, until the library is ready to build Continue (otherwise

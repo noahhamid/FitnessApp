@@ -1,3 +1,6 @@
+// First import on purpose — Sentry.init must run before the modules it
+// instruments are loaded.
+import { Sentry, serverSentryEnabled } from "./lib/sentry.server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -87,8 +90,16 @@ app.get("/terms", (c) => c.html(TERMS_HTML));
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 
-app.onError((err, c) => {
+app.onError(async (err, c) => {
   console.error(err);
+  if (serverSentryEnabled) {
+    Sentry.captureException(err, {
+      tags: { method: c.req.method, path: new URL(c.req.url).pathname },
+    });
+    // Serverless freezes the instance the moment a response is returned, so an
+    // in-flight send would be dropped without waiting for it here.
+    await Sentry.flush(2000);
+  }
   return c.json({ error: "Internal server error" }, 500);
 });
 

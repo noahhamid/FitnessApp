@@ -8,19 +8,25 @@ const APPLE_ROOT_CA_G3_PEM = `-----BEGIN CERTIFICATE-----
 MIICQzCCAcmgAwIBAgIILcX8iNLFS5UwCgYIKoZIzj0EAwMwZzEbMBkGA1UEAwwS
 QXBwbGUgUm9vdCBDQSAtIEczMSYwJAYDVQQLDB1BcHBsZSBDZXJ0aWZpY2F0aW9u
 IEF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMwHhcN
-MTQwMDIyMTc1MTIxWhcNMzkwMjIyMDAwMDAwWjBnMRswGQYDVQQDDBJBcHBsZSBS
+MTQwNDMwMTgxOTA2WhcNMzkwNDMwMTgxOTA2WjBnMRswGQYDVQQDDBJBcHBsZSBS
 b290IENBIC0gRzMxJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9y
-aXR5MRMwEQYDVQQKDwpBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzB2MBAGByqGSM49
+aXR5MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzB2MBAGByqGSM49
 AgEGBSuBBAAiA2IABJjpLz1AcqTtkyJygRMc3RCV8cWjTnHcFBbZDuWmBSp3ZHtf
-TjjTuxxEtX/1H7YyYl3P6TkT9mJNfdwCoKm0B7m2o7iJsX/DghK1CVNaVcdKsbKq
-NsWtFXABMuVl/CUYU+dBAQKjZDBiMC8GA1UdIwQoMCaAFK2RlDqKIW1DAxmGN43+
-pzjPJwKsMB0GA1UdDgQWBBStkZQ6iiFtQwMZhjeN/qc4zycCrDAOBgNVHQ8BAf8E
-BAMCAQYwEgYDVR0TAQH/BAgwBgEB/wIBAzAKBggqhkjOPQQDAwNnADBkAjA6z3rq
-vRgCvtjU8LgynElNSZf9lK7n2M5t01Tnwz0N4loogmB0n/m2OxGT3OsEaiwCMGTO
-mogOINIfb+yS+JePNlrOBfNwBCjk1EaKESYRZN1lrIQBGNjmMOrF0BZB+e5IIg==
+TjjTuxxEtX/1H7YyYl3J6YRbTzBPEVoA/VhYDKX1DyxNB0cTddqXl5dvMVztK517
+IDvYuVTZXpmkOlEKMaNCMEAwHQYDVR0OBBYEFLuw3qFYM4iapIqZ3r6966/ayySr
+MA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMDA2gA
+MGUCMQCD6cHEFl4aXTQY2e3v9GwOAEZLuN+yRhHFD/3meoyhpmvOwgPUnPWTxnS4
+at+qIxUCMG1mihDK1A3UT82NQz60imOlM27jbdoXt2QfyFMm+YhidDkLF1vLUagM
+6BgD56KyKA==
 -----END CERTIFICATE-----`;
 
-const PINNED_ROOT = new X509Certificate(APPLE_ROOT_CA_G3_PEM);
+let pinnedRoot: X509Certificate | null = null;
+
+/** Parsed only when a receipt is verified — a bad PEM must not take down boot. */
+function appleRootCaG3(): X509Certificate {
+  if (!pinnedRoot) pinnedRoot = new X509Certificate(APPLE_ROOT_CA_G3_PEM);
+  return pinnedRoot;
+}
 
 export type AppleTransaction = {
   transactionId: string;
@@ -85,13 +91,14 @@ function verifyX5cChain(x5c: unknown): X509Certificate {
     throw new Error("Apple leaf certificate not signed by intermediate");
   }
 
+  const root = appleRootCaG3();
   const tail = chain[chain.length - 1]!;
   const signer =
-    tail.fingerprint256 === PINNED_ROOT.fingerprint256
+    tail.fingerprint256 === root.fingerprint256
       ? chain[chain.length - 2] ?? intermediate
       : tail;
 
-  if (!signer.verify(PINNED_ROOT.publicKey)) {
+  if (!signer.verify(root.publicKey)) {
     throw new Error("Apple certificate chain does not pin to Root CA G3");
   }
 

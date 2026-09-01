@@ -401,9 +401,15 @@ workoutsRouter.get("/exercises", async (c) => {
 workoutsRouter.get("/personal-records", async (c) => {
   const user = getUser(c);
  
+  // PRs are all-time, so this can't be date-bounded — but it can stop hauling
+  // back columns nobody reads. Only completedAt and each exercise's name/sets
+  // are used below.
   const sessions = await prisma.workoutSession.findMany({
     where: { userId: user.id, completedAt: { not: null } },
-    include: { exercises: true },
+    select: {
+      completedAt: true,
+      exercises: { select: { exerciseName: true, sets: true } },
+    },
     orderBy: { completedAt: "asc" }, // ascending so later PRs correctly overwrite earlier ones
   });
  

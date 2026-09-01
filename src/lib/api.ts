@@ -10,6 +10,8 @@ import {
 } from "./session-token";
 
 const API_URL = getClientApiUrl();
+const DEFAULT_TIMEOUT_MS = 15_000;//To the team, this is deliberate. A vercel cold start can take a few seconds, we shouldn't lower it below 10s
+export const AI_TIMEOUT_MS = 60_000;
 
 type ApiEnvelope<T> = { data: T };
 type ApiFailure = { error: string };
@@ -123,24 +125,35 @@ async function handleUnauthorized(): Promise<void> {
     handlingUnauthorized = false;
   }
 }
+type RequestOptions = { timeoutMs?: number};
 
 async function request<T>(
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
   path: string,
   body?: unknown,
+  options?: RequestOptions,
 ): Promise<T> {
   const authHeaders = await buildAuthHeaders();
-  const response = await fetch(`${API_URL}${path}`, {
+
+  const controller = new AbortController();
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
     method,
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
-      // Device calendar day — server must not invent "today" from UTC.
       "X-Client-Calendar-Date": localDateOnly(),
       ...authHeaders,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
     credentials: "omit",
+    signal: controller.signal,
   });
 
   let payload: ApiEnvelope<T> | ApiFailure | null = null;
@@ -169,26 +182,34 @@ async function request<T>(
   }
 
   return payload.data;
+} catch(err){
+  if (timedOut) {
+    throw new Error("The network seems to be slow or unavailable. Please try again :)")
+  }
+  throw err;
+} finally{
+  clearTimeout(timer);
+}
 }
 
 export const api = {
-  get<T>(path: string): Promise<T> {
-    return request<T>("GET", path);
+  get<T>(path: string, options?: RequestOptions): Promise<T> {
+    return request<T>("GET", path, undefined, options);
   },
 
-  post<T>(path: string, body?: unknown): Promise<T> {
-    return request<T>("POST", path, body);
+  post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
+    return request<T>("POST", path, body, options);
   },
 
-  put<T>(path: string, body?: unknown): Promise<T> {
-    return request<T>("PUT", path, body);
+  put<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
+    return request<T>("PUT", path, body, options);
   },
 
-  delete<T>(path: string): Promise<T> {
-    return request<T>("DELETE", path);
+  delete<T>(path: string, options?: RequestOptions): Promise<T> {
+    return request<T>("DELETE", path, undefined, options);
   },
 
-  patch<T>(path: string, body?: unknown): Promise<T> {
-    return request<T>("PATCH", path, body);
+  patch<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
+    return request<T>("PATCH", path, body, options);
   },
 };

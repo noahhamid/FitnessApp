@@ -1,9 +1,14 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { isoDate, parseLogDate, requestLogDate } from "../lib/dates";
+import {
+  IMAGE_TOO_LARGE_MESSAGE,
+  MAX_IMAGE_BASE64_CHARS,
+} from "../lib/image-limits";
 import { storeMealPhoto } from "../lib/meal-photo-storage";
 import { prisma } from "../lib/prisma";
 import { err, ok } from "../lib/response";
+import { consumeUsage, MEAL_PHOTO_QUOTA } from "../lib/usage-limit";
 import { isParseFail, parseJson, parseQuery } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
 import { requirePremium } from "../middleware/requirePremium";
@@ -52,7 +57,11 @@ const mealLogSchema = z.object({
 });
 
 const mealPhotoSchema = z.object({
-  base64: z.string().trim().min(1),
+  base64: z
+    .string()
+    .trim()
+    .min(1)
+    .max(MAX_IMAGE_BASE64_CHARS, IMAGE_TOO_LARGE_MESSAGE),
   mimeType: z
     .string()
     .trim()
@@ -185,10 +194,21 @@ nutritionRouter.get("/log", async (c) => {
  * Production uses Vercel Blob; local/dev falls back to ./uploads/meals.
  */
 nutritionRouter.post("/meal-photo", requirePremium, async (c) => {
+  const user = getUser(c);
+
+  // Fail closed: every upload is Blob storage we pay to keep and serve.
+  try {
+    const { allowed } = await consumeUsage(MEAL_PHOTO_QUOTA, user.id);
+    if (!allowed) {
+      return err(c, "Too many photo uploads. Try again in an hour.", 429);
+    }
+  } catch (e) {
+    console.error("[meal-photo] usage limit check failed:", e);
+    return err(c, "Photo upload is unavailable right now.", 503);
+  }
+
   const parsed = await parseJson(c, mealPhotoSchema);
   if (isParseFail(parsed)) return parsed.response;
-
-  const user = getUser(c);
 
   try {
     const url = await storeMealPhoto({

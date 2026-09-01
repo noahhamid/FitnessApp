@@ -1,6 +1,6 @@
 // src/features/nutrition/services/nutrition.service.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { api } from "@/src/lib/api";
+import { api, AI_TIMEOUT_MS } from "@/src/lib/api";
 import type { AdaptiveSuggestion } from "@/src/lib/adaptive-nutrition";
 import type {
   DailyTotals,
@@ -103,7 +103,7 @@ export async function scanFoodImage(
   base64: string,
   mimeType: string,
 ): Promise<FoodScanResult> {
-  return api.post<FoodScanResult>("/api/ai/food-scan", { base64, mimeType });
+  return api.post<FoodScanResult>("/api/ai/food-scan", { base64, mimeType }, {timeoutMs: AI_TIMEOUT_MS});
 }
 
 /** Persist a scan photo; returns a public URL for MealLog.imageUrl. */
@@ -114,7 +114,7 @@ export async function uploadMealPhoto(
   const row = await api.post<{ url: string }>("/api/nutrition/meal-photo", {
     base64,
     mimeType,
-  });
+  }, {timeoutMs: AI_TIMEOUT_MS} );
   return row.url;
 }
 

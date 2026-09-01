@@ -60,6 +60,15 @@ function entitlementPayload(row: {
   };
 }
 
+/** Prisma unique-constraint violation, without pulling in the runtime class. */
+function isUniqueViolation(e: unknown): boolean {
+  return (
+    typeof e === "object" &&
+    e !== null &&
+    (e as { code?: unknown }).code === "P2002"
+  );
+}
+
 async function assertTokenNotLinkedToOtherUser(
   userId: string,
   transactionId: string | null,
@@ -150,37 +159,60 @@ billingRouter.post("/sync", requireAuth, async (c) => {
     if (conflict) return err(c, conflict, 409);
   }
 
-  const row = await prisma.userEntitlement.upsert({
-    where: { userId: user.id },
-    create: {
-      userId: user.id,
-      isPremium: Boolean(granted),
-      storeVerified: Boolean(granted),
-      productId: granted?.productId ?? null,
-      platform: granted?.platform ?? platform,
-      transactionId: granted?.transactionId ?? null,
-      originalTransactionId: granted?.originalTransactionId ?? null,
-      purchaseToken: granted?.purchaseToken ?? null,
-      expiresAt: granted?.expiresAt ?? null,
-    },
-    update: granted
-      ? {
-          isPremium: true,
-          storeVerified: true,
-          productId: granted.productId,
-          platform: granted.platform,
-          transactionId: granted.transactionId,
-          originalTransactionId: granted.originalTransactionId,
-          purchaseToken: granted.purchaseToken,
-          expiresAt: granted.expiresAt,
-        }
-      : {
-          isPremium: false,
-          storeVerified: false,
-          productId: null,
-          expiresAt: null,
-        },
-  });
+  // An empty list means the store told us nothing — offline, a StoreKit
+  // timeout, or a lookup that threw. That is not proof the user has no
+  // subscription, so never revoke on it. Real revocation comes from the
+  // expiresAt check in isEntitlementActive and from the store webhooks.
+  if (!granted && subscriptions.length === 0) {
+    const existing = await prisma.userEntitlement.findUnique({
+      where: { userId: user.id },
+    });
+    if (existing) return ok(c, entitlementPayload(existing));
+  }
+
+  let row;
+  try {
+    row = await prisma.userEntitlement.upsert({
+      where: { userId: user.id },
+      create: {
+        userId: user.id,
+        isPremium: Boolean(granted),
+        storeVerified: Boolean(granted),
+        productId: granted?.productId ?? null,
+        platform: granted?.platform ?? platform,
+        transactionId: granted?.transactionId ?? null,
+        originalTransactionId: granted?.originalTransactionId ?? null,
+        purchaseToken: granted?.purchaseToken ?? null,
+        expiresAt: granted?.expiresAt ?? null,
+      },
+      update: granted
+        ? {
+            isPremium: true,
+            storeVerified: true,
+            productId: granted.productId,
+            platform: granted.platform,
+            transactionId: granted.transactionId,
+            originalTransactionId: granted.originalTransactionId,
+            purchaseToken: granted.purchaseToken,
+            expiresAt: granted.expiresAt,
+          }
+        : {
+            isPremium: false,
+            storeVerified: false,
+            productId: null,
+            expiresAt: null,
+          },
+    });
+  } catch (e) {
+    // assertTokenNotLinkedToOtherUser reads before this writes, so two accounts
+    // racing the same receipt can both pass it. The unique indexes on
+    // transactionId / originalTransactionId are what actually stop the second
+    // one — report that as the conflict it is rather than a 500.
+    if (isUniqueViolation(e)) {
+      return err(c, "This purchase is already linked to another account", 409);
+    }
+    throw e;
+  }
 
   return ok(c, entitlementPayload(row));
 });

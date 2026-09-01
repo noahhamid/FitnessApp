@@ -34,7 +34,9 @@ esbuild.buildSync({
   platform: "node",
   format: "cjs",
   outfile: "api/handler.cjs",
-  external: ["@neondatabase/serverless", "ws"],
+  // @sentry/node pulls in OpenTelemetry, which uses dynamic requires that
+  // esbuild can't resolve statically — leave it to Node at runtime.
+  external: ["@neondatabase/serverless", "ws", "@sentry/node"],
 });
 
 console.log("bundled api/handler.cjs");

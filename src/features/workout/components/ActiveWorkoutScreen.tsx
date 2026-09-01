@@ -60,6 +60,10 @@ import {
   detachSessionTimer,
   setSessionTimerPaused,
 } from "@/src/lib/session-timer-notification";
+import {
+  clearActiveWorkout,
+  saveActiveWorkout,
+} from "../services/active-workout.service";
 
 /** Hero photo band — image is clipped here, not full-screen absoluteFill.
  *  Panel top is computed at render from safe-area + hero offset. */
@@ -627,8 +631,12 @@ export function ActiveWorkoutScreen({
       return;
     }
     // Zero progress: silent DELETE, then leave — no confirmation dialog.
+    // The resumable branch above keeps its snapshot on purpose.
     deleteSession.mutate(sessionId, {
-      onSettled: () => onClose(),
+      onSettled: () => {
+        void clearActiveWorkout();
+        onClose();
+      },
     });
   };
 
@@ -793,11 +801,37 @@ export function ActiveWorkoutScreen({
   };
 
   /**
+   * Mirror every logged set to disk. The PATCH below is the primary path; this
+   * is the copy that survives an app kill when the PATCH never landed. Covers
+   * pending-/live- ids too — their names are still enough to rebuild a session.
+   */
+  const saveWorkoutSnapshot = () => {
+    if (!sessionId) return;
+    void saveActiveWorkout({
+      sessionId,
+      startedAt: clockOriginMs,
+      exercises: exercisesRef.current.map((ex) => ({
+        id: ex.id,
+        name: ex.name,
+        sets: logsRef.current
+          .filter((l) => l.exerciseName === ex.name)
+          .map((l) => ({
+            reps: l.reps,
+            weight: l.weight,
+            durationSec: l.durationSec,
+            completed: l.completed,
+          })),
+      })),
+    });
+  };
+
+  /**
    * Background-sync this exercise's logged sets so far. Uses WorkoutExercise
    * row id (remapped after session create / live-add). Failures are quiet —
    * Finish's POST /complete remains the authoritative write.
    */
   const syncExerciseSets = (ex: Exercise) => {
+    saveWorkoutSnapshot();
     if (!sessionId) return;
     // Guard against catalog / optimistic ids that predate remapping.
     if (
@@ -1037,6 +1071,9 @@ export function ActiveWorkoutScreen({
     setSavingFinish(true);
     try {
       await onFinish(logsRef.current);
+      // Only past the await — a throw means the save failed and the snapshot
+      // is still the user's only copy.
+      void clearActiveWorkout();
       haptic(Haptics.ImpactFeedbackStyle.Medium);
       setPhase("done");
     } catch (e) {

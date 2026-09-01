@@ -109,6 +109,7 @@ model User {
   workoutPlan WorkoutPlan?
   nutritionAdjustmentLogs NutritionAdjustmentLog[]
   entitlement     UserEntitlement?
+  usageLimits     UsageLimit[]
 
   @@map("user")
 }
@@ -161,6 +162,8 @@ model UserEntitlement {
   updatedAt             DateTime  @updatedAt
   createdAt             DateTime  @default(now())
 
+  /// Google RTDN looks rows up by this on every notification.
+  @@index([purchaseToken])
   @@map("user_entitlement")
 }
 
@@ -221,6 +224,23 @@ model RateLimit {
   @@map("rateLimit")
 }
 
+/// Per-user quotas for endpoints that cost real money (Gemini calls, Blob
+/// storage). In Postgres for the same reason as RateLimit above — an in-memory
+/// counter resets on every Vercel cold start, so it caps nothing.
+model UsageLimit {
+  id        String   @id @default(cuid())
+  userId    String
+  /// Matches UsageFeature in src/lib/usage-limit.ts.
+  feature   String
+  count     Int      @default(0)
+  windowEnd DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, feature])
+  @@map("usage_limit")
+}
+
 model WorkoutSession {
   id          String    @id @default(cuid())
   startedAt   DateTime  @default(now())
@@ -231,6 +251,10 @@ model WorkoutSession {
   user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   exercises WorkoutExercise[]
 
+  /// Composite so history/PR reads seek straight to one user's rows and come
+  /// back already ordered — without it every read scans the whole table, which
+  /// grows with all users rather than just the one asking.
+  @@index([userId, completedAt])
   @@map("workout_session")
 }
 
