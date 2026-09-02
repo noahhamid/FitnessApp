@@ -2,8 +2,9 @@ import { X509Certificate, createPublicKey, verify } from "node:crypto";
 import { BUNDLE_ID } from "./brand";
 
 /**
- * Apple Root CA - G3 (https://www.apple.com/certificateauthority/).
+ * Apple Root CA - G3 (https://www.apple.com/certificateauthority/AppleRootCA-G3.cer).
  * StoreKit 2 / App Store Server Notification JWS chains to this root.
+ * Loaded lazily so a bad PEM cannot crash `npm run dev:server` on import.
  */
 const APPLE_ROOT_CA_G3_PEM = `-----BEGIN CERTIFICATE-----
 MIICQzCCAcmgAwIBAgIILcX8iNLFS5UwCgYIKoZIzj0EAwMwZzEbMBkGA1UEAwwS
@@ -92,7 +93,7 @@ function verifyX5cChain(x5c: unknown): X509Certificate {
     throw new Error("Apple leaf certificate not signed by intermediate");
   }
 
-  const root = appleRootCaG3();
+const root = appleRootCaG3();
   const tail = chain[chain.length - 1]!;
   const signer =
     tail.fingerprint256 === root.fingerprint256

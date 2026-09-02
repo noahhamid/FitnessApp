@@ -447,10 +447,7 @@ export default function MealScreen() {
         onClose={() => setTargetsOpen(false)}
         onUpdateProfile={() => {
           setTargetsOpen(false);
-          router.push({
-            pathname: "/(app)/(tabs)/profile",
-            params: { editPlan: "1" },
-          });
+          router.push("/(app)/body-health");
         }}
         goals={goals ?? null}
         goalId={profile?.goalId}

@@ -86,10 +86,7 @@ import {
 type ViewState = "today" | "fullPlan" | "detail" | "active" | "libraryDetail";
 
 function openPlanEditor() {
-  router.push({
-    pathname: "/(app)/(tabs)/profile",
-    params: { editPlan: "1" },
-  });
+  router.push("/(app)/training-schedule");
 }
 
 /** Shorten long split names so they fit beside the Update plan chip. */
