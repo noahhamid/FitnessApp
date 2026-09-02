@@ -20,7 +20,7 @@ export type ReminderSlot =
   | "workout";
 
 const CHANNEL_ID = "meal-workout-reminders";
-const SOFT_PROMPT_KEY = "exo:reminders-soft-prompt-v1";
+const SOFT_PROMPT_KEY = "trainplate:reminders-soft-prompt-v1";
 
 /** Local clock times for each reminder (device timezone). */
 export const REMINDER_TIMES: Record<

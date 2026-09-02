@@ -1,6 +1,11 @@
-# PotentialPeak
+# Trainplate
 
-Fitness app (Expo / React Native + Hono on Vercel). Store name is **PotentialPeak**; bundle id is `com.exo.fitness`.
+Fitness app (Expo / React Native + Hono on Vercel). Store name is **Trainplate**; bundle id is `com.trainplate.app`.
+
+Home-screen name: **Trainplate**. Store listing (at submit time):
+
+- Apple name + Play title: `Trainplate: Workout & Meal Log`
+- Apple subtitle: `AI Calorie Scanner & Gym Plans`
 
 ## Store subscriptions
 
@@ -8,8 +13,8 @@ Create these exact product IDs in App Store Connect and Google Play Console. The
 
 | Plan | Product ID |
 |---|---|
-| Monthly | `com.exo.fitness.premium.monthly` |
-| Annual | `com.exo.fitness.premium.annual` |
+| Monthly | `com.trainplate.app.premium.monthly` |
+| Annual | `com.trainplate.app.premium.annual` |
 
 Paste these listing URLs (same copy as in the app):
 
@@ -32,13 +37,24 @@ The API does **not** trust the phone. It verifies the Apple JWS / Play purchase 
 6. Sandbox / internal testing: use a TestFlight sandbox Apple ID and a Play license tester. Expo Go cannot buy these products.
 7. Local only: `IAP_SKIP_VERIFY=true` in `.env.local` lets the API accept a token without calling the stores. Never set this on Vercel production.
 
+### After the package / bundle ID change
+
+The native ID is now `com.trainplate.app`. Recreate these when store accounts exist:
+
+- Google Cloud: new Android package + iOS bundle + reversed-client URL scheme on the OAuth clients
+- Apple: App ID `com.trainplate.app`, Sign in with Apple, IAP products with the SKUs above
+- Play: application ID `com.trainplate.app`, subscription product IDs matching `skus.ts`
+- Resend From name: Trainplate
+- Local `.env.local` bundle/package vars (`APPLE_APP_BUNDLE_IDENTIFIER`, `APPLE_IAP_BUNDLE_ID`, `GOOGLE_PLAY_PACKAGE_NAME`)
+- If you have a previous `ios/` or `android/` prebuild, regenerate with `npx expo prebuild --clean`
+
 ## Email (Resend)
 
 Production email sign-up needs a **verified domain** on `RESEND_FROM_EMAIL`. Until then, use Google / Apple sign-in or the Resend account-owner inbox.
 
 ## Demo build (Android APK)
 
-From this directory (`my-app`):
+From this directory:
 
 ```bash
 eas build --platform android --profile preview

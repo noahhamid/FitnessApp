@@ -18,7 +18,7 @@ config({ path: ".env.local" });
 neonConfig.webSocketConstructor = ws;
 
 /** Keep in sync with PREMIUM_MONTHLY_SKU in src/features/billing/skus.ts. */
-const PREMIUM_SKU = "com.exo.fitness.premium.monthly";
+const PREMIUM_SKU = "com.trainplate.app.premium.monthly";
 
 const email = process.argv[2];
 const revoke = process.argv.includes("--revoke");

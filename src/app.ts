@@ -14,6 +14,7 @@ import { weightRouter } from "./routes/weight";
 import { workoutsRouter } from "./routes/workouts";
 import { PRIVACY_HTML, TERMS_HTML } from "./lib/legal-html";
 import { PRODUCTION_API_URL } from "./lib/public-api-url";
+import { APP_SCHEME } from "./lib/brand";
 import { ok } from "./lib/response";
 
 /**
@@ -42,7 +43,7 @@ function corsOrigin(origin: string): string | undefined {
   if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalized)) {
     return origin;
   }
-  if (origin.startsWith("com.exo.fitness://") || origin.startsWith("exp://")) {
+  if (origin.startsWith(`${APP_SCHEME}://`) || origin.startsWith("exp://")) {
     return origin;
   }
   const extra = process.env.BETTER_AUTH_URL?.replace(/\/$/, "");

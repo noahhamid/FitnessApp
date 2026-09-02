@@ -1,8 +1,10 @@
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
-/** Must match `AUTH_STORAGE_PREFIX` in auth-client.ts */
-const STORAGE_PREFIX = "exo_fitness";
+import { AUTH_STORAGE_PREFIX } from "./brand";
+
+/** Must match `AUTH_STORAGE_PREFIX` in brand.ts / auth-client.ts */
+const STORAGE_PREFIX = AUTH_STORAGE_PREFIX;
 
 /** Same key `api.ts` reads for `Authorization: Bearer`. */
 export const SESSION_TOKEN_KEY = `${STORAGE_PREFIX}_session_token`;

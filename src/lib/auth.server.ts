@@ -1,8 +1,9 @@
 import { prisma } from "./prisma";
 import { normalizeDisplayFirstName } from "./display-name";
 import { logEmailVerificationLink, sendAuthEmail } from "./send-auth-email";
+import { APP_NAME, APP_SCHEME, BUNDLE_ID } from "./brand";
 
-const APP_VERIFY_EMAIL_URL = "com.exo.fitness://verify-email";
+const APP_VERIFY_EMAIL_URL = `${APP_SCHEME}://verify-email`;
 
 /** On in production. Opt out with ENABLE_AUTH_RATE_LIMIT=false or
  *  DISABLE_AUTH_RATE_LIMIT=true (legacy Vercel flag). */
@@ -35,17 +36,17 @@ async function createAuth() {
       deleteUser: {
         enabled: true,
         sendDeleteAccountVerification: async ({ user, token }) => {
-          const confirmUrl = `com.exo.fitness://delete-account?token=${encodeURIComponent(token)}`;
+          const confirmUrl = `${APP_SCHEME}://delete-account?token=${encodeURIComponent(token)}`;
           await sendAuthEmail({
             to: user.email,
-            subject: "Confirm deleting your PotentialPeak Fitness account",
+            subject: `Confirm deleting your ${APP_NAME} account`,
             html: `
       <p>Hi${user.name ? ` ${user.name}` : ""},</p>
-      <p>We got a request to delete your PotentialPeak Fitness account. If you go through with this, everything including your workouts, meals, weight logs, and profile. It will be permanently wiped out.</p>
+      <p>We got a request to delete your ${APP_NAME} account. If you go through with this, everything including your workouts, meals, weight logs, and profile. It will be permanently wiped out.</p>
       <p>There's no turning back once you do it. If you're sure, just tap the link below on the device where you're currently logged in:</p>
       <p><a href="${confirmUrl}">Yes, delete my account</a></p>
       <p>Didn't ask for this? No worries at all, you can just ignore this email and your account will stay safe and active.</p>
-      <p>Take care,<br>The PotentialPeak Fitness Team</p>
+      <p>Take care,<br>The ${APP_NAME} Team</p>
     `,
           });
         },
@@ -91,13 +92,13 @@ async function createAuth() {
       sendResetPassword: async ({ user, url }) => {
         await sendAuthEmail({
           to: user.email,
-          subject: "Reset your PotentialPeak Fitness password",
+          subject: `Reset your ${APP_NAME} password`,
           html: `
       <p>Hi${user.name ? ` ${user.name}` : ""},</p>
       <p>We received a request to reset your password. No worries, it happens to the best of us! Just tap the link below to set up a new one:</p>
       <p><a href="${url}">Choose a new password</a></p>
       <p>If you didn't ask for this, you can safely ignore this email—your current password won't change.</p>
-      <p>Take care,<br>The PotentialPeak Fitness Team</p>
+      <p>Take care,<br>The ${APP_NAME} Team</p>
     `,
         });
       },
@@ -122,13 +123,13 @@ async function createAuth() {
         }
         await sendAuthEmail({
           to: user.email,
-          subject: "Welcome to PotentialPeak Fitness! Please verify your email",
+          subject: `Welcome to ${APP_NAME}! Please verify your email`,
           html: `
       <p>Hi${user.name ? ` ${user.name}` : ""},</p>
       <p>Welcome aboard! We're super excited to have you. Just click the link below to verify your email address and get everything set up:</p>
       <p><a href="${verifyUrl}">Verify my email</a></p>
       <p>If you didn't create an account with us, feel free to ignore this email.</p>
-      <p>Take care,<br>The PotentialPeak Fitness Team</p>
+      <p>Take care,<br>The ${APP_NAME} Team</p>
     `,
         });
       },
@@ -141,12 +142,12 @@ async function createAuth() {
       },
       apple: {
         // Service ID for web OAuth; native idToken aud is the App ID / bundle.
-        clientId: process.env.APPLE_CLIENT_ID ?? "com.exo.fitness",
+        clientId: process.env.APPLE_CLIENT_ID ?? BUNDLE_ID,
         // Required by the provider shape. Native idToken verify uses
         // appBundleIdentifier; set a real JWT secret when enabling web Apple OAuth.
         clientSecret: process.env.APPLE_CLIENT_SECRET ?? "native-idtoken-only",
         appBundleIdentifier:
-          process.env.APPLE_APP_BUNDLE_IDENTIFIER ?? "com.exo.fitness",
+          process.env.APPLE_APP_BUNDLE_IDENTIFIER ?? BUNDLE_ID,
       },
     },
 
@@ -185,8 +186,8 @@ async function createAuth() {
     },
 
     trustedOrigins: [
-      "com.exo.fitness://",
-      "com.exo.fitness://*",
+      `${APP_SCHEME}://`,
+      `${APP_SCHEME}://*`,
       "http://localhost:8081",
       "http://localhost:8080",
       "http://localhost:19006",

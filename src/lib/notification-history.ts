@@ -1,7 +1,7 @@
 import { storage } from "@/src/utils/storage";
 import { localDateOnly } from "@/src/features/progress/lib/localDate";
 
-export const NOTIFICATION_HISTORY_KEY = "exo:notification-history-v1";
+export const NOTIFICATION_HISTORY_KEY = "trainplate:notification-history-v1";
 
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 

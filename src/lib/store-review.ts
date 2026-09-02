@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import * as StoreReview from "expo-store-review";
 
-const STORAGE_KEY = "exo:store-review-v1";
+const STORAGE_KEY = "trainplate:store-review-v1";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const YEARLY_CAP = 2;
 

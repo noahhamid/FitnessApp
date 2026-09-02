@@ -18,7 +18,7 @@ export const PRIVACY_POLICY: LegalDocument = {
   title: "Privacy Policy",
   updated: "August 25, 2026",
   intro: [
-    'This Privacy Policy explains how PotentialPeak ("we," "us," "the app") collects, uses, and protects your information.',
+    'This Privacy Policy explains how Trainplate ("we," "us," "the app") collects, uses, and protects your information.',
   ],
   sections: [
     {
@@ -42,7 +42,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         },
         {
           type: "p",
-          text: "**Purchases:** if you subscribe to PotentialPeak Pro, Apple or Google process the payment. We do not collect or store your full card number. The store may tell the app whether a subscription is active so we can unlock Pro features.",
+          text: "**Purchases:** if you subscribe to Trainplate Pro, Apple or Google process the payment. We do not collect or store your full card number. The store may tell the app whether a subscription is active so we can unlock Pro features.",
         },
       ],
     },
@@ -84,7 +84,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "You can delete your account at any time from Profile → Delete Account. When you do, your account and all associated data (workouts, meals, weight logs, and progress) are permanently deleted from our systems, with the exception of technical logs that may briefly persist for security purposes before automatically expiring. Deleting your PotentialPeak account does not cancel a store subscription — manage that in your Apple or Google account settings.",
+          text: "You can delete your account at any time from Profile → Delete Account. When you do, your account and all associated data (workouts, meals, weight logs, and progress) are permanently deleted from our systems, with the exception of technical logs that may briefly persist for security purposes before automatically expiring. Deleting your Trainplate account does not cancel a store subscription — manage that in your Apple or Google account settings.",
         },
       ],
     },
@@ -102,7 +102,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "PotentialPeak is not intended for children under 13 (or the relevant age of consent in your region). We do not knowingly collect data from children.",
+          text: "Trainplate is not intended for children under 13 (or the relevant age of consent in your region). We do not knowingly collect data from children.",
         },
       ],
     },
@@ -130,14 +130,14 @@ export const PRIVACY_POLICY: LegalDocument = {
 export const TERMS_OF_SERVICE: LegalDocument = {
   title: "Terms of Service",
   updated: "August 25, 2026",
-  intro: ["By using PotentialPeak, you agree to these terms."],
+  intro: ["By using Trainplate, you agree to these terms."],
   sections: [
     {
-      heading: "Using PotentialPeak",
+      heading: "Using Trainplate",
       blocks: [
         {
           type: "p",
-          text: "PotentialPeak provides workout planning, nutrition tracking, and fitness progress tools. You must be at least 13 years old (or the applicable age in your region) to use the app.",
+          text: "Trainplate provides workout planning, nutrition tracking, and fitness progress tools. You must be at least 13 years old (or the applicable age in your region) to use the app.",
         },
       ],
     },
@@ -146,7 +146,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "PotentialPeak provides general fitness and nutrition guidance based on the information you provide. It is not medical advice. Consult a doctor before starting any new exercise or diet program, especially if you have a pre-existing health condition. Nutritional targets and workout suggestions are estimates, not personalized medical recommendations.",
+          text: "Trainplate provides general fitness and nutrition guidance based on the information you provide. It is not medical advice. Consult a doctor before starting any new exercise or diet program, especially if you have a pre-existing health condition. Nutritional targets and workout suggestions are estimates, not personalized medical recommendations.",
         },
       ],
     },
@@ -164,7 +164,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "PotentialPeak Pro is an optional auto-renewing subscription. Monthly and annual plans are offered. The price and duration shown on the paywall at the time of purchase are the terms that apply to that subscription.",
+          text: "Trainplate Pro is an optional auto-renewing subscription. Monthly and annual plans are offered. The price and duration shown on the paywall at the time of purchase are the terms that apply to that subscription.",
         },
         {
           type: "p",
@@ -173,9 +173,9 @@ export const TERMS_OF_SERVICE: LegalDocument = {
         {
           type: "ul",
           items: [
-            "**Cancel:** turn off auto-renew in your App Store or Google Play subscription settings. Deleting your PotentialPeak account does not cancel the store subscription.",
+            "**Cancel:** turn off auto-renew in your App Store or Google Play subscription settings. Deleting your Trainplate account does not cancel the store subscription.",
             "**Restore:** if you reinstall the app or switch devices, use Restore purchases in Profile (or on the paywall) to unlock Pro again on that device.",
-            "**Refunds:** refunds are handled by Apple or Google under their store policies, not by PotentialPeak directly.",
+            "**Refunds:** refunds are handled by Apple or Google under their store policies, not by Trainplate directly.",
           ],
         },
       ],
@@ -185,7 +185,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "Don't use PotentialPeak to upload harmful, illegal, or abusive content, including through the meal-photo scanner. We reserve the right to suspend accounts that misuse the service.",
+          text: "Don't use Trainplate to upload harmful, illegal, or abusive content, including through the meal-photo scanner. We reserve the right to suspend accounts that misuse the service.",
         },
       ],
     },
@@ -194,7 +194,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: 'PotentialPeak is provided "as is." We work hard to keep it accurate and reliable, but we don\'t guarantee the app will be error-free or that workout/nutrition suggestions will produce specific results. Use of the app, including any exercise performed based on its suggestions, is at your own risk.',
+          text: 'Trainplate is provided "as is." We work hard to keep it accurate and reliable, but we don\'t guarantee the app will be error-free or that workout/nutrition suggestions will produce specific results. Use of the app, including any exercise performed based on its suggestions, is at your own risk.',
         },
       ],
     },
@@ -212,7 +212,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
       blocks: [
         {
           type: "p",
-          text: "You can delete your account at any time. We may suspend or terminate accounts that violate these terms. Ending your PotentialPeak account does not by itself cancel an active store subscription.",
+          text: "You can delete your account at any time. We may suspend or terminate accounts that violate these terms. Ending your Trainplate account does not by itself cancel an active store subscription.",
         },
       ],
     },

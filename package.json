@@ -1,5 +1,5 @@
 {
-  "name": "potential-peak",
+  "name": "trainplate",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
@@ -102,7 +102,7 @@
     "typescript": "~5.9.2"
   },
   "private": true,
-  "description": "Potential Peak — Expo fitness app with Better Auth, workouts, nutrition, and IAP.",
+  "description": "Trainplate — Expo fitness app with Better Auth, workouts, nutrition, and IAP.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Menna-ai-apps/potentialpeak-app.git"

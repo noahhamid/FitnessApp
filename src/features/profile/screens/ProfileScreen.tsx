@@ -868,7 +868,7 @@ export default function ProfileScreen() {
             onConfirm={() =>
               Alert.alert(
                 "Delete account permanently?",
-                "This cannot be undone. It permanently removes your account and all of your data on Exo — workout history, meal logs, weight logs, water logs, nutrition goals, and profile settings.\n\nMeal scan photos stored in the cloud may also become inaccessible.",
+                "This cannot be undone. It permanently removes your account and all of your data on Trainplate — workout history, meal logs, weight logs, water logs, nutrition goals, and profile settings.\n\nMeal scan photos stored in the cloud may also become inaccessible.",
                 [
                   { text: "Cancel", style: "cancel" },
                   {

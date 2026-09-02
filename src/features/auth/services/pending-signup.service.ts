@@ -1,7 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
-const KEY = "exo_fitness_pending_signup";
+const KEY = "trainplate_pending_signup";
 
 export type PendingSignUp = {
   email: string;

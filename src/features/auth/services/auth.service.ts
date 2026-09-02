@@ -9,6 +9,7 @@ import {
   persistTokenFromAuthData,
 } from "@/src/lib/session-token";
 import { invalidateAuthHeaderCache } from "@/src/lib/api";
+import { APP_SCHEME } from "@/src/lib/brand";
 import { NativeModules, Platform } from "react-native";
 
 type GoogleSignInSdk = typeof import("@react-native-google-signin/google-signin");
@@ -119,7 +120,7 @@ export function isEmailNotVerifiedError(error: unknown): boolean {
 export async function sendVerificationEmail(email: string): Promise<void> {
   const { error } = await authClient.sendVerificationEmail({
     email,
-    callbackURL: "com.exo.fitness://verify-email",
+    callbackURL: `${APP_SCHEME}://verify-email`,
   });
   throwIfAuthError(error);
 }
@@ -327,7 +328,7 @@ export async function deleteAccount(token?: string): Promise<{
   const { data, error } = await authClient.deleteUser(
     token
       ? { token }
-      : { callbackURL: "com.exo.fitness://" },
+      : { callbackURL: `${APP_SCHEME}://` },
   );
   throwIfAuthError(error);
 

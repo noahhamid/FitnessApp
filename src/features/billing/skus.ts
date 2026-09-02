@@ -1,7 +1,11 @@
-/** Store subscription IDs — must match App Store Connect / Play Console exactly. */
-export const PREMIUM_MONTHLY_SKU = "com.exo.fitness.premium.monthly";
-export const PREMIUM_ANNUAL_SKU = "com.exo.fitness.premium.annual";
+import {
+  PREMIUM_ANNUAL_SKU,
+  PREMIUM_MONTHLY_SKU,
+} from "@/src/lib/brand";
 
+export { PREMIUM_ANNUAL_SKU, PREMIUM_MONTHLY_SKU };
+
+/** Store subscription IDs — must match App Store Connect / Play Console exactly. */
 export const PREMIUM_SKUS = [PREMIUM_MONTHLY_SKU, PREMIUM_ANNUAL_SKU] as const;
 
 export type PremiumSku = (typeof PREMIUM_SKUS)[number];

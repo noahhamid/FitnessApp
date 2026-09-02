@@ -7,7 +7,7 @@ import type { AppTheme } from "@/src/theme";
 
 /**
  * Deep link target for account-deletion confirmation emails:
- *   com.exo.fitness://delete-account?token=...
+ *   com.trainplate.app://delete-account?token=...
  * User must still be signed in; Better Auth validates token + session.
  */
 export default function DeleteAccountConfirmScreen() {

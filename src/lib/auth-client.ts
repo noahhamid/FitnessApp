@@ -6,17 +6,14 @@ import { Platform } from "react-native";
 import { applyDevLanApiUrlOverride } from "./dev-api-url";
 import { getClientApiUrl } from "./public-api-url";
 import { persistSessionToken, readSessionToken } from "./session-token";
+import { APP_SCHEME, AUTH_STORAGE_PREFIX } from "./brand";
 
 // Before createAuthClient — force Expo Go onto the Metro host's :3000 API.
 applyDevLanApiUrlOverride();
 
 const baseURL = getClientApiUrl();
 
-/** Must match app.config.ts `scheme` (Google Auth Platform package / bundle). */
-export const APP_SCHEME = "com.exo.fitness";
-
-/** SecureStore key prefix — keep stable once shipped. */
-export const AUTH_STORAGE_PREFIX = "exo_fitness";
+export { APP_SCHEME, AUTH_STORAGE_PREFIX };
 
 const webStorage = {
   getItem: (key: string) => {
@@ -43,11 +40,11 @@ const webStorage = {
  */
 function bearerTokenPlugin(): BetterAuthClientPlugin {
   return {
-    id: "exo-bearer-token",
+    id: "trainplate-bearer-token",
     fetchPlugins: [
       {
-        id: "exo-bearer-token",
-        name: "Exo bearer token",
+        id: "trainplate-bearer-token",
+        name: "Trainplate bearer token",
         hooks: {
           async onSuccess(context) {
             const fromHeader =

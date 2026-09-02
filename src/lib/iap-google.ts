@@ -1,4 +1,5 @@
 import { createSign } from "node:crypto";
+import { BUNDLE_ID } from "./brand";
 
 type ServiceAccount = {
   client_email: string;
@@ -48,7 +49,7 @@ export function playVerifyConfigured(): boolean {
 }
 
 export function playPackageName(): string {
-  return process.env.GOOGLE_PLAY_PACKAGE_NAME?.trim() || "com.exo.fitness";
+  return process.env.GOOGLE_PLAY_PACKAGE_NAME?.trim() || BUNDLE_ID;
 }
 
 function signJwt(email: string, privateKey: string): string {

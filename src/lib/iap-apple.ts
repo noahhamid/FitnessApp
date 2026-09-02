@@ -1,4 +1,5 @@
 import { X509Certificate, createPublicKey, verify } from "node:crypto";
+import { BUNDLE_ID } from "./brand";
 
 /**
  * Apple Root CA - G3 (https://www.apple.com/certificateauthority/).
@@ -159,5 +160,5 @@ export function parseAppleTransaction(payload: AppleTransaction): AppleTransacti
 }
 
 export function expectedAppleBundleId(): string {
-  return process.env.APPLE_IAP_BUNDLE_ID?.trim() || "com.exo.fitness";
+  return process.env.APPLE_IAP_BUNDLE_ID?.trim() || BUNDLE_ID;
 }

@@ -3,41 +3,36 @@ import type { ExpoConfig } from "expo/config";
 const BRAND_RED = "#C91923";
 
 const config: ExpoConfig = {
-  name: "PotentialPeak",
-  slug: "potential-peak",
+  name: "Trainplate",
+  slug: "trainplate",
   version: "1.0.0",
   orientation: "portrait",
-  icon: "./assets/images/potentialpeak_logo.jpg",
-  scheme: "com.exo.fitness",
+  icon: "./assets/images/trainplate.jpg",
+  scheme: "com.trainplate.app",
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
-    bundleIdentifier: "com.exo.fitness",
+    bundleIdentifier: "com.trainplate.app",
     usesAppleSignIn: true,
     infoPlist: {
       NSCameraUsageDescription:
-        "PotentialPeak uses the camera so you can photograph meals for calorie and macro estimates.",
+        "Trainplate uses the camera so you can photograph meals for calorie and macro estimates.",
       NSPhotoLibraryUsageDescription:
-        "PotentialPeak accesses your photo library when you pick an existing meal photo to save in the app.",
+        "Trainplate accesses your photo library when you pick an existing meal photo to save in the app.",
     },
   },
   android: {
-    package: "com.exo.fitness",
-    // Local API is http://192.168.x.x — without this, Android blocks cleartext
-    // and auth shows a generic "Network request failed".
-    // Expo's Android type omits this Manifest flag; prebuild still honors it.
+    package: "com.trainplate.app",
     usesCleartextTraffic: true,
     adaptiveIcon: {
-      // potentialpeak_logo.jpg, inset so the figure survives circle masks.
-      foregroundImage: "./assets/images/android-icon-foreground.png",
+      foregroundImage: "./assets/images/trainplate.jpg",
       backgroundColor: BRAND_RED,
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
-    // Reinstall was restoring the quiz draft (and jumping to the paywall).
     allowBackup: false,
   } as ExpoConfig["android"],
   web: {
@@ -83,16 +78,16 @@ const config: ExpoConfig = {
       "expo-image-picker",
       {
         cameraPermission:
-          "PotentialPeak uses the camera so you can photograph meals for calorie and macro estimates.",
+          "Trainplate uses the camera so you can photograph meals for calorie and macro estimates.",
         photosPermission:
-          "PotentialPeak accesses your photo library when you pick an existing meal photo to save in the app.",
+          "Trainplate accesses your photo library when you pick an existing meal photo to save in the app.",
       },
     ],
     [
       "expo-camera",
       {
         cameraPermission:
-          "PotentialPeak uses the camera so you can photograph meals for calorie and macro estimates.",
+          "Trainplate uses the camera so you can photograph meals for calorie and macro estimates.",
         microphonePermission: false,
         recordAudioAndroid: false,
       },
@@ -104,8 +99,6 @@ const config: ExpoConfig = {
         defaultChannel: "meal-workout-reminders",
       },
     ],
-    // HTTP cleartext only for local/dev and non-production EAS profiles
-    // (LAN API). Store builds must use HTTPS (Vercel).
     [
       "expo-build-properties",
       {
@@ -114,9 +107,6 @@ const config: ExpoConfig = {
         },
       },
     ],
-    // Crash reporting uses EXPO_PUBLIC_SENTRY_DSN. eas.json sets
-    // SENTRY_DISABLE_AUTO_UPLOAD so preview builds don't fail without
-    // SENTRY_AUTH_TOKEN.
     "@sentry/react-native/expo",
   ],
   experiments: {

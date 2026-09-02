@@ -3,6 +3,7 @@ import {
   TERMS_OF_SERVICE,
   type LegalDocument,
 } from "@/src/features/legal/legal-content";
+import { APP_NAME } from "@/src/lib/brand";
 
 function escapeHtml(text: string): string {
   return text
@@ -40,7 +41,7 @@ export function renderLegalHtml(document: LegalDocument): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(document.title)} — PotentialPeak</title>
+  <title>${escapeHtml(document.title)} — ${escapeHtml(APP_NAME)}</title>
   <style>
     body { font-family: system-ui, sans-serif; line-height: 1.5; max-width: 40rem; margin: 2rem auto; padding: 0 1.25rem; color: #111; }
     h1 { font-size: 1.75rem; }
