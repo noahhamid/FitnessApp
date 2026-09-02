@@ -1,10 +1,5 @@
 import { useAuth, useSignOut, useDeleteAccount } from "@/src/features/auth/hooks/useAuth";
-import {
-  fetchUserProfile,
-  saveUserProfile,
-  type EquipmentAccess,
-  type ExperienceLevel,
-} from "@/src/features/profile/services/profile.service";
+import { fetchUserProfile, saveUserProfile } from "@/src/features/profile/services/profile.service";
 import {
   useCompletedSessionCount,
   useWorkoutHistory,
@@ -38,44 +33,22 @@ import {
   normalizeTrainingDays,
   WEEKDAY_LABELS_SHORT,
 } from "@/src/lib/plan-day-selection";
-import { workoutPlanQueryKey } from "@/src/features/workout/hooks/useWorkoutPlan";
 import { startOnboardingRetake } from "@/src/features/auth/services/onboarding-draft.service";
 import { useIap } from "@/src/features/billing/IapContext";
+import {
+  PROFILE_EQUIPMENT_OPTIONS,
+  PROFILE_EXPERIENCE_OPTIONS,
+  PROFILE_GOALS,
+} from "@/src/features/profile/lib/profile-edit-options";
 
-const GOALS = [
-  { id: "lose", label: "Lose Weight", icon: "trending-down-outline" as const },
-  { id: "build", label: "Build Muscle", icon: "barbell-outline" as const },
-  { id: "endure", label: "Endurance", icon: "heart-outline" as const },
-  { id: "health", label: "Stay Healthy", icon: "leaf-outline" as const },
-] as const;
-
-const EXPERIENCE_OPTIONS = [
-  { id: "novice", label: "Novice" },
-  { id: "intermediate", label: "Intermediate" },
-  { id: "advanced", label: "Advanced" },
-] as const;
-
-const EQUIPMENT_OPTIONS = [
-  { id: "full_gym", label: "Full Gym" },
-  { id: "home_dumbbells", label: "Home / Dumbbells" },
-  { id: "bodyweight", label: "Bodyweight Only" },
-] as const;
-
-type GoalId = (typeof GOALS)[number]["id"];
 type SaveState = "idle" | "saving" | "saved";
 
 function experienceLabel(id: string | null | undefined): string {
-  return EXPERIENCE_OPTIONS.find((o) => o.id === id)?.label ?? "Not set";
+  return PROFILE_EXPERIENCE_OPTIONS.find((o) => o.id === id)?.label ?? "Not set";
 }
 
 function equipmentLabel(id: string | null | undefined): string {
-  return EQUIPMENT_OPTIONS.find((o) => o.id === id)?.label ?? "Not set";
-}
-
-function parsePositiveNumber(value: string): number | null {
-  const parsed = Number(value.trim().replace(",", "."));
-  if (!Number.isFinite(parsed) || parsed <= 0) return null;
-  return parsed;
+  return PROFILE_EQUIPMENT_OPTIONS.find((o) => o.id === id)?.label ?? "Not set";
 }
 
 const SETTINGS = [
@@ -235,15 +208,6 @@ export default function ProfileScreen() {
 
   const [editMode, setEditMode] = useState(false);
   const [nameInput, setNameInput] = useState("");
-  const [weightInput, setWeightInput] = useState("");
-  const [heightInput, setHeightInput] = useState("");
-  const [ageInput, setAgeInput] = useState("");
-  const [goalInput, setGoalInput] = useState<GoalId>("health");
-  const [experienceInput, setExperienceInput] =
-    useState<ExperienceLevel>("novice");
-  const [equipmentInput, setEquipmentInput] =
-    useState<EquipmentAccess>("full_gym");
-  const [daysInput, setDaysInput] = useState<number[]>([]);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -258,11 +222,8 @@ export default function ProfileScreen() {
     typeof profile?.heightCm === "number" && Number.isFinite(profile.heightCm)
       ? profile.heightCm
       : 0;
-  const ageYears =
-    typeof profile?.age === "number" && Number.isFinite(profile.age)
-      ? profile.age
-      : 0;
-  const activeGoal = GOALS.find((g) => g.id === profile?.goalId) ?? GOALS[3];
+  const activeGoal =
+    PROFILE_GOALS.find((g) => g.id === profile?.goalId) ?? PROFILE_GOALS[3];
   // Stored picks win; otherwise show the default pattern for their frequency so
   // the editor always opens on the schedule they're actually training.
   const scheduledDays = useMemo(
@@ -284,39 +245,7 @@ export default function ProfileScreen() {
 
   const applyProfileToInputs = useCallback(() => {
     setNameInput(name);
-    setWeightInput(weightKg > 0 ? String(Number(weightKg.toFixed(2))) : "");
-    setHeightInput(heightCm > 0 ? String(heightCm) : "");
-    setAgeInput(ageYears > 0 ? String(ageYears) : "");
-    setGoalInput(
-      (["lose", "build", "endure", "health"] as GoalId[]).includes(
-        profile?.goalId as GoalId,
-      )
-        ? (profile!.goalId as GoalId)
-        : "health",
-    );
-    setExperienceInput(
-      (["novice", "intermediate", "advanced"] as ExperienceLevel[]).includes(
-        profile?.experience as ExperienceLevel,
-      )
-        ? (profile!.experience as ExperienceLevel)
-        : "novice",
-    );
-    setEquipmentInput(
-      (["full_gym", "home_dumbbells", "bodyweight"] as EquipmentAccess[]).includes(
-        profile?.equipment as EquipmentAccess,
-      )
-        ? (profile!.equipment as EquipmentAccess)
-        : "full_gym",
-    );
-    setDaysInput(scheduledDays);
-  }, [
-    ageYears,
-    heightCm,
-    name,
-    profile,
-    scheduledDays,
-    weightKg,
-  ]);
+  }, [name]);
 
   // Keep form fields mirrored while browsing; never overwrite mid-edit.
   const editSeededRef = useRef(false);
@@ -326,7 +255,6 @@ export default function ProfileScreen() {
       applyProfileToInputs();
       return;
     }
-    // Entered edit before profile finished loading — seed once data arrives.
     if (editSeededRef.current || profilePending) return;
     applyProfileToInputs();
     editSeededRef.current = true;
@@ -348,23 +276,10 @@ export default function ProfileScreen() {
         ? params.editPlan[0]
         : params.editPlan;
       if (flag !== "1") return;
-      beginEdit();
       router.setParams({ editPlan: undefined });
-      // beginEdit closes over latest seed helpers via render; param gate is enough.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      router.push("/(app)/training-schedule");
     }, [params.editPlan]),
   );
-
-  /** Two sessions is the floor the plan generator supports. */
-  const toggleTrainingDay = (index: number) => {
-    setDaysInput((current) => {
-      if (current.includes(index)) {
-        if (current.length <= 2) return current;
-        return current.filter((d) => d !== index);
-      }
-      return [...current, index].sort((a, b) => a - b);
-    });
-  };
 
   useEffect(() => {
     return () => {
@@ -374,56 +289,15 @@ export default function ProfileScreen() {
 
   async function handleSaveProfile() {
     const nextName = nameInput.trim();
-    const nextWeight = parsePositiveNumber(weightInput);
-    const nextHeight = parsePositiveNumber(heightInput);
-    const nextAge = parsePositiveNumber(ageInput);
-
     if (!nextName) {
       Alert.alert("Invalid name", "Please enter a valid name.");
       return;
     }
-    if (!nextWeight || !nextHeight || !nextAge) {
-      Alert.alert(
-        "Incomplete profile",
-        "Weight, height, and age must be valid numbers.",
-      );
-      return;
-    }
-
-    const savedWeight = Number(nextWeight.toFixed(2));
-    const savedHeight = Math.round(nextHeight);
-    const savedAge = Math.round(nextAge);
 
     setSaveState("saving");
     try {
-      const scheduleChanged =
-        daysInput.length >= 2 &&
-        daysInput.join(",") !== scheduledDays.join(",");
-      const planInputsChanged =
-        scheduleChanged ||
-        goalInput !== (profile?.goalId as GoalId | null) ||
-        experienceInput !== profile?.experience ||
-        equipmentInput !== profile?.equipment;
-
-      await saveUserProfile({
-        name: nextName,
-        goalId: goalInput,
-        weightKg: savedWeight,
-        heightCm: savedHeight,
-        age: savedAge,
-        experience: experienceInput,
-        equipment: equipmentInput,
-        ...(scheduleChanged && { trainingDays: daysInput }),
-      });
+      await saveUserProfile({ name: nextName });
       await qc.invalidateQueries({ queryKey: ["auth", "session"] });
-      await qc.invalidateQueries({ queryKey: ["user", "profile"] });
-      // Server PUT /api/profile already upserts NutritionGoal via
-      // computeNutritionTargets — refresh clients; do not recompute here.
-      await qc.invalidateQueries({ queryKey: ["nutrition", "goals"] });
-      if (planInputsChanged) {
-        // Goal, days, level, or equipment regenerates the split server-side.
-        await qc.invalidateQueries({ queryKey: workoutPlanQueryKey });
-      }
       setSaveState("saved");
       saveTimeoutRef.current = setTimeout(() => {
         setSaveState("idle");
@@ -534,7 +408,7 @@ export default function ProfileScreen() {
           {editMode && (
             <GlassSurface style={styles.editSection}>
               <View style={styles.editSectionHeader}>
-                <Text style={styles.editSectionTitle}>Edit Profile</Text>
+                <Text style={styles.editSectionTitle}>Edit name</Text>
                 <TouchableOpacity
                   onPress={() => {
                     setEditMode(false);
@@ -557,164 +431,6 @@ export default function ProfileScreen() {
                   style={styles.editInput}
                 />
               </View>
-
-              <View style={styles.editFieldRow}>
-                <View style={[styles.editField, { flex: 1 }]}>
-                  <Text style={styles.editFieldLabel}>Weight (kg)</Text>
-                  <TextInput
-                    value={weightInput}
-                    onChangeText={setWeightInput}
-                    keyboardType="decimal-pad"
-                    placeholder="75"
-                    placeholderTextColor={T.muted}
-                    style={styles.editInput}
-                    selectTextOnFocus
-                  />
-                </View>
-                <View style={[styles.editField, { flex: 1 }]}>
-                  <Text style={styles.editFieldLabel}>Height (cm)</Text>
-                  <TextInput
-                    value={heightInput}
-                    onChangeText={setHeightInput}
-                    keyboardType="number-pad"
-                    placeholder="175"
-                    placeholderTextColor={T.muted}
-                    style={styles.editInput}
-                    selectTextOnFocus
-                  />
-                </View>
-                <View style={[styles.editField, { flex: 1 }]}>
-                  <Text style={styles.editFieldLabel}>Age</Text>
-                  <TextInput
-                    value={ageInput}
-                    onChangeText={setAgeInput}
-                    keyboardType="number-pad"
-                    placeholder="25"
-                    placeholderTextColor={T.muted}
-                    style={styles.editInput}
-                    selectTextOnFocus
-                  />
-                </View>
-              </View>
-
-              <Text style={styles.editFieldLabel}>Fitness Goal</Text>
-              <View style={styles.goalGrid}>
-                {GOALS.map((goal) => {
-                  const active = goalInput === goal.id;
-                  return (
-                    <TouchableOpacity
-                      key={goal.id}
-                      onPress={() => setGoalInput(goal.id)}
-                      activeOpacity={0.75}
-                      style={[styles.goalChip, active && styles.goalChipActive]}
-                    >
-                      <Ionicons
-                        name={goal.icon}
-                        size={13}
-                        color={active ? T.accent : T.muted}
-                      />
-                      <Text
-                        style={[
-                          styles.goalChipText,
-                          active && { color: T.accent },
-                        ]}
-                      >
-                        {goal.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <Text style={styles.editFieldLabel}>Experience</Text>
-              <View style={styles.goalGrid}>
-                {EXPERIENCE_OPTIONS.map((option) => {
-                  const active = experienceInput === option.id;
-                  return (
-                    <TouchableOpacity
-                      key={option.id}
-                      onPress={() => setExperienceInput(option.id)}
-                      activeOpacity={0.75}
-                      style={[styles.goalChip, active && styles.goalChipActive]}
-                    >
-                      <Text
-                        style={[
-                          styles.goalChipText,
-                          active && { color: T.accent },
-                        ]}
-                      >
-                        {option.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <Text style={styles.editFieldLabel}>Equipment</Text>
-              <View style={styles.goalGrid}>
-                {EQUIPMENT_OPTIONS.map((option) => {
-                  const active = equipmentInput === option.id;
-                  return (
-                    <TouchableOpacity
-                      key={option.id}
-                      onPress={() => setEquipmentInput(option.id)}
-                      activeOpacity={0.75}
-                      style={[styles.goalChip, active && styles.goalChipActive]}
-                    >
-                      <Text
-                        style={[
-                          styles.goalChipText,
-                          active && { color: T.accent },
-                        ]}
-                      >
-                        {option.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <Text style={styles.editFieldLabel}>Training Days</Text>
-              <View style={styles.weekdayGrid}>
-                {[
-                  WEEKDAY_LABELS_SHORT.slice(0, 3),
-                  WEEKDAY_LABELS_SHORT.slice(3),
-                ].map((row, rowIndex) => (
-                  <View key={rowIndex} style={styles.weekdayRow}>
-                    {row.map((label, col) => {
-                      const index = rowIndex === 0 ? col : col + 3;
-                      const active = daysInput.includes(index);
-                      return (
-                        <TouchableOpacity
-                          key={label}
-                          accessibilityRole="checkbox"
-                          accessibilityState={{ checked: active }}
-                          accessibilityLabel={label}
-                          onPress={() => toggleTrainingDay(index)}
-                          activeOpacity={0.75}
-                          style={[
-                            styles.weekdayChip,
-                            active && styles.weekdayChipActive,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.weekdayChipText,
-                              active && { color: T.accent },
-                            ]}
-                          >
-                            {label.slice(0, 1)}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                ))}
-              </View>
-              <Text style={styles.weekdayHint}>
-                {daysInput.length} days a week. Changing goal, days, level, or
-                equipment rebuilds your split, so today&apos;s workout may differ.
-              </Text>
             </GlassSurface>
           )}
 
@@ -773,13 +489,14 @@ export default function ProfileScreen() {
                   style={styles.settingRow}
                   activeOpacity={0.7}
                   onPress={() => {
-                    if (
-                      setting.id === "body" ||
-                      setting.id === "goal" ||
-                      setting.id === "schedule" ||
-                      setting.id === "training"
-                    ) {
-                      setEditMode(true);
+                    if (setting.id === "body") {
+                      router.push("/(app)/body-health");
+                    } else if (setting.id === "goal") {
+                      router.push("/(app)/fitness-goal");
+                    } else if (setting.id === "schedule") {
+                      router.push("/(app)/training-schedule");
+                    } else if (setting.id === "training") {
+                      router.push("/(app)/training-setup");
                     } else if (setting.id === "restore") {
                       if (restoring) return;
                       void restore().then((ok) => {

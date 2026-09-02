@@ -300,7 +300,6 @@ export default function ScanMealScreen() {
     try {
       const shot = await cameraRef.current.takePictureAsync({
         quality: 0.65,
-        base64: true,
         skipProcessing: false,
       });
       if (!shot?.uri) {
@@ -308,12 +307,21 @@ export default function ScanMealScreen() {
         setErrorMsg("Couldn't capture that photo. Try again.");
         return;
       }
-      if (!shot.base64) {
+      const prepared = await ImageManipulator.manipulateAsync(
+        shot.uri,
+        [{ resize: { width: 1024 } }],
+        {
+          compress: 0.72,
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true,
+        },
+      );
+      if (!prepared.base64) {
         setStatus("error");
         setErrorMsg("Couldn't read that photo. Try again.");
         return;
       }
-      await analyzeBase64(shot.base64, "image/jpeg", shot.uri);
+      await analyzeBase64(prepared.base64, "image/jpeg", shot.uri);
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
       setStatus("error");

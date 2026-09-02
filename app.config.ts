@@ -83,16 +83,16 @@ const config: ExpoConfig = {
       "expo-image-picker",
       {
         cameraPermission:
-          "Exo uses the camera so you can photograph meals for calorie and macro estimates.",
+          "PotentialPeak uses the camera so you can photograph meals for calorie and macro estimates.",
         photosPermission:
-          "Exo accesses your photo library when you pick an existing meal photo to save in the app.",
+          "PotentialPeak accesses your photo library when you pick an existing meal photo to save in the app.",
       },
     ],
     [
       "expo-camera",
       {
         cameraPermission:
-          "Exo uses the camera so you can photograph meals for calorie and macro estimates.",
+          "PotentialPeak uses the camera so you can photograph meals for calorie and macro estimates.",
         microphonePermission: false,
         recordAudioAndroid: false,
       },

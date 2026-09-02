@@ -122,6 +122,8 @@ export function useUpdateSessionExercise() {
         `/api/workouts/${sessionId}/exercises/${exerciseId}`,
         { sets },
       ),
+      retry: 3,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
     onSuccess: (_data, { sessionId, exerciseId, sets }) => {
       qc.setQueryData<
         | {

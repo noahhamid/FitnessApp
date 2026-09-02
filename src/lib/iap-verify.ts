@@ -31,8 +31,18 @@ export type VerifyOk = { ok: true; subscription: VerifiedSubscription };
 export type VerifyFail = { ok: false; reason: string };
 export type VerifyResult = VerifyOk | VerifyFail;
 
+/** True on a real deployment, whoever hosts it. */
+function isProductionServer(): boolean {
+  return Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production";
+}
+
+/**
+ * Local-only escape hatch that grants Pro with no store check. Gated on
+ * NODE_ENV as well as VERCEL — the Vercel flag alone would silently stop
+ * protecting anything if this ever moved to a container host.
+ */
 function skipVerifyAllowed(): boolean {
-  if (process.env.VERCEL) return false;
+  if (isProductionServer()) return false;
   return process.env.IAP_SKIP_VERIFY === "true";
 }
 
@@ -50,6 +60,11 @@ function verifyDecodedApple(tx: AppleTransaction, purchaseToken: string): Verify
   }
   if (tx.revocationDate) {
     return { ok: false, reason: "Apple transaction was revoked" };
+  }
+  // Sandbox purchases are free. Useful against a local server, never a reason
+  // to grant Pro in production.
+  if (tx.environment === "Sandbox" && isProductionServer()) {
+    return { ok: false, reason: "Sandbox purchases are not valid here" };
   }
   const expiresAt = asExpiry(tx.expiresDate);
   if (expiresAt && expiresAt.getTime() <= Date.now()) {

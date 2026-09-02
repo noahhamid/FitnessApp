@@ -23,10 +23,9 @@ at+qIxUCMG1mihDK1A3UT82NQz60imOlM27jbdoXt2QfyFMm+YhidDkLF1vLUagM
 
 let pinnedRoot: X509Certificate | null = null;
 
-function appleRootCa(): X509Certificate {
-  if (!pinnedRoot) {
-    pinnedRoot = new X509Certificate(APPLE_ROOT_CA_G3_PEM);
-  }
+/** Parsed only when a receipt is verified — a bad PEM must not take down boot. */
+function appleRootCaG3(): X509Certificate {
+  if (!pinnedRoot) pinnedRoot = new X509Certificate(APPLE_ROOT_CA_G3_PEM);
   return pinnedRoot;
 }
 
@@ -93,7 +92,7 @@ function verifyX5cChain(x5c: unknown): X509Certificate {
     throw new Error("Apple leaf certificate not signed by intermediate");
   }
 
-  const root = appleRootCa();
+const root = appleRootCaG3();
   const tail = chain[chain.length - 1]!;
   const signer =
     tail.fingerprint256 === root.fingerprint256

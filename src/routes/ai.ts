@@ -1,6 +1,11 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import {
+  IMAGE_TOO_LARGE_MESSAGE,
+  MAX_IMAGE_BASE64_CHARS,
+} from "../lib/image-limits";
 import { err, ok } from "../lib/response";
+import { consumeUsage, FOOD_SCAN_QUOTA } from "../lib/usage-limit";
 import { isParseFail, parseJson } from "../lib/validate";
 import { getUser, requireAuth } from "../middleware/requireAuth";
 import { requirePremium } from "../middleware/requirePremium";
@@ -10,7 +15,11 @@ const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const foodScanSchema = z.object({
-  base64: z.string().trim().min(1),
+  base64: z
+    .string()
+    .trim()
+    .min(1)
+    .max(MAX_IMAGE_BASE64_CHARS, IMAGE_TOO_LARGE_MESSAGE),
   mimeType: z
     .string()
     .trim()
@@ -52,22 +61,6 @@ Rules:
 - Use realistic USDA-based values
 - If multiple items are visible, sum everything into one total
 - Return ONLY the JSON, nothing else`;
-
-const scanAttempts = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_MAX = 20;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
-
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const entry = scanAttempts.get(userId);
-  if (!entry || now > entry.resetAt) {
-    scanAttempts.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= RATE_LIMIT_MAX) return false;
-  entry.count += 1;
-  return true;
-}
 
 async function requestGemini(
   parts: Record<string, unknown>[],
@@ -132,8 +125,17 @@ export const aiRouter = new Hono<AppEnv>().use("*", requireAuth);
 // Response: { name, cal, protein, carbs, fat }
 aiRouter.post("/food-scan", requirePremium, async (c) => {
   const user = getUser(c);
-  if (!checkRateLimit(user.id)) {
-    return err(c, "Too many scans. Try again in an hour.", 429);
+
+  // Fail closed: if the counter is unreachable we can't prove the user is
+  // under quota, and each scan past it is a billed Gemini call.
+  try {
+    const { allowed } = await consumeUsage(FOOD_SCAN_QUOTA, user.id);
+    if (!allowed) {
+      return err(c, "Too many scans. Try again in an hour.", 429);
+    }
+  } catch (e) {
+    console.error("[food-scan] usage limit check failed:", e);
+    return err(c, "Scanning is unavailable right now. Try again shortly.", 503);
   }
 
   const parsedBody = await parseJson(c, foodScanSchema);
