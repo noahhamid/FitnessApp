@@ -92,7 +92,7 @@ export default function RevisedPredictionScreen() {
       sub={sub}
       icon={Sparkles}
       onContinue={() =>
-        router.push({ pathname: "/(auth)/onboarding/creating-plan", params })
+        router.replace({ pathname: "/(auth)/onboarding/creating-plan", params })
       }
     />
   );

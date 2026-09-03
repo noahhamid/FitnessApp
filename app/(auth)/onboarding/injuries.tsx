@@ -32,6 +32,8 @@ export default function OnboardingInjuriesScreen() {
       BASE.map((opt) => ({
         ...opt,
         image: injuryChipImage(opt.id, gender),
+        imageOffsetY:
+          opt.id === "knees" ? -10 : opt.id === "wrists" ? 8 : 10,
       })),
     [gender],
   );
@@ -57,6 +59,8 @@ export default function OnboardingInjuriesScreen() {
           multiple
           exclusiveId="none"
           columns={2}
+          imagePlacement="background"
+          imageFit="cover"
         />
       </View>
 

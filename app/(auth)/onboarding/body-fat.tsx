@@ -228,9 +228,22 @@ export default function OnboardingBodyFatScreen() {
             onPress={handleSkip}
             accessibilityRole="button"
             accessibilityLabel="Skip and estimate from BMI"
-            style={({ pressed }) => [s.skipBtn, pressed && s.skipPressed]}
+            style={({ pressed }) => [
+              s.skipBtn,
+              {
+                backgroundColor: resolved === "dark" ? "#FFFFFF" : "#000000",
+              },
+              pressed && s.skipPressed,
+            ]}
           >
-            <Text style={s.skipText}>Skip — estimate from BMI</Text>
+            <Text
+              style={[
+                s.skipText,
+                { color: resolved === "dark" ? "#000000" : "#FFFFFF" },
+              ]}
+            >
+              Skip — estimate from BMI
+            </Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>

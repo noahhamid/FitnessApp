@@ -31,7 +31,7 @@ function keyOf(days: number[]): string {
 }
 
 function formatDays(days: number[]): string {
-  return days.map((d) => WEEKDAY_LABELS_SHORT[d] ?? "").filter(Boolean).join(" · ");
+  return days.map((d) => WEEKDAY_LABELS_SHORT[d] ?? "").filter(Boolean).join(" - ");
 }
 
 /** How many days/week this profile should train — capped at 5. */

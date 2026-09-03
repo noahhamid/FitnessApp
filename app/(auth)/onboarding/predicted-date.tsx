@@ -78,7 +78,7 @@ export default function PredictedDateScreen() {
       sub={sub}
       icon={CalendarDays}
       onContinue={() =>
-        router.push({ pathname: "/(auth)/onboarding/body-issues", params })
+        router.replace({ pathname: "/(auth)/onboarding/body-issues", params })
       }
     />
   );

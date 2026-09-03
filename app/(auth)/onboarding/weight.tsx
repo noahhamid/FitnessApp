@@ -102,7 +102,7 @@ export default function OnboardingWeightScreen() {
   const [weightKg, setWeightKg] = useState<number>(
     hasSavedWeight ? clampKg(savedWeight) : defaultKg,
   );
-  const [chosen, setChosen] = useState(hasSavedWeight);
+  const [chosen, setChosen] = useState(true);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(
     String(hasSavedWeight ? clampKg(savedWeight) : defaultKg),

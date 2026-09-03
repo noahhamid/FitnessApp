@@ -51,6 +51,7 @@ export default function OnboardingBodyIssuesScreen() {
           onChange={setSelected}
           multiple
           exclusiveId="none"
+          imageEmphasis="low"
         />
       </View>
 

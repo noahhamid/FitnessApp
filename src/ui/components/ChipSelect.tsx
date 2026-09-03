@@ -49,6 +49,8 @@ type Props = {
   imagePlacement?: "breakout" | "inside" | "background";
   /** Idle = label only; photo fades in on select (focus areas). */
   revealImageOnSelect?: boolean;
+  /** Larger, lower cutouts — goal-detail and later chip screens. */
+  imageEmphasis?: "default" | "low";
   style?: StyleProp<ViewStyle>;
 };
 
@@ -137,6 +139,7 @@ export function ChipSelect({
   imageFit = "contain",
   imagePlacement = "breakout",
   revealImageOnSelect = false,
+  imageEmphasis = "default",
   style,
 }: Props) {
   const { styles: s } = useOnboardingStyles(makeStyles);
@@ -219,6 +222,7 @@ export function ChipSelect({
                   imageFit={imageFit}
                   imageOffsetY={opt.imageOffsetY}
                   revealImageOnSelect={revealImageOnSelect}
+                  imageEmphasis={imageEmphasis}
                   style={tileStyle}
                 />
               ) : (

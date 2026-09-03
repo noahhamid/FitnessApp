@@ -44,6 +44,14 @@ function sameDays(a: number[], b: number[]): boolean {
   return a.every((d, i) => d === b[i]);
 }
 
+function chunkPairs<T>(items: T[]): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += 2) {
+    rows.push(items.slice(i, i + 2));
+  }
+  return rows;
+}
+
 export default function OnboardingScheduleScreen() {
   const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
   const { requestNotifications } = usePermissions();
@@ -204,9 +212,6 @@ export default function OnboardingScheduleScreen() {
                     {opt.hint}
                   </Text>
                 </View>
-                <View style={[s.radio, active && s.radioActive]}>
-                  {active ? <View style={s.radioDot} /> : null}
-                </View>
               </Pressable>
             );
           })}
@@ -254,37 +259,39 @@ export default function OnboardingScheduleScreen() {
         {suggestions.length > 0 && (
           <>
             <Text style={s.sectionLabel}>RECOMMENDED FOR YOU</Text>
-            <View style={s.list}>
-              {suggestions.map((row, i) => {
-                const active = sameDays(weekdays, row.days);
-                return (
-                  <Pressable
-                    key={row.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    onPress={() => applySuggestion(row)}
-                    style={[s.listRow, active && s.listRowActive]}
-                  >
-                    <Text style={[s.suggestRank, active && s.suggestRankActive]}>
-                      {i + 1}
-                    </Text>
-                    <View style={s.listCopy}>
-                      <Text
-                        style={[s.listTitle, active && s.listTitleActive]}
-                        numberOfLines={1}
+            <View style={s.suggestGrid}>
+              {chunkPairs(suggestions).map((pair, rowIndex) => (
+                <View key={rowIndex} style={s.weekdayRow}>
+                  {pair.map((row) => {
+                    const active = sameDays(weekdays, row.days);
+                    return (
+                      <Pressable
+                        key={row.id}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        onPress={() => applySuggestion(row)}
+                        style={[s.suggestChip, active && s.suggestChipActive]}
                       >
-                        {row.title}
-                      </Text>
-                      <Text
-                        style={[s.listHint, active && s.listHintActive]}
-                        numberOfLines={1}
-                      >
-                        {row.reason}
-                      </Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
+                        <Text
+                          style={[s.suggestTitle, active && s.suggestTitleActive]}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.7}
+                        >
+                          {row.title}
+                        </Text>
+                        <Text
+                          style={[s.suggestHint, active && s.suggestHintActive]}
+                          numberOfLines={1}
+                        >
+                          {row.reason}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                  {pair.length === 1 ? <View style={s.suggestSpacer} /> : null}
+                </View>
+              ))}
             </View>
           </>
         )}
@@ -364,33 +371,6 @@ function makeStyles(C: OnboardingColors) {
   listHintActive: {
     color: "rgba(255,255,255,0.78)",
   },
-  radio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  radioActive: {
-    borderColor: "#FFFFFF",
-  },
-  radioDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#FFFFFF",
-  },
-  suggestRank: {
-    fontFamily: FONTS.blackItalic,
-    fontSize: 18,
-    width: 22,
-    color: C.muted,
-  },
-  suggestRankActive: {
-    color: "#FFFFFF",
-  },
   weekdayGrid: {
     gap: 6,
   },
@@ -416,6 +396,46 @@ function makeStyles(C: OnboardingColors) {
   },
   weekdayChipTextActive: {
     color: "#FFFFFF",
+  },
+  suggestGrid: {
+    gap: 6,
+  },
+  suggestChip: {
+    flex: 1,
+    minHeight: 52,
+    borderRadius: 12,
+    backgroundColor: C.bg3,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  suggestChipActive: {
+    backgroundColor: C.accent,
+  },
+  suggestSpacer: {
+    flex: 1,
+  },
+  suggestTitle: {
+    fontFamily: FONTS.blackItalic,
+    fontSize: 12,
+    letterSpacing: 0.2,
+    color: C.text,
+    textTransform: "uppercase",
+    textAlign: "center",
+  },
+  suggestTitleActive: {
+    color: "#FFFFFF",
+  },
+  suggestHint: {
+    fontFamily: FONTS.regular,
+    fontSize: 10,
+    color: C.muted,
+    marginTop: 2,
+    textAlign: "center",
+  },
+  suggestHintActive: {
+    color: "rgba(255,255,255,0.78)",
   },
 });
 }

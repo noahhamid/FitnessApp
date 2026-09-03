@@ -52,6 +52,7 @@ export default function OnboardingExperienceScreen() {
           options={options}
           selected={selected}
           onChange={setSelected}
+          imageEmphasis="low"
         />
       </View>
 

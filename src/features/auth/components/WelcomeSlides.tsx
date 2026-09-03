@@ -44,13 +44,13 @@ export function WelcomeSlides() {
         <View style={s.logoContainer}>
           <View style={s.imageWrapper}>
             <Image
-              source={require("../../../../assets/images/potentialpeak_logo.jpg")}
+              source={require("../../../../assets/images/trainplate.jpg")}
               style={s.logo}
               resizeMode="cover"
             />
           </View>
           <Text style={s.brand}>
-            Potential<Text style={s.redtext}>Peak</Text>
+            Train<Text style={s.redtext}>Plate</Text>
           </Text>
           <Text style={s.sub}>Push. Grow. Repeat.</Text>
         </View>

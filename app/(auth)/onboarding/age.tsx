@@ -19,7 +19,7 @@ export default function OnboardingAgeScreen() {
   const savedAge = parseInt(String(params.age ?? ""), 10);
   const hasSavedAge = Number.isFinite(savedAge);
   const [age, setAge] = useState(hasSavedAge ? savedAge : DEFAULT_AGE);
-  const [chosen, setChosen] = useState(hasSavedAge);
+  const [chosen, setChosen] = useState(true);
 
   const handleAgeChange = (next: number) => {
     setAge(next);

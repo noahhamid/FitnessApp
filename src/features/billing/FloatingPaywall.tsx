@@ -1,7 +1,7 @@
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { X } from "lucide-react-native";
 import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
-import { SKU_LABEL, type PremiumSku } from "./skus";
+import { SKU_LABEL, skuDisplayPrice, type PremiumSku } from "./skus";
 import type { StoreProduct } from "./IapContext";
 
 type Props = {
@@ -77,7 +77,7 @@ export function FloatingPaywall({
                     {SKU_LABEL[sku]}
                   </Text>
                   <Text style={[styles.skuPrice, active && styles.skuLabelActive]}>
-                    {product?.displayPrice ?? "—"}
+                    {skuDisplayPrice(sku, product?.displayPrice)}
                   </Text>
                 </Pressable>
               );
@@ -95,7 +95,12 @@ export function FloatingPaywall({
             {purchasing ? (
               <ActivityIndicator color={C.onAccent} size="small" />
             ) : (
-              <Text style={styles.ctaText}>SUBSCRIBE</Text>
+              <Text style={styles.ctaText}>
+                {`SUBSCRIBE · ${skuDisplayPrice(
+                  selectedSku,
+                  products.find((item) => item.id === selectedSku)?.displayPrice,
+                )}`}
+              </Text>
             )}
           </Pressable>
 

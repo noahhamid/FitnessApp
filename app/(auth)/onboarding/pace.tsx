@@ -1,9 +1,6 @@
 import { OnboardingHeader } from "@/src/features/auth/components/OnboardingHeader";
 import { OnboardingNav } from "@/src/features/auth/components/OnboardingNav";
-import {
-  paceChipImage,
-  resolveChipGender,
-} from "@/src/features/auth/constants/chip-images";
+import { paceChipImage } from "@/src/features/auth/constants/chip-images";
 import { ChipSelect, type ChipOption } from "@/src/ui/components/ChipSelect";
 import { useOnboardingColors, useSystemResolvedScheme } from "@/src/ui/tokens";
 import { router, useLocalSearchParams } from "expo-router";
@@ -11,26 +8,26 @@ import { useMemo, useState } from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const PACE_COPY: Record<string, { id: string; label: string }[]> = {
+const PACE_COPY: Record<string, { id: string; label: string; desc: string }[]> = {
   lose: [
-    { id: "slow", label: "Slow & Steady" },
-    { id: "moderate", label: "Moderate" },
-    { id: "aggressive", label: "Aggressive" },
+    { id: "slow", label: "Slow & Steady", desc: "Smaller weekly change. Longer timeline." },
+    { id: "moderate", label: "Moderate", desc: "Balanced weekly change." },
+    { id: "aggressive", label: "Aggressive", desc: "Faster weekly change. Shorter timeline." },
   ],
   build: [
-    { id: "slow", label: "Slow & Steady" },
-    { id: "moderate", label: "Moderate" },
-    { id: "aggressive", label: "Aggressive" },
+    { id: "slow", label: "Slow & Steady", desc: "Smaller weekly change. Longer timeline." },
+    { id: "moderate", label: "Moderate", desc: "Balanced weekly change." },
+    { id: "aggressive", label: "Aggressive", desc: "Faster weekly change. Shorter timeline." },
   ],
   endure: [
-    { id: "slow", label: "Easy Does It" },
-    { id: "moderate", label: "Balanced" },
-    { id: "aggressive", label: "Push Hard" },
+    { id: "slow", label: "Easy Does It", desc: "Smaller weekly change. Longer timeline." },
+    { id: "moderate", label: "Balanced", desc: "Balanced weekly change." },
+    { id: "aggressive", label: "Push Hard", desc: "Faster weekly change. Shorter timeline." },
   ],
   health: [
-    { id: "slow", label: "Easy Does It" },
-    { id: "moderate", label: "Balanced" },
-    { id: "aggressive", label: "Push Hard" },
+    { id: "slow", label: "Easy Does It", desc: "Smaller weekly change. Longer timeline." },
+    { id: "moderate", label: "Balanced", desc: "Balanced weekly change." },
+    { id: "aggressive", label: "Push Hard", desc: "Faster weekly change. Shorter timeline." },
   ],
 };
 
@@ -44,7 +41,6 @@ export default function OnboardingPaceScreen() {
     pace?: string;
   }>();
   const goalId = params.goalId ?? "health";
-  const gender = resolveChipGender(params.gender);
   const savedPace =
     typeof params.pace === "string" && params.pace.length > 0
       ? params.pace
@@ -57,9 +53,9 @@ export default function OnboardingPaceScreen() {
     const base = PACE_COPY[goalId] ?? PACE_COPY.health;
     return base.map((opt) => ({
       ...opt,
-      image: paceChipImage(opt.id, gender),
+      image: paceChipImage(opt.id),
     }));
-  }, [goalId, gender]);
+  }, [goalId]);
 
   return (
     <SafeAreaView
@@ -70,12 +66,17 @@ export default function OnboardingPaceScreen() {
 
       <OnboardingHeader
         headline={"YOUR\nPACE."}
-        sub="How hard do you want to push toward the goal?"
+        sub="How fast the plan moves your weight — not how hard each session feels."
         onBack={() => router.back()}
       />
 
       <View style={s.body}>
-        <ChipSelect options={options} selected={selected} onChange={setSelected} />
+        <ChipSelect
+          options={options}
+          selected={selected}
+          onChange={setSelected}
+          imageEmphasis="low"
+        />
       </View>
 
       <OnboardingNav

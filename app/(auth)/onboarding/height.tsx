@@ -134,7 +134,7 @@ export default function OnboardingHeightScreen() {
   const [heightCm, setHeightCm] = useState<number>(
     hasSavedHeight ? clampCm(savedHeight, minCm, maxCm) : defaultCm,
   );
-  const [chosen, setChosen] = useState(hasSavedHeight);
+  const [chosen, setChosen] = useState(true);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(
     String(hasSavedHeight ? clampCm(savedHeight, minCm, maxCm) : defaultCm),

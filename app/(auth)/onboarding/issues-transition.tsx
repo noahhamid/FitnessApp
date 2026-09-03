@@ -19,7 +19,7 @@ export default function IssuesTransitionScreen() {
       }
       icon={HeartPulse}
       onContinue={() =>
-        router.push({ pathname: "/(auth)/onboarding/injuries", params })
+        router.replace({ pathname: "/(auth)/onboarding/injuries", params })
       }
     />
   );

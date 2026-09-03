@@ -11,12 +11,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
-  useWindowDimensions,
   View,
 } from "react-native";
 import {
@@ -67,8 +65,6 @@ export function SignUpForm() {
   const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
   const params = useLocalSearchParams<OnboardingAuthParams>();
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
-  const viewportHeight = height - insets.bottom;
   const scrim = useMemo(
     () => heroScrim(C.bg, resolved),
     [C.bg, resolved],
@@ -168,7 +164,7 @@ export function SignUpForm() {
   }
 
   return (
-    <View style={[s.root, { height: viewportHeight, maxHeight: viewportHeight }]}>
+    <View style={s.root}>
       <StatusBar
         barStyle={resolved === "dark" ? "light-content" : "dark-content"}
         backgroundColor={C.bg}
@@ -177,16 +173,7 @@ export function SignUpForm() {
         style={s.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <ScrollView
-          style={s.flex}
-          contentContainerStyle={[
-            s.scrollContent,
-            { minHeight: viewportHeight, paddingBottom: insets.bottom + 24 },
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-        >
+        <View style={s.flex}>
           <ImageBackground
             source={require("../../../../assets/images/welcome-gym.jpg")}
             style={s.photoBand}
@@ -204,7 +191,7 @@ export function SignUpForm() {
             </SafeAreaView>
           </ImageBackground>
 
-          <View style={s.formArea}>
+          <View style={[s.formArea, { paddingBottom: Math.max(insets.bottom, 12) }]}>
             <Text style={s.headline}>
               CREATE{"\n"}
               <Text style={s.brandMarkAccent}>ACCOUNT</Text>.
@@ -322,7 +309,7 @@ export function SignUpForm() {
               <Text style={s.linkText}>Already have an account? Sign in</Text>
             </Pressable>
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </View>
   );
@@ -336,10 +323,7 @@ function makeStyles(C: OnboardingColors) {
       overflow: "hidden",
     },
     flex: { flex: 1 },
-    scrollContent: {
-      flexGrow: 1,
-    },
-    photoBand: { height: 148, justifyContent: "flex-start" },
+    photoBand: { height: 108, justifyContent: "flex-start" },
     backBtn: {
       width: 40,
       height: 40,
@@ -353,28 +337,32 @@ function makeStyles(C: OnboardingColors) {
       marginTop: 8,
     },
     backArrow: { color: C.text, fontSize: 18 },
-    formArea: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 24 },
+    formArea: {
+      flex: 1,
+      paddingHorizontal: 24,
+      paddingTop: 6,
+    },
     headline: {
       fontFamily: FONTS.blackItalic,
-      fontSize: 36,
-      lineHeight: 36,
+      fontSize: 32,
+      lineHeight: 32,
       letterSpacing: -0.6,
       color: C.text,
-      marginBottom: 8,
+      marginBottom: 6,
       textTransform: "uppercase",
     },
     sub: {
       fontFamily: FONTS.regular,
       fontSize: 13,
       color: C.muted,
-      marginBottom: 12,
+      marginBottom: 8,
     },
     legalLine: {
       fontFamily: FONTS.regular,
       fontSize: 12,
-      lineHeight: 18,
+      lineHeight: 16,
       color: C.muted,
-      marginBottom: 20,
+      marginBottom: 10,
     },
     legalLink: {
       fontFamily: FONTS.bold,
@@ -385,7 +373,7 @@ function makeStyles(C: OnboardingColors) {
       flexDirection: "row",
       alignItems: "center",
       gap: 12,
-      marginBottom: 18,
+      marginBottom: 10,
     },
     dividerLine: {
       flex: 1,
@@ -398,13 +386,13 @@ function makeStyles(C: OnboardingColors) {
       letterSpacing: 1.5,
       color: C.muted,
     },
-    field: { marginBottom: 16 },
+    field: { marginBottom: 8 },
     label: {
       fontFamily: FONTS.bold,
       fontSize: 11,
       letterSpacing: 1.5,
       color: C.muted,
-      marginBottom: 8,
+      marginBottom: 4,
     },
     input: {
       backgroundColor: C.card,
@@ -412,7 +400,7 @@ function makeStyles(C: OnboardingColors) {
       borderWidth: 1.5,
       borderColor: C.border,
       paddingHorizontal: 18,
-      paddingVertical: 16,
+      paddingVertical: 12,
       fontFamily: FONTS.regular,
       fontSize: 15,
       color: C.text,
@@ -420,9 +408,9 @@ function makeStyles(C: OnboardingColors) {
     primaryBtn: {
       backgroundColor: C.accent,
       borderRadius: 16,
-      paddingVertical: 18,
+      paddingVertical: 16,
       alignItems: "center",
-      marginTop: 16,
+      marginTop: 8,
     },
     primaryBtnDisabled: { opacity: 0.35 },
     primaryBtnText: {
@@ -445,7 +433,7 @@ function makeStyles(C: OnboardingColors) {
       marginBottom: 12,
       textAlign: "center",
     },
-    linkBtn: { paddingVertical: 16, alignItems: "center" },
+    linkBtn: { paddingVertical: 8, alignItems: "center" },
     linkText: { fontFamily: FONTS.regular, fontSize: 13, color: C.muted },
     brandMarkAccent: {
       fontFamily: FONTS.blackItalic,

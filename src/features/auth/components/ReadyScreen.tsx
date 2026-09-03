@@ -4,7 +4,15 @@ import {
   ExperienceIcon,
   ExperienceLevel,
 } from "@/src/ui/components/ExperienceIcon";
-import { previewSplitLabel } from "@/src/lib/onboarding-timeline";
+import {
+  estimateTimeline,
+  formatTargetDate,
+  previewSplitLabel,
+  type GoalId,
+  type Pace,
+} from "@/src/lib/onboarding-timeline";
+import type { Gender } from "@/src/lib/nutrition-calc";
+import { WEEKDAY_LABELS_SHORT } from "@/src/lib/plan-day-selection";
 import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
 import { promptOnboardingReview } from "@/src/lib/store-review";
@@ -23,6 +31,7 @@ import {
   Alert,
   Animated,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -65,21 +74,61 @@ const INJURY_LABELS: Record<string, string> = {
   wrists: "Wrists",
 };
 
+const GOAL_DETAIL_LABELS: Record<string, string> = {
+  steady: "Lose weight steadily",
+  tone: "Tone up / recomposition",
+  aggressive_cut: "Aggressive cut",
+  bulk: "Bulk up",
+  lean_muscle: "Lean muscle",
+  strength: "Strength focus",
+  stamina: "Improve stamina",
+  event: "Train for an event",
+  conditioning: "General conditioning",
+  wellness: "General wellness",
+  energy: "More energy",
+  habit: "Build the habit",
+};
+
+const PACE_LABELS: Record<string, string> = {
+  slow: "Slow & steady",
+  moderate: "Moderate",
+  aggressive: "Aggressive",
+};
+
+const BODY_ISSUE_LABELS: Record<string, string> = {
+  sitting: "Prolonged sitting",
+  sleep: "Poor sleep quality",
+  diet: "Dietary issues",
+};
+
+const REMINDER_LABELS: Record<string, string> = {
+  "7": "Morning · around 7:00",
+  "14": "Afternoon · around 14:00",
+  "19": "Evening · around 19:00",
+};
+
 export function ReadyScreen() {
   const { styles: s } = useOnboardingStyles(makeStyles);
   const params = useLocalSearchParams<{
     goalId?: string;
+    goalDetail?: string;
     weightKg?: string;
+    targetWeightKg?: string;
     heightCm?: string;
     age?: string;
     gender?: string;
+    pace?: string;
     daysPerWeek?: string;
+    trainingDays?: string;
     experience?: string;
     equipment?: string;
     focusAreas?: string;
     injuries?: string;
+    bodyIssues?: string;
     bodyFatPercent?: string;
     bodyFatSource?: string;
+    reminderEnabled?: string;
+    reminderHour?: string;
     retake?: string;
   }>();
 
@@ -128,11 +177,59 @@ export function ReadyScreen() {
         .filter((i) => i && i !== "none"),
     [params.injuries],
   );
+  const bodyIssues = useMemo(
+    () =>
+      (params.bodyIssues ?? "")
+        .split(",")
+        .filter((i) => i && i !== "none"),
+    [params.bodyIssues],
+  );
+  const trainingDayLabels = useMemo(() => {
+    return (params.trainingDays ?? "")
+      .split(",")
+      .map((d) => Number(d))
+      .filter((d) => Number.isFinite(d) && d >= 0 && d <= 6)
+      .map((d) => WEEKDAY_LABELS_SHORT[d])
+      .join(" - ");
+  }, [params.trainingDays]);
 
   const splitLabel = useMemo(() => {
     const days = parseInt(params.daysPerWeek ?? "3", 10) || 3;
     return previewSplitLabel(days, experience ?? "novice");
   }, [params.daysPerWeek, experience]);
+
+  const timeline = useMemo(() => {
+    const currentKg = parseInt(params.weightKg ?? "", 10);
+    const targetKg = parseInt(params.targetWeightKg ?? "", 10);
+    if (!Number.isFinite(currentKg) || !Number.isFinite(targetKg)) return null;
+    const age = parseInt(params.age ?? "", 10);
+    const heightCm = parseInt(params.heightCm ?? "", 10);
+    const days = parseInt(params.daysPerWeek ?? "", 10);
+    const bf = Number(params.bodyFatPercent);
+    return estimateTimeline({
+      goalId: (params.goalId ?? "health") as GoalId,
+      currentKg,
+      targetKg,
+      pace: (params.pace ?? "moderate") as Pace,
+      daysPerWeek: Number.isFinite(days) ? days : undefined,
+      gender: (params.gender === "female" ? "female" : "male") as Gender,
+      age: Number.isFinite(age) ? age : undefined,
+      heightCm: Number.isFinite(heightCm) ? heightCm : undefined,
+      experience: experience ?? "intermediate",
+      bodyFatPercent: Number.isFinite(bf) && bf > 0 ? bf : undefined,
+    });
+  }, [
+    experience,
+    params.age,
+    params.bodyFatPercent,
+    params.daysPerWeek,
+    params.gender,
+    params.goalId,
+    params.heightCm,
+    params.pace,
+    params.targetWeightKg,
+    params.weightKg,
+  ]);
 
   return (
     <View
@@ -164,7 +261,11 @@ export function ReadyScreen() {
             {isRetake ? "NEW PLAN\nREADY." : "PLAN\nREADY."}
           </Text>
 
-          <View style={s.summaryCard}>
+          <ScrollView
+            style={s.summaryScroll}
+            contentContainerStyle={s.summaryCard}
+            showsVerticalScrollIndicator={false}
+          >
             {goalId && (
               <View style={s.summaryRow}>
                 <GoalIcon name={goalId} size={40} />
@@ -173,9 +274,35 @@ export function ReadyScreen() {
                   <Text style={s.rowValue}>
                     {GOAL_LABELS[goalId] ?? goalId}
                   </Text>
+                  {params.goalDetail ? (
+                    <Text style={s.rowSubValue}>
+                      {GOAL_DETAIL_LABELS[params.goalDetail] ?? params.goalDetail}
+                    </Text>
+                  ) : null}
                 </View>
               </View>
             )}
+
+            {params.targetWeightKg ? (
+              <>
+                <View style={s.divider} />
+                <View>
+                  <Text style={s.rowLabel}>
+                    {goalId === "endure" || goalId === "health"
+                      ? "MAINTAIN WEIGHT"
+                      : "TARGET WEIGHT"}
+                  </Text>
+                  <Text style={s.rowValue}>{params.targetWeightKg} kg</Text>
+                  {timeline ? (
+                    <Text style={s.rowSubValue}>
+                      {timeline.alreadyThere
+                        ? "You're already at this weight"
+                        : `Estimated around ${formatTargetDate(timeline.targetDate)}`}
+                    </Text>
+                  ) : null}
+                </View>
+              </>
+            ) : null}
 
             <View style={s.divider} />
 
@@ -191,6 +318,12 @@ export function ReadyScreen() {
                 </Text>
               </View>
               <View style={s.statBlock}>
+                <Text style={s.rowLabel}>AGE</Text>
+                <Text style={s.rowValue}>
+                  {params.age ? `${params.age}` : "—"}
+                </Text>
+              </View>
+              <View style={s.statBlock}>
                 <Text style={s.rowLabel}>WEIGHT</Text>
                 <Text style={s.rowValue}>{params.weightKg ?? "—"} kg</Text>
               </View>
@@ -199,6 +332,18 @@ export function ReadyScreen() {
                 <Text style={s.rowValue}>{params.heightCm ?? "—"} cm</Text>
               </View>
             </View>
+
+            {params.pace ? (
+              <>
+                <View style={s.divider} />
+                <View>
+                  <Text style={s.rowLabel}>PLAN PACE</Text>
+                  <Text style={s.rowValue}>
+                    {PACE_LABELS[params.pace] ?? params.pace}
+                  </Text>
+                </View>
+              </>
+            ) : null}
 
             {params.bodyFatPercent ? (
               <>
@@ -230,8 +375,32 @@ export function ReadyScreen() {
                   {experience ? EXPERIENCE_LABELS[experience] : "—"} ·{" "}
                   {params.equipment ? EQUIPMENT_LABELS[params.equipment] : "—"}
                 </Text>
+                {trainingDayLabels ? (
+                  <Text style={s.rowSubValue}>{trainingDayLabels}</Text>
+                ) : null}
               </View>
             </View>
+
+            {params.reminderEnabled === "1" && params.reminderHour ? (
+              <>
+                <View style={s.divider} />
+                <View>
+                  <Text style={s.rowLabel}>REMINDER</Text>
+                  <Text style={s.rowValue}>
+                    {REMINDER_LABELS[params.reminderHour] ??
+                      `Around ${params.reminderHour}:00`}
+                  </Text>
+                </View>
+              </>
+            ) : params.reminderEnabled === "0" ? (
+              <>
+                <View style={s.divider} />
+                <View>
+                  <Text style={s.rowLabel}>REMINDER</Text>
+                  <Text style={s.rowValue}>Off</Text>
+                </View>
+              </>
+            ) : null}
 
             {focusAreas.length > 0 && (
               <>
@@ -240,6 +409,20 @@ export function ReadyScreen() {
                   <Text style={s.rowLabel}>EXTRA FOCUS</Text>
                   <Text style={s.rowValue}>
                     {focusAreas.map((f) => FOCUS_LABELS[f] ?? f).join(" · ")}
+                  </Text>
+                </View>
+              </>
+            )}
+
+            {bodyIssues.length > 0 && (
+              <>
+                <View style={s.divider} />
+                <View>
+                  <Text style={s.rowLabel}>BODY NOTES</Text>
+                  <Text style={s.rowValue}>
+                    {bodyIssues
+                      .map((i) => BODY_ISSUE_LABELS[i] ?? i)
+                      .join(" · ")}
                   </Text>
                 </View>
               </>
@@ -256,7 +439,7 @@ export function ReadyScreen() {
                 </View>
               </>
             )}
-          </View>
+          </ScrollView>
         </Animated.View>
 
         <View style={{ flex: 1 }} />
@@ -332,19 +515,22 @@ function makeStyles(C: OnboardingColors) {
     color: C.text,
     letterSpacing: -0.5,
     textAlign: "center",
-    marginBottom: 24,
+    marginBottom: 16,
   },
-  summaryCard: {
-    backgroundColor: C.card,
+  summaryScroll: {
+    maxHeight: 340,
     borderRadius: 20,
     borderWidth: 1.5,
     borderColor: C.border,
-    padding: 18,
+    backgroundColor: C.card,
+  },
+  summaryCard: {
+    padding: 16,
   },
   summaryRow: { flexDirection: "row", alignItems: "center" },
-  statRow: { flexDirection: "row", justifyContent: "space-between" },
-  statBlock: { alignItems: "flex-start" },
-  divider: { height: 1, backgroundColor: C.border, marginVertical: 16 },
+  statRow: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+  statBlock: { alignItems: "flex-start", flexShrink: 1 },
+  divider: { height: 1, backgroundColor: C.border, marginVertical: 10 },
   rowLabel: {
     fontFamily: FONTS.bold,
     fontSize: 10,

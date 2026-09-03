@@ -1,6 +1,7 @@
 import { FONTS, type OnboardingColors } from "@/src/ui/tokens";
 import { useOnboardingStyles } from "@/src/features/auth/hooks/useOnboardingStyles";
-import { useEffect, useRef, type ComponentType } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useRef, type ComponentType } from "react";
 import {
   Animated,
   StatusBar,
@@ -51,33 +52,37 @@ export function OnboardingTransition({
 
   const line = headline.replace(/\s*\n\s*/g, " ").trim();
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fade, {
-        toValue: 1,
-        duration: 320,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rise, {
-        toValue: 0,
-        duration: 320,
-        useNativeDriver: true,
-      }),
-      Animated.timing(progress, {
-        toValue: 1,
-        duration: resolvedDuration,
-        useNativeDriver: false,
-      }),
-    ]).start();
+  useFocusEffect(
+    useCallback(() => {
+      fade.setValue(0);
+      rise.setValue(16);
+      progress.setValue(0);
 
-    const timer = setTimeout(() => {
-      onContinueRef.current();
-    }, resolvedDuration);
+      Animated.parallel([
+        Animated.timing(fade, {
+          toValue: 1,
+          duration: 320,
+          useNativeDriver: true,
+        }),
+        Animated.timing(rise, {
+          toValue: 0,
+          duration: 320,
+          useNativeDriver: true,
+        }),
+        Animated.timing(progress, {
+          toValue: 1,
+          duration: resolvedDuration,
+          useNativeDriver: false,
+        }),
+      ]).start();
 
-    return () => clearTimeout(timer);
-    // Intentionally once on mount — callers often pass an inline onContinue.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      const timer = setTimeout(() => {
+        onContinueRef.current();
+      }, resolvedDuration);
+
+      return () => clearTimeout(timer);
+    }, [fade, progress, resolvedDuration, rise]),
+  );
 
   const barWidth = progress.interpolate({
     inputRange: [0, 1],

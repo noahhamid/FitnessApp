@@ -48,6 +48,7 @@ export default function OnboardingEquipmentScreen() {
           options={options}
           selected={selected}
           onChange={setSelected}
+          imageEmphasis="low"
         />
       </View>
 

@@ -37,7 +37,7 @@ const config: ExpoConfig = {
   } as ExpoConfig["android"],
   web: {
     output: "server",
-    favicon: "./assets/images/potentialpeak_logo.jpg",
+    favicon: "./assets/images/trainplate.jpg",
   },
   // Exercise JPGs (~34MB) load from Cloudinary — keep them off the APK/AAB.
   assetBundlePatterns: [

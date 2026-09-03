@@ -50,7 +50,7 @@ export default function OnboardingTargetWeightScreen() {
   const [targetKg, setTargetKg] = useState(
     hasSavedTarget ? clampKg(savedTarget) : defaultTarget,
   );
-  const [chosen, setChosen] = useState(hasSavedTarget);
+  const [chosen, setChosen] = useState(true);
 
   const handleTargetChange = (next: number) => {
     setTargetKg(next);

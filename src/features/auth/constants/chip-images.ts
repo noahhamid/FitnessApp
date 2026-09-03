@@ -17,9 +17,8 @@ function pick(map: Gendered, gender: ChipGender): ImageSourcePropType {
 
 /**
  * Every option owns a dedicated file so no two chips can share a photo.
- * Person-centric questions (focus, goal detail, pace, experience) are
- * gendered; gear and time-of-day questions are not, because the subject
- * of the photo isn't a body.
+ * Person-centric questions (focus, goal detail, experience) are
+ * gendered; gear, pace, and lifestyle scenes are not.
  */
 
 /** Body-part focus — the named muscle group is the subject. */
@@ -106,20 +105,11 @@ const GOAL_DETAIL: Record<string, Gendered> = {
   ),
 };
 
-/** Pace — how hard the training looks, not a physique. */
-const PACE: Record<string, Gendered> = {
-  slow: g(
-    require("@/assets/images/chips/male/pace-slow.jpg"),
-    require("@/assets/images/chips/female/pace-slow.jpg"),
-  ),
-  moderate: g(
-    require("@/assets/images/chips/male/pace-moderate.jpg"),
-    require("@/assets/images/chips/female/pace-moderate.jpg"),
-  ),
-  aggressive: g(
-    require("@/assets/images/chips/male/pace-aggressive.jpg"),
-    require("@/assets/images/chips/female/pace-aggressive.jpg"),
-  ),
+/** Pace — how fast the plan moves weight (time), not a physique. */
+const PACE: Record<string, ImageSourcePropType> = {
+  slow: require("@/assets/images/chips/shared/pace-slow.jpg"),
+  moderate: require("@/assets/images/chips/shared/pace-moderate.jpg"),
+  aggressive: require("@/assets/images/chips/shared/pace-aggressive.jpg"),
 };
 
 /** Experience — how practiced the lifter in the photo looks. */
@@ -192,8 +182,8 @@ export function goalDetailChipImage(id: string, gender: ChipGender) {
   return pick(GOAL_DETAIL[id] ?? GOAL_DETAIL.wellness, gender);
 }
 
-export function paceChipImage(id: string, gender: ChipGender) {
-  return pick(PACE[id] ?? PACE.moderate, gender);
+export function paceChipImage(id: string) {
+  return PACE[id] ?? PACE.moderate;
 }
 
 export function experienceChipImage(id: string, gender: ChipGender) {

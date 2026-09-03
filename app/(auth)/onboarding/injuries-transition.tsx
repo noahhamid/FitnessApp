@@ -19,7 +19,7 @@ export default function InjuriesTransitionScreen() {
       }
       icon={Shield}
       onContinue={() =>
-        router.push({ pathname: "/(auth)/onboarding/experience", params })
+        router.replace({ pathname: "/(auth)/onboarding/experience", params })
       }
     />
   );

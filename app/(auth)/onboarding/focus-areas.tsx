@@ -34,6 +34,12 @@ export default function OnboardingFocusAreasScreen() {
       BASE.map((opt) => ({
         ...opt,
         image: focusChipImage(opt.id, gender),
+        imageOffsetY:
+          opt.id === "legs" || opt.id === "glutes"
+            ? -8
+            : opt.id === "abs" || opt.id === "full_body"
+              ? 6
+              : 12,
       })),
     [gender],
   );
@@ -59,6 +65,8 @@ export default function OnboardingFocusAreasScreen() {
           multiple
           selectAllId="full_body"
           columns={2}
+          imagePlacement="background"
+          imageFit="cover"
         />
       </View>
 

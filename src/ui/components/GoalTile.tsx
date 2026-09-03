@@ -43,6 +43,11 @@ type Props = {
   imageOffsetY?: number;
   /** Idle = label on a quiet card; the photo fades in when selected. */
   revealImageOnSelect?: boolean;
+  /**
+   * "low" enlarges the cutout and sits it lower so the top half of the
+   * subject is what shows (goal-detail and later chip screens).
+   */
+  imageEmphasis?: "default" | "low";
 };
 
 /** Map offset → expo-image contentPosition without scaling the photo. */
@@ -67,7 +72,7 @@ function fadeStops(hex: string) {
   return [rgba(0), rgba(0.25), rgba(0.7), rgba(1), rgba(1)] as const;
 }
 
-const FADE_LOCATIONS = [0, 0.35, 0.68, 0.88, 1] as const;
+const FADE_LOCATIONS = [0, 0.22, 0.52, 0.78, 1] as const;
 const FADE_SELECTED = fadeStops(CARD_COLOR_SELECTED);
 
 function scrimFromBg(hex: string) {
@@ -94,6 +99,7 @@ export function GoalTile({
   imageFit = "contain",
   imageOffsetY = 0,
   revealImageOnSelect = false,
+  imageEmphasis = "default",
 }: Props) {
   const { C, styles: s, resolved } = useOnboardingStyles(makeStyles);
   const inside = imagePlacement === "inside";
@@ -122,6 +128,13 @@ export function GoalTile({
   });
 
   const cardColor = isSelected ? CARD_COLOR_SELECTED : C.bg3;
+  const low = imageEmphasis === "low";
+  const cutoutTransform = [
+    ...(flipX ? [{ scaleX: -1 as const }] : []),
+    ...(low
+      ? [{ scale: 1.28 }, { translateY: 36 }]
+      : []),
+  ];
 
   const label = (
     <>
@@ -261,7 +274,10 @@ export function GoalTile({
               <Image
                 source={image}
                 resizeMode="contain"
-                style={[s.cutout, flipX && s.cutoutFlipped]}
+                style={[
+                  s.cutout,
+                  cutoutTransform.length > 0 && { transform: cutoutTransform },
+                ]}
               />
               {fade}
             </View>
@@ -330,7 +346,7 @@ function makeStyles(C: OnboardingColors) {
       left: 0,
       right: 0,
       bottom: 0,
-      height: "48%",
+      height: "60%",
       zIndex: 2,
     },
     insideFade: {
@@ -338,7 +354,7 @@ function makeStyles(C: OnboardingColors) {
       left: 0,
       right: 0,
       bottom: 0,
-      height: "70%",
+      height: "80%",
       zIndex: 2,
     },
     cutoutTail: {},

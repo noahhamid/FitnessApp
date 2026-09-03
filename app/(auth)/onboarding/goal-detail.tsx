@@ -69,6 +69,7 @@ export default function OnboardingGoalDetailScreen() {
           options={options}
           selected={selected}
           onChange={setSelected}
+          imageEmphasis="low"
         />
       </View>
 

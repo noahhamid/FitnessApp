@@ -21,6 +21,7 @@ import {
   PREMIUM_ANNUAL_SKU,
   PREMIUM_MONTHLY_SKU,
   SKU_LABEL,
+  skuDisplayPrice,
   type PremiumSku,
 } from "./skus";
 
@@ -96,9 +97,8 @@ export function PaywallFlow({
 
   const busy = leaving || purchasing || restoring;
   const selected = products.find((item) => item.id === selectedSku);
-  const ctaLabel = selected
-    ? `SUBSCRIBE · ${selected.displayPrice}`
-    : "SUBSCRIBE";
+  const ctaPrice = skuDisplayPrice(selectedSku, selected?.displayPrice);
+  const ctaLabel = `SUBSCRIBE · ${ctaPrice}`;
 
   async function handlePurchase() {
     if (isPremium) {
@@ -184,7 +184,7 @@ export function PaywallFlow({
                       {SKU_LABEL[sku]}
                     </Text>
                     <Text style={[s.skuPrice, active && s.skuLabelActive]}>
-                      {product?.displayPrice ?? "—"}
+                      {skuDisplayPrice(sku, product?.displayPrice)}
                     </Text>
                   </Pressable>
                 );
