@@ -18,8 +18,8 @@ Create these exact product IDs in App Store Connect and Google Play Console. The
 
 Paste these listing URLs (same copy as in the app):
 
-- Privacy: https://potentialpeak-app-puce.vercel.app/privacy
-- Terms: https://potentialpeak-app-puce.vercel.app/terms
+- Privacy: https://potential-peak.vercel.app/privacy
+- Terms: https://potential-peak.vercel.app/terms
 
 Apple: one subscription group, auto-renewable, paid-apps agreement + banking. Google: one subscription with monthly and annual base plans using those IDs.
 
