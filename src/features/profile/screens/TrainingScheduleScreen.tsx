@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -23,6 +22,7 @@ import {
 import { workoutPlanQueryKey } from "@/src/features/workout/hooks/useWorkoutPlan";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
+import { appAlert } from "@/src/components/AppAlert";
 
 export default function TrainingScheduleScreen() {
   const { T, styles } = useThemedStyles(makeStyles);
@@ -59,7 +59,7 @@ export default function TrainingScheduleScreen() {
 
   async function onSave() {
     if (daysInput.length < 2) {
-      Alert.alert("Pick at least 2 days", "Your plan needs two or more days.");
+      appAlert("Pick at least 2 days", "Your plan needs two or more days.");
       return;
     }
     setSaving(true);
@@ -72,7 +72,7 @@ export default function TrainingScheduleScreen() {
       }
       router.back();
     } catch (err) {
-      Alert.alert(
+      appAlert(
         "Save failed",
         err instanceof Error ? err.message : "Unable to save.",
       );
@@ -93,6 +93,7 @@ export default function TrainingScheduleScreen() {
         <ActivityIndicator color={T.accent} style={{ marginTop: 24 }} />
       ) : (
         <GlassSurface style={styles.card}>
+          <Text style={styles.label}>Training Days</Text>
           <View style={styles.weekdayGrid}>
             {[
               WEEKDAY_LABELS_SHORT.slice(0, 3),
@@ -144,33 +145,42 @@ function makeStyles(T: AppTheme) {
     card: {
       borderRadius: T.radius.lg,
       padding: 16,
-      gap: 14,
+      gap: 12,
+      marginTop: 4,
     },
-    weekdayGrid: { gap: 10 },
-    weekdayRow: { flexDirection: "row", gap: 8, justifyContent: "center" },
+    label: {
+      fontFamily: T.bodyMed,
+      fontSize: 10,
+      color: T.muted,
+      letterSpacing: 0.4,
+    },
+    weekdayGrid: { gap: 6 },
+    weekdayRow: {
+      flexDirection: "row",
+      gap: 6,
+    },
     weekdayChip: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      flex: 1,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: T.bg,
-      borderWidth: StyleSheet.hairlineWidth,
+      backgroundColor: T.accentTint,
+      borderRadius: T.radius.sm,
+      borderWidth: 0.5,
       borderColor: T.border,
+      paddingVertical: 10,
     },
     weekdayChipActive: {
       borderColor: T.accent,
-      backgroundColor: T.accentTint,
     },
     weekdayChipText: {
-      fontFamily: T.bodyBold,
-      fontSize: 14,
-      color: T.white,
+      fontFamily: T.bodySemi,
+      fontSize: 12,
+      color: T.muted,
     },
     hint: {
-      fontFamily: T.body,
-      fontSize: 12,
-      lineHeight: 17,
+      fontFamily: T.bodyMed,
+      fontSize: 11,
+      lineHeight: 15,
       color: T.muted,
     },
   });

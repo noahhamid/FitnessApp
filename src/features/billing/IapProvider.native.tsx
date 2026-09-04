@@ -173,6 +173,18 @@ export function IapProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!connected || !signedIn || !storeChecked) return;
+    // Empty Play/App Store lookup is not proof of "no Pro". Dev grants and
+    // server entitlements live on /api/billing/me — only sync when the store
+    // actually handed us a purchase token (real buy / restore).
+    const hasStoreProof = activeSubscriptions.some((sub) => {
+      const token =
+        (typeof sub.purchaseToken === "string" && sub.purchaseToken) ||
+        (typeof (sub as { purchaseTokenAndroid?: unknown })
+          .purchaseTokenAndroid === "string" &&
+          (sub as { purchaseTokenAndroid: string }).purchaseTokenAndroid);
+      return Boolean(token && token.length >= 8);
+    });
+    if (!hasStoreProof) return;
     void syncEntitlement(activeSubscriptions)
       .then((row) => setServerPremium(row.isPremium))
       .catch(() => {

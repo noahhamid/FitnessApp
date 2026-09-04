@@ -1,7 +1,6 @@
 // app/log-meal.tsx
 import { useMemo, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -17,6 +16,7 @@ import { ChevronLeft } from "lucide-react-native";
 
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
+import { appAlert } from "@/src/components/AppAlert";
 import { PressableScale } from "../components/PressableScale";
 import { useAddMeal, useDeleteMeal, useUpdateMeal } from "../hooks/useNutrition";
 import { useAddCustomFood, useFoodSearch } from "../hooks/useFoodSearch";
@@ -142,7 +142,7 @@ export default function LogMealScreen() {
 
   const handleDelete = () => {
     if (!mealId || deleteMeal.isPending) return;
-    Alert.alert("Delete meal", "Remove this meal from the diary?", [
+    appAlert("Delete meal", "Remove this meal from the diary?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",

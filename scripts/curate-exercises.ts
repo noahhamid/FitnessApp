@@ -88,6 +88,9 @@ const BODY_PART_TO_MG: Record<string, MuscleGroup | "split"> = {
 };
 
 const HOME_EQUIPMENT = new Set([
+  // Access tier = home kit (dumbbells, bands, balls). UI labels come from
+  // formatEquipmentLabel(name) so "Band …" shows as Resistance band, not
+  // "Home Dumbbells".
   "dumbbell",
   "kettlebell",
   "band",

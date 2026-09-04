@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -23,6 +22,7 @@ import {
 } from "@/src/features/profile/lib/profile-edit-options";
 import { workoutPlanQueryKey } from "@/src/features/workout/hooks/useWorkoutPlan";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
+import { appAlert } from "@/src/components/AppAlert";
 import type { AppTheme } from "@/src/theme";
 
 export default function TrainingSetupScreen() {
@@ -73,7 +73,7 @@ export default function TrainingSetupScreen() {
       }
       router.back();
     } catch (err) {
-      Alert.alert(
+      appAlert(
         "Save failed",
         err instanceof Error ? err.message : "Unable to save.",
       );
@@ -94,7 +94,7 @@ export default function TrainingSetupScreen() {
         <ActivityIndicator color={T.accent} style={{ marginTop: 24 }} />
       ) : (
         <GlassSurface style={styles.card}>
-          <Text style={styles.sectionLabel}>Experience</Text>
+          <Text style={styles.label}>Experience</Text>
           <View style={styles.grid}>
             {PROFILE_EXPERIENCE_OPTIONS.map((option) => {
               const active = experienceInput === option.id;
@@ -115,9 +115,7 @@ export default function TrainingSetupScreen() {
             })}
           </View>
 
-          <Text style={[styles.sectionLabel, styles.sectionSpaced]}>
-            Equipment
-          </Text>
+          <Text style={[styles.label, styles.labelSpaced]}>Equipment</Text>
           <View style={styles.grid}>
             {PROFILE_EQUIPMENT_OPTIONS.map((option) => {
               const active = equipmentInput === option.id;
@@ -152,40 +150,43 @@ function makeStyles(T: AppTheme) {
     card: {
       borderRadius: T.radius.lg,
       padding: 16,
-      gap: 10,
+      gap: 12,
+      marginTop: 4,
     },
-    sectionLabel: {
-      fontFamily: T.bodyBold,
-      fontSize: 11,
-      letterSpacing: 0.6,
+    label: {
+      fontFamily: T.bodyMed,
+      fontSize: 10,
       color: T.muted,
-      textTransform: "uppercase",
+      letterSpacing: 0.4,
     },
-    sectionSpaced: { marginTop: 8 },
-    grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    labelSpaced: { marginTop: 4 },
+    grid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
     chip: {
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      borderRadius: T.radius.pill,
-      backgroundColor: T.bg,
-      borderWidth: StyleSheet.hairlineWidth,
+      backgroundColor: T.accentTint,
+      borderRadius: T.radius.sm,
+      borderWidth: 0.5,
       borderColor: T.border,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
     },
     chipActive: {
       borderColor: T.accent,
-      backgroundColor: T.accentTint,
     },
     chipText: {
-      fontFamily: T.bodySemi,
-      fontSize: 13,
-      color: T.white,
+      fontFamily: T.bodyMed,
+      fontSize: 12,
+      color: T.muted,
     },
     hint: {
-      fontFamily: T.body,
-      fontSize: 12,
-      lineHeight: 17,
+      fontFamily: T.bodyMed,
+      fontSize: 11,
+      lineHeight: 15,
       color: T.muted,
-      marginTop: 4,
+      marginTop: 2,
     },
   });
 }

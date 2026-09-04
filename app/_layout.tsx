@@ -40,6 +40,7 @@ import {
   AppErrorBoundary,
   ErrorFallback,
 } from "@/src/components/AppErrorBoundary";
+import { AppAlertProvider } from "@/src/components/AppAlert";
 import { IapProvider } from "@/src/features/billing/IapProvider";
 import { LoadingScreen } from "@/src/ui/components/LoadingScreen";
 import * as WebBrowser from "expo-web-browser";
@@ -142,11 +143,13 @@ function RootLayout() {
       <AppThemeProvider>
         <QueryClientProvider client={queryClient}>
           <IapProvider>
-            {/* Inside the providers so retrying re-mounts the screens without
-                dropping the theme, session, or React Query cache. */}
-            <AppErrorBoundary>
-              <AppShell />
-            </AppErrorBoundary>
+            <AppAlertProvider>
+              {/* Inside the providers so retrying re-mounts the screens without
+                  dropping the theme, session, or React Query cache. */}
+              <AppErrorBoundary>
+                <AppShell />
+              </AppErrorBoundary>
+            </AppAlertProvider>
           </IapProvider>
         </QueryClientProvider>
       </AppThemeProvider>

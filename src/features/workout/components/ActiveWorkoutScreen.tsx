@@ -11,11 +11,11 @@ import {
   ScrollView,
   Modal,
   Pressable,
-  Alert,
   ActivityIndicator,
   Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { appAlert } from "@/src/components/AppAlert";
 import {
   SafeAreaProvider,
   useSafeAreaInsets,
@@ -423,7 +423,7 @@ export function ActiveWorkoutScreen({
   const guardSessionReady = (actionLabel: string): boolean => {
     if (sessionReady) return true;
     if (sessionCreateError) {
-      Alert.alert(
+      appAlert(
         "Workout not saved yet",
         sessionCreateError,
         onRetryCreateSession
@@ -435,7 +435,7 @@ export function ActiveWorkoutScreen({
       );
       return false;
     }
-    Alert.alert(
+    appAlert(
       "Still setting up",
       `Hang on a moment — ${actionLabel} will be available once your workout is saved.`,
     );
@@ -889,7 +889,7 @@ export function ActiveWorkoutScreen({
       if (selectedId === ex.id) returnToList();
     };
 
-    Alert.alert(
+    appAlert(
       "Mark complete?",
       remaining < ex.sets
         ? `Save the remaining ${remaining} set${remaining === 1 ? "" : "s"} of ${ex.name} as done.`
@@ -998,7 +998,7 @@ export function ActiveWorkoutScreen({
   const onCompletePress = () => {
     if (selected?.type === "reps" && currentWeight <= 0) {
       haptic(Haptics.ImpactFeedbackStyle.Light);
-      Alert.alert(
+      appAlert(
         "Set your weight",
         "Dial in the kg before tapping Done — next set.",
       );
@@ -1082,7 +1082,7 @@ export function ActiveWorkoutScreen({
           ? e.message
           : "Couldn't save this workout. Try again.";
       setFinishError(message);
-      Alert.alert(
+      appAlert(
         "Couldn't save this workout",
         `${message}\n\nYour workout is still here. Tap retry to save it.`,
         [
@@ -1111,10 +1111,10 @@ export function ActiveWorkoutScreen({
 
   const incompleteCount = exercises.filter((e) => !isExComplete(e)).length;
 
-  // Hero sits under the close/pause row; sheet starts just below it so the
-  // exercise title inside the panel is never clipped by the photo.
-  const heroTop = safeTop + 52;
-  const heroHeight = Math.max(120, HERO_BAND_H);
+  // Hero sits edge-to-edge under the status bar; top controls overlay it.
+  const topBarH = 44;
+  const heroTop = 0;
+  const heroHeight = Math.max(120, HERO_BAND_H) + safeTop + topBarH;
   const panelTop = heroTop + heroHeight + 4;
 
   const [listOverflows, setListOverflows] = useState(false);

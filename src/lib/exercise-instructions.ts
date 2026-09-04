@@ -80,12 +80,47 @@ export function tipsForPattern(pattern?: string | null): ExerciseTip[] {
   return TIPS_BY_PATTERN[pattern.toLowerCase()] ?? TIPS_BY_PATTERN.carry;
 }
 
-export function formatEquipmentLabel(equipment?: string | null): string {
-  if (!equipment) return "Bodyweight";
-  return equipment
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
+/**
+ * Human-readable kit for an exercise.
+ * Prefer the move's name (Band → "Resistance band") over the access tier
+ * (`home_dumbbells`), which is only used for plan filtering.
+ */
+export function formatEquipmentLabel(
+  equipment?: string | null,
+  exerciseName?: string | null,
+): string {
+  const name = (exerciseName ?? "").toLowerCase();
+
+  if (/\bresistance\s*bands?\b|\bbands?\b|elastic/.test(name)) {
+    return "Resistance band";
+  }
+  if (/kettlebell/.test(name)) return "Kettlebell";
+  if (/cable/.test(name)) return "Cable";
+  if (/smith/.test(name)) return "Smith machine";
+  if (/barbell|ez[\s-]?bar|trap\s*bar/.test(name)) return "Barbell";
+  if (
+    /leg press|lat pull-?downs?|pec deck|chest press machine|hack squat|\blever\b|pendulum|landmine|belt squat/.test(
+      name,
+    )
+  ) {
+    return "Machine";
+  }
+  if (/dumbbell/.test(name)) return "Dumbbells";
+  if (/medicine\s*ball/.test(name)) return "Medicine ball";
+  if (/exercise\s*ball|stability\s*ball|bosu/.test(name)) {
+    return "Stability ball";
+  }
+  if (/roller|ab\s*wheel|wheel\s*roller/.test(name)) return "Roller";
+
+  switch (equipment) {
+    case "full_gym":
+      return "Full gym";
+    case "home_dumbbells":
+      return "Home / Dumbbells";
+    case "bodyweight":
+    default:
+      return "Bodyweight";
+  }
 }
 
 export function formatPatternLabel(pattern?: string | null): string {

@@ -163,11 +163,17 @@ billingRouter.post("/sync", requireAuth, async (c) => {
   // timeout, or a lookup that threw. That is not proof the user has no
   // subscription, so never revoke on it. Real revocation comes from the
   // expiresAt check in isEntitlementActive and from the store webhooks.
-  if (!granted && subscriptions.length === 0) {
+  // Dev grants (scripts/grant-premium.mjs) also stay until explicitly revoked.
+  if (!granted) {
     const existing = await prisma.userEntitlement.findUnique({
       where: { userId: user.id },
     });
-    if (existing) return ok(c, entitlementPayload(existing));
+    if (subscriptions.length === 0 && existing) {
+      return ok(c, entitlementPayload(existing));
+    }
+    if (existing?.platform === "dev" && isEntitlementActive(existing)) {
+      return ok(c, entitlementPayload(existing));
+    }
   }
 
   let row;
