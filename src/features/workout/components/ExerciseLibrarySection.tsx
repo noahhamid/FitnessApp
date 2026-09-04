@@ -14,8 +14,8 @@ import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
 import {
   formatMuscleGroup,
-  formatMovementPattern,
 } from "../lib/muscle-icons";
+import { formatEquipmentLabel } from "@/src/lib/exercise-instructions";
 import { imageForExercise } from "@/src/lib/workout-plan-adapter";
 import { useUserProfile } from "@/src/features/profile/hooks/useUserProfile";
 
@@ -104,7 +104,7 @@ export function ExerciseLibrarySection({ onView }: Props) {
 
       <View style={s.list}>
         {visibleExercises.map((ex) => {
-          const meta = `${formatMuscleGroup(ex.muscleGroup)} · ${formatMovementPattern(ex.movementPattern)}`;
+          const meta = `${formatMuscleGroup(ex.muscleGroup)} · ${formatEquipmentLabel(ex.minEquipment, ex.name)}`;
           return (
             <Pressable
               key={ex.id}

@@ -28,7 +28,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef } from "react";
 import {
-  Alert,
   Animated,
   Pressable,
   ScrollView,
@@ -37,6 +36,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { appAlert } from "@/src/components/AppAlert";
 
 const GOAL_LABELS: Record<string, string> = {
   lose: "Lose Fat",
@@ -480,7 +480,7 @@ export function ReadyScreen() {
               router.push({ pathname: "/(auth)/paywall", params });
             } catch {
               continuing.current = false;
-              Alert.alert(
+              appAlert(
                 "Couldn't save your plan",
                 "Check your connection and try again. Your workouts and meals are still on your account.",
               );

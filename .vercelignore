@@ -7,6 +7,9 @@ ios
 /uploads
 .cursor
 agent-transcripts
-assets/images/workout
+assets
 scripts/data
+prisma/data
+data/exercises-dataset.json
+*.canvas.tsx
 !api/handler.cjs

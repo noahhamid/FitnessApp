@@ -11,7 +11,6 @@ import {
   StyleProp,
   ViewStyle,
   Image,
-  Alert,
   Modal,
   RefreshControl,
 } from "react-native";
@@ -23,6 +22,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
+import { appAlert } from "@/src/components/AppAlert";
 import type { AppTheme } from "@/src/theme";
 import { topInset } from "@/src/lib/safe-area";
 import { tabContentBottomPad } from "@/src/lib/tab-chrome";
@@ -242,12 +242,11 @@ export default function WorkoutScreen() {
 
   // Checkmark destination matches the active add path: live session names
   // while a workout is in progress, PlannedExtraExercise names otherwise.
-  const addedNames = useMemo(() => {
-    if (inProgress) {
-      return new Set(inProgress.plan.exercises.map((e) => e.name));
-    }
-    return new Set(extras.map((e) => e.exerciseName));
-  }, [inProgress, extras]);
+  // (Expanded below once today's plan is known — plan moves already "belong".)
+  const extraNames = useMemo(
+    () => new Set(extras.map((e) => e.exerciseName)),
+    [extras],
+  );
 
   const uiDays: WorkoutPlan[] = useMemo(() => {
     if (!apiPlan) return [];
@@ -321,7 +320,7 @@ export default function WorkoutScreen() {
     try {
       await cardio.complete();
     } catch (e) {
-      Alert.alert(
+      appAlert(
         "Couldn't save conditioning",
         e instanceof Error ? e.message : "Try again in a moment.",
       );
@@ -350,6 +349,22 @@ export default function WorkoutScreen() {
       ],
     };
   }, [baseTodaysWorkout, extras, apiPlan?.goalId, profile?.gender]);
+
+  // Plan exercises + extras + live session — so detail doesn't offer "Add"
+  // for moves already scheduled today.
+  const addedNames = useMemo(() => {
+    const names = new Set<string>(extraNames);
+    if (inProgress) {
+      for (const e of inProgress.plan.exercises) names.add(e.name);
+    }
+    if (todaysWorkout) {
+      for (const e of todaysWorkout.exercises) names.add(e.name);
+    }
+    if (selectedDay) {
+      for (const e of selectedDay.exercises) names.add(e.name);
+    }
+    return names;
+  }, [extraNames, inProgress, todaysWorkout, selectedDay]);
 
   // Prefetch plan + today's cover while the Workout tab is focused so Start
   // doesn't wait on a cold plan fetch / image decode.
@@ -479,7 +494,7 @@ export default function WorkoutScreen() {
             : "Couldn't save this workout to your account.";
         setSessionCreating(false);
         setSessionCreateError(message);
-        Alert.alert(
+        appAlert(
           "Couldn't save workout",
           `${message}\n\nYou can retry from the banner, or cancel and try again.`,
         );
@@ -551,20 +566,59 @@ export default function WorkoutScreen() {
       byExercise.set(log.exerciseName, existing);
     }
 
+    // Complete requires ≥1 exercise with ≥1 set. Finish must still work when
+    // the user never tapped Done — use the live roster and placeholder sets.
+    const roster =
+      activeExercises.length > 0
+        ? activeExercises
+        : (selectedDay?.exercises ?? []);
+
+    const mapSets = (sets: SetLog[]) =>
+      sets.map((s) => ({
+        reps: s.reps,
+        weight: s.weight,
+        durationSec: s.durationSec,
+        completed: s.completed,
+      }));
+
+    const seen = new Set<string>();
+    const exercises: {
+      exerciseName: string;
+      sets: ReturnType<typeof mapSets>;
+    }[] = [];
+
+    for (const ex of roster) {
+      if (seen.has(ex.name)) continue;
+      seen.add(ex.name);
+      const logged = byExercise.get(ex.name);
+      if (logged && logged.length > 0) {
+        exercises.push({ exerciseName: ex.name, sets: mapSets(logged) });
+        continue;
+      }
+      const placeholders = Math.max(1, ex.sets || 1);
+      exercises.push({
+        exerciseName: ex.name,
+        sets: Array.from({ length: placeholders }, () =>
+          ex.type === "duration"
+            ? { durationSec: ex.durationSec ?? 0, completed: false }
+            : { reps: ex.reps, weight: 0, completed: false },
+        ),
+      });
+    }
+
+    for (const [exerciseName, sets] of byExercise) {
+      if (seen.has(exerciseName)) continue;
+      exercises.push({ exerciseName, sets: mapSets(sets) });
+    }
+
+    if (exercises.length === 0) {
+      throw new Error("Add at least one exercise before finishing.");
+    }
+
     try {
       await completeSession.mutateAsync({
         sessionId: activeSessionId,
-        exercises: Array.from(byExercise.entries()).map(
-          ([exerciseName, sets]) => ({
-            exerciseName,
-            sets: sets.map((s) => ({
-              reps: s.reps,
-              weight: s.weight,
-              durationSec: s.durationSec,
-              completed: s.completed,
-            })),
-          }),
-        ),
+        exercises,
       });
     } catch (e) {
       throw e instanceof Error
@@ -730,19 +784,35 @@ export default function WorkoutScreen() {
 
   // ── Library exercise detail (view / start standalone / add to today) ──────
   if (view === "libraryDetail" && viewingExercise) {
+    const inScheduledPlan =
+      (todaysWorkout?.exercises.some(
+        (e) => e.name === viewingExercise.name,
+      ) ??
+        false) ||
+      (selectedDay?.exercises.some((e) => e.name === viewingExercise.name) ??
+        false) ||
+      (inProgress?.plan.exercises.some(
+        (e) => e.name === viewingExercise.name,
+      ) ??
+        false);
+    const inExtrasOnly =
+      extraNames.has(viewingExercise.name) && !inScheduledPlan;
+
     return (
       <ExerciseDetailCard
         exercise={viewingExercise}
         imageUrl={imageForExercise(viewingExercise.name, profile?.gender)}
         addedToToday={addedNames.has(viewingExercise.name)}
-        // Mid-workout library modal (ActiveWorkoutScreen) passes
-        // showStart={false} / allowRemove={false}. Today browse omits
-        // showStart so it defaults to true — previously showStart={!inProgress}
-        // hid Start whenever a Continue session existed.
         addLabel={
           inProgress ? "Add to this workout" : "Add to today's session"
         }
-        allowRemove={!inProgress}
+        addedLabel={
+          inScheduledPlan
+            ? "Already in today's workout"
+            : "Added — tap to remove"
+        }
+        allowRemove={!inProgress && inExtrasOnly}
+        showStart={!inScheduledPlan}
         addPending={inProgress ? liveAddPending : isAddingExtra}
         onBack={() => {
           setView(libraryDetailFrom);

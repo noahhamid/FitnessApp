@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -23,6 +22,7 @@ import {
 } from "@/src/features/profile/lib/profile-edit-options";
 import { workoutPlanQueryKey } from "@/src/features/workout/hooks/useWorkoutPlan";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
+import { appAlert } from "@/src/components/AppAlert";
 import type { AppTheme } from "@/src/theme";
 
 export default function FitnessGoalScreen() {
@@ -53,7 +53,7 @@ export default function FitnessGoalScreen() {
       }
       router.back();
     } catch (err) {
-      Alert.alert(
+      appAlert(
         "Save failed",
         err instanceof Error ? err.message : "Unable to save.",
       );
@@ -74,6 +74,7 @@ export default function FitnessGoalScreen() {
         <ActivityIndicator color={T.accent} style={{ marginTop: 24 }} />
       ) : (
         <GlassSurface style={styles.card}>
+          <Text style={styles.label}>Fitness Goal</Text>
           <View style={styles.grid}>
             {PROFILE_GOALS.map((goal) => {
               const active = goalInput === goal.id;
@@ -86,7 +87,7 @@ export default function FitnessGoalScreen() {
                 >
                   <Ionicons
                     name={goal.icon}
-                    size={14}
+                    size={13}
                     color={active ? T.accent : T.muted}
                   />
                   <Text
@@ -113,33 +114,43 @@ function makeStyles(T: AppTheme) {
     card: {
       borderRadius: T.radius.lg,
       padding: 16,
-      gap: 14,
+      gap: 12,
+      marginTop: 4,
     },
-    grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+    label: {
+      fontFamily: T.bodyMed,
+      fontSize: 10,
+      color: T.muted,
+      letterSpacing: 0.4,
+    },
+    grid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
     chip: {
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      borderRadius: T.radius.pill,
-      backgroundColor: T.bg,
-      borderWidth: StyleSheet.hairlineWidth,
+      backgroundColor: T.accentTint,
+      borderRadius: T.radius.sm,
+      borderWidth: 0.5,
       borderColor: T.border,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
     },
     chipActive: {
       borderColor: T.accent,
-      backgroundColor: T.accentTint,
     },
     chipText: {
-      fontFamily: T.bodySemi,
-      fontSize: 13,
-      color: T.white,
+      fontFamily: T.bodyMed,
+      fontSize: 12,
+      color: T.muted,
     },
     hint: {
-      fontFamily: T.body,
-      fontSize: 12,
-      lineHeight: 17,
+      fontFamily: T.bodyMed,
+      fontSize: 11,
+      lineHeight: 15,
       color: T.muted,
     },
   });

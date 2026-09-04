@@ -219,33 +219,12 @@ export default function MealScreen() {
         translucent={false}
       />
 
-      <MealHeader
-        title="Today's plate"
-        caloriesLeft={caloriesLeft}
-      />
-
-      <View style={styles.daySelectorWrap}>
-        <DaySelector
-          days={days}
-          activeIndex={activeDayIndex}
-          onSelect={(i) => {
-            const picked = days[i];
-            if (picked && !picked.disabled) setSelectedDate(picked.date);
-          }}
-          onPrevWeek={() => shiftWeek(-1)}
-          onNextWeek={() => shiftWeek(1)}
-          weekLabel={formatWeekLabel(weekStart, weekEnd, weekOffset)}
-          canGoPrevWeek={canGoPrevWeek}
-          canGoNextWeek={canGoNextWeek}
-        />
-      </View>
-
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: tabContentBottomPad(insets.bottom) },
-        ]}
+        contentContainerStyle={{
+          paddingBottom: tabContentBottomPad(insets.bottom),
+        }}
+        stickyHeaderIndices={[1]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -257,6 +236,28 @@ export default function MealScreen() {
           />
         }
       >
+        <MealHeader
+          title="Today's plate"
+          caloriesLeft={caloriesLeft}
+        />
+
+        <View style={styles.daySelectorSticky} collapsable={false}>
+          <DaySelector
+            days={days}
+            activeIndex={activeDayIndex}
+            onSelect={(i) => {
+              const picked = days[i];
+              if (picked && !picked.disabled) setSelectedDate(picked.date);
+            }}
+            onPrevWeek={() => shiftWeek(-1)}
+            onNextWeek={() => shiftWeek(1)}
+            weekLabel={formatWeekLabel(weekStart, weekEnd, weekOffset)}
+            canGoPrevWeek={canGoPrevWeek}
+            canGoNextWeek={canGoNextWeek}
+          />
+        </View>
+
+        <View style={styles.content}>
         <DailySummaryCard
           consumed={consumed}
           calorieGoal={calorieGoal}
@@ -440,6 +441,7 @@ export default function MealScreen() {
             streak={weekly.streak}
           />
         )}
+        </View>
       </ScrollView>
 
       <NutritionTargetsModal
@@ -468,7 +470,15 @@ function makeStyles(T: AppTheme) {
     right: 0,
     height: 260,
   },
-  daySelectorWrap: { paddingHorizontal: 20, paddingBottom: 4 },
+  daySelectorSticky: {
+    paddingHorizontal: 20,
+    paddingTop: 6,
+    paddingBottom: 10,
+    backgroundColor: T.bg,
+    zIndex: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: T.border,
+  },
   scroll: { flex: 1 },
   content: {
     paddingHorizontal: 20,

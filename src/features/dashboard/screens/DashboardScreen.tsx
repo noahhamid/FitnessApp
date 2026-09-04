@@ -274,27 +274,10 @@ export default function DashboardScreen() {
         translucent={false}
       />
 
-      <DashboardHeader name={user?.name ?? "there"} />
-
-      <View style={styles.daySelectorWrap}>
-        <DaySelector
-          days={days}
-          activeIndex={activeDayIndex}
-          onSelect={(i) => {
-            const picked = days[i];
-            if (picked && !picked.disabled) setSelectedDate(picked.date);
-          }}
-          onPrevWeek={() => shiftWeek(-1)}
-          onNextWeek={() => shiftWeek(1)}
-          weekLabel={formatWeekLabel(weekStart, weekEnd, weekOffset)}
-          canGoPrevWeek={canGoPrevWeek}
-          canGoNextWeek={canGoNextWeek}
-        />
-      </View>
-
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingBottom: contentPadBottom }]}
+        contentContainerStyle={{ paddingBottom: contentPadBottom }}
+        stickyHeaderIndices={[1]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -306,6 +289,25 @@ export default function DashboardScreen() {
           />
         }
       >
+        <DashboardHeader name={user?.name ?? "there"} />
+
+        <View style={styles.daySelectorSticky} collapsable={false}>
+          <DaySelector
+            days={days}
+            activeIndex={activeDayIndex}
+            onSelect={(i) => {
+              const picked = days[i];
+              if (picked && !picked.disabled) setSelectedDate(picked.date);
+            }}
+            onPrevWeek={() => shiftWeek(-1)}
+            onNextWeek={() => shiftWeek(1)}
+            weekLabel={formatWeekLabel(weekStart, weekEnd, weekOffset)}
+            canGoPrevWeek={canGoPrevWeek}
+            canGoNextWeek={canGoNextWeek}
+          />
+        </View>
+
+        <View style={styles.content}>
         <TodayPulseRow
           plannedMinutes={plannedMinutes}
           completedMinutes={completedMinutes}
@@ -442,6 +444,7 @@ export default function DashboardScreen() {
             goalHit={goalHit}
           />
         )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -450,7 +453,15 @@ export default function DashboardScreen() {
 function makeStyles(T: AppTheme) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: T.bg },
-    daySelectorWrap: { paddingHorizontal: 20, paddingBottom: 4 },
+    daySelectorSticky: {
+      paddingHorizontal: 20,
+      paddingTop: 6,
+      paddingBottom: 10,
+      backgroundColor: T.bg,
+      zIndex: 10,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: T.border,
+    },
     scroll: { flex: 1 },
     content: {
       paddingHorizontal: 20,

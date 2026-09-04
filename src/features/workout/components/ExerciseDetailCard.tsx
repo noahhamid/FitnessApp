@@ -136,7 +136,10 @@ export function ExerciseDetailCard({
             <Info size={13} color={T.accent} strokeWidth={2.2} />
             <Text style={s.metaLabel}>Equipment</Text>
             <Text style={s.metaValue} numberOfLines={1}>
-              {formatEquipmentLabel(exercise.minEquipment)}
+              {formatEquipmentLabel(
+                exercise.minEquipment,
+                exercise.name,
+              )}
             </Text>
           </View>
         </View>

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   StyleSheet,
   Text,
   TextInput,
@@ -18,6 +17,7 @@ import {
 import { parsePositiveNumber } from "@/src/features/profile/lib/profile-edit-options";
 import { useThemedStyles } from "@/src/context/useThemedStyles";
 import type { AppTheme } from "@/src/theme";
+import { appAlert } from "@/src/components/AppAlert";
 
 export default function BodyHealthScreen() {
   const { T, styles } = useThemedStyles(makeStyles);
@@ -57,7 +57,7 @@ export default function BodyHealthScreen() {
     const nextHeight = parsePositiveNumber(heightInput);
     const nextAge = parsePositiveNumber(ageInput);
     if (!nextWeight || !nextHeight || !nextAge) {
-      Alert.alert(
+      appAlert(
         "Incomplete profile",
         "Weight, height, and age must be valid numbers.",
       );
@@ -74,7 +74,7 @@ export default function BodyHealthScreen() {
       await qc.invalidateQueries({ queryKey: ["nutrition", "goals"] });
       router.back();
     } catch (err) {
-      Alert.alert(
+      appAlert(
         "Save failed",
         err instanceof Error ? err.message : "Unable to save.",
       );
@@ -95,41 +95,43 @@ export default function BodyHealthScreen() {
         <ActivityIndicator color={T.accent} style={{ marginTop: 24 }} />
       ) : (
         <GlassSurface style={styles.card}>
-          <View style={styles.field}>
-            <Text style={styles.label}>Weight (kg)</Text>
-            <TextInput
-              value={weightInput}
-              onChangeText={setWeightInput}
-              keyboardType="decimal-pad"
-              placeholder="75"
-              placeholderTextColor={T.muted}
-              style={styles.input}
-              selectTextOnFocus
-            />
-          </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Height (cm)</Text>
-            <TextInput
-              value={heightInput}
-              onChangeText={setHeightInput}
-              keyboardType="number-pad"
-              placeholder="175"
-              placeholderTextColor={T.muted}
-              style={styles.input}
-              selectTextOnFocus
-            />
-          </View>
-          <View style={styles.field}>
-            <Text style={styles.label}>Age</Text>
-            <TextInput
-              value={ageInput}
-              onChangeText={setAgeInput}
-              keyboardType="number-pad"
-              placeholder="25"
-              placeholderTextColor={T.muted}
-              style={styles.input}
-              selectTextOnFocus
-            />
+          <View style={styles.fieldRow}>
+            <View style={[styles.field, { flex: 1 }]}>
+              <Text style={styles.label}>Weight (kg)</Text>
+              <TextInput
+                value={weightInput}
+                onChangeText={setWeightInput}
+                keyboardType="decimal-pad"
+                placeholder="75"
+                placeholderTextColor={T.muted}
+                style={styles.input}
+                selectTextOnFocus
+              />
+            </View>
+            <View style={[styles.field, { flex: 1 }]}>
+              <Text style={styles.label}>Height (cm)</Text>
+              <TextInput
+                value={heightInput}
+                onChangeText={setHeightInput}
+                keyboardType="number-pad"
+                placeholder="175"
+                placeholderTextColor={T.muted}
+                style={styles.input}
+                selectTextOnFocus
+              />
+            </View>
+            <View style={[styles.field, { flex: 1 }]}>
+              <Text style={styles.label}>Age</Text>
+              <TextInput
+                value={ageInput}
+                onChangeText={setAgeInput}
+                keyboardType="number-pad"
+                placeholder="25"
+                placeholderTextColor={T.muted}
+                style={styles.input}
+                selectTextOnFocus
+              />
+            </View>
           </View>
         </GlassSurface>
       )}
@@ -142,26 +144,30 @@ function makeStyles(T: AppTheme) {
     card: {
       borderRadius: T.radius.lg,
       padding: 16,
-      gap: 14,
+      gap: 12,
+      marginTop: 4,
+    },
+    fieldRow: {
+      flexDirection: "row",
+      gap: 10,
     },
     field: { gap: 6 },
     label: {
-      fontFamily: T.bodyBold,
-      fontSize: 11,
-      letterSpacing: 0.6,
+      fontFamily: T.bodyMed,
+      fontSize: 10,
       color: T.muted,
-      textTransform: "uppercase",
+      letterSpacing: 0.4,
     },
     input: {
-      backgroundColor: T.bg,
-      borderRadius: T.radius.md,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: T.border,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
       fontFamily: T.body,
-      fontSize: 16,
+      fontSize: 14,
       color: T.white,
+      backgroundColor: T.accentTint,
+      borderRadius: T.radius.sm,
+      borderWidth: 0.5,
+      borderColor: T.border,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
     },
   });
 }

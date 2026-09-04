@@ -12,7 +12,6 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { tabContentBottomPad } from "@/src/lib/tab-chrome";
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -27,6 +26,7 @@ import type { AppTheme } from "@/src/theme";
 import { GlassSurface } from "@/src/features/dashboard/components/GlassSurface";
 import { AppearanceModeControl } from "@/src/features/profile/components/AppearanceModeControl";
 import { PageHeader } from "@/src/components/PageHeader";
+import { appAlert } from "@/src/components/AppAlert";
 import { weekDatesFor } from "@/src/lib/week-days";
 import {
   defaultTrainingDays,
@@ -290,7 +290,7 @@ export default function ProfileScreen() {
   async function handleSaveProfile() {
     const nextName = nameInput.trim();
     if (!nextName) {
-      Alert.alert("Invalid name", "Please enter a valid name.");
+      appAlert("Invalid name", "Please enter a valid name.");
       return;
     }
 
@@ -305,7 +305,7 @@ export default function ProfileScreen() {
       }, 1400);
     } catch (err) {
       setSaveState("idle");
-      Alert.alert(
+      appAlert(
         "Save failed",
         err instanceof Error ? err.message : "Unable to save profile.",
       );
@@ -500,7 +500,7 @@ export default function ProfileScreen() {
                     } else if (setting.id === "restore") {
                       if (restoring) return;
                       void restore().then((ok) => {
-                        Alert.alert(
+                        appAlert(
                           ok ? "Purchases restored" : "Nothing to restore",
                           ok
                             ? "Pro is unlocked on this account."
@@ -508,7 +508,7 @@ export default function ProfileScreen() {
                         );
                       });
                     } else if (setting.id === "restart") {
-                      Alert.alert(
+                      appAlert(
                         "Restart setup?",
                         "You'll go through the quiz again and we'll rebuild your plan and nutrition targets. Workouts, meals, and progress stay on your account.",
                         [
@@ -565,7 +565,7 @@ export default function ProfileScreen() {
           <SignOutButton
             pending={signOutMutation.isPending}
             onConfirm={() =>
-              Alert.alert(
+              appAlert(
                 "Sign out?",
                 "You'll need to sign back in to access your data.",
                 [
@@ -583,7 +583,7 @@ export default function ProfileScreen() {
           <DeleteAccountButton
             pending={deleteAccountMutation.isPending}
             onConfirm={() =>
-              Alert.alert(
+              appAlert(
                 "Delete account permanently?",
                 "This cannot be undone. It permanently removes your account and all of your data on Trainplate — workout history, meal logs, weight logs, water logs, nutrition goals, and profile settings.\n\nMeal scan photos stored in the cloud may also become inaccessible.",
                 [
@@ -595,7 +595,7 @@ export default function ProfileScreen() {
                       deleteAccountMutation.mutate(undefined, {
                         onSuccess: (result) => {
                           if (result.verificationEmailSent) {
-                            Alert.alert(
+                            appAlert(
                               "Check your email",
                               "We sent a confirmation link to finish deleting your account. Open that link on this device while you are still signed in. Your account stays active until you confirm.",
                             );
@@ -604,7 +604,7 @@ export default function ProfileScreen() {
                           router.replace("/(auth)/welcome");
                         },
                         onError: (err) => {
-                          Alert.alert(
+                          appAlert(
                             "Couldn't delete account",
                             err instanceof Error
                               ? err.message

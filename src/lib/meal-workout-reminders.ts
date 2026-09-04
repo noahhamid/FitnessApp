@@ -1,4 +1,4 @@
-import { Alert, Platform } from "react-native";
+import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { localDateOnly, parseLocalDateKey } from "@/src/features/progress/lib/localDate";
@@ -11,6 +11,7 @@ import {
   markNotificationCanceled,
   recordNotificationScheduled,
 } from "@/src/lib/notification-history";
+import { appAlert } from "@/src/components/AppAlert";
 
 export type ReminderSlot =
   | "breakfast"
@@ -34,6 +35,18 @@ export const REMINDER_TIMES: Record<
   workout: { hour: 18, minute: 0 },
 };
 
+/**
+ * Second ping for the same slot if still undone — roughly doubles daily
+ * reminders without inventing new meal types.
+ */
+export const REMINDER_FOLLOWUP_OFFSET_MIN: Record<ReminderSlot, number> = {
+  breakfast: 150, // 10:30
+  lunch: 90, // 14:30
+  snack: 75, // 17:15
+  dinner: 90, // 20:30
+  workout: 120, // +2h after the primary workout hour
+};
+
 const MEAL_SLOTS: ReminderSlot[] = [
   "breakfast",
   "lunch",
@@ -55,6 +68,10 @@ export function normalizeReminderSlots(
 
 export function reminderId(slot: ReminderSlot, date: string): string {
   return `reminder-${slot}-${date}`;
+}
+
+export function reminderFollowupId(slot: ReminderSlot, date: string): string {
+  return `reminder-${slot}-followup-${date}`;
 }
 
 export function mealTypeToSlot(meal: MealType): ReminderSlot {
@@ -113,34 +130,60 @@ export function suggestMealSlotForQuickAdd(
 function copyFor(
   slot: ReminderSlot,
   workoutTitle?: string,
+  followUp = false,
 ): { title: string; body: string } {
   switch (slot) {
     case "breakfast":
-      return {
-        title: "Breakfast check-in",
-        body: "Don't forget breakfast — keep the streak going",
-      };
+      return followUp
+        ? {
+            title: "Still time for breakfast",
+            body: "Quick log keeps your day on track — takes 10 seconds",
+          }
+        : {
+            title: "Breakfast check-in",
+            body: "Don't forget breakfast — keep the streak going",
+          };
     case "lunch":
-      return {
-        title: "Lunchtime fuel",
-        body: "Log lunch when you can — your body will thank you",
-      };
+      return followUp
+        ? {
+            title: "Lunch still open",
+            body: "Log what you ate — even a rough estimate helps",
+          }
+        : {
+            title: "Lunchtime fuel",
+            body: "Log lunch when you can — your body will thank you",
+          };
     case "snack":
-      return {
-        title: "Snack window",
-        body: "A quick snack keeps energy steady this afternoon",
-      };
+      return followUp
+        ? {
+            title: "Afternoon check",
+            body: "Snack or skip — either way, log it so targets stay honest",
+          }
+        : {
+            title: "Snack window",
+            body: "A quick snack keeps energy steady this afternoon",
+          };
     case "dinner":
-      return {
-        title: "Dinner time",
-        body: "Don't skip dinner — finish strong today",
-      };
+      return followUp
+        ? {
+            title: "Dinner wrap-up",
+            body: "Close the day strong — log dinner before you wind down",
+          }
+        : {
+            title: "Dinner time",
+            body: "Don't skip dinner — finish strong today",
+          };
     case "workout": {
       const title = workoutTitle?.trim() || "today's workout";
-      return {
-        title: "Training day",
-        body: `Today's a training day — ${title} is ready when you are`,
-      };
+      return followUp
+        ? {
+            title: "Session still waiting",
+            body: `${title} is still on your plan — even a short one counts`,
+          }
+        : {
+            title: "Training day",
+            body: `Today's a training day — ${title} is ready when you are`,
+          };
     }
   }
 }
@@ -150,6 +193,7 @@ export function isReminderTimeUpcoming(
   slot: ReminderSlot,
   now: Date = new Date(),
   workoutHour?: number,
+  followUp = false,
 ): boolean {
   const { hour, minute } =
     slot === "workout" && workoutHour != null
@@ -157,6 +201,11 @@ export function isReminderTimeUpcoming(
       : REMINDER_TIMES[slot];
   const trigger = new Date(now);
   trigger.setHours(hour, minute, 0, 0);
+  if (followUp) {
+    trigger.setMinutes(
+      trigger.getMinutes() + REMINDER_FOLLOWUP_OFFSET_MIN[slot],
+    );
+  }
   return trigger.getTime() > now.getTime();
 }
 
@@ -169,8 +218,13 @@ function weeklyWorkoutId(mondayIndex: number): string {
   return `reminder-workout-weekly-${mondayIndex}`;
 }
 
+function weeklyWorkoutFollowupId(mondayIndex: number): string {
+  return `reminder-workout-weekly-${mondayIndex}-followup`;
+}
+
 /**
- * Repeating workout pings on the chosen weekdays at `hour`:00.
+ * Repeating workout pings on the chosen weekdays at `hour`:00,
+ * plus a follow-up two hours later.
  * Replaces any previous weekly workout schedules.
  */
 export async function syncWeeklyWorkoutReminders(input: {
@@ -185,6 +239,7 @@ export async function syncWeeklyWorkoutReminders(input: {
 
   for (let i = 0; i < 7; i++) {
     await cancelOsReminder(weeklyWorkoutId(i));
+    await cancelOsReminder(weeklyWorkoutFollowupId(i));
   }
 
   if (!input.enabled || input.trainingDays.length === 0) return;
@@ -193,14 +248,19 @@ export async function syncWeeklyWorkoutReminders(input: {
   if (!perms.granted) return;
 
   const hour = Math.max(0, Math.min(23, Math.round(input.hour)));
+  const followHour = (hour + Math.floor(REMINDER_FOLLOWUP_OFFSET_MIN.workout / 60)) % 24;
+  const followMinute = REMINDER_FOLLOWUP_OFFSET_MIN.workout % 60;
 
   for (const mondayIndex of input.trainingDays) {
     if (!Number.isInteger(mondayIndex) || mondayIndex < 0 || mondayIndex > 6) {
       continue;
     }
-    const id = weeklyWorkoutId(mondayIndex);
+    const weekday = expoWeekdayFromMondayIndex(mondayIndex);
+    const channel =
+      Platform.OS === "android" ? { channelId: CHANNEL_ID } : {};
+
     await Notifications.scheduleNotificationAsync({
-      identifier: id,
+      identifier: weeklyWorkoutId(mondayIndex),
       content: {
         title: "Training day",
         body: "Today's a training day — your session is ready when you are",
@@ -209,10 +269,32 @@ export async function syncWeeklyWorkoutReminders(input: {
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-        weekday: expoWeekdayFromMondayIndex(mondayIndex),
+        weekday,
         hour,
         minute: 0,
-        ...(Platform.OS === "android" ? { channelId: CHANNEL_ID } : {}),
+        ...channel,
+      },
+    });
+
+    await Notifications.scheduleNotificationAsync({
+      identifier: weeklyWorkoutFollowupId(mondayIndex),
+      content: {
+        title: "Session still waiting",
+        body: "Your workout is still on the plan — even a short one counts",
+        sound: true,
+        data: {
+          type: "reminder",
+          slot: "workout",
+          weekday: mondayIndex,
+          followUp: true,
+        },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+        weekday,
+        hour: followHour,
+        minute: followMinute,
+        ...channel,
       },
     });
   }
@@ -277,8 +359,11 @@ export async function cancelReminder(
 ): Promise<void> {
   if (Platform.OS === "web") return;
   const id = reminderId(slot, date);
+  const followId = reminderFollowupId(slot, date);
   await cancelOsReminder(id);
+  await cancelOsReminder(followId);
   await markNotificationCanceled(id);
+  await markNotificationCanceled(followId);
 }
 
 /**
@@ -291,7 +376,10 @@ export async function cancelAllRemindersForDate(
 ): Promise<void> {
   if (Platform.OS === "web") return;
   await Promise.all(
-    ALL_SLOTS.map((slot) => cancelOsReminder(reminderId(slot, date))),
+    ALL_SLOTS.flatMap((slot) => [
+      cancelOsReminder(reminderId(slot, date)),
+      cancelOsReminder(reminderFollowupId(slot, date)),
+    ]),
   );
 }
 
@@ -321,40 +409,56 @@ async function scheduleOne(
   workoutHour?: number,
 ): Promise<void> {
   const now = new Date();
-  if (!isReminderTimeUpcoming(slot, now, workoutHour)) return;
-
   const { hour, minute } =
     slot === "workout" && workoutHour != null
       ? { hour: workoutHour, minute: 0 }
       : REMINDER_TIMES[slot];
-  const triggerDate = new Date(now);
-  triggerDate.setHours(hour, minute, 0, 0);
 
-  const { title, body } = copyFor(slot, workoutTitle);
-  const id = reminderId(slot, date);
+  const channel =
+    Platform.OS === "android" ? { channelId: CHANNEL_ID } : {};
 
-  await Notifications.scheduleNotificationAsync({
-    identifier: id,
-    content: {
+  const scheduleAt = async (followUp: boolean) => {
+    if (!isReminderTimeUpcoming(slot, now, workoutHour, followUp)) return;
+
+    const triggerDate = new Date(now);
+    triggerDate.setHours(hour, minute, 0, 0);
+    if (followUp) {
+      triggerDate.setMinutes(
+        triggerDate.getMinutes() + REMINDER_FOLLOWUP_OFFSET_MIN[slot],
+      );
+    }
+
+    const { title, body } = copyFor(slot, workoutTitle, followUp);
+    const id = followUp
+      ? reminderFollowupId(slot, date)
+      : reminderId(slot, date);
+
+    await Notifications.scheduleNotificationAsync({
+      identifier: id,
+      content: {
+        title,
+        body,
+        sound: true,
+        data: { type: "reminder", slot, date, followUp },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: triggerDate,
+        ...channel,
+      },
+    });
+
+    await recordNotificationScheduled({
+      id,
+      type: slot,
       title,
       body,
-      sound: true,
-      data: { type: "reminder", slot, date },
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: triggerDate,
-      ...(Platform.OS === "android" ? { channelId: CHANNEL_ID } : {}),
-    },
-  });
+      scheduledFor: triggerDate,
+    });
+  };
 
-  await recordNotificationScheduled({
-    id,
-    type: slot,
-    title,
-    body,
-    scheduledFor: triggerDate,
-  });
+  await scheduleAt(false);
+  await scheduleAt(true);
 }
 
 /**
@@ -435,9 +539,9 @@ export function promptForReminderPermissions(
       return;
     }
 
-    Alert.alert(
+    appAlert(
       "Stay on track",
-      "We'll remind you about meals and workouts at the right times — only for what you haven't logged yet.",
+      "We'll send meal and workout reminders through the day — including a second nudge if you haven't logged yet.",
       [
         {
           text: "Not now",

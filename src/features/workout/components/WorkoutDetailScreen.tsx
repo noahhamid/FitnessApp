@@ -106,25 +106,17 @@ export function WorkoutDetailScreen({
         <View
           style={[
             s.heroWrap,
-            { height: 260 + topInset(insets.top) + 52 },
+            { height: 280 + topInset(insets.top) },
           ]}
         >
           <Image
             source={{ uri: plan.coverImage }}
-            style={[
-              s.heroImage,
-              { top: topInset(insets.top) + 52, height: 260 },
-            ]}
+            style={s.heroImage}
             resizeMode="cover"
           />
-          <View
-            style={[
-              s.heroOverlay,
-              { top: topInset(insets.top) + 52, height: 260 },
-            ]}
-          />
+          <View style={s.heroOverlay} />
           <TouchableOpacity
-            style={[s.backBtn, { top: topInset(insets.top) + 60 }]}
+            style={[s.backBtn, { top: topInset(insets.top) + 10 }]}
             activeOpacity={0.8}
             onPress={onBack}
           >
@@ -216,11 +208,13 @@ function makeStyles(T: AppTheme) {
   scrollContent: { paddingBottom: 120 },
 
   heroWrap: { position: "relative", backgroundColor: T.bg },
-  heroImage: { position: "absolute", left: 0, right: 0, width: "100%" },
+  heroImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+  },
   heroOverlay: {
-    position: "absolute",
-    left: 0,
-    right: 0,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(10,10,10,0.28)",
   },
   backBtn: {
@@ -232,6 +226,7 @@ function makeStyles(T: AppTheme) {
     backgroundColor: T.onImageGlass,
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 2,
   },
   heroTextWrap: {
     position: "absolute",
